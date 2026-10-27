@@ -43,6 +43,9 @@ int  n3ds_should_quit(void);
 /* simple debug log on the SD card (sdmc:/3ds/freespace2/fs2_3ds.log) */
 void n3ds_log(const char *fmt, ...);
 
+/* log the message, show it in the system error dialog, then return (caller exits) */
+void n3ds_fatal(const char *msg);
+
 #ifdef __cplusplus
 }
 #endif

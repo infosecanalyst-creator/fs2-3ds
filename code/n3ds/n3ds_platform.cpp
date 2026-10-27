@@ -46,6 +46,15 @@ extern "C" void n3ds_log(const char *fmt, ...)
 	fflush(n3ds_logfile);
 }
 
+extern "C" void n3ds_fatal(const char *msg)
+{
+	n3ds_log("FATAL: %s\n", msg);
+	errorConf err;
+	errorInit(&err, ERROR_TEXT_WORD_WRAP, CFG_LANGUAGE_EN);
+	errorText(&err, msg);
+	errorDisp(&err);
+}
+
 /* ------------------------------------------------------------------ init */
 
 static int n3ds_quit = 0;
@@ -365,6 +374,14 @@ static void compose_end(void)
 extern "C" void n3ds_present(void)
 {
 	int flight = in_flight();
+
+	static int frames = 0, last_state = -1;
+	int state = gameseq_get_state();
+	if (state != last_state || frames == 0) {
+		n3ds_log("frame %d: game state %d\n", frames, state);
+		last_state = state;
+	}
+	frames++;
 
 	pglSaveViewport();
 

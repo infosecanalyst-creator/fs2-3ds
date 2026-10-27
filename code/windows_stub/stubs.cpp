@@ -204,9 +204,20 @@ void Sleep(int mili)
 
 extern void os_deinit();
 // fatal assertion error
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#endif
+
 void WinAssert(char * text, char *filename, int line)
 {
 	fprintf(stderr, "ASSERTION FAILED: \"%s\" at %s:%d\n", text, filename, line);
+#ifdef SCP_3DS
+	{
+		char msg[512];
+		snprintf(msg, sizeof(msg), "Assertion failed: %s\n%s:%d", text, filename, line);
+		n3ds_fatal(msg);
+	}
+#endif
 
 	// this stuff migt be really useful for solving bug reports and user errors. We should output it! 
 	mprintf(("ASSERTION: \"%s\" at %s:%d\n", text, strrchr(filename, '/')+1, line ));
@@ -226,6 +237,16 @@ void WinAssert(char * text, char *filename, int line)
 void Warning( char * filename, int line, const char * format, ... )
 {
 	Global_warning_count++;
+#ifdef SCP_3DS
+	{
+		char wbuf[512];
+		va_list wargs;
+		va_start(wargs, format);
+		vsnprintf(wbuf, sizeof(wbuf) - 1, format, wargs);
+		va_end(wargs);
+		n3ds_log("WARNING: %s (%s:%d)\n", wbuf, filename, line);
+	}
+#endif
 
 #ifndef NDEBUG
 	va_list args;
@@ -316,6 +337,13 @@ void Error( char * filename, int line, const char * format, ... )
 	fprintf(stderr, "ERROR: \"%s\" at %s:%d\n", buffer, filename, line);
 #endif
 
+#ifdef SCP_3DS
+	{
+		char msg[1024];
+		snprintf(msg, sizeof(msg), "FreeSpace 2 error:\n%s\n\n%s:%d", buffer_tmp, filename, line);
+		n3ds_fatal(msg);
+	}
+#endif
 	exit(EXIT_FAILURE);
 }
 

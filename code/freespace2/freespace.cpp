@@ -3625,6 +3625,13 @@ void run_launcher()
 char full_path[1024];
 #endif
 
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#define N3DS_TRACE(x) n3ds_log("init: %s\n", x)
+#else
+#define N3DS_TRACE(x)
+#endif
+
 void game_init()
 {
 	int s1, e1;
@@ -3646,9 +3653,11 @@ void game_init()
 #endif
 
 	// encrypt stuff
+	N3DS_TRACE("encrypt_init");
 	encrypt_init();
 
 	// Initialize the timer before the os
+	N3DS_TRACE("timer_init");
 	timer_init();
 
 	// init os stuff next
@@ -3684,6 +3693,7 @@ void game_init()
 	//Initialize the libraries
 	s1 = timer_get_milliseconds();
 
+	N3DS_TRACE(whee);
 	if ( cfile_init(whee, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
 		exit(1);
 	}
@@ -3691,6 +3701,7 @@ void game_init()
 	e1 = timer_get_milliseconds();
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
+	N3DS_TRACE("lcl_init");
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
 
@@ -3801,6 +3812,7 @@ void game_init()
 // SOUND INIT END
 /////////////////////////////
 
+	N3DS_TRACE("gr_init");
 	if ( gr_init() == false ) {
 #ifdef _WIN32
 		ClipCursor(NULL);
@@ -3863,6 +3875,7 @@ void game_init()
 	script_init();			//WMC
 
 //#if defined(FS2_DEMO) || defined(OEM_BUILD)
+	N3DS_TRACE("gr_font_init");
 	gr_font_init();					// loads up all fonts
 	// add title screen
 	if(!Is_standalone){
@@ -3925,7 +3938,9 @@ void game_init()
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
+	N3DS_TRACE("iff_init");
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
+	N3DS_TRACE("species_init");
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
 	brief_parse_icon_tbl();
@@ -3937,6 +3952,7 @@ void game_init()
 
 	hud_init_comm_orders();	// Goober5000
 
+	N3DS_TRACE("control_config_common_init");
 	control_config_common_init();				// sets up localization stuff in the control config
 
 	parse_rank_tbl();
@@ -3948,6 +3964,7 @@ void game_init()
 	atexit(medal_close);
 */
 #endif
+	N3DS_TRACE("cutscene_init");
 	cutscene_init();
 	key_init();
 	mouse_init();
@@ -3955,8 +3972,10 @@ void game_init()
 
 	select_radar_mode(Cmdline_orb_radar);
 
+	N3DS_TRACE("gameseq_init");
 	gameseq_init();
 
+	N3DS_TRACE("multi_init");
 	multi_init();	
 
 	// standalone's don't use hte joystick and it seems to sometimes cause them to not get shutdown properly
@@ -3965,23 +3984,32 @@ void game_init()
 	}
 
 	player_controls_init();
+	N3DS_TRACE("model_init");
 	model_init();	
 
 	event_music_init();
 
+	N3DS_TRACE("obj_init");
 	obj_init();	
 	mflash_game_init();	
 	armor_init();
+	N3DS_TRACE("weapon_init");
 	weapon_init();	
+	N3DS_TRACE("ai_init");
 	ai_init();
 	ai_profiles_init();		// Goober5000
+	N3DS_TRACE("ship_init");
 	ship_init();						// read in ships.tbl	
 
+	N3DS_TRACE("player_init");
 	player_init();	
+	N3DS_TRACE("mission_campaign_init");
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
 	context_help_init();			
+	N3DS_TRACE("techroom_intel_init");
 	techroom_intel_init();			// parse species.tbl, load intel info  
+	N3DS_TRACE("hud_positions_init");
 	hud_positions_init();		//Setup hud positions
 	
 	// initialize psnet
@@ -3993,9 +4021,11 @@ void game_init()
 
 	neb2_init();						// fullneb stuff
 	nebl_init();
+	N3DS_TRACE("stars_init");
 	stars_init();
 	ssm_init();	
 	player_tips_init();				// helpful tips
+	N3DS_TRACE("beam_init");
 	beam_init();
 	
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
@@ -4005,6 +4035,7 @@ void game_init()
 	load_animating_pointer(NOX("cursor"), 0, 0);	
 
 	// initialize alpha colors
+	N3DS_TRACE("alpha_colors_init");
 	alpha_colors_init();	
 
 	if (Cmdline_cell) {
