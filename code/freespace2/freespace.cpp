@@ -9294,6 +9294,11 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #else
 
 // *NIX specific
+#ifdef SCP_3DS
+// the 3DS entry point (n3ds/n3ds_sdl.cpp) sets up the hardware, then calls this
+extern "C" int SDL_main(int argc, char *argv[]);
+#define main SDL_main
+#endif
 int main(int argc, char *argv[])
 {
 	int result = EXIT_FAILURE;

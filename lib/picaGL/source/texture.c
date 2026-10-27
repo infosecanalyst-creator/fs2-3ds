@@ -30,12 +30,18 @@ static size_t _determineBPP(GPU_TEXCOLOR format)
 	}
 }
 
-static GPU_TEXCOLOR _determineHardwareFormat(GLenum format)
+static GPU_TEXCOLOR _determineHardwareFormat(GLenum format, GLenum srcFormat, GLenum srcType)
 {
+	/* 16-bit 1555 sources keep their 1-bit alpha exactly */
+	if(srcType == GL_UNSIGNED_SHORT_1_5_5_5_REV)
+		return GPU_RGBA5551;
+
 	switch(format)
-	{	
+	{
+		case GL_RGBA8: return GPU_RGBA8;
+		case GL_RGB5_A1: return GPU_RGBA5551;
+
 		case 4:
-		case GL_RGBA8: //return GPU_RGBA8;
 		case GL_RGBA:
 		case GL_RGBA4: return GPU_RGBA4;
 
@@ -45,7 +51,9 @@ static GPU_TEXCOLOR _determineHardwareFormat(GLenum format)
 		case GL_RGB5:  return GPU_RGB565;
 
 		case GL_ALPHA:
-		case GL_LUMINANCE_ALPHA: return GPU_LA4;
+		case GL_ALPHA8: return GPU_A8;
+		case GL_LUMINANCE:
+		case GL_LUMINANCE_ALPHA: return GPU_LA8;
 
 		default: return GPU_RGBA4;
 	}
@@ -74,6 +82,23 @@ static inline readFunc _determineReadFunction(GLenum format, GLenum type, uint8_
 				case GL_UNSIGNED_BYTE: *bpp = 4; return _readRGBA8;
 				default:               return NULL;
 			}
+		case GL_BGRA:
+			switch (type) {
+				case GL_UNSIGNED_BYTE:
+				case GL_UNSIGNED_INT_8_8_8_8_REV: *bpp = 4; return _readBGRA8;
+				case GL_UNSIGNED_SHORT_1_5_5_5_REV: *bpp = 2; return _readBGRA5551REV;
+				default:               return NULL;
+			}
+		case GL_BGR:
+			switch (type) {
+				case GL_UNSIGNED_BYTE: *bpp = 3; return _readBGR8;
+				default:               return NULL;
+			}
+		case GL_LUMINANCE:
+			switch (type) {
+				case GL_UNSIGNED_BYTE: *bpp = 1; return _readL8;
+				default:               return NULL;
+			}
 		default:
 			return NULL;
 	}
@@ -83,6 +108,9 @@ static inline writeFunc _determineWriteFunction(GPU_TEXCOLOR format)
 {
 	switch (format) {
 		case GPU_RGBA4:  return _writeRGBA4;
+		case GPU_RGBA5551: return _writeRGBA5551;
+		case GPU_RGBA8:  return _writeRGBA8;
+		case GPU_RGB8:   return _writeRGB8;
 		case GPU_RGB565: return _writeRGB565;
 		case GPU_LA8:    return _writeLA8;
 		case GPU_LA4:    return _writeLA4;
@@ -245,7 +273,7 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 	if(texture->data)
 		_textureDataFree(texture);
 
-	texture->format = _determineHardwareFormat(internalFormat);
+	texture->format = _determineHardwareFormat(internalFormat, format, type);
 	texture->bpp 	= _determineBPP(texture->format);
 	texture->width  = width;
 	texture->height = height;

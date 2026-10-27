@@ -190,6 +190,10 @@ void os_deinit();
 // detect users home directory
 const char *detect_home(void)
 {
+#ifdef SCP_3DS
+	// pilots, settings and screenshots live next to the game data
+	return "sdmc:/3ds/freespace2";
+#endif
 	return (getenv("HOME"));
 }
 
@@ -286,8 +290,15 @@ extern int SDLtoFS2[SDLK_LAST];
 extern void joy_set_button_state(int button, int state);
 extern void joy_set_hat_state(int position);
 
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#endif
+
 DWORD unix_process(DWORD lparam)
 {
+#ifdef SCP_3DS
+	n3ds_input_poll();
+#endif
 	SDL_Event event;
 
 	while( SDL_PollEvent(&event) ) {

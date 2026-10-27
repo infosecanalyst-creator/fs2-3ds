@@ -23,6 +23,8 @@ void pglMainAsTexture(GLuint name);
 void pglMainSize(int *w, int *h, int *gpuW, int *gpuH);
 void pglPresentScreens(int stereo);
 void pglPresentRightEye(void);
+void pglSaveViewport(void);
+void pglRestoreViewport(void);
 
 #ifdef __cplusplus
 }

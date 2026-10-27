@@ -345,7 +345,11 @@ typedef struct {
 	unsigned short rsequence[MAXNETBUFFERS];				// This is the sequence number of the given packet
 	float last_packet_received;								// For a given connection, this is the last packet we received
 	float last_packet_sent;
+#ifdef SCP_3DS
+	struct sockaddr_storage addr;								// SOCKADDR of our peer (3DS: sockaddr has a flexible array)
+#else
 	SOCKADDR addr;													// SOCKADDR of our peer
+#endif
 	ushort status;													// Status of this connection
 	unsigned short oursequence;								// This is the next sequence number the application is expecting
 	unsigned short theirsequence;								// This is the next sequence number the peer is expecting
@@ -1348,14 +1352,14 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 			if(!Ipx_active){
 				 return;
 			}
-			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 			break;
 #endif
 		case NET_TCP:
 			if(!Tcp_active){
 				return;
 			}
-			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+			SENDTO(Unreliable_socket, (char *)&diss_conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&Reliable_sockets[*sockp].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 			break;
 		default:
 			ml_string("Unknown protocol type in nw_CloseSocket()!");			
@@ -1424,7 +1428,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 						if(!Ipx_active){
 							return 0;
 						}
-						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 						break;
 #endif
 					case NET_TCP:
@@ -1432,7 +1436,7 @@ int psnet_rel_send(PSNET_SOCKET_RELIABLE socketid, ubyte *data, int length, int 
 							return 0;
 						}
 						multi_rate_add(np_index, "tcp(h)", RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i]);
-						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+						bytesout = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 						break;
 					default:
 						ml_string("Unknown protocol type in nw_SendReliable()!");
@@ -1532,7 +1536,7 @@ void psnet_rel_work()
 					Int3();
 					return;
 				}
-				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 				break;
 #endif
 			case NET_TCP:
@@ -1541,7 +1545,7 @@ void psnet_rel_work()
 					Int3();
 					return;
 				}
-				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+				ret = SENDTO(Unreliable_socket, (char *)&conn_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&Reliable_sockets[Serverconn].addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 				break;
 			default:
 				ml_string("Unknown protocol type in nw_WorkReliable()!");
@@ -1629,7 +1633,7 @@ void psnet_rel_work()
 							//We already have a reliable link to this user, so we will ignore it...
 							ml_printf("Received duplicate connection request. %d",i);
 							//reliable_sockets[i].last_packet_received = timer_GetTime();
-							psnet_rel_send_ack(&Reliable_sockets[i].addr, rcv_buff.seq, link_type, rcv_buff.send_time);
+							psnet_rel_send_ack((SOCKADDR *)&Reliable_sockets[i].addr, rcv_buff.seq, link_type, rcv_buff.send_time);
 							//We will change this as a hack to prevent later code from hooking us up
 							rcv_buff.type = 0xff;
 							continue;
@@ -1641,7 +1645,7 @@ void psnet_rel_work()
 						//Add the new connection here.
 						Reliable_sockets[i].connection_type=link_type;
 						memcpy(&Reliable_sockets[i].m_net_addr, &d3_rcv_addr, sizeof(net_addr));
-						memcpy(&Reliable_sockets[i].addr ,&rcv_addr, sizeof(SOCKADDR));
+						memcpy((SOCKADDR *)&Reliable_sockets[i].addr ,&rcv_addr, sizeof(SOCKADDR));
 						Reliable_sockets[i].ping_pos = 0;
 						Reliable_sockets[i].num_ping_samples = 0;
 						Reliable_sockets[i].status = RNF_LIMBO;
@@ -1658,7 +1662,7 @@ void psnet_rel_work()
 					//Int3();//See Kevin
 					continue;
 				}
-				psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);			
+				psnet_rel_send_ack((SOCKADDR *)&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);			
 			}
 			
 			//Find out if this is a packet from someone we were expecting a packet.
@@ -1693,7 +1697,7 @@ void psnet_rel_work()
 						}
 					} else if(rcv_buff.type == RNT_I_AM_HERE){
 						rsocket->status = RNF_CONNECTING;
-						psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
+						psnet_rel_send_ack((SOCKADDR *)&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
 						ml_string("Got IAMHERE!");
 						continue;
 					}
@@ -1799,7 +1803,7 @@ void psnet_rel_work()
 						}
 					}
 				}
-				psnet_rel_send_ack(&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
+				psnet_rel_send_ack((SOCKADDR *)&rsocket->addr, rcv_buff.seq, link_type, rcv_buff.send_time);		
 			}
 			
 		}
@@ -1851,11 +1855,11 @@ void psnet_rel_work()
 					send_header.data_len = INTEL_SHORT( (ushort)rsocket->send_len[i] );
 					send_header.type = RNT_DATA;
 					if(rsocket->connection_type == NET_TCP){
-						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 					} 
 #ifdef _WIN32
                  else if(rsocket->connection_type == NET_IPX){
-						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+						rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE+rsocket->send_len[i],0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 					}
 #endif
 
@@ -1880,11 +1884,11 @@ void psnet_rel_work()
 
 				rcode = -1;
 				if(rsocket->connection_type == NET_TCP){
-					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 				} 
 #ifdef _WIN32
             else if(rsocket->connection_type == NET_IPX){
-					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
+					rcode = SENDTO(Unreliable_socket, (char *)&send_header,RELIABLE_PACKET_HEADER_ONLY_SIZE,0,(SOCKADDR *)&rsocket->addr,sizeof(SOCKADDR), PSNET_TYPE_RELIABLE);
 				}
 #endif
 
@@ -2140,7 +2144,7 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 								Reliable_sockets[i].connection_type = (ubyte)server_addr->type;
 								memcpy(&Reliable_sockets[i].m_net_addr,&d3_rcv_addr,sizeof(net_addr));
 								Reliable_sockets[i].last_packet_received = psnet_get_time();
-								memcpy(&Reliable_sockets[i].addr,&rcv_addr,sizeof(SOCKADDR));
+								memcpy((SOCKADDR *)&Reliable_sockets[i].addr,&rcv_addr,sizeof(SOCKADDR));
 								Reliable_sockets[i].status = RNF_LIMBO;
 								*socket = i;
 								ml_string("Succesfully connected to server in nw_ConnectToServer().");

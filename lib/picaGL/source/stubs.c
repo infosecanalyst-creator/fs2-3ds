@@ -21,12 +21,10 @@ void glColor3b(GLbyte red, GLbyte green, GLbyte blue) {}
 void glColor3bv(const GLbyte *v) {}
 void glColor3d(GLdouble red, GLdouble green, GLdouble blue) {}
 void glColor3dv(const GLdouble *v) {}
-void glColor3fv(const GLfloat *v) {}
 void glColor3i(GLint red, GLint green, GLint blue) {}
 void glColor3iv(const GLint *v) {}
 void glColor3s(GLshort red, GLshort green, GLshort blue) {}
 void glColor3sv(const GLshort *v) {}
-void glColor3ub(GLubyte red, GLubyte green, GLubyte blue) {}
 void glColor3ui(GLuint red, GLuint green, GLuint blue) {}
 void glColor3uiv(const GLuint *v) {}
 void glColor3us(GLushort red, GLushort green, GLushort blue) {}
@@ -121,7 +119,6 @@ void glLightfv(GLenum light, GLenum pname, const GLfloat *params) {}
 void glLighti(GLenum light, GLenum pname, GLint param) {}
 void glLightiv(GLenum light, GLenum pname, const GLint *params) {}
 void glLineStipple(GLint factor, GLushort pattern) {}
-void glLineWidth(GLfloat width) {}
 void glListBase(GLuint base) {}
 void glLoadMatrixd(const GLdouble *m) {}
 void glLoadName(GLuint name) {}
@@ -160,7 +157,6 @@ void glPixelStorei(GLenum pname, GLint param) {}
 void glPixelTransferf(GLenum pname, GLfloat param) {}
 void glPixelTransferi(GLenum pname, GLint param) {}
 void glPixelZoom(GLfloat xfactor, GLfloat yfactor) {}
-void glPointSize(GLfloat size) {}
 void glPolygonStipple(const GLubyte *mask) {}
 void glPopAttrib(void) {}
 void glPopClientAttrib(void) {}
@@ -248,7 +244,6 @@ void glTranslated(GLdouble x, GLdouble y, GLdouble z) {}
 void glVertex2d(GLdouble x, GLdouble y) {}
 void glVertex2dv(const GLdouble *v) {}
 void glVertex2fv(const GLfloat *v) {}
-void glVertex2i(GLint x, GLint y) {}
 void glVertex2iv(const GLint *v) {}
 void glVertex2s(GLshort x, GLshort y) {}
 void glVertex2sv(const GLshort *v) {}
@@ -260,7 +255,6 @@ void glVertex3s(GLshort x, GLshort y, GLshort z) {}
 void glVertex3sv(const GLshort *v) {}
 void glVertex4d(GLdouble x, GLdouble y, GLdouble z, GLdouble w) {}
 void glVertex4dv(const GLdouble *v) {}
-void glVertex4f(GLfloat x, GLfloat y, GLfloat z, GLfloat w) {}
 void glVertex4fv(const GLfloat *v) {}
 void glVertex4i(GLint x, GLint y, GLint z, GLint w) {}
 void glVertex4iv(const GLint *v) {}

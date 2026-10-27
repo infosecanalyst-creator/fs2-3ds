@@ -191,3 +191,25 @@ void pglPresentRightEye(void)
 		GX_TRANSFER_OUT_FORMAT(gfxGetScreenFormat(GFX_TOP)));
 	_queueRun(false);
 }
+
+
+/* save/restore the GL viewport + scissor rectangles across a compose pass */
+static GLint _sv_vx, _sv_vy, _sv_vw, _sv_vh, _sv_sx, _sv_sy, _sv_sw, _sv_sh;
+static GLboolean _sv_sstate;
+void pglSaveViewport(void)
+{
+	_sv_vx = pglState->viewportX; _sv_vy = pglState->viewportY;
+	_sv_vw = pglState->viewportWidth; _sv_vh = pglState->viewportHeight;
+	_sv_sx = pglState->scissorX; _sv_sy = pglState->scissorY;
+	_sv_sw = pglState->scissorWidth; _sv_sh = pglState->scissorHeight;
+	_sv_sstate = pglState->scissorState;
+}
+void pglRestoreViewport(void)
+{
+	pglState->viewportX = _sv_vx; pglState->viewportY = _sv_vy;
+	pglState->viewportWidth = _sv_vw; pglState->viewportHeight = _sv_vh;
+	pglState->scissorX = _sv_sx; pglState->scissorY = _sv_sy;
+	pglState->scissorWidth = _sv_sw; pglState->scissorHeight = _sv_sh;
+	pglState->scissorState = _sv_sstate;
+	pglState->changes |= STATE_VIEWPORT_CHANGE | STATE_SCISSOR_CHANGE;
+}

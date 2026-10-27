@@ -1421,6 +1421,14 @@ bool gr_init(int d_mode, int d_width, int d_height, int d_depth)
 #endif
 #endif
 
+#ifdef SCP_3DS
+	// fixed offscreen target, see n3ds/n3ds_platform.h
+	mode = GR_OPENGL;
+	width = 800;
+	height = 480;
+	depth = 16;	// 16-bit textures (1555) keep texture memory down
+#endif
+
 	// now try to actually init everything...
 	if ( gr_init_sub(mode, width, height, depth) == false ) {
 		return false;

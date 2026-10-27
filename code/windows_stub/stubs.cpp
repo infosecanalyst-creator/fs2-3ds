@@ -578,6 +578,7 @@ int MulDiv(int number, int numerator, int denominator)
 }
 
 // lowercase a string
+#ifndef SCP_3DS
 void strlwr(char *s)
 {
 	if (s == NULL)
@@ -588,6 +589,7 @@ void strlwr(char *s)
 		s++;
 	}
 }
+#endif
 
 
 /* *************************************

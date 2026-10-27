@@ -24,7 +24,8 @@
 .proc main
 	; Force the w component of inpos to be 1.0
 	mov r0.xyz, inpos
-	mov r0.w,   ones
+	mov r0.w,   inpos.w
+	mov r1,     ones
 
 	; outpos = projectionMatrix * inpos
 	dp4 outpos.x, projection[0], r0
@@ -35,7 +36,7 @@
 	mov outtc0, intex
 	mov outtc1, intex2
 	
-	cmp inclr.w, gt, gt, r0.w
+	cmp inclr.w, gt, gt, r1.w
 
 	ifc cmp.x
 		mul outclr, rgba8_to_float, inclr

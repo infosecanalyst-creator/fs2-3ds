@@ -887,4 +887,24 @@ void glGetCompressedTexImage( GLenum target, GLint lod, GLvoid *img );
 
 #include <GL/glext.h>
 
+
+/* fs2-3ds additions */
+#ifndef GL_ALPHA_SCALE
+#define GL_ALPHA_SCALE 0x0D1C
+#endif
+#ifndef GL_TEXTURE_INTERNAL_FORMAT
+#define GL_TEXTURE_INTERNAL_FORMAT 0x1003
+#endif
+#ifndef GL_TRANSFORM_BIT
+#define GL_TRANSFORM_BIT 0x00001000
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
+void glLineWidth( GLfloat width );
+void glPointSize( GLfloat size );
+void glGetMaterialfv( GLenum face, GLenum pname, GLfloat *params );
+#ifdef __cplusplus
+}
+#endif
 #endif

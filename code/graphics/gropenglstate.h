@@ -84,6 +84,7 @@ class opengl_texture_state
 		void Disable(bool force = false);
 		void DisableAll();
 		void Delete(GLuint tex_id);
+		void ReapplyAll();   // fs2-3ds: push cached state back to GL
 		GLfloat AnisoFilter(GLfloat aniso = 0.0f);
 		
 		inline void SetRGBScale(GLfloat scale);
@@ -249,6 +250,7 @@ class opengl_state
 		GLboolean Light(GLint num, GLint state = -1);
 		GLboolean ClipPlane(GLint num, GLint state = -1);
 		GLboolean DepthMask(GLint state = -1);
+		void ReapplyAll();   // fs2-3ds: push cached state back to GL
 
 		inline GLenum FrontFaceValue(GLenum new_val = GL_INVALID_ENUM);
 		inline GLenum CullFaceValue(GLenum new_val = GL_INVALID_ENUM);

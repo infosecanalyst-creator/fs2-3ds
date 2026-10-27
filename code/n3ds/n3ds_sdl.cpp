@@ -189,7 +189,24 @@ int SDL_GL_GetAttribute(SDL_GLattr attr, int *value)
 }
 
 void SDL_GL_SwapBuffers(void) { n3ds_present(); }
-void *SDL_GL_GetProcAddress(const char *proc) { (void)proc; return NULL; }
+extern "C" void glActiveTextureARB(GLenum texture);
+extern "C" void glClientActiveTextureARB(GLenum texture);
+
+static void n3ds_glMultiTexCoord2fARB(GLenum target, GLfloat s, GLfloat t) { glMultiTexCoord2f(target, s, t); }
+
+void *SDL_GL_GetProcAddress(const char *proc)
+{
+	static const struct { const char *name; void *fn; } table[] = {
+		{ "glActiveTextureARB",       (void *)glActiveTextureARB },
+		{ "glClientActiveTextureARB", (void *)glClientActiveTextureARB },
+		{ "glMultiTexCoord2fARB",     (void *)n3ds_glMultiTexCoord2fARB },
+		{ "glDrawRangeElements",      (void *)glDrawRangeElements },
+		{ "glDrawRangeElementsEXT",   (void *)glDrawRangeElements },
+	};
+	for (unsigned i = 0; i < sizeof(table) / sizeof(table[0]); i++)
+		if (!strcmp(proc, table[i].name)) return table[i].fn;
+	return NULL;
+}
 
 int SDL_ShowCursor(int toggle) { (void)toggle; return 0; }
 void SDL_WarpMouse(Uint16 x, Uint16 y) { (void)x; (void)y; }

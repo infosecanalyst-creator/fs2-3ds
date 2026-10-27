@@ -231,6 +231,9 @@ typedef struct _LARGE_INTEGER {
 #define WSAENOTSOCK     ENOTSOCK
 #define WSAECONNRESET   ECONNRESET
 #define WSAECONNABORTED ECONNABORTED
+#ifdef SCP_3DS
+#include "n3ds_compat.h"
+#endif
 #define WSAESHUTDOWN    ESHUTDOWN
 #define WSAEADDRINUSE	EADDRINUSE
 #define SOCKET_ERROR	(-1)
@@ -370,7 +373,9 @@ void _splitpath(char *path, char *drive, char *dir, char *fname, char *ext);
 #define _strnicmp(s1, s2, n)	strncasecmp((s1), (s2), (n))
 #define _strlwr(s)				strlwr(s)
 
+#ifndef SCP_3DS
 void strlwr(char *s);
+#endif
 char *strnset( char *string, int fill, size_t count);
 
 // other stuff

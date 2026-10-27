@@ -10,6 +10,9 @@ const GLubyte* glGetString(GLenum name)
 			return (GLubyte*)"1.1";
 		case GL_VENDOR:
 			return (GLubyte*)"MasterFeizz";
+		case GL_EXTENSIONS:
+			return (GLubyte*)"GL_ARB_multitexture GL_ARB_texture_env_add GL_EXT_texture_env_add "
+			                 "GL_EXT_draw_range_elements GL_EXT_bgra GL_ARB_texture_mirrored_repeat";
 		default: 
 			return (GLubyte*)"";
 	}

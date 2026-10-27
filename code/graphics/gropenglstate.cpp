@@ -801,3 +801,42 @@ void opengl_setup_render_states(int &r, int &g, int &b, int &alpha, int &tmap_ty
 	GL_state.SetAlphaBlendMode(alpha_blend);
 	GL_state.SetZbufferType(zbuffer_type);
 }
+
+
+#ifdef SCP_3DS
+// The 3DS platform layer draws the two screens with raw GL calls between frames.
+// Push everything the cache believes back into GL so the engine stays in sync.
+void opengl_texture_state::ReapplyAll()
+{
+	GLuint saved = active_texture_unit;
+	for (int i = 0; i < num_texture_units; i++) {
+		vglActiveTextureARB(GL_TEXTURE0_ARB + i);
+		if (units[i].enabled) glEnable(units[i].texture_target); else glDisable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, units[i].texture_id);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, units[i].env_mode ? units[i].env_mode : GL_MODULATE);
+	}
+	vglActiveTextureARB(GL_TEXTURE0_ARB + saved);
+	Current_texture_source = (gr_texture_source)(-1);
+}
+
+void opengl_state::ReapplyAll()
+{
+	if (blend_Status) glEnable(GL_BLEND); else glDisable(GL_BLEND);
+	if (alphatest_Status) glEnable(GL_ALPHA_TEST); else glDisable(GL_ALPHA_TEST);
+	if (depthtest_Status) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+	if (scissortest_Status) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
+	if (cullface_Status) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
+	glDepthMask(depthmask_Status);
+	glBlendFunc(blendfunc_Value[0], blendfunc_Value[1]);
+	glDepthFunc(depthfunc_Value);
+	glCullFace(cullface_Value);
+	Current_alpha_blend_mode = (gr_alpha_blend)(-1);
+	Current_zbuffer_type = (gr_zbuffer_type)(-1);
+	Texture.ReapplyAll();
+}
+
+void opengl_state_n3ds_resync(void)
+{
+	GL_state.ReapplyAll();
+}
+#endif

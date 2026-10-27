@@ -19,13 +19,13 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 
 #include "n3ds/n3ds_platform.h"
 #include "n3ds/n3ds_panel.h"
+#include "n3ds/n3ds_manual.h"
 
 #include "globalincs/pstypes.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/2d.h"
-#include "graphics/gropenglstate.h"
 
 #define FS2_DIR "sdmc:/3ds/freespace2"
 
@@ -88,7 +88,6 @@ extern "C" int n3ds_should_quit(void) { return n3ds_quit; }
 static int joy_axes[6];
 static int joy_buttons[16];
 static int joy_hat = 0;
-static int virtual_throttle = -32768;   /* axis 2: absolute throttle driven by ZL/ZR */
 
 /* touch / mouse */
 static int touch_x = N3DS_GAME_W / 2, touch_y = N3DS_GAME_H / 2;
@@ -125,9 +124,11 @@ static const keymap n3ds_keys[] = {
 	{ BTN_DUP,     KEY_H,                      KEY_UP },      /* nearest hostile */
 	{ BTN_DDOWN,   KEY_M,                      KEY_DOWN },    /* match target speed */
 	{ BTN_DLEFT,   KEY_PERIOD,                 KEY_LEFT },    /* cycle primary */
-	{ BTN_DRIGHT,  KEY_SLASH,                  KEY_RIGHT },   /* cycle secondary */
+	{ BTN_DRIGHT,  KEY_DIVIDE,                 KEY_RIGHT },   /* cycle secondary bank */
 	{ BTN_START,   KEY_ESC,                    KEY_ESC },     /* in-game menu */
 	{ BTN_SELECT,  KEY_C,                      0 },             /* comms (wingman orders) */
+	{ BTN_ZR,      KEY_A,                      0 },             /* throttle up (hold) */
+	{ BTN_ZL,      KEY_Z,                      0 },             /* throttle down (hold) */
 };
 
 /* hold SELECT + button for secondary functions in flight */
@@ -135,7 +136,7 @@ static const keymap n3ds_select_keys[] = {
 	{ BTN_Y,       KEY_F,                      0 },             /* next friendly */
 	{ BTN_X,       KEY_S,                      0 },             /* next subsystem */
 	{ BTN_A,       KEY_Q,                      0 },             /* equalize shields */
-	{ BTN_DUP,     KEY_E,                      0 },             /* target attacker */
+	{ BTN_DUP,     KEY_R,                      0 },             /* closest attacker */
 	{ BTN_DDOWN,   KEY_B,                      0 },             /* next bomb */
 	{ BTN_DLEFT,   KEY_F3,                     0 },             /* target-view toggle */
 	{ BTN_DRIGHT,  KEY_PADPLUS,                0 },             /* radar range */
@@ -212,6 +213,23 @@ extern "C" void n3ds_input_poll(void)
 		}
 	}
 
+	/* SELECT + START: built-in manual (pauses the game in flight) */
+	if ((held & BTN_SELECT) && (down & BTN_START)) {
+		n3ds_manual_toggle();
+		release_all_keys();
+		if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+		return;
+	}
+	if (n3ds_manual_is_open()) {
+		if (down & (BTN_R | BTN_DRIGHT)) n3ds_manual_page(1);
+		if (down & (BTN_L | BTN_DLEFT)) n3ds_manual_page(-1);
+		if (down & BTN_B) {
+			n3ds_manual_close();
+			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+		}
+		return;
+	}
+
 	/* buttons */
 	int select_held = (held & BTN_SELECT) && flight;
 	static int select_used = 0;
@@ -252,12 +270,7 @@ extern "C" void n3ds_input_poll(void)
 	joy_axes[3] = scale_axis(cs.dx, 140);   /* bank */
 	joy_axes[4] = -scale_axis(cs.dy, 140);
 
-	/* ZL/ZR drive an absolute throttle so speed stays where you leave it */
-	if (held & BTN_ZR) virtual_throttle += 1400;
-	if (held & BTN_ZL) virtual_throttle -= 1400;
-	if (virtual_throttle > 32767) virtual_throttle = 32767;
-	if (virtual_throttle < -32768) virtual_throttle = -32768;
-	joy_axes[2] = virtual_throttle;
+	joy_axes[2] = 0;
 
 	joy_hat = 0;
 	memset(joy_buttons, 0, sizeof(joy_buttons));
@@ -353,6 +366,8 @@ extern "C" void n3ds_present(void)
 {
 	int flight = in_flight();
 
+	pglSaveViewport();
+
 	/* ---- top screen */
 	compose_begin(PGL_TARGET_TOP);
 	if (flight) {
@@ -370,10 +385,19 @@ extern "C" void n3ds_present(void)
 	compose_end();
 
 	/* ---- bottom screen */
-	if (flight) {
+	if (n3ds_manual_is_open()) {
+		pglBindTarget(PGL_TARGET_MAIN);
+		pglRestoreViewport();
+		opengl_state_n3ds_resync();
+		n3ds_manual_draw();
+		compose_begin(PGL_TARGET_BOTTOM);
+		blit_main(0, 0, 320, 240, 0, 0, 320, 240);
+		compose_end();
+	} else if (flight) {
 		/* draw the cockpit panel with the engine into the corner of the main target,
 		   then copy it 1:1 to the touchscreen */
 		pglBindTarget(PGL_TARGET_MAIN);
+		pglRestoreViewport();
 		opengl_state_n3ds_resync();
 		n3ds_panel_draw();
 		compose_begin(PGL_TARGET_BOTTOM);
@@ -389,8 +413,8 @@ extern "C" void n3ds_present(void)
 	pglPresentScreens(stereo);
 
 	/* back to the engine's target for the next frame */
-	glBindTexture(GL_TEXTURE_2D, 0);
 	pglBindTarget(PGL_TARGET_MAIN);
+	pglRestoreViewport();
 	opengl_state_n3ds_resync();
 
 	gspWaitForVBlank();
