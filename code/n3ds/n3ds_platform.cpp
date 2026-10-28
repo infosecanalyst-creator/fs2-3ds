@@ -498,11 +498,22 @@ extern "C" void n3ds_present(void)
 
 	pglSaveViewport();
 
+	/* where this frame was rendered: at render scale 0.5 the whole 800x480 engine frame
+	   sits in the 400x240 GL-bottom-left corner = engine rect (0,240)-(400,480) */
+	float fscale = pglGetRenderScale();
+	float src_x0 = 0, src_y0 = 0, src_x1 = N3DS_GAME_W, src_y1 = N3DS_GAME_H;
+	if (fscale < 0.99f) {
+		src_y0 = N3DS_GAME_H - N3DS_GAME_H * fscale;
+		src_x1 = N3DS_GAME_W * fscale;
+	}
+	/* overlays (panel, manual, dashboard) are drawn 1:1 into the engine's top-left corner */
+	pglSetRenderScale(1.0f);
+
 	int bottom = 1;
 	if (flight) {
-		/* ---- top: the cockpit view, whole frame, 2:1 downscale with bilinear filtering */
+		/* ---- top: the cockpit view (rendered at the LCD's own 400x240) */
 		compose_begin(PGL_TARGET_TOP);
-		blit_main(0, 0, 400, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
+		blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
 		compose_end();
 
 		/* ---- bottom: the manual, or the cockpit panel (drawn by the engine into the
@@ -531,7 +542,7 @@ extern "C" void n3ds_present(void)
 	} else {
 		/* ---- bottom: the menu itself, whole frame (stylus / Circle Pad pointer) */
 		compose_begin(PGL_TARGET_BOTTOM);
-		blit_main(0, 0, 320, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
+		blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);
 		compose_end();
 
 		if (n3ds_manual_is_open()) {
@@ -559,8 +570,11 @@ extern "C" void n3ds_present(void)
 	pglPresentScreensEx(stereo, bottom);   /* queues the frame; no GPU or VBlank wait here */
 	u64 t_present1 = osGetTime();
 
-	/* back to the engine's target for the next frame */
+	/* back to the engine's target for the next frame. In flight the GPU only renders
+	   the 400x240 the top LCD can show (a quarter of the pixels of 800x480): the real
+	   hardware is fill-rate bound there, the CPU side takes only a few ms. */
 	pglBindTarget(PGL_TARGET_MAIN);
+	pglSetRenderScale(in_flight() ? 0.5f : 1.0f);
 	pglRestoreViewport();
 	opengl_state_n3ds_resync();
 	n3ds_prof_end(N3DS_PROF_PRESENT);

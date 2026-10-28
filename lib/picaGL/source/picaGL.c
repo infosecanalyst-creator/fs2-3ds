@@ -285,23 +285,25 @@ void pglPresentRightEye(void)
 }
 
 
-/* save/restore the GL viewport + scissor rectangles across a compose pass */
-static GLint _sv_vx, _sv_vy, _sv_vw, _sv_vh, _sv_sx, _sv_sy, _sv_sw, _sv_sh;
+/* save/restore the GL viewport + scissor rectangles across a compose pass
+   (the engine's raw values; they are re-scaled for whatever target is bound) */
+extern GLint pglViewportRaw[4], pglScissorRaw[4];
+void _applyViewport(void);
+void _applyScissor(void);
+static GLint _sv_vp[4], _sv_sc[4];
 static GLboolean _sv_sstate;
 void pglSaveViewport(void)
 {
-	_sv_vx = pglState->viewportX; _sv_vy = pglState->viewportY;
-	_sv_vw = pglState->viewportWidth; _sv_vh = pglState->viewportHeight;
-	_sv_sx = pglState->scissorX; _sv_sy = pglState->scissorY;
-	_sv_sw = pglState->scissorWidth; _sv_sh = pglState->scissorHeight;
+	memcpy(_sv_vp, pglViewportRaw, sizeof(_sv_vp));
+	memcpy(_sv_sc, pglScissorRaw, sizeof(_sv_sc));
 	_sv_sstate = pglState->scissorState;
 }
 void pglRestoreViewport(void)
 {
-	pglState->viewportX = _sv_vx; pglState->viewportY = _sv_vy;
-	pglState->viewportWidth = _sv_vw; pglState->viewportHeight = _sv_vh;
-	pglState->scissorX = _sv_sx; pglState->scissorY = _sv_sy;
-	pglState->scissorWidth = _sv_sw; pglState->scissorHeight = _sv_sh;
+	memcpy(pglViewportRaw, _sv_vp, sizeof(_sv_vp));
+	memcpy(pglScissorRaw, _sv_sc, sizeof(_sv_sc));
 	pglState->scissorState = _sv_sstate;
+	_applyViewport();
+	_applyScissor();
 	pglState->changes |= STATE_VIEWPORT_CHANGE | STATE_SCISSOR_CHANGE;
 }

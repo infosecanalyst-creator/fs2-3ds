@@ -29,6 +29,10 @@ typedef struct {
 	float flushWaitMs, swapWaitMs;
 } pglFrameStats;
 void pglGetStats(pglFrameStats *out, int reset);
+
+/* scale applied to all viewports/scissors on the main target (1.0 or 0.5) */
+void pglSetRenderScale(float scale);
+float pglGetRenderScale(void);
 void pglPresentRightEye(void);
 void pglSaveViewport(void);
 void pglRestoreViewport(void);

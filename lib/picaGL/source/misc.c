@@ -1,5 +1,7 @@
 #include "internal.h"
 
+float _curScale(void);
+
 static GLint _GetScreenWidth()
 {
 	return pglState->targetWidth;
@@ -17,7 +19,12 @@ void glClear(GLbitfield mask)
 	if(mask & GL_DEPTH_BUFFER_BIT)
 		write_mask |= GPU_WRITE_DEPTH;
 	
-	_picaViewport(0, 0, pglState->targetHeight, pglState->targetWidth);
+	{
+		/* only clear the part of the target that is being rendered at this scale */
+		float s = _curScale();
+		uint32_t cw = (uint32_t)(pglState->targetWidth * s), ch = (uint32_t)(pglState->targetHeight * s);
+		_picaViewport(0, pglState->targetWidth - cw, ch, cw);
+	}
 	
 	_picaScissorTest(pglState->scissorState ? 0x3 : 0x0, pglState->scissorY, pglState->scissorX, pglState->scissorY + pglState->scissorHeight, pglState->scissorX + pglState->scissorWidth);
 
@@ -125,28 +132,68 @@ void glFinish(void)
 	_queueWaitAndClear();
 }
 
+/*
+ * fs2-3ds render scale: while the main target is bound, every viewport and scissor
+ * rectangle is multiplied by pglRenderScale. At 0.5 the engine still "sees" 800x480 but
+ * the GPU only fills the 400x240 corner of the target (GL bottom-left), i.e. exactly the
+ * top LCD's resolution - a quarter of the pixels. Compose targets are never scaled.
+ */
+float pglRenderScale = 1.0f;
+GLint pglViewportRaw[4] = { 0, 0, 800, 480 };
+GLint pglScissorRaw[4] = { 0, 0, 800, 480 };
+
+float _curScale(void)
+{
+	return (pglState->targetColor == pglState->mainColor) ? pglRenderScale : 1.0f;
+}
+
+void _applyViewport(void)
+{
+	float s = _curScale();
+	GLint x = (GLint)(pglViewportRaw[0] * s), y = (GLint)(pglViewportRaw[1] * s);
+	GLint w = (GLint)(pglViewportRaw[2] * s), h = (GLint)(pglViewportRaw[3] * s);
+	GLint vx = (_GetScreenWidth() - w) - x;
+	if (pglState->viewportX == vx && pglState->viewportY == y && pglState->viewportWidth == w && pglState->viewportHeight == h)
+		return;
+	pglState->viewportX = vx;
+	pglState->viewportY = y;
+	pglState->viewportWidth = w;
+	pglState->viewportHeight = h;
+	pglState->changes |= STATE_VIEWPORT_CHANGE;
+}
+
+void _applyScissor(void)
+{
+	float s = _curScale();
+	GLint x = (GLint)(pglScissorRaw[0] * s), y = (GLint)(pglScissorRaw[1] * s);
+	GLint w = (GLint)(pglScissorRaw[2] * s + 0.5f), h = (GLint)(pglScissorRaw[3] * s + 0.5f);
+	GLint sx = (_GetScreenWidth() - w) - x;
+	if (pglState->scissorX == sx && pglState->scissorY == y && pglState->scissorWidth == w && pglState->scissorHeight == h)
+		return;
+	pglState->scissorX = sx;
+	pglState->scissorY = y;
+	pglState->scissorWidth = w;
+	pglState->scissorHeight = h;
+	pglState->changes |= STATE_SCISSOR_CHANGE;
+}
+
+void pglSetRenderScale(float scale)
+{
+	pglRenderScale = scale;
+	_applyViewport();
+	_applyScissor();
+}
+
+float pglGetRenderScale(void) { return pglRenderScale; }
+
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-	if(pglState->viewportX == (_GetScreenWidth() - width) - x && pglState->viewportY == y &&
-	   pglState->viewportWidth == width && pglState->viewportHeight == height)
-		return;
-	pglState->viewportX = (_GetScreenWidth() - width) - x;
-	pglState->viewportY = y;
-	pglState->viewportHeight = height;
-	pglState->viewportWidth = width;
-
-	pglState->changes |= STATE_VIEWPORT_CHANGE;
+	pglViewportRaw[0] = x; pglViewportRaw[1] = y; pglViewportRaw[2] = width; pglViewportRaw[3] = height;
+	_applyViewport();
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-	if(pglState->scissorX == (_GetScreenWidth() - width) - x && pglState->scissorY == y &&
-	   pglState->scissorWidth == width && pglState->scissorHeight == height)
-		return;
-	pglState->scissorX = (_GetScreenWidth() - width) - x;
-	pglState->scissorY = y;
-	pglState->scissorWidth = width;
-	pglState->scissorHeight = height;
-
-	pglState->changes |= STATE_SCISSOR_CHANGE;
+	pglScissorRaw[0] = x; pglScissorRaw[1] = y; pglScissorRaw[2] = width; pglScissorRaw[3] = height;
+	_applyScissor();
 }
