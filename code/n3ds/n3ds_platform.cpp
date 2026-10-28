@@ -342,10 +342,19 @@ extern "C" void n3ds_input_poll(void)
 	circlePosition cp, cs;
 	hidCircleRead(&cp);
 	hidCstickRead(&cs);
+	/* small dead zone of our own: a worn Circle Pad rests a few counts off centre */
+	if (cp.dx > -12 && cp.dx < 12 && cp.dy > -12 && cp.dy < 12) { cp.dx = 0; cp.dy = 0; }
+	if (cs.dx > -12 && cs.dx < 12) cs.dx = 0;
+	if (cs.dy > -12 && cs.dy < 12) cs.dy = 0;
 	joy_axes[0] = scale_axis(cp.dx, 150);
 	joy_axes[1] = -scale_axis(cp.dy, 150);
 	joy_axes[3] = scale_axis(cs.dx, 140);   /* bank */
 	joy_axes[4] = -scale_axis(cs.dy, 140);
+
+	/* never fly with the "mouse": new pilots default to mouse flight, and the stylus /
+	   pointer position would keep turning the ship with nobody touching anything */
+	extern int Use_mouse_to_fly;
+	Use_mouse_to_fly = 0;
 
 	joy_axes[2] = 0;
 

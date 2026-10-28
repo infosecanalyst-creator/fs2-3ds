@@ -137,13 +137,11 @@ static inline uint32_t _picaConvertFilter(uint32_t param)
 {
 	switch(param)
 	{	
-		case GL_LINEAR_MIPMAP_LINEAR:
-		case GL_LINEAR: return GPU_LINEAR;
-		
 		case GL_NEAREST_MIPMAP_NEAREST:
 		case GL_NEAREST: return GPU_NEAREST;
 
-		default: return GL_LINEAR;
+		/* no mipmaps on this path: every *_MIPMAP_* filter and GL_LINEAR sample bilinear */
+		default: return GPU_LINEAR;
 	}
 }
 
@@ -403,16 +401,19 @@ void glTexParameterf(GLenum target, GLenum pname, GLfloat param)
 	switch(pname)
 	{
 		case GL_TEXTURE_MAG_FILTER:
-			tex_param = (tex_param & 0xFFFE) | GPU_TEXTURE_MAG_FILTER(_picaConvertFilter(param));
+			/* fs2-3ds: clear the MAG bit (bit 1) - the old mask cleared bit 0 */
+			tex_param = (tex_param & ~GPU_TEXTURE_MAG_FILTER(1)) | GPU_TEXTURE_MAG_FILTER(_picaConvertFilter(param));
 			break;
 		case GL_TEXTURE_MIN_FILTER:
-			tex_param = (tex_param & 0xFFFD) | GPU_TEXTURE_MIN_FILTER(_picaConvertFilter(param));
+			/* fs2-3ds: clear the MIN bit (bit 2) - the old mask cleared the MAG bit, so every
+			   texture ended up magnified with nearest-neighbour (blocky nebulae and planets) */
+			tex_param = (tex_param & ~GPU_TEXTURE_MIN_FILTER(1)) | GPU_TEXTURE_MIN_FILTER(_picaConvertFilter(param));
 			break;
 		case GL_TEXTURE_WRAP_T:
-			tex_param = (tex_param & 0xFCFF) | GPU_TEXTURE_WRAP_T(_picaConvertWrap(param));
+			tex_param = (tex_param & ~GPU_TEXTURE_WRAP_T(3)) | GPU_TEXTURE_WRAP_T(_picaConvertWrap(param));
 			break;
 		case GL_TEXTURE_WRAP_S:
-			tex_param = (tex_param & 0xCFFF) | GPU_TEXTURE_WRAP_S(_picaConvertWrap(param));
+			tex_param = (tex_param & ~GPU_TEXTURE_WRAP_S(3)) | GPU_TEXTURE_WRAP_S(_picaConvertWrap(param));
 			break;
 		default:
 			return;
