@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <malloc.h>
+#include <math.h>
 
 /* libctru's KEY_* button enums clash with the engine's KEY_* scancode macros, so
    capture the button bits under other names before the engine headers are included */
@@ -20,6 +21,7 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 #include "n3ds/n3ds_platform.h"
 #include "n3ds/n3ds_panel.h"
 #include "n3ds/n3ds_manual.h"
+#include "n3ds/n3ds_dash.h"
 
 #include "globalincs/pstypes.h"
 #include "io/key.h"
@@ -163,9 +165,9 @@ struct keymap { u32 button; int flight_key; int menu_key; };
 
 static const keymap n3ds_keys[] = {
 	/* button        in flight                     in menus     */
-	{ BTN_A,       KEY_TAB,                    KEY_ENTER },   /* afterburner / accept */
+	{ BTN_A,       KEY_TAB,                    0 },             /* afterburner / mouse click (below) */
 	{ BTN_B,       KEY_X,                      KEY_ESC },     /* countermeasure / back */
-	{ BTN_X,       KEY_Y,                      0 },             /* target ship in reticle */
+	{ BTN_X,       KEY_Y,                      KEY_ENTER },   /* target ship in reticle / accept */
 	{ BTN_Y,       KEY_T,                      0 },             /* target next ship */
 	{ BTN_R,       KEY_LCTRL,                  0 },             /* fire primary */
 	{ BTN_L,       KEY_SPACEBAR,               0 },             /* fire secondary */
@@ -256,8 +258,31 @@ extern "C" void n3ds_input_poll(void)
 			/* bottom screen shows the whole 800x480 frame squeezed into 320x240 */
 			touch_x = tp.px * N3DS_GAME_W / 320;
 			touch_y = tp.py * N3DS_GAME_H / 240;
+		} else {
+			/* Circle Pad moves the pointer: slow near the centre for precision, fast at the rim */
+			circlePosition cp;
+			hidCircleRead(&cp);
+			int dx = cp.dx, dy = cp.dy;
+			int mag = dx * dx + dy * dy;
+			if (mag > 18 * 18) {
+				static float fx = -1, fy = -1;
+				if (fx < 0 || (int)fx != touch_x || (int)fy != touch_y) { fx = (float)touch_x; fy = (float)touch_y; }
+				float m = sqrtf((float)mag);
+				float t = (m - 18.0f) / (150.0f - 18.0f);
+				if (t > 1.0f) t = 1.0f;
+				float speed = 1.0f + 13.0f * t * t;          /* engine pixels per frame */
+				fx += dx / m * speed;
+				fy -= dy / m * speed;
+				if (fx < 0) fx = 0;
+				if (fy < 0) fy = 0;
+				if (fx > N3DS_GAME_W - 1) fx = N3DS_GAME_W - 1;
+				if (fy > N3DS_GAME_H - 1) fy = N3DS_GAME_H - 1;
+				touch_x = (int)fx;
+				touch_y = (int)fy;
+			}
 		}
-		int now = (held & BTN_TOUCH) ? 1 : 0;
+		/* stylus down or A held = left mouse button */
+		int now = ((held & BTN_TOUCH) || (held & BTN_A)) ? 1 : 0;
 		if (now != touch_down) {
 			/* make sure the cursor position is updated before the click lands */
 			mouse_mark_button(MOUSE_LEFT_BUTTON, now);
@@ -464,36 +489,24 @@ extern "C" void n3ds_present(void)
 
 	pglSaveViewport();
 
-	/* ---- top screen */
-	compose_begin(PGL_TARGET_TOP);
-	if (flight) {
-		/* whole frame, 2:1 downscale with bilinear filtering */
-		blit_main(0, 0, 400, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
-	} else {
-		/* 1:1 magnifier centred on the stylus */
-		int cx = touch_x - 200, cy = touch_y - 120;
-		if (cx < 0) cx = 0;
-		if (cy < 0) cy = 0;
-		if (cx > N3DS_GAME_W - 400) cx = N3DS_GAME_W - 400;
-		if (cy > N3DS_GAME_H - 240) cy = N3DS_GAME_H - 240;
-		blit_main(0, 0, 400, 240, (float)cx, (float)cy, (float)(cx + 400), (float)(cy + 240));
-	}
-	compose_end();
-
-	/* ---- bottom screen */
 	int bottom = 1;
-	if (n3ds_manual_is_open()) {
-		pglBindTarget(PGL_TARGET_MAIN);
-		pglRestoreViewport();
-		opengl_state_n3ds_resync();
-		n3ds_manual_draw();
-		compose_begin(PGL_TARGET_BOTTOM);
-		blit_main(0, 0, 320, 240, 0, 0, 320, 240);
+	if (flight) {
+		/* ---- top: the cockpit view, whole frame, 2:1 downscale with bilinear filtering */
+		compose_begin(PGL_TARGET_TOP);
+		blit_main(0, 0, 400, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
 		compose_end();
-	} else if (flight) {
-		/* draw the cockpit panel with the engine into the corner of the main target,
-		   then copy it 1:1 to the touchscreen - at 30 Hz, it's only gauges and text */
-		if (frames & 1) {
+
+		/* ---- bottom: the manual, or the cockpit panel (drawn by the engine into the
+		   corner of the main target, copied 1:1) at 30 Hz - it's only gauges and text */
+		if (n3ds_manual_is_open()) {
+			pglBindTarget(PGL_TARGET_MAIN);
+			pglRestoreViewport();
+			opengl_state_n3ds_resync();
+			n3ds_manual_draw();
+			compose_begin(PGL_TARGET_BOTTOM);
+			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
+			compose_end();
+		} else if (frames & 1) {
 			n3ds_prof_begin(N3DS_PROF_PANEL);
 			pglBindTarget(PGL_TARGET_MAIN);
 			pglRestoreViewport();
@@ -507,8 +520,28 @@ extern "C" void n3ds_present(void)
 			bottom = 0;
 		}
 	} else {
+		/* ---- bottom: the menu itself, whole frame (stylus / Circle Pad pointer) */
 		compose_begin(PGL_TARGET_BOTTOM);
 		blit_main(0, 0, 320, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
+		compose_end();
+
+		if (n3ds_manual_is_open()) {
+			pglBindTarget(PGL_TARGET_MAIN);
+			pglRestoreViewport();
+			opengl_state_n3ds_resync();
+			n3ds_manual_draw();
+			compose_begin(PGL_TARGET_BOTTOM);
+			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
+			compose_end();
+		}
+
+		/* ---- top: dashboard - only things that are NOT on the touchscreen */
+		pglBindTarget(PGL_TARGET_MAIN);
+		pglRestoreViewport();
+		opengl_state_n3ds_resync();
+		n3ds_dash_draw();
+		compose_begin(PGL_TARGET_TOP);
+		blit_main(0, 0, 400, 240, 0, 0, 400, 240);
 		compose_end();
 	}
 

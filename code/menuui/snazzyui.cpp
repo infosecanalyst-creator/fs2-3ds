@@ -219,6 +219,9 @@
 
 
 #include "menuui/snazzyui.h"
+#ifdef SCP_3DS
+#include "n3ds/n3ds_dash.h"
+#endif
 #include "io/key.h"
 #include "graphics/font.h"
 #include "io/mouse.h"
@@ -341,7 +344,12 @@ int snazzy_menu_do(ubyte *data, int mask_w, int mask_h, int num_regions, MENU_RE
 	gr_set_font( FONT1 );
 
 	if ((mouse_on_choice >= 0) && (mouse_on_choice <= (num_regions)) && (i >=0)) {
+#ifdef SCP_3DS
+		// New 3DS: the label goes to the top-screen dashboard, not under the stylus
+		n3ds_dash_hover( regions[i].text );
+#else
 		gr_printf( 0x8000, 450, regions[i].text );
+#endif
 	}
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ){
