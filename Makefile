@@ -94,10 +94,14 @@ $(BUILD)/shaders/%.shbin.o: lib/picaGL/source/shaders/%.v.pica
 # picaGL sources need the generated shader headers
 $(addprefix $(BUILD)/,$(addsuffix .o,$(basename $(PICAGL_SRC)))): $(SHBIN_OBJS)
 
+# engine code: float literals stay single precision (fs2 is float-only; on the ARM11 VFP a
+# stray "x * 0.5" otherwise turns into double maths plus two conversions)
+$(BUILD)/code/%.o: ENGINE_FLAGS := -fsingle-precision-constant
+
 $(BUILD)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	@echo $<
-	@$(CXX) -MMD -MP $(CXXFLAGS) -c $< -o $@
+	@$(CXX) -MMD -MP $(CXXFLAGS) $(ENGINE_FLAGS) -c $< -o $@
 
 $(BUILD)/%.o: %.c
 	@mkdir -p $(dir $@)

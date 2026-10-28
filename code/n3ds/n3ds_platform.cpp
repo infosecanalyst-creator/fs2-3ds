@@ -328,6 +328,34 @@ extern "C" void n3ds_input_poll(void)
 	memset(joy_buttons, 0, sizeof(joy_buttons));
 }
 
+/* ------------------------------------------------------------------ profiler */
+
+static u64 prof_start[N3DS_PROF_COUNT];
+static u64 prof_total[N3DS_PROF_COUNT];
+
+extern "C" void n3ds_prof_begin(int id) { prof_start[id] = svcGetSystemTick(); }
+extern "C" void n3ds_prof_end(int id) { prof_total[id] += svcGetSystemTick() - prof_start[id]; }
+
+static inline float ticks_ms(u64 t) { return (float)((double)t / (SYSCLOCK_ARM11 / 1000.0)); }
+
+/* every 300 frames: average ms per frame for each stage, GPU waits and draw counts */
+static void prof_report(int frames_in_window, u64 window_ticks, int state)
+{
+	pglFrameStats gs;
+	pglGetStats(&gs, 1);
+	float n = (float)frames_in_window;
+	float ms = ticks_ms(window_ticks);
+	n3ds_log("perf state %d: %.1f fps | ms/frame sim %.1f 3d %.1f hud %.1f panel %.1f present %.1f | gpu-wait %.1f swap-wait %.1f | per frame: %u polys -> %u draws, %u arrays, %u flushes, %u verts | linear free %d KB\n",
+		state, n * 1000.0f / ms,
+		ticks_ms(prof_total[N3DS_PROF_SIM]) / n, ticks_ms(prof_total[N3DS_PROF_3D]) / n,
+		ticks_ms(prof_total[N3DS_PROF_HUD]) / n, ticks_ms(prof_total[N3DS_PROF_PANEL]) / n,
+		ticks_ms(prof_total[N3DS_PROF_PRESENT]) / n,
+		gs.flushWaitMs / n, gs.swapWaitMs / n,
+		(unsigned)(gs.ends / n), (unsigned)(gs.batches / n), (unsigned)(gs.arrayDraws / n),
+		(unsigned)(gs.flushes / n), (unsigned)(gs.verts / n), (int)(linearSpaceFree() / 1024));
+	memset(prof_total, 0, sizeof(prof_total));
+}
+
 /* ------------------------------------------------------------------ screens */
 
 /*
@@ -425,8 +453,14 @@ extern "C" void n3ds_present(void)
 		last_state = state;
 	}
 	frames++;
-	if ((frames % 300) == 0)
-		n3ds_log("frame %d state %d touch %d,%d\n", frames, state, touch_x, touch_y);
+	static u64 window_t0 = 0;
+	if (!window_t0) window_t0 = svcGetSystemTick();
+	if ((frames % 300) == 0) {
+		u64 now = svcGetSystemTick();
+		prof_report(300, now - window_t0, state);
+		window_t0 = now;
+	}
+	n3ds_prof_begin(N3DS_PROF_PRESENT);
 
 	pglSaveViewport();
 
@@ -447,6 +481,7 @@ extern "C" void n3ds_present(void)
 	compose_end();
 
 	/* ---- bottom screen */
+	int bottom = 1;
 	if (n3ds_manual_is_open()) {
 		pglBindTarget(PGL_TARGET_MAIN);
 		pglRestoreViewport();
@@ -457,14 +492,20 @@ extern "C" void n3ds_present(void)
 		compose_end();
 	} else if (flight) {
 		/* draw the cockpit panel with the engine into the corner of the main target,
-		   then copy it 1:1 to the touchscreen */
-		pglBindTarget(PGL_TARGET_MAIN);
-		pglRestoreViewport();
-		opengl_state_n3ds_resync();
-		n3ds_panel_draw();
-		compose_begin(PGL_TARGET_BOTTOM);
-		blit_main(0, 0, 320, 240, 0, 0, 320, 240);
-		compose_end();
+		   then copy it 1:1 to the touchscreen - at 30 Hz, it's only gauges and text */
+		if (frames & 1) {
+			n3ds_prof_begin(N3DS_PROF_PANEL);
+			pglBindTarget(PGL_TARGET_MAIN);
+			pglRestoreViewport();
+			opengl_state_n3ds_resync();
+			n3ds_panel_draw();
+			compose_begin(PGL_TARGET_BOTTOM);
+			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
+			compose_end();
+			n3ds_prof_end(N3DS_PROF_PANEL);
+		} else {
+			bottom = 0;
+		}
 	} else {
 		compose_begin(PGL_TARGET_BOTTOM);
 		blit_main(0, 0, 320, 240, 0, 0, N3DS_GAME_W, N3DS_GAME_H);
@@ -473,17 +514,16 @@ extern "C" void n3ds_present(void)
 
 	int stereo = 0;
 	u64 t_present0 = osGetTime();
-	pglPresentScreens(stereo);
+	pglPresentScreensEx(stereo, bottom);   /* queues the frame; no GPU or VBlank wait here */
 	u64 t_present1 = osGetTime();
 
 	/* back to the engine's target for the next frame */
 	pglBindTarget(PGL_TARGET_MAIN);
 	pglRestoreViewport();
 	opengl_state_n3ds_resync();
+	n3ds_prof_end(N3DS_PROF_PRESENT);
 
-	u64 t_vb0 = osGetTime();
-	gspWaitForVBlank();
-	u64 t_vb1 = osGetTime();
+	u64 t_vb0 = osGetTime(), t_vb1 = t_vb0;
 
 	/* frame timing trace: first frames after start and after the keyboard */
 	static u64 t_last = 0;

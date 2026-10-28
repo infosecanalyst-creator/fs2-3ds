@@ -7,6 +7,7 @@ static GLint _GetScreenWidth()
 
 void glClear(GLbitfield mask)
 {
+	_batchSubmit();
 	shaderProgramUse(&pglState->clearShader);
 
 	uint32_t write_mask = 0;
@@ -83,7 +84,13 @@ void glFlush(void)
 {
 	static int nextCommandBuffer = 1;
 
+	_batchSubmit();
+
+	/* wait for the previous command list (it used the other geometry/command buffers) */
+	u64 t0 = svcGetSystemTick();
 	_queueWaitAndClear();
+	pglStats.flushWaitTicks += svcGetSystemTick() - t0;
+	pglStats.flushes++;
 
 	_picaFinalize(true);
 	u32* commandBuffer;
@@ -91,7 +98,12 @@ void glFlush(void)
 
 	GPUCMD_Split(&commandBuffer, &commandBuffer_size);
 
-	GX_FlushCacheRegions (commandBuffer, commandBuffer_size * 4, (u32 *) __ctru_linear_heap, __ctru_linear_heap_size, NULL, 0);
+	/* fs2-3ds: clean only what the GPU will read from this list - the command buffer and
+	   the used parts of the vertex / index buffers - instead of the whole 32 MB linear heap.
+	   (Texture uploads flush their own data.) */
+	GX_FlushCacheRegions(commandBuffer, commandBuffer_size * 4,
+		(u32*)pglState->geometryBuffer[pglState->geometryBufferCurrent], (pglState->geometryBufferOffset + 31) & ~31u,
+		(u32*)pglState->indexBuffer[pglState->geometryBufferCurrent], ((pglState->indexBufferOffset * 2) + 31) & ~31u);
 	GX_ProcessCommandList(commandBuffer, commandBuffer_size * 4, 0x00);
 
 	_queueRun(true);
@@ -100,6 +112,7 @@ void glFlush(void)
 
 	pglState->batchedDraws = 0;
 	pglState->geometryBufferOffset = 0;
+	pglState->indexBufferOffset = 0;
 	pglState->geometryBufferCurrent = nextCommandBuffer;
 
 	nextCommandBuffer = !nextCommandBuffer;
@@ -114,6 +127,9 @@ void glFinish(void)
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
+	if(pglState->viewportX == (_GetScreenWidth() - width) - x && pglState->viewportY == y &&
+	   pglState->viewportWidth == width && pglState->viewportHeight == height)
+		return;
 	pglState->viewportX = (_GetScreenWidth() - width) - x;
 	pglState->viewportY = y;
 	pglState->viewportHeight = height;
@@ -124,6 +140,9 @@ void glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
+	if(pglState->scissorX == (_GetScreenWidth() - width) - x && pglState->scissorY == y &&
+	   pglState->scissorWidth == width && pglState->scissorHeight == height)
+		return;
 	pglState->scissorX = (_GetScreenWidth() - width) - x;
 	pglState->scissorY = y;
 	pglState->scissorWidth = width;

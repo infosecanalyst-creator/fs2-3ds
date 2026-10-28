@@ -131,6 +131,10 @@ void _picaDrawElements(GPU_Primitive_t primitive, uint32_t indexArray, uint32_t 
 	GPUCMD_AddMaskedWrite(GPUREG_START_DRAW_FUNC0, 0x1, 0x00000001);
 	GPUCMD_AddWrite(GPUREG_VTX_FUNC, 0x00000001);
 
+	/* fs2-3ds: leave the geometry stage in normal mode for later non-indexed draws */
+	GPUCMD_AddMaskedWrite(GPUREG_GEOSTAGE_CONFIG, 0x2, 0x00000000);
+	GPUCMD_AddMaskedWrite(GPUREG_GEOSTAGE_CONFIG2, 0x2, 0x00000000);
+
 }
 
 void _picaDepthMap(float near, float far, float polygon_offset){

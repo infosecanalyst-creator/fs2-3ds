@@ -11,9 +11,10 @@
 
 #define MATRIX_STACK_SIZE 16
 
-#define MAX_BATCHED_DRAWS 200
+#define MAX_BATCHED_DRAWS 4000
 
-#define GEOMETRY_BUFFER_SIZE 0x20000
+#define GEOMETRY_BUFFER_SIZE 0x180000   /* vertices, per command buffer (fs2-3ds: was 128 KB) */
+#define INDEX_BUFFER_SIZE    0x60000    /* 16-bit indices for batched immediate-mode draws */
 #define COMMAND_BUFFER_LENGTH 0x40000
 
 #define COMMAND_BUFFER_SIZE   COMMAND_BUFFER_LENGTH * 4
@@ -175,6 +176,8 @@ typedef struct {
 
 	void 				*geometryBuffer[2];
 	GLuint 				 geometryBufferOffset, geometryBufferCurrent;
+	uint16_t			*indexBuffer[2];
+	GLuint				 indexBufferOffset;   /* in indices */
 
 	GLuint				changes;
 	GLuint 				batchedDraws;
@@ -185,6 +188,16 @@ extern picaGLState *pglState;
 void _stateInitialize();
 void _stateReset();
 void _stateFlush();
+
+/* immediate.c: batched immediate-mode geometry (fs2-3ds) */
+void _batchSubmit(void);
+
+/* fs2-3ds profiling counters (see pglGetStats) */
+typedef struct {
+	u32 ends, batches, arrayDraws, flushes, verts;
+	u64 flushWaitTicks, swapWaitTicks;
+} pglStatsInternal;
+extern pglStatsInternal pglStats;
 void _stateDefault();
 
 /* pica.c */

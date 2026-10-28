@@ -50,6 +50,11 @@ void n3ds_fatal(const char *msg);
 int  n3ds_file_exists(const char *path);
 void n3ds_dircache_invalidate(void);
 
+/* lightweight frame profiler: totals are written to fs2_3ds.log every 300 frames */
+enum { N3DS_PROF_SIM, N3DS_PROF_3D, N3DS_PROF_HUD, N3DS_PROF_PANEL, N3DS_PROF_PRESENT, N3DS_PROF_COUNT };
+void n3ds_prof_begin(int id);
+void n3ds_prof_end(int id);
+
 /* show the 3DS software keyboard; returns 1 when the user confirmed (out filled) */
 int n3ds_keyboard(int password, const char *initial, char *out, int outlen);
 

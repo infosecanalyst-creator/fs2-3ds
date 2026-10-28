@@ -1628,7 +1628,11 @@ void init_new_pilot(player *p, int reset)
 		control_config_reset_defaults();		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
+#ifdef SCP_3DS
+		cur_speed = os_config_read_uint(NULL, NOX("ComputerSpeed"), 1 );	// New 3DS: start new pilots on Medium detail
+#else
 		cur_speed = os_config_read_uint(NULL, NOX("ComputerSpeed"), 2 );
+#endif
 		if ( cur_speed < 0 )	{
 			cur_speed = 0;
 		} else if ( cur_speed >= NUM_DEFAULT_DETAIL_LEVELS )	{

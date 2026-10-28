@@ -11,6 +11,9 @@ void _stateInitialize()
 
 	pglState->geometryBuffer[0] = linearAlloc(GEOMETRY_BUFFER_SIZE);
 	pglState->geometryBuffer[1] = linearAlloc(GEOMETRY_BUFFER_SIZE);
+	pglState->indexBuffer[0] = linearAlloc(INDEX_BUFFER_SIZE);
+	pglState->indexBuffer[1] = linearAlloc(INDEX_BUFFER_SIZE);
+	pglState->indexBufferOffset = 0;
 
 	pglState->geometryBufferCurrent = 0;
 
@@ -113,6 +116,9 @@ void _stateFlush()
 
 	if(!pglState->changes)
 		return;
+
+	/* registers are about to change: draw the open batch with the state it was built for */
+	_batchSubmit();
 	
 	if(pglState->changes & STATE_VIEWPORT_CHANGE)
 	{
@@ -202,34 +208,42 @@ void glDisable(GLenum cap)
 	switch (cap)
 	{
 		case GL_DEPTH_TEST:
+			if(pglState->depthTestState == false) break;
 			pglState->depthTestState = false;
 			pglState->changes |= STATE_DEPTHTEST_CHANGE;
 			break;
 		case GL_POLYGON_OFFSET_FILL:
+			if(pglState->polygonOffsetState == false) break;
 			pglState->polygonOffsetState = false;
-			pglState->changes |= STATE_DEPTHTEST_CHANGE;
+			pglState->changes |= STATE_DEPTHMAP_CHANGE;
 			break;
 		case GL_STENCIL_TEST:
+			if(pglState->stencilTestState == false) break;
 			pglState->stencilTestState = false;
 			pglState->changes |= STATE_STENCIL_CHANGE;
 			break;
 		case GL_BLEND:
+			if(pglState->blendState == false) break;
 			pglState->blendState = false;
 			pglState->changes |= STATE_BLEND_CHANGE;
 			break;
 		case GL_SCISSOR_TEST:
+			if(pglState->scissorState == false) break;
 			pglState->scissorState = false;
 			pglState->changes |= STATE_SCISSOR_CHANGE;
 			break;
 		case GL_CULL_FACE:
+			if(pglState->cullState == false) break;
 			pglState->cullState = false;
 			pglState->changes |= STATE_CULL_CHANGE;
 			break;
 		case GL_TEXTURE_2D:
+			if(pglState->texUnitState[pglState->texUnitActive] == false) break;
 			pglState->texUnitState[pglState->texUnitActive] = false;
 			pglState->changes |= STATE_TEXTURE_CHANGE;
 			break;
 		case GL_ALPHA_TEST:
+			if(pglState->alphaTestState == false) break;
 			pglState->alphaTestState = false;
 			pglState->changes |= STATE_ALPHATEST_CHANGE;
 			break;
@@ -243,34 +257,42 @@ void glEnable(GLenum cap)
 	switch (cap)
 	{
 		case GL_DEPTH_TEST:
+			if(pglState->depthTestState == true) break;
 			pglState->depthTestState = true;
 			pglState->changes |= STATE_DEPTHTEST_CHANGE;
 			break;
 		case GL_POLYGON_OFFSET_FILL:
+			if(pglState->polygonOffsetState == true) break;
 			pglState->polygonOffsetState = true;
-			pglState->changes |= STATE_DEPTHTEST_CHANGE;
+			pglState->changes |= STATE_DEPTHMAP_CHANGE;
 			break;
 		case GL_STENCIL_TEST:
+			if(pglState->stencilTestState == true) break;
 			pglState->stencilTestState = true;
 			pglState->changes |= STATE_STENCIL_CHANGE;
 			break;
 		case GL_BLEND:
+			if(pglState->blendState == true) break;
 			pglState->blendState = true;
 			pglState->changes |= STATE_BLEND_CHANGE;
 			break;
 		case GL_SCISSOR_TEST:
+			if(pglState->scissorState == true) break;
 			pglState->scissorState = true;
 			pglState->changes |= STATE_SCISSOR_CHANGE;
 			break;
 		case GL_CULL_FACE:
+			if(pglState->cullState == true) break;
 			pglState->cullState = true;
 			pglState->changes |= STATE_CULL_CHANGE;
 			break;
 		case GL_TEXTURE_2D:
+			if(pglState->texUnitState[pglState->texUnitActive] == true) break;
 			pglState->texUnitState[pglState->texUnitActive] = true;
 			pglState->changes |= STATE_TEXTURE_CHANGE;
 			break;
 		case GL_ALPHA_TEST:
+			if(pglState->alphaTestState == true) break;
 			pglState->alphaTestState = true;
 			pglState->changes |= STATE_ALPHATEST_CHANGE;
 			break;

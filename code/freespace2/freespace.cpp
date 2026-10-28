@@ -6454,7 +6454,13 @@ void game_frame(int paused)
 			return;
 		}
 		
+#ifdef SCP_3DS
+		n3ds_prof_begin(N3DS_PROF_SIM);
 		game_simulation_frame(); 
+		n3ds_prof_end(N3DS_PROF_SIM);
+#else
+		game_simulation_frame(); 
+#endif
 		
 		// if not actually in a game play state, then return.  This condition could only be true in 
 		// a multiplayer game.
@@ -6492,7 +6498,13 @@ void game_frame(int paused)
                 bars_do_frame(flFrametime);
             }
 
+#ifdef SCP_3DS
+			n3ds_prof_begin(N3DS_PROF_3D);
 			game_render_frame( cid );
+			n3ds_prof_end(N3DS_PROF_3D);
+#else
+			game_render_frame( cid );
+#endif
 
 			// save the eye position and orientation
 			if ( Game_mode & GM_MULTIPLAYER ) {
@@ -6542,6 +6554,9 @@ void game_frame(int paused)
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
+#ifdef SCP_3DS
+			n3ds_prof_begin(N3DS_PROF_HUD);
+#endif
 
 			gr_reset_clip();
 			game_get_framerate();
@@ -6582,6 +6597,9 @@ void game_frame(int paused)
 
 			game_tst_frame();
 
+#ifdef SCP_3DS
+			n3ds_prof_end(N3DS_PROF_HUD);
+#endif
 			DEBUG_GET_TIME( render2_time2 )
 
 			// maybe render and process the dead popup

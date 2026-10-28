@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdio.h>
 #include "internal.h"
 
@@ -106,6 +107,7 @@ void pglSelectScreen(unsigned display, unsigned side)
 void pglBindTarget(int which)
 {
 	/* Make sure everything drawn to the previous target lands in memory */
+	_batchSubmit();
 	_picaFinalize(true);
 
 	if(which == PGL_TARGET_MAIN)
@@ -156,29 +158,119 @@ void pglMainSize(int *w, int *h, int *gpuW, int *gpuH)
 	if(gpuH) *gpuH = pglState->mainGpuH;
 }
 
-/* Send the composed top/bottom buffers to the LCDs. topRight: also fill the right-eye
-   framebuffer from a second compose (pass NULL-equivalent 0 to copy left). */
-void pglPresentScreens(int stereo)
+/*
+ * fs2-3ds: asynchronous present.
+ *
+ * The old present waited for the GPU to finish the whole frame, then for each display
+ * transfer, then for a VBlank - the CPU sat idle for the GPU's part of every frame and any
+ * frame slower than 16.7 ms was rounded up to 33 ms. Now the frame's command list and the
+ * two display transfers are queued and the CPU returns to the game at once; the screens
+ * are swapped from the GX queue's completion callback, and the next present only waits
+ * if the previous swap has not been shown yet (one VBlank since it). CPU and GPU overlap,
+ * and the frame rate is no longer quantised to 60/30/20.
+ */
+static volatile u32 _vblankCount = 0;
+static volatile u32 _swapVblank = 0;
+static volatile int _swapPending = 0;      /* bit0 top, bit1 bottom, bit2 top stereo */
+static volatile u32 _swapsRequested = 0, _swapsDone = 0;
+static int _presentInit = 0;
+
+static void _onVBlank(void *unused)
 {
+	(void)unused;
+	_vblankCount++;
+}
+
+static void _doPendingSwap(void)
+{
+	int p = __atomic_exchange_n(&_swapPending, 0, __ATOMIC_SEQ_CST);
+	if (!p)
+		return;
+	if (p & 1) gfxScreenSwapBuffers(GFX_TOP, (p & 4) != 0);
+	if (p & 2) gfxScreenSwapBuffers(GFX_BOTTOM, false);
+	_swapVblank = _vblankCount;
+	__atomic_add_fetch(&_swapsDone, 1, __ATOMIC_SEQ_CST);
+}
+
+static void _onQueueDone(gxCmdQueue_s *q)
+{
+	(void)q;
+	_doPendingSwap();
+}
+
+static void _presentSetup(void)
+{
+	if (_presentInit)
+		return;
+	_presentInit = 1;
+	gspSetEventCallback(GSPGPU_EVENT_VBlank0, _onVBlank, NULL, false);
+	gxCmdQueueSetCallback(&pglState->gxQueue, _onQueueDone, NULL);
+}
+
+/* wait until the previous frame has been swapped in and has been on screen since a VBlank,
+   so its old back buffer (the one we are about to write) is no longer being scanned out */
+static void _waitPreviousSwap(void)
+{
+	u64 t0 = svcGetSystemTick();
+	while (_swapsDone != _swapsRequested)
+	{
+		if (gxCmdQueueWait(&pglState->gxQueue, 0))
+			_doPendingSwap();          /* queue idle but callback raced us */
+		else
+			svcSleepThread(100000);
+	}
+	while (_vblankCount == _swapVblank)
+		gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
+	pglStats.swapWaitTicks += svcGetSystemTick() - t0;
+}
+
+void pglPresentScreensEx(int stereo, int bottom)
+{
+	_presentSetup();
+
+	/* submit the frame (waits only for the previous command list) */
 	glFlush();
+
+	_waitPreviousSwap();
 
 	u32 *top = (u32*)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
 	GX_DisplayTransfer(pglState->screenColor[0], GX_BUFFER_DIM(240, 400), top, GX_BUFFER_DIM(240, 400),
 		GX_TRANSFER_OUT_FORMAT(gfxGetScreenFormat(GFX_TOP)));
-	_queueRun(false);
 
-	if(stereo)
+	if (bottom)
 	{
-		/* right eye was composed separately via pglPresentRightEye */
+		u32 *bot = (u32*)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+		GX_DisplayTransfer(pglState->screenColor[1], GX_BUFFER_DIM(240, 320), bot, GX_BUFFER_DIM(240, 320),
+			GX_TRANSFER_OUT_FORMAT(gfxGetScreenFormat(GFX_BOTTOM)));
 	}
 
-	u32 *bot = (u32*)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
-	GX_DisplayTransfer(pglState->screenColor[1], GX_BUFFER_DIM(240, 320), bot, GX_BUFFER_DIM(240, 320),
-		GX_TRANSFER_OUT_FORMAT(gfxGetScreenFormat(GFX_BOTTOM)));
-	_queueRun(false);
+	_swapsRequested++;
+	__atomic_store_n(&_swapPending, 1 | (bottom ? 2 : 0) | (stereo ? 4 : 0), __ATOMIC_SEQ_CST);
 
-	gfxScreenSwapBuffers(GFX_TOP, stereo ? true : false);
-	gfxScreenSwapBuffers(GFX_BOTTOM, false);
+	/* if the queue already drained before the flag was set, swap here */
+	if (gxCmdQueueWait(&pglState->gxQueue, 0))
+		_doPendingSwap();
+}
+
+void pglPresentScreens(int stereo)
+{
+	pglPresentScreensEx(stereo, 1);
+}
+
+void pglGetStats(pglFrameStats *out, int reset)
+{
+	if (out)
+	{
+		out->ends = pglStats.ends;
+		out->batches = pglStats.batches;
+		out->arrayDraws = pglStats.arrayDraws;
+		out->flushes = pglStats.flushes;
+		out->verts = pglStats.verts;
+		out->flushWaitMs = (float)((double)pglStats.flushWaitTicks / (SYSCLOCK_ARM11 / 1000.0));
+		out->swapWaitMs = (float)((double)pglStats.swapWaitTicks / (SYSCLOCK_ARM11 / 1000.0));
+	}
+	if (reset)
+		memset(&pglStats, 0, sizeof(pglStats));
 }
 
 /* Copy the current top compose buffer into the right-eye framebuffer (call before

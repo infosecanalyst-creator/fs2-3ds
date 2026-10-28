@@ -43,7 +43,7 @@ static void* _bufferArray(const void *data, GLsizei size)
 	if(data != NULL)
 		memcpy(cache, data, size);
 
-	pglState->geometryBufferOffset += size;
+	pglState->geometryBufferOffset = (pglState->geometryBufferOffset + size + 15) & ~15u;   /* keep attribute buffers aligned */
 
 	return cache;
 }
@@ -189,7 +189,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count)
 	if(pglState->vertexArrayState == GL_FALSE)
 		return;
 
-	glDrawRangeElements(mode, first, count, count, GL_UNSIGNED_SHORT, NULL);
+	glDrawRangeElements(mode, first, first + count, count, GL_UNSIGNED_SHORT, NULL);
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices)
@@ -226,10 +226,13 @@ void glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, 
 	AttribPointer *colorArray 		= &pglState->colorArrayPointer;
 	AttribPointer *texCoordArray 	= pglState->texCoordArrayPointer;
 
-	if(_checkBufferLimit((end * 48) + (sizeof(GLushort) * count)) == false)
+	_batchSubmit();
+
+	if(_checkBufferLimit((end * 48) + (sizeof(GLushort) * count) + 64) == false || gpuCmdBufOffset + 0x1000 > gpuCmdBufSize)
 		glFlush();
 
 	_stateFlush();
+	pglStats.arrayDraws++;
 
 	if(vertexArray->inLinearMem)
 		arrayCache = (void*)vertexArray->pointer;
@@ -288,10 +291,10 @@ void glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, 
 
 	if( (pglState->texCoordArrayState[1] == GL_TRUE) && (pglState->texUnitState[1] == GL_TRUE) )
 	{	
-		if(texCoordArray[0].inLinearMem)
-			arrayCache = (void*)texCoordArray[0].pointer;
+		if(texCoordArray[1].inLinearMem)
+			arrayCache = (void*)texCoordArray[1].pointer;
 		else
-			arrayCache = _bufferArray(texCoordArray[0].pointer, texCoordArray[0].stride * end);
+			arrayCache = _bufferArray(texCoordArray[1].pointer, texCoordArray[1].stride * end);
 		
 		attributesFormat |= GPU_ATTRIBFMT(3, texCoordArray[1].size, texCoordArray[1].type);
 		_picaAttribBufferOffset(bufferCount, (uint32_t)arrayCache - __ctru_linear_heap);

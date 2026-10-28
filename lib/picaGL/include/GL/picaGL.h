@@ -22,6 +22,13 @@ void pglGetTargetSize(int *w, int *h);
 void pglMainAsTexture(GLuint name);
 void pglMainSize(int *w, int *h, int *gpuW, int *gpuH);
 void pglPresentScreens(int stereo);
+void pglPresentScreensEx(int stereo, int bottom);   /* bottom = 0: leave the touchscreen as it is */
+
+typedef struct {
+	unsigned ends, batches, arrayDraws, flushes, verts;
+	float flushWaitMs, swapWaitMs;
+} pglFrameStats;
+void pglGetStats(pglFrameStats *out, int reset);
 void pglPresentRightEye(void);
 void pglSaveViewport(void);
 void pglRestoreViewport(void);
