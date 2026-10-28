@@ -277,6 +277,9 @@
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
 #include "cfile/cfilesystem.h"
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#endif
 #include "localization/localize.h"
 
 
@@ -1173,7 +1176,11 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 			} else
 #endif
 			{
+#ifdef SCP_3DS
+				FILE *fp = n3ds_file_exists(longname) ? fopen(longname, "rb" ) : NULL;
+#else
 				FILE *fp = fopen(longname, "rb" );
+#endif
 
 				if (fp) {
 					if (size)
@@ -1384,7 +1391,11 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			} else
 #endif
 			{
+#ifdef SCP_3DS
+				FILE *fp = n3ds_file_exists(longname) ? fopen(longname, "rb" ) : NULL;
+#else
 				FILE *fp = fopen(longname, "rb" );
+#endif
 
 				if (fp) {
 					if (size)

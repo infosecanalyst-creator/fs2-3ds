@@ -119,3 +119,68 @@ extern "C" void globfree(glob_t *pglob)
 	pglob->gl_pathv = NULL;
 	pglob->gl_pathc = 0;
 }
+
+/* ------------------------------------------------------------------ directory cache */
+/* The engine probes the SD card for loose files before every archive lookup, and a
+   failed fopen() on the 3DS costs a full file-system round trip. Directory listings are
+   cached in memory (case-insensitive, like FAT) and dropped whenever the game writes. */
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <ctype.h>
+
+struct n3ds_dir_entry {
+	std::string dir;                 /* lowercased directory path */
+	std::vector<std::string> names;  /* lowercased, sorted */
+	bool exists;
+};
+
+static std::vector<n3ds_dir_entry> n3ds_dirs;
+
+static std::string n3ds_lower(const std::string &s)
+{
+	std::string r(s);
+	for (size_t i = 0; i < r.size(); i++) r[i] = (char)tolower((unsigned char)r[i]);
+	return r;
+}
+
+extern "C" void n3ds_dircache_invalidate(void)
+{
+	n3ds_dirs.clear();
+}
+
+static n3ds_dir_entry &n3ds_dir_lookup(const std::string &dir)
+{
+	std::string key = n3ds_lower(dir);
+	for (size_t i = 0; i < n3ds_dirs.size(); i++)
+		if (n3ds_dirs[i].dir == key) return n3ds_dirs[i];
+
+	n3ds_dir_entry e;
+	e.dir = key;
+	e.exists = false;
+	DIR *d = opendir(dir.empty() ? "." : dir.c_str());
+	if (d) {
+		e.exists = true;
+		struct dirent *de;
+		while ((de = readdir(d)) != NULL) e.names.push_back(n3ds_lower(de->d_name));
+		closedir(d);
+		std::sort(e.names.begin(), e.names.end());
+	}
+	n3ds_dirs.push_back(e);
+	return n3ds_dirs.back();
+}
+
+extern "C" int n3ds_file_exists(const char *path)
+{
+	if (!path || !*path) return 0;
+	std::string p(path);
+	size_t slash = p.find_last_of('/');
+	std::string dir = (slash == std::string::npos) ? std::string() : p.substr(0, slash);
+	std::string name = n3ds_lower((slash == std::string::npos) ? p : p.substr(slash + 1));
+	if (name.empty()) return 0;
+	/* wildcard names are not cached; let the caller try */
+	if (name.find_first_of("*?") != std::string::npos) return 1;
+	n3ds_dir_entry &e = n3ds_dir_lookup(dir);
+	if (!e.exists) return 0;
+	return std::binary_search(e.names.begin(), e.names.end(), name) ? 1 : 0;
+}

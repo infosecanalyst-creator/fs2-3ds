@@ -82,6 +82,9 @@ typedef struct Cfile_block {
 	int		lib_offset;
 	int		raw_position;
 	int		size;				// for packed files
+#ifdef SCP_3DS
+	char	*n3ds_buf;			// whole file read into RAM (files inside .vp archives)
+#endif
 	
 } Cfile_block;
 

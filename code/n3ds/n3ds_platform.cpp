@@ -14,7 +14,7 @@
    capture the button bits under other names before the engine headers are included */
 static const u32 BTN_A = KEY_A, BTN_B = KEY_B, BTN_X = KEY_X, BTN_Y = KEY_Y;
 static const u32 BTN_L = KEY_L, BTN_R = KEY_R, BTN_ZL = KEY_ZL, BTN_ZR = KEY_ZR;
-static const u32 BTN_START = KEY_START, BTN_SELECT = KEY_SELECT, BTN_TOUCH = BTN_TOUCH;
+static const u32 BTN_START = KEY_START, BTN_SELECT = KEY_SELECT, BTN_TOUCH = KEY_TOUCH;
 static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT, BTN_DRIGHT = KEY_DRIGHT;
 
 #include "n3ds/n3ds_platform.h"
@@ -39,6 +39,9 @@ extern "C" void n3ds_log(const char *fmt, ...)
 		n3ds_logfile = fopen(FS2_DIR "/fs2_3ds.log", "w");
 		if (!n3ds_logfile) return;
 	}
+	static u64 t0 = 0;
+	if (!t0) t0 = osGetTime();
+	fprintf(n3ds_logfile, "[%6.1f] ", (double)(osGetTime() - t0) / 1000.0);
 	va_list ap;
 	va_start(ap, fmt);
 	vfprintf(n3ds_logfile, fmt, ap);
@@ -55,6 +58,39 @@ extern "C" void n3ds_fatal(const char *msg)
 	errorDisp(&err);
 }
 
+/* crash handler: log the faulting address and registers, then show a dialog */
+static u8 n3ds_exc_stack[0x2000] __attribute__((aligned(8)));
+static char n3ds_exc_msg[512];
+
+static void n3ds_exception_handler(ERRF_ExceptionInfo *excep, CpuRegisters *regs)
+{
+	snprintf(n3ds_exc_msg, sizeof(n3ds_exc_msg),
+		"CRASH type %d  pc=%08lx lr=%08lx sp=%08lx far=%08lx\nr0=%08lx r1=%08lx r2=%08lx r3=%08lx\n",
+		(int)excep->type, (unsigned long)regs->pc, (unsigned long)regs->lr, (unsigned long)regs->sp,
+		(unsigned long)excep->far, (unsigned long)regs->r[0], (unsigned long)regs->r[1],
+		(unsigned long)regs->r[2], (unsigned long)regs->r[3]);
+	n3ds_log("%s", n3ds_exc_msg);
+	if (n3ds_logfile) fclose(n3ds_logfile);
+	n3ds_logfile = NULL;
+	for (;;) svcSleepThread(1000000000LL);
+}
+
+int n3ds_trace_frames = 10;
+
+extern "C" int n3ds_keyboard(int password, const char *initial, char *out, int outlen)
+{
+	n3ds_trace_frames = 20;
+	SwkbdState kb;
+	swkbdInit(&kb, SWKBD_TYPE_NORMAL, 2, outlen - 1);
+	swkbdSetHintText(&kb, password ? "Password" : "Enter text");
+	if (initial && initial[0]) swkbdSetInitialText(&kb, initial);
+	if (password) swkbdSetPasswordMode(&kb, SWKBD_PASSWORD_HIDE_DELAY);
+	swkbdSetValidation(&kb, SWKBD_NOTEMPTY_NOTBLANK, 0, 0);
+	SwkbdButton b = swkbdInputText(&kb, out, outlen);
+	n3ds_log("keyboard: button %d text '%s'\n", (int)b, (b == SWKBD_BUTTON_CONFIRM && !password) ? out : "");
+	return b == SWKBD_BUTTON_CONFIRM;
+}
+
 /* ------------------------------------------------------------------ init */
 
 static int n3ds_quit = 0;
@@ -63,6 +99,7 @@ static GLuint n3ds_main_tex = 0;
 extern "C" void n3ds_init(void)
 {
 	osSetSpeedupEnable(true);           /* 804 MHz + L2 cache on New 3DS */
+	threadOnException(n3ds_exception_handler, n3ds_exc_stack + sizeof(n3ds_exc_stack), WRITE_DATA_TO_HANDLER_STACK);
 	gfxInitDefault();
 	gfxSet3D(true);
 	hidInit();
@@ -71,12 +108,14 @@ extern "C" void n3ds_init(void)
 	chdir(FS2_DIR);
 
 	n3ds_log("FreeSpace 2 3DS starting\n");
+	n3ds_log("heap %lu KB, linear %lu KB free\n", (unsigned long)(envGetHeapSize() / 1024), (unsigned long)(linearSpaceFree() / 1024));
 
 	pglInitEx(N3DS_GAME_W, N3DS_GAME_H);
 	glGenTextures(1, &n3ds_main_tex);
 	pglMainAsTexture(n3ds_main_tex);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	pglBindTarget(PGL_TARGET_MAIN);
+	n3ds_log("graphics ready\n");
 }
 
 extern "C" void n3ds_shutdown(void)
@@ -194,6 +233,10 @@ extern "C" void n3ds_input_poll(void)
 	u32 held = hidKeysHeld();
 	u32 down = hidKeysDown();
 	u32 up = hidKeysUp();
+	if (down) {
+		touchPosition ltp; hidTouchRead(&ltp);
+		n3ds_log("input down %08lx touch %d,%d\n", (unsigned long)down, ltp.px, ltp.py);
+	}
 
 	int flight = in_flight();
 	static int was_flight = -1;
@@ -292,7 +335,7 @@ extern "C" void n3ds_input_poll(void)
  * currently bound screen target rectangle (screen coords, top-left origin).
  */
 #ifndef N3DS_RT_FLIP_T
-#define N3DS_RT_FLIP_T 1
+#define N3DS_RT_FLIP_T 0
 #endif
 
 static void main_uv(float ex, float ey, float *s, float *t)
@@ -382,6 +425,8 @@ extern "C" void n3ds_present(void)
 		last_state = state;
 	}
 	frames++;
+	if ((frames % 300) == 0)
+		n3ds_log("frame %d state %d touch %d,%d\n", frames, state, touch_x, touch_y);
 
 	pglSaveViewport();
 
@@ -427,12 +472,26 @@ extern "C" void n3ds_present(void)
 	}
 
 	int stereo = 0;
+	u64 t_present0 = osGetTime();
 	pglPresentScreens(stereo);
+	u64 t_present1 = osGetTime();
 
 	/* back to the engine's target for the next frame */
 	pglBindTarget(PGL_TARGET_MAIN);
 	pglRestoreViewport();
 	opengl_state_n3ds_resync();
 
+	u64 t_vb0 = osGetTime();
 	gspWaitForVBlank();
+	u64 t_vb1 = osGetTime();
+
+	/* frame timing trace: first frames after start and after the keyboard */
+	static u64 t_last = 0;
+	extern int n3ds_trace_frames;
+	if (n3ds_trace_frames > 0) {
+		n3ds_trace_frames--;
+		n3ds_log("t frame=%d engine=%d present=%d vblank=%d\n", frames,
+			(int)(t_present0 - t_last), (int)(t_present1 - t_present0), (int)(t_vb1 - t_vb0));
+	}
+	t_last = osGetTime();
 }

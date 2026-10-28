@@ -236,6 +236,9 @@
 #include <ctype.h>
 #include "ui/uidefs.h"
 #include "ui/ui.h"
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#endif
 #include "bmpman/bmpman.h"
 #include "io/timer.h"
 #include "globalincs/alphacolors.h"
@@ -587,6 +590,29 @@ void UI_INPUTBOX::process(int focus)
 	oldposition = position;
 	pressed_down = 0;
 	clear_lastkey = (flags & UI_INPUTBOX_FLAG_KEYTHRU) ? 0 : 1;
+
+#ifdef SCP_3DS
+	// No physical keyboard: when a text box first gets focus, open the 3DS software
+	// keyboard, then behave as if the text was typed and Enter (or Esc) was pressed.
+	{
+		static UI_INPUTBOX *n3ds_kbd_box = NULL;
+		if (focus && n3ds_kbd_box != this && !hidden) {
+			n3ds_kbd_box = this;
+			char buf[256];
+			int maxlen = (length < (int)sizeof(buf) - 1) ? length : (int)sizeof(buf) - 1;
+			int ok = n3ds_keyboard((flags & UI_INPUTBOX_FLAG_PASSWD) ? 1 : 0, text, buf, maxlen + 1);
+			if (ok) {
+				set_text(buf);
+			}
+			// screens read Enter/Esc as key events, so queue a real key press
+			key_mark(ok ? KEY_ENTER : KEY_ESC, 1, 0);
+			key_mark(ok ? KEY_ENTER : KEY_ESC, 0, 0);
+			return;
+		} else if (!focus && n3ds_kbd_box == this) {
+			n3ds_kbd_box = NULL;
+		}
+	}
+#endif
 
 	if (focus) {
 		key = my_wnd->keypress;

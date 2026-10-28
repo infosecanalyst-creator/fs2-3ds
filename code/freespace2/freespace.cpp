@@ -9154,7 +9154,7 @@ int game_main(char *cmdline)
 
 #endif // _WIN32
 
-
+	N3DS_TRACE("parse_cmdline");
 	if ( !parse_cmdline(cmdline) ) {
 		return 1;
 	}
@@ -9170,8 +9170,10 @@ int game_main(char *cmdline)
 #endif
 
 
+	N3DS_TRACE("init_cdrom");
 	init_cdrom();
 
+	N3DS_TRACE("game_init");
 	game_init();
 	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
 	initialize_trackir(); 
@@ -9211,9 +9213,11 @@ int game_main(char *cmdline)
 		return 0;
 	}
 
+	N3DS_TRACE("game_init done");
 	if (!Is_standalone) {
 		movie_play( NOX("intro.mve") );
 	}
+	N3DS_TRACE("intro done");
 
 	if (Is_standalone){
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -9226,6 +9230,9 @@ int game_main(char *cmdline)
 		os_poll();
 
 		state = gameseq_process_events();
+#ifdef SCP_3DS
+		{ static int last = -1; if (state != last) { n3ds_log("main loop state %d\n", state); last = state; } }
+#endif
 		if ( state == GS_STATE_QUIT_GAME ){
 			break;
 		}
@@ -9343,6 +9350,7 @@ int main(int argc, char *argv[])
 	strncpy(full_path, *argv, 1024);
 #endif
 
+	N3DS_TRACE("main");
 	DBUGFILE_INIT();
 
 	// create user's directory	
@@ -9369,6 +9377,7 @@ int main(int argc, char *argv[])
 		strcat(argptr, " ");
 	}
 
+	N3DS_TRACE("game_main");
 	// switch to game_main()
 	try {
 		result = game_main(argptr);

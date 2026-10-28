@@ -131,6 +131,23 @@ void cf_init_lowlevel_read_code( CFILE * cfile, int lib_offset, int size, int po
 	cb->raw_position = pos;
 	cb->size = size;
 
+#ifdef SCP_3DS
+	// SD card access on the 3DS is slow per call and every fseek drops the stdio buffer,
+	// so files stored inside .vp archives are read into RAM in one go and served from there.
+	if (cb->n3ds_buf) { free(cb->n3ds_buf); cb->n3ds_buf = NULL; }
+	if ( cb->fp && cb->lib_offset && size > 0 && size <= 16*1024*1024 ) {
+		char *mem = (char *)malloc(size);
+		if (mem) {
+			fseek( cb->fp, cb->lib_offset, SEEK_SET );
+			if ( (int)fread(mem, 1, size, cb->fp) == size ) {
+				cb->n3ds_buf = mem;
+			} else {
+				free(mem);
+			}
+		}
+	}
+#endif
+
 	if ( cb->fp )	{
 		if ( cb->lib_offset )	{
 			fseek( cb->fp, cb->lib_offset, SEEK_SET );
@@ -248,6 +265,15 @@ int cfseek( CFILE *cfile, int offset, int where )
 		return 1;
 	}	
 
+#ifdef SCP_3DS
+	if (cb->n3ds_buf) {
+		int pos = goal_position - cb->lib_offset;
+		if (pos < 0) pos = 0;
+		if (pos > cb->size) pos = cb->size;
+		cb->raw_position = pos;
+		return 0;
+	}
+#endif
 	int result = fseek(cb->fp, goal_position, SEEK_SET );
 	cb->raw_position = goal_position - cb->lib_offset;
 
@@ -293,6 +319,13 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		//mprintf(( "CFILE: EOF encountered in file\n" ));
 	}
 
+#ifdef SCP_3DS
+	if (cb->n3ds_buf) {
+		memcpy(buf, cb->n3ds_buf + cb->raw_position, size);
+		cb->raw_position += size;
+		return size / elsize;
+	}
+#endif
 	int bytes_read = fread( buf, 1, size, cb->fp );
 	if ( bytes_read > 0 )	{
 		cb->raw_position += bytes_read;
@@ -325,6 +358,20 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 		return 0;
 	}
 
+#ifdef SCP_3DS
+	if (cb->n3ds_buf) {
+		char tmp[64];
+		int n = cb->size - cb->raw_position;
+		if (n <= 0) return 0;
+		if (n > 63) n = 63;
+		memcpy(tmp, cb->n3ds_buf + cb->raw_position, n);
+		tmp[n] = 0;
+		int consumed = 0;
+		int items = sscanf(tmp, LUA_NUMBER_SCAN "%n", buf, &consumed);
+		if (items == 1) cb->raw_position += consumed;
+		return items;
+	}
+#endif
 	long orig_pos = ftell(cb->fp);
 	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
 	cb->raw_position += ftell(cb->fp)-orig_pos;		

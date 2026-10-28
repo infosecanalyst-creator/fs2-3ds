@@ -18,6 +18,9 @@
 
 extern "C" {
 
+/* fs2_open's table parsers keep large buffers on the stack; the 3dsx default is 32 KB */
+u32 __stacksize__ = 1024 * 1024;
+
 /* ------------------------------------------------------------------ core */
 
 static char sdl_error[256] = "";

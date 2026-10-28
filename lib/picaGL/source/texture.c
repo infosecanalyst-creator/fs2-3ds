@@ -50,8 +50,10 @@ static GPU_TEXCOLOR _determineHardwareFormat(GLenum format, GLenum srcFormat, GL
 		case GL_RGB:
 		case GL_RGB5:  return GPU_RGB565;
 
+		/* PICA samples A8 as (0,0,0,A); GL treats GL_ALPHA as (Cf, A) under MODULATE.
+		   Store white luminance + alpha so text and HUD glyphs keep their colour. */
 		case GL_ALPHA:
-		case GL_ALPHA8: return GPU_A8;
+		case GL_ALPHA8: return GPU_LA8;
 		case GL_LUMINANCE:
 		case GL_LUMINANCE_ALPHA: return GPU_LA8;
 
@@ -216,6 +218,58 @@ static inline void _textureTile(TextureObject *texture, GLint xoffset, GLint yof
 		}
 	}
 
+	/* fs2-3ds: direct loops for the formats fs2_open uploads most (no per-texel calls) */
+	if(readPixel == _readBGRA5551REV && writePixel == _writeRGBA5551)
+	{
+		const uint16_t *src = (const uint16_t*)data;
+		uint16_t *dst = (uint16_t*)tiled_output;
+		for(int y = 0; y < height; y++)
+		{
+			output_y = texture->height - 1 - (y + yoffset);
+			coarse_y = output_y & ~7;
+			uint32_t row_base = coarse_y * texture->width;
+			const uint16_t *s = src + y * width;
+			for(int x = 0; x < width; x++)
+			{
+				uint16_t v = s[x];
+				/* 1-5-5-5 (A R G B, A in bit 15) -> 5-5-5-1 (R G B A, A in bit 0) */
+				dst[_getMortonOffset(x + xoffset, output_y) + row_base] = (uint16_t)((v << 1) | (v >> 15));
+			}
+		}
+	}
+	else if(readPixel == _readBGRA8 && writePixel == _writeRGBA8)
+	{
+		const uint8_t *src = (const uint8_t*)data;
+		uint32_t *dst = (uint32_t*)tiled_output;
+		for(int y = 0; y < height; y++)
+		{
+			output_y = texture->height - 1 - (y + yoffset);
+			coarse_y = output_y & ~7;
+			uint32_t row_base = coarse_y * texture->width;
+			const uint8_t *s = src + y * width * 4;
+			for(int x = 0; x < width; x++, s += 4)
+			{
+				/* B G R A bytes -> PICA RGBA8 word (A in low byte, then B, G, R) */
+				dst[_getMortonOffset(x + xoffset, output_y) + row_base] =
+					(uint32_t)s[3] | ((uint32_t)s[0] << 8) | ((uint32_t)s[1] << 16) | ((uint32_t)s[2] << 24);
+			}
+		}
+	}
+	else if(readPixel == _readA8 && writePixel == _writeLA8)
+	{
+		const uint8_t *src = (const uint8_t*)data;
+		uint16_t *dst = (uint16_t*)tiled_output;
+		for(int y = 0; y < height; y++)
+		{
+			output_y = texture->height - 1 - (y + yoffset);
+			coarse_y = output_y & ~7;
+			uint32_t row_base = coarse_y * texture->width;
+			const uint8_t *s = src + y * width;
+			for(int x = 0; x < width; x++)
+				dst[_getMortonOffset(x + xoffset, output_y) + row_base] = (uint16_t)(s[x] | 0xFF00);
+		}
+	}
+	else
 	for(int y = 0; y < height; y++)
 	{
 		output_y = texture->height - 1 - (y + yoffset);
@@ -262,7 +316,24 @@ void glClientActiveTexture( GLenum texture )
 	pglState->texUnitActiveClient = texunit;
 }
 
+extern void n3ds_log(const char *fmt, ...);
+static int _texUploads = 0;
+static u64 _texUploadMs = 0;
+
 void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
+{
+	u64 _t0 = osGetTime();
+	void _glTexImage2D_impl(GLenum, GLint, GLint, GLsizei, GLsizei, GLint, GLenum, GLenum, const GLvoid*);
+	_glTexImage2D_impl(target, level, internalFormat, width, height, border, format, type, data);
+	u64 _dt = osGetTime() - _t0;
+	_texUploads++;
+	_texUploadMs += _dt;
+	if (_dt >= 20 || (_texUploads % 100) == 0)
+		n3ds_log("tex %dx%d fmt %x/%x took %d ms (total %d uploads, %d ms) linear free %d KB\n", width, height, format, type,
+			(int)_dt, _texUploads, (int)_texUploadMs, (int)(linearSpaceFree() / 1024));
+}
+
+void _glTexImage2D_impl(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
 	if(level != 0 || target != GL_TEXTURE_2D)
 		return;

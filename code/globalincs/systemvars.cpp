@@ -392,8 +392,18 @@ int game_busy_callback( void (*callback)(int count), int delta_step )
 }
 
 // Call whenever loading to display cursor
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 void game_busy(char *filename)
 {
+#ifdef SCP_3DS
+	{
+		static int n = 0;
+		if (filename) n3ds_log("busy: %s\n", filename);
+		else if ((++n % 25) == 0) n3ds_log("busy #%d\n", n);
+	}
+#endif
 	if ( cf_in_callback != 0 ) return;	// don't call callback if we're already in it.
 	if ( cf_timestamp < 0 ) return;
 	if ( !cf_callback ) return;

@@ -377,6 +377,9 @@
 #endif
 
 #include "cfile/cfile.h"
+#ifdef SCP_3DS
+#include "n3ds/n3ds_platform.h"
+#endif
 #include "parse/encrypt.h"
 #include "cfile/cfilesystem.h"
 #include "cfile/cfilearchive.h"
@@ -792,6 +795,9 @@ char *cf_add_ext(char *filename, char *ext)
 // Deletes a file. Returns 0 if an error occurs, 1 on success
 int cf_delete(char *filename, int dir_type)
 {
+#ifdef SCP_3DS
+	n3ds_dircache_invalidate();
+#endif
 	char longname[MAX_PATH_LEN];
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
@@ -899,6 +905,9 @@ void cf_attrib(char *filename, int set, int clear, int dir_type)
 
 int cf_rename(char *old_name, char *name, int dir_type)
 {
+#ifdef SCP_3DS
+	n3ds_dircache_invalidate();
+#endif
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
 	int ret_code;
@@ -979,6 +988,9 @@ extern int game_cd_changed();
 
 CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
 {
+#ifdef SCP_3DS
+	if (mode && (strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))) n3ds_dircache_invalidate();
+#endif
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
 		Error(LOCATION, "file name %s too long, \nmust be less than 31 charicters", file_path);*/
@@ -1297,6 +1309,9 @@ int cfclose( CFILE * cfile )
 	} else if ( cb->fp != NULL )	{
 		Assert(cb->fp != NULL);
 		result = fclose(cb->fp);
+#ifdef SCP_3DS
+		if (cb->n3ds_buf) { free(cb->n3ds_buf); cb->n3ds_buf = NULL; }
+#endif
 	} else {
 		// VP  do nothing
 	}

@@ -260,7 +260,6 @@ void glVertex4i(GLint x, GLint y, GLint z, GLint w) {}
 void glVertex4iv(const GLint *v) {}
 void glVertex4s(GLshort x, GLshort y, GLshort z, GLshort w) {}
 void glVertex4sv(const GLshort *v) {}
-void glGetFloatv(GLenum pname, GLfloat* data) {}
 void glCompressedTexImage3DARB(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data) {}
 void glCompressedTexImage2DARB(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border,  GLsizei imageSize, const void *data) {}
 void glTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels ) {}

@@ -3442,8 +3442,14 @@ void model_load_texture(polymodel *pm, int i, char *file)
 }
 
 //returns the number of this model
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
+#ifdef SCP_3DS
+	n3ds_log("model_load %s\n", filename);
+#endif
 	int i, num, arc_idx;
 	polymodel *pm = NULL;
 

@@ -46,6 +46,13 @@ void n3ds_log(const char *fmt, ...);
 /* log the message, show it in the system error dialog, then return (caller exits) */
 void n3ds_fatal(const char *msg);
 
+/* cached directory listings: fast "does this loose file exist" checks on the SD card */
+int  n3ds_file_exists(const char *path);
+void n3ds_dircache_invalidate(void);
+
+/* show the 3DS software keyboard; returns 1 when the user confirmed (out filled) */
+int n3ds_keyboard(int password, const char *initial, char *out, int outlen);
+
 #ifdef __cplusplus
 }
 #endif
