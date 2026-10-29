@@ -97,6 +97,8 @@ extern "C" int n3ds_keyboard(int password, const char *initial, char *out, int o
 
 static int n3ds_quit = 0;
 static GLuint n3ds_main_tex = 0;
+static GLuint n3ds_overlay_tex = 0;   /* panel / manual / dashboard are drawn here, never into the game's frame */
+static GLuint n3ds_snap_tex = 0;      /* engine save_screen copy */
 
 extern "C" void n3ds_init(void)
 {
@@ -115,6 +117,9 @@ extern "C" void n3ds_init(void)
 	pglInitEx(N3DS_GAME_W, N3DS_GAME_H);
 	glGenTextures(1, &n3ds_main_tex);
 	pglMainAsTexture(n3ds_main_tex);
+	glGenTextures(1, &n3ds_overlay_tex);
+	pglOverlayAsTexture(n3ds_overlay_tex);
+	glGenTextures(1, &n3ds_snap_tex);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	pglBindTarget(PGL_TARGET_MAIN);
 	n3ds_log("graphics ready\n");
@@ -433,6 +438,8 @@ static void blit_main(float sx0, float sy0, float sx1, float sy1, float ex0, flo
 	glEnd();
 }
 
+static GLuint compose_src_tex = 0;
+
 static void compose_begin(int target)
 {
 	pglBindTarget(target);
@@ -463,7 +470,7 @@ static void compose_begin(int target)
 	glDisable(GL_TEXTURE_2D);
 	glActiveTexture(GL_TEXTURE0);
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, n3ds_main_tex);
+	glBindTexture(GL_TEXTURE_2D, compose_src_tex ? compose_src_tex : n3ds_main_tex);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 	glColor4f(1, 1, 1, 1);
 }
@@ -474,6 +481,76 @@ static void compose_end(void)
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+}
+
+/* draw an overlay with the engine into the overlay target (same coordinates as the
+   main target, so the engine's 2D code works unchanged) */
+static void overlay_begin(void)
+{
+	pglBindTarget(PGL_TARGET_OVERLAY);
+	pglRestoreViewport();
+	opengl_state_n3ds_resync();
+}
+
+/* copy the overlay's top-left w x 240 1:1 to a screen */
+static void overlay_to(int target, int w)
+{
+	compose_src_tex = n3ds_overlay_tex;
+	compose_begin(target);
+	blit_main(0, 0, (float)w, 240, 0, 0, (float)w, 240);
+	compose_end();
+	compose_src_tex = 0;
+}
+
+/* ---- engine save_screen / restore_screen (popups, pause): GPU copy of the frame */
+static int snap_valid = 0;
+static float snap_scale = 1.0f;
+
+extern "C" int n3ds_save_screen(void)
+{
+	pglSnapshotMain(n3ds_snap_tex);
+	snap_scale = pglGetRenderScale();
+	snap_valid = 1;
+	opengl_state_n3ds_resync();
+	return 1;
+}
+
+extern "C" void n3ds_free_screen(void) { snap_valid = 0; }
+
+extern "C" void n3ds_restore_screen(void)
+{
+	if (!snap_valid) return;
+	pglSaveViewport();
+	glViewport(0, 0, N3DS_GAME_W, N3DS_GAME_H);
+	glDisable(GL_SCISSOR_TEST);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	glDisable(GL_ALPHA_TEST);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_STENCIL_TEST);
+	glDepthMask(GL_FALSE);
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	glOrtho(0, N3DS_GAME_W, 0, N3DS_GAME_H, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glActiveTexture(GL_TEXTURE1);
+	glDisable(GL_TEXTURE_2D);
+	glActiveTexture(GL_TEXTURE0);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, n3ds_snap_tex);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glColor4f(1, 1, 1, 1);
+
+	float sy0 = 0, sx1 = N3DS_GAME_W;
+	if (snap_scale < 0.99f) { sy0 = N3DS_GAME_H - N3DS_GAME_H * snap_scale; sx1 = N3DS_GAME_W * snap_scale; }
+	blit_main(0, 0, N3DS_GAME_W, N3DS_GAME_H, 0, sy0, sx1, N3DS_GAME_H);
+
+	compose_end();
+	pglRestoreViewport();
+	opengl_state_n3ds_resync();
 }
 
 extern "C" void n3ds_present(void)
@@ -519,22 +596,14 @@ extern "C" void n3ds_present(void)
 		/* ---- bottom: the manual, or the cockpit panel (drawn by the engine into the
 		   corner of the main target, copied 1:1) at 30 Hz - it's only gauges and text */
 		if (n3ds_manual_is_open()) {
-			pglBindTarget(PGL_TARGET_MAIN);
-			pglRestoreViewport();
-			opengl_state_n3ds_resync();
+			overlay_begin();
 			n3ds_manual_draw();
-			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
-			compose_end();
+			overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else if (frames & 1) {
 			n3ds_prof_begin(N3DS_PROF_PANEL);
-			pglBindTarget(PGL_TARGET_MAIN);
-			pglRestoreViewport();
-			opengl_state_n3ds_resync();
+			overlay_begin();
 			n3ds_panel_draw();
-			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
-			compose_end();
+			overlay_to(PGL_TARGET_BOTTOM, 320);
 			n3ds_prof_end(N3DS_PROF_PANEL);
 		} else {
 			bottom = 0;
@@ -546,23 +615,15 @@ extern "C" void n3ds_present(void)
 		compose_end();
 
 		if (n3ds_manual_is_open()) {
-			pglBindTarget(PGL_TARGET_MAIN);
-			pglRestoreViewport();
-			opengl_state_n3ds_resync();
+			overlay_begin();
 			n3ds_manual_draw();
-			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 0, 320, 240, 0, 0, 320, 240);
-			compose_end();
+			overlay_to(PGL_TARGET_BOTTOM, 320);
 		}
 
 		/* ---- top: dashboard - only things that are NOT on the touchscreen */
-		pglBindTarget(PGL_TARGET_MAIN);
-		pglRestoreViewport();
-		opengl_state_n3ds_resync();
+		overlay_begin();
 		n3ds_dash_draw();
-		compose_begin(PGL_TARGET_TOP);
-		blit_main(0, 0, 400, 240, 0, 0, 400, 240);
-		compose_end();
+		overlay_to(PGL_TARGET_TOP, 400);
 	}
 
 	int stereo = 0;

@@ -2068,8 +2068,23 @@ void opengl_save_mouse_area(int x, int y, int w, int h)
 	GL_mouse_saved = 1;
 }
 
+#ifdef SCP_3DS
+extern "C" int n3ds_save_screen(void);
+extern "C" void n3ds_restore_screen(void);
+extern "C" void n3ds_free_screen(void);
+static int N3ds_screen_saved = 0;
+#endif
+
 int gr_opengl_save_screen()
 {
+#ifdef SCP_3DS
+	// New 3DS: no glReadPixels - the GPU copies the render target instead (popups, pause)
+	gr_opengl_reset_clip();
+	if (N3ds_screen_saved)
+		return -1;
+	N3ds_screen_saved = n3ds_save_screen();
+	return N3ds_screen_saved ? 1 : -1;
+#endif
 	int i;
 	ubyte *sptr = NULL, *dptr = NULL;
 	ubyte *opengl_screen_tmp = NULL;
@@ -2203,6 +2218,15 @@ void gr_opengl_restore_screen(int bmp_id)
 {
 	gr_reset_clip();
 
+#ifdef SCP_3DS
+	if (!N3ds_screen_saved) {
+		gr_clear();
+		return;
+	}
+	n3ds_restore_screen();
+	return;
+#endif
+
 	if ( !GL_saved_screen ) {
 		gr_clear();
 		return;
@@ -2219,6 +2243,11 @@ void gr_opengl_restore_screen(int bmp_id)
 
 void gr_opengl_free_screen(int bmp_id)
 {
+#ifdef SCP_3DS
+	N3ds_screen_saved = 0;
+	n3ds_free_screen();
+	return;
+#endif
 	if (!GL_saved_screen)
 		return;
 

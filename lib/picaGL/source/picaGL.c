@@ -110,7 +110,22 @@ void pglBindTarget(int which)
 	_batchSubmit();
 	_picaFinalize(true);
 
-	if(which == PGL_TARGET_MAIN)
+	if(which == PGL_TARGET_OVERLAY)
+	{
+		if(!pglState->overlayColor)
+		{
+			size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
+			pglState->overlayColor = vramAlloc(sz);
+			if(!pglState->overlayColor) pglState->overlayColor = linearAlloc(sz);
+		}
+		pglState->targetColor  = pglState->overlayColor;
+		pglState->targetDepth  = NULL;
+		pglState->targetWidth  = pglState->mainWidth;
+		pglState->targetHeight = pglState->mainHeight;
+		pglState->bufferGpuW   = pglState->mainGpuW;
+		pglState->bufferGpuH   = pglState->mainGpuH;
+	}
+	else if(which == PGL_TARGET_MAIN)
 	{
 		pglState->targetColor  = pglState->mainColor;
 		pglState->targetDepth  = pglState->mainDepth;
@@ -148,6 +163,33 @@ void pglWrapTexture(GLuint name, void *data, int gpuWidth, int gpuHeight);
 void pglMainAsTexture(GLuint name)
 {
 	pglWrapTexture(name, pglState->mainColor, pglState->mainGpuW, pglState->mainGpuH);
+}
+
+void pglOverlayAsTexture(GLuint name)
+{
+	if(!pglState->overlayColor)
+	{
+		size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
+		pglState->overlayColor = vramAlloc(sz);
+		if(!pglState->overlayColor) pglState->overlayColor = linearAlloc(sz);
+	}
+	pglWrapTexture(name, pglState->overlayColor, pglState->mainGpuW, pglState->mainGpuH);
+}
+
+void pglSnapshotMain(GLuint name)
+{
+	static void *snap = NULL;
+	size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
+	if(!snap) snap = linearAlloc(sz);
+	if(!snap) return;
+
+	/* everything drawn so far has to be in the target before it is copied */
+	_batchSubmit();
+	glFinish();
+	GX_TextureCopy(pglState->mainColor, 0, snap, 0, sz, 8);
+	_queueRun(false);
+
+	pglWrapTexture(name, snap, pglState->mainGpuW, pglState->mainGpuH);
 }
 
 void pglMainSize(int *w, int *h, int *gpuW, int *gpuH)

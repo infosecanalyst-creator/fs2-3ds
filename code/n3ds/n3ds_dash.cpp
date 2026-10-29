@@ -139,6 +139,37 @@ static void value(int x, int y, const char *text)
 	gr_string(x, y, text, false);
 }
 
+/* draw text word-wrapped to the dashboard width; returns the y below it */
+static int wrapped(int x, int y, const char *text, int lh)
+{
+	char line[160];
+	int maxw = DASH_W - x - 6;
+	const char *p = text;
+	while (*p) {
+		int n = 0, last_space = -1;
+		while (p[n]) {
+			if (p[n] == ' ') last_space = n;
+			int len = n + 1;
+			if (len >= (int)sizeof(line)) break;
+			memcpy(line, p, len); line[len] = 0;
+			int w, h;
+			gr_get_string_size(&w, &h, line);
+			if (w > maxw) break;
+			n++;
+		}
+		int take = n;
+		if (p[n] && last_space > 0) take = last_space;
+		if (take <= 0) take = 1;
+		memcpy(line, p, take); line[take] = 0;
+		gr_string(x, y, line, false);
+		y += lh;
+		p += take;
+		while (*p == ' ') p++;
+		if (y > DASH_H - 34) break;
+	}
+	return y;
+}
+
 /* copy a campaign mission file name without its extension */
 static void mission_label(char *out, int outlen, const char *name)
 {
@@ -220,7 +251,7 @@ void n3ds_dash_draw(void)
 	label(8, y, "POINTER");
 	if (Dash_frame - Hover_frame <= 2 && Hover_text[0]) {
 		gr_set_color(255, 255, 160);
-		gr_string(72, y, Hover_text, false);
+		y = wrapped(72, y, Hover_text, 14) - 14;
 	} else {
 		gr_set_color(110, 110, 110);
 		gr_string(72, y, "-", false);
@@ -229,7 +260,7 @@ void n3ds_dash_draw(void)
 
 	if (popup_active()) {
 		gr_set_color(255, 160, 120);
-		gr_string(72, y, "A message is waiting on the touchscreen.", false);
+		gr_string(72, y, "Message waiting on the touchscreen.", false);
 		y += 14;
 	}
 
@@ -240,10 +271,8 @@ void n3ds_dash_draw(void)
 	/* help for this screen */
 	if (h) {
 		gr_set_color(210, 210, 210);
-		for (int i = 0; i < 6 && h->lines[i]; i++) {
-			gr_string(8, y, h->lines[i], false);
-			y += 13;
-		}
+		for (int i = 0; i < 6 && h->lines[i]; i++)
+			y = wrapped(8, y, h->lines[i], 13);
 	}
 
 	/* controls footer */

@@ -16,10 +16,15 @@ void pglSelectScreen(unsigned display, unsigned side);
 #define PGL_TARGET_MAIN   0
 #define PGL_TARGET_TOP    1
 #define PGL_TARGET_BOTTOM 2
+#define PGL_TARGET_OVERLAY 3   /* same size/layout as MAIN, no depth: for screen overlays */
 void pglInitEx(int mainWidth, int mainHeight);
 void pglBindTarget(int which);
 void pglGetTargetSize(int *w, int *h);
 void pglMainAsTexture(GLuint name);
+void pglOverlayAsTexture(GLuint name);
+/* copy the main target's current picture into a buffer and wrap it as texture 'name'
+   (used for the engine's save_screen/restore_screen) */
+void pglSnapshotMain(GLuint name);
 void pglMainSize(int *w, int *h, int *gpuW, int *gpuH);
 void pglPresentScreens(int stereo);
 void pglPresentScreensEx(int stereo, int bottom);   /* bottom = 0: leave the touchscreen as it is */
