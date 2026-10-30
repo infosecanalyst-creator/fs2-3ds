@@ -32,7 +32,7 @@
 #include "mission/missioncampaign.h"
 #include "popup/popup.h"
 
-#define DASH_W 400
+#define DASH_W 320
 #define DASH_H 240
 
 static char Hover_text[128] = "";
@@ -59,8 +59,8 @@ static const screen_help Help[] = {
 		"New pilot: Create, then type a callsign on the keyboard.",
 		"Pilot files live in sdmc:/3ds/freespace2/.fs2_open", NULL } },
 	{ GS_STATE_MAIN_MENU, "MAIN HALL", {
-		"Point at a room - its name appears above.",
-		"Press A (or tap it again) to go in.",
+		"Point at a room - its name shows on this screen.",
+		"Press A to go in.",
 		"Ready Room: campaign   Tech Room: ship and weapon data",
 		"Barracks: pilots and medals   Options: detail and sound",
 		"Lower detail in Options if a battle feels slow.", NULL } },
@@ -140,6 +140,8 @@ static void value(int x, int y, const char *text)
 }
 
 /* draw text word-wrapped to the dashboard width; returns the y below it */
+static int Wrap_bottom = 240;
+
 static int wrapped(int x, int y, const char *text, int lh)
 {
 	char line[160];
@@ -165,7 +167,7 @@ static int wrapped(int x, int y, const char *text, int lh)
 		y += lh;
 		p += take;
 		while (*p == ' ') p++;
-		if (y > DASH_H - 34) break;
+		if (y + lh > Wrap_bottom) break;
 	}
 	return y;
 }
@@ -177,6 +179,70 @@ static void mission_label(char *out, int outlen, const char *name)
 	out[outlen - 1] = 0;
 	char *dot = strrchr(out, '.');
 	if (dot) *dot = 0;
+}
+
+/* ---- touch buttons on the dashboard */
+struct dash_button { int x, y, w, h; const char *label; };
+#define BTN_Y 178
+#define BTN_H 26
+static const dash_button Dash_buttons[] = {
+	{   2, BTN_Y, 62, BTN_H, "BACK" },
+	{  66, BTN_Y, 62, BTN_H, "ENTER" },
+	{ 130, BTN_Y, 62, BTN_H, "ZOOM -" },
+	{ 194, BTN_Y, 62, BTN_H, "ZOOM +" },
+	{ 258, BTN_Y, 60, BTN_H, "MANUAL" },
+};
+#define NUM_DASH_BUTTONS ((int)(sizeof(Dash_buttons) / sizeof(Dash_buttons[0])))
+static int Dash_pressed = -1;
+
+extern "C" void n3ds_click(void);
+extern "C" void n3ds_menu_zoom(int delta);
+extern "C" void n3ds_tap_key(int key);
+#include "io/key.h"
+#include "n3ds/n3ds_manual.h"
+
+void n3ds_dash_touch(int held, int x, int y, int pressed)
+{
+	if (pressed) {
+		Dash_pressed = -1;
+		for (int i = 0; i < NUM_DASH_BUTTONS; i++) {
+			const dash_button &b = Dash_buttons[i];
+			if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+				Dash_pressed = i;
+				n3ds_click();
+				break;
+			}
+		}
+		return;
+	}
+	if (!held && Dash_pressed >= 0) {
+		/* act on release, like a real button */
+		switch (Dash_pressed) {
+			case 0: n3ds_tap_key(KEY_ESC); break;
+			case 1: n3ds_tap_key(KEY_ENTER); break;
+			case 2: n3ds_menu_zoom(-1); break;
+			case 3: n3ds_menu_zoom(+1); break;
+			case 4: n3ds_manual_toggle(); break;
+		}
+		Dash_pressed = -1;
+	}
+}
+
+static void draw_buttons(void)
+{
+	for (int i = 0; i < NUM_DASH_BUTTONS; i++) {
+		const dash_button &b = Dash_buttons[i];
+		int pressed = (i == Dash_pressed);
+		int off = pressed ? 1 : 0;       /* pressed buttons sink by a pixel and light up */
+		gr_set_color(pressed ? 90 : 40, pressed ? 140 : 70, pressed ? 200 : 110);
+		gr_rect(b.x, b.y + off, b.w, b.h, false);
+		gr_set_color(pressed ? 160 : 70, pressed ? 200 : 110, pressed ? 250 : 160);
+		gr_rect(b.x, b.y + off, b.w, 1, false);
+		int w, h;
+		gr_get_string_size(&w, &h, b.label);
+		gr_set_color(240, 240, 240);
+		gr_string(b.x + (b.w - w) / 2, b.y + off + (b.h - h) / 2, b.label, false);
+	}
 }
 
 void n3ds_dash_draw(void)
@@ -192,95 +258,102 @@ void n3ds_dash_draw(void)
 	gr_set_color(6, 10, 18);
 	gr_rect(0, 0, DASH_W, DASH_H, false);
 
-	/* title bar */
-	gr_set_color(24, 44, 74);
-	gr_rect(0, 0, DASH_W, 24, false);
-	gr_set_font(FONT2);
-	gr_set_color(255, 220, 120);
-	gr_string(8, 4, h ? h->title : "FREESPACE 2", false);
-
-	gr_set_font(FONT1);
 	char buf[160];
+	int w, hh;
+
+	/* title bar: big font if it fits next to the clock, else the small one */
+	gr_set_color(24, 44, 74);
+	gr_rect(0, 0, DASH_W, 22, false);
+	gr_set_font(FONT1);
 	time_t now = time(NULL);
 	struct tm *lt = localtime(&now);
+	int clock_w = 0;
 	if (lt) {
-		int w, hh;
 		sprintf(buf, "%d:%02d", lt->tm_hour, lt->tm_min);
-		gr_get_string_size(&w, &hh, buf);
+		gr_get_string_size(&clock_w, &hh, buf);
 		gr_set_color(180, 180, 180);
-		gr_string(DASH_W - 8 - w, 8, buf, false);
+		gr_string(DASH_W - 6 - clock_w, 7, buf, false);
 	}
+	const char *title = h ? h->title : "FREESPACE 2";
+	gr_set_font(FONT2);
+	gr_get_string_size(&w, &hh, title);
+	if (w > DASH_W - 20 - clock_w) gr_set_font(FONT1);
+	gr_set_color(255, 220, 120);
+	gr_string(6, 4, title, false);
+	gr_set_font(FONT1);
 
 	/* pilot and campaign */
-	int y = 32;
+	Wrap_bottom = BTN_Y - 4;
+	int y = 27;
 	if (Player && Player->callsign[0]) {
-		label(8, y, "PILOT");
 		int r = Player->stats.rank;
 		if (r < 0) r = 0;
 		if (r >= NUM_RANKS) r = NUM_RANKS - 1;
-		sprintf(buf, "%s   %s   %d kills   %u missions", Player->callsign, Ranks[r].name,
+		label(6, y, "PILOT");
+		gr_set_color(235, 235, 235);
+		sprintf(buf, "%s, %s - %d kills, %u missions", Player->callsign, Ranks[r].name,
 			Player->stats.kill_count_ok, Player->stats.missions_flown);
-		value(72, y, buf);
-		y += 14;
+		y = wrapped(62, y, buf, 12);
 
 		if (Campaign.num_missions > 0) {
-			label(8, y, "CAMPAIGN");
-			value(72, y, Campaign.name);
-			y += 14;
+			label(6, y, "CAMPAIGN");
+			gr_set_color(235, 235, 235);
+			y = wrapped(62, y, Campaign.name, 12);
 			char next[40];
 			int n = Campaign.next_mission;
 			if (n >= 0 && n < Campaign.num_missions)
 				mission_label(next, sizeof(next), Campaign.missions[n].name);
 			else
 				strcpy(next, "-");
-			label(8, y, "NEXT");
-			sprintf(buf, "%s   (%d of %d missions flown)", next, Campaign.num_missions_completed, Campaign.num_missions);
-			value(72, y, buf);
-			y += 14;
+			label(6, y, "NEXT");
+			gr_set_color(235, 235, 235);
+			sprintf(buf, "%s (%d of %d flown)", next, Campaign.num_missions_completed, Campaign.num_missions);
+			y = wrapped(62, y, buf, 12);
 		}
 	} else {
-		value(8, y, "No pilot selected yet.");
-		y += 14;
+		value(6, y, "No pilot selected yet.");
+		y += 12;
 	}
 
-	y += 2;
+	y += 1;
 	hline(y);
-	y += 6;
+	y += 4;
 
-	/* what the pointer is over (only on screens that name their regions) */
-	label(8, y, "POINTER");
+	/* what the pointer is over (screens that name their regions, like the main hall) */
+	label(6, y, "POINTER");
 	if (Dash_frame - Hover_frame <= 2 && Hover_text[0]) {
 		gr_set_color(255, 255, 160);
-		y = wrapped(72, y, Hover_text, 14) - 14;
+		y = wrapped(62, y, Hover_text, 12);
 	} else {
 		gr_set_color(110, 110, 110);
-		gr_string(72, y, "-", false);
+		gr_string(62, y, "-", false);
+		y += 12;
 	}
-	y += 14;
-
 	if (popup_active()) {
 		gr_set_color(255, 160, 120);
-		gr_string(72, y, "Message waiting on the touchscreen.", false);
-		y += 14;
+		y = wrapped(62, y, "A message is waiting for an answer.", 12);
 	}
 
-	y += 2;
+	y += 1;
 	hline(y);
-	y += 6;
+	y += 4;
 
 	/* help for this screen */
 	if (h) {
 		gr_set_color(210, 210, 210);
 		for (int i = 0; i < 6 && h->lines[i]; i++)
-			y = wrapped(8, y, h->lines[i], 13);
+			y = wrapped(6, y, h->lines[i], 12);
 	}
+
+	draw_buttons();
 
 	/* controls footer */
 	gr_set_color(24, 44, 74);
 	gr_rect(0, DASH_H - 30, DASH_W, 30, false);
 	gr_set_color(200, 200, 200);
-	gr_string(8, DASH_H - 27, "Circle Pad or stylus: pointer    A: click    X: Enter", false);
-	gr_string(8, DASH_H - 14, "B: back    D-Pad: arrows    SELECT+START: manual", false);
+	Wrap_bottom = DASH_H;
+	wrapped(6, DASH_H - 28, "Pad / C-Stick: pointer   A: click   X: Enter", 13);
+	wrapped(6, DASH_H - 15, "B: back   L / R: zoom   SELECT+START: manual", 13);
 
 	gr_reset_clip();
 }

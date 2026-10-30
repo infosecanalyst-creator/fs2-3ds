@@ -25,6 +25,8 @@
 #include "hud/hudets.h"
 #include "math/vecmat.h"
 
+extern "C" void n3ds_click(void);
+
 #define PANEL_W 320
 #define PANEL_H 240
 
@@ -197,6 +199,7 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 		if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
 			Panel_pressed_key = b.key;
 			Panel_pressed_button = i;
+			n3ds_click();
 			key_mark(b.key, 1, 0);
 			return;
 		}
@@ -205,6 +208,7 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 		if (x >= Ets_cols[c].x - 4 && x < Ets_cols[c].x + 32 && y >= ETS_Y && y < ETS_Y + ETS_H) {
 			int key = (y < ETS_Y + ETS_H / 2) ? Ets_cols[c].key_up : Ets_cols[c].key_down;
 			Panel_pressed_key = key;
+			n3ds_click();
 			key_mark(key, 1, 0);
 			return;
 		}

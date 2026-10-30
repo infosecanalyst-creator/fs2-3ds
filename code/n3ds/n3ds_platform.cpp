@@ -28,6 +28,8 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/2d.h"
+#include "gamesnd/gamesnd.h"
+#include "sound/sound.h"
 
 #define FS2_DIR "sdmc:/3ds/freespace2"
 
@@ -228,6 +230,34 @@ static int scale_axis(int v, int range)
 	return s;
 }
 
+/* ---- menu view on the top screen: zoom levels show 400x240, 533x320 or the whole
+   800x480 engine frame; the view scrolls to keep the pointer on screen */
+static const float Menu_zooms[3] = { 0.5f, 0.75f, 1.0f };   /* LCD pixels per engine pixel */
+static int menu_zoom = 2;
+static float view_x = 0, view_y = 0;
+
+static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
+
+extern "C" void n3ds_menu_zoom(int delta)
+{
+	menu_zoom += delta;
+	if (menu_zoom < 0) menu_zoom = 0;
+	if (menu_zoom > 2) menu_zoom = 2;
+}
+
+/* quiet click for touch buttons */
+extern "C" void n3ds_click(void)
+{
+	if (Snds_iface && Num_iface_sounds > SND_IFACE_MOUSE_CLICK)
+		snd_play(&Snds_iface[SND_IFACE_MOUSE_CLICK], 0.0f, 0.15f);
+}
+
+extern "C" void n3ds_tap_key(int key)
+{
+	key_mark(key, 1, 0);
+	key_mark(key, 0, 0);
+}
+
 extern "C" void n3ds_input_poll(void)
 {
 	if (!aptMainLoop()) {
@@ -255,29 +285,39 @@ extern "C" void n3ds_input_poll(void)
 	/* panel buttons take the touch while flying */
 	touchPosition tp;
 	hidTouchRead(&tp);
-	if (flight) {
+	if (flight && !n3ds_manual_is_open()) {
 		n3ds_panel_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
 		touch_down = 0;
 	} else {
-		if (held & BTN_TOUCH) {
-			/* bottom screen shows the whole 800x480 frame squeezed into 320x240 */
-			touch_x = tp.px * N3DS_GAME_W / 320;
-			touch_y = tp.py * N3DS_GAME_H / 240;
-		} else {
-			/* Circle Pad moves the pointer: slow near the centre for precision, fast at the rim */
-			circlePosition cp;
+		/* menus are on the top screen; the touchscreen is the dashboard with buttons */
+		if (!n3ds_manual_is_open())
+			n3ds_dash_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
+
+		/* Circle Pad and C-Stick move the pointer: slow near the centre for precision,
+		   fast at the rim. The top-screen view follows the pointer. */
+		if (!n3ds_manual_is_open()) {
+			circlePosition cp, cs;
 			hidCircleRead(&cp);
-			int dx = cp.dx, dy = cp.dy;
-			int mag = dx * dx + dy * dy;
-			if (mag > 18 * 18) {
+			hidCstickRead(&cs);
+			float vx = 0, vy = 0;
+			const circlePosition *sticks[2] = { &cp, &cs };
+			const float range[2] = { 150.0f, 140.0f };
+			for (int si = 0; si < 2; si++) {
+				int dx = sticks[si]->dx, dy = sticks[si]->dy;
+				int mag = dx * dx + dy * dy;
+				if (mag <= 18 * 18) continue;
+				float m = sqrtf((float)mag);
+				float t = (m - 18.0f) / (range[si] - 18.0f);
+				if (t > 1.0f) t = 1.0f;
+				float speed = (1.0f + 11.0f * t * t) / menu_zoom_scale();   /* screen pixels per frame */
+				vx += dx / m * speed;
+				vy -= dy / m * speed;
+			}
+			if (vx != 0 || vy != 0) {
 				static float fx = -1, fy = -1;
 				if (fx < 0 || (int)fx != touch_x || (int)fy != touch_y) { fx = (float)touch_x; fy = (float)touch_y; }
-				float m = sqrtf((float)mag);
-				float t = (m - 18.0f) / (150.0f - 18.0f);
-				if (t > 1.0f) t = 1.0f;
-				float speed = 1.0f + 13.0f * t * t;          /* engine pixels per frame */
-				fx += dx / m * speed;
-				fy -= dy / m * speed;
+				fx += vx;
+				fy += vy;
 				if (fx < 0) fx = 0;
 				if (fy < 0) fy = 0;
 				if (fx > N3DS_GAME_W - 1) fx = N3DS_GAME_W - 1;
@@ -285,9 +325,12 @@ extern "C" void n3ds_input_poll(void)
 				touch_x = (int)fx;
 				touch_y = (int)fy;
 			}
+			/* L / R zoom the top-screen view */
+			if (down & BTN_L) n3ds_menu_zoom(-1);
+			if (down & BTN_R) n3ds_menu_zoom(+1);
 		}
-		/* stylus down or A held = left mouse button */
-		int now = ((held & BTN_TOUCH) || (held & BTN_A)) ? 1 : 0;
+		/* A = left mouse button */
+		int now = (held & BTN_A) ? 1 : 0;
 		if (now != touch_down) {
 			/* make sure the cursor position is updated before the click lands */
 			mouse_mark_button(MOUSE_LEFT_BUTTON, now);
@@ -303,9 +346,20 @@ extern "C" void n3ds_input_poll(void)
 		return;
 	}
 	if (n3ds_manual_is_open()) {
-		if (down & (BTN_R | BTN_DRIGHT)) n3ds_manual_page(1);
-		if (down & (BTN_L | BTN_DLEFT)) n3ds_manual_page(-1);
-		if (down & BTN_B) {
+		/* the standard manual controls of all the 3DS ports */
+		circlePosition mcp, mcs;
+		hidCircleRead(&mcp);
+		hidCstickRead(&mcs);
+		n3ds_manual_scroll(abs(mcp.dy) >= abs(mcs.dy) ? mcp.dy : mcs.dy);
+		if (down & BTN_DLEFT)  n3ds_manual_dpad(-1, 0);
+		if (down & BTN_DRIGHT) n3ds_manual_dpad(1, 0);
+		if (down & BTN_DUP)    n3ds_manual_dpad(0, -1);
+		if (down & BTN_DDOWN)  n3ds_manual_dpad(0, 1);
+		if (down & BTN_A)      n3ds_manual_select();
+		if (down & BTN_R)      n3ds_manual_page(1);
+		if (down & BTN_L)      n3ds_manual_page(-1);
+		n3ds_manual_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
+		if (down & (BTN_B | BTN_START)) {
 			n3ds_manual_close();
 			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
 		}
@@ -587,7 +641,15 @@ extern "C" void n3ds_present(void)
 	pglSetRenderScale(1.0f);
 
 	int bottom = 1;
-	if (flight) {
+	if (n3ds_manual_is_open()) {
+		/* manual: text on top, section buttons on the touchscreen */
+		overlay_begin();
+		n3ds_manual_draw_text();
+		overlay_to(PGL_TARGET_TOP, 400);
+		overlay_begin();
+		n3ds_manual_draw();
+		overlay_to(PGL_TARGET_BOTTOM, 320);
+	} else if (flight) {
 		/* ---- top: the cockpit view (rendered at the LCD's own 400x240) */
 		compose_begin(PGL_TARGET_TOP);
 		blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
@@ -609,21 +671,32 @@ extern "C" void n3ds_present(void)
 			bottom = 0;
 		}
 	} else {
-		/* ---- bottom: the menu itself, whole frame (stylus / Circle Pad pointer) */
-		compose_begin(PGL_TARGET_BOTTOM);
-		blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);
+		/* ---- top: the menu, at a readable zoom; the view follows the pointer */
+		float z = menu_zoom_scale();
+		float ww = 400.0f / z, wh = 240.0f / z;            /* engine pixels in view */
+		const float margin = 48.0f / z;
+		if (touch_x < view_x + margin) view_x = touch_x - margin;
+		if (touch_x > view_x + ww - margin) view_x = touch_x - ww + margin;
+		if (touch_y < view_y + margin) view_y = touch_y - margin;
+		if (touch_y > view_y + wh - margin) view_y = touch_y - wh + margin;
+		if (view_x > N3DS_GAME_W - ww) view_x = N3DS_GAME_W - ww;
+		if (view_y > N3DS_GAME_H - wh) view_y = N3DS_GAME_H - wh;
+		if (view_x < 0) view_x = 0;
+		if (view_y < 0) view_y = 0;
+		/* map the view (engine coords) into wherever this frame was rendered */
+		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
+		compose_begin(PGL_TARGET_TOP);
+		blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
+			src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
 		compose_end();
 
-		if (n3ds_manual_is_open()) {
-			overlay_begin();
-			n3ds_manual_draw();
-			overlay_to(PGL_TARGET_BOTTOM, 320);
-		}
-
-		/* ---- top: dashboard - only things that are NOT on the touchscreen */
+		/* ---- bottom: the manual, or the dashboard - nothing that is on the top screen */
 		overlay_begin();
-		n3ds_dash_draw();
-		overlay_to(PGL_TARGET_TOP, 400);
+		if (n3ds_manual_is_open())
+			n3ds_manual_draw();
+		else
+			n3ds_dash_draw();
+		overlay_to(PGL_TARGET_BOTTOM, 320);
 	}
 
 	int stereo = 0;
