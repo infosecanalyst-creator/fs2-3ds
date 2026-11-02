@@ -444,11 +444,38 @@ extern "C" void n3ds_input_poll(void)
 
 /* ------------------------------------------------------------------ profiler */
 
+static inline float ticks_ms_early(u64 t) { return (float)((double)t / (SYSCLOCK_ARM11 / 1000.0)); }
+
 static u64 prof_start[N3DS_PROF_COUNT];
 static u64 prof_total[N3DS_PROF_COUNT];
 
-extern "C" void n3ds_prof_begin(int id) { prof_start[id] = svcGetSystemTick(); }
-extern "C" void n3ds_prof_end(int id) { prof_total[id] += svcGetSystemTick() - prof_start[id]; }
+/* GPU probe: on one frame in 300 the CPU waits for the GPU at each stage boundary, so
+   each wait measures how long the GPU took for that stage alone (logged as "gpu probe") */
+static int probe_frame = 0;
+static float probe_ms[5];
+static float gpu_finish_ms(void)
+{
+	u64 t = svcGetSystemTick();
+	glFinish();
+	return ticks_ms_early(svcGetSystemTick() - t);
+}
+
+extern "C" void n3ds_prof_begin(int id)
+{
+	if (probe_frame) {
+		if (id == N3DS_PROF_SIM) gpu_finish_ms();                 /* drain the previous frame */
+		if (id == N3DS_PROF_3D)  probe_ms[0] = gpu_finish_ms();   /* clear + anything before 3D */
+	}
+	prof_start[id] = svcGetSystemTick();
+}
+extern "C" void n3ds_prof_end(int id)
+{
+	if (probe_frame) {
+		if (id == N3DS_PROF_3D)  probe_ms[1] = gpu_finish_ms();
+		if (id == N3DS_PROF_HUD) probe_ms[2] = gpu_finish_ms();
+	}
+	prof_total[id] += svcGetSystemTick() - prof_start[id];
+}
 
 static inline float ticks_ms(u64 t) { return (float)((double)t / (SYSCLOCK_ARM11 / 1000.0)); }
 
@@ -733,6 +760,14 @@ extern "C" void n3ds_present(void)
 			bottom = 0;
 		}
 	}
+
+	if (probe_frame) {
+		probe_ms[3] = gpu_finish_ms();     /* top/bottom compose + panel / dashboard */
+		n3ds_log("gpu probe (state %d): clear %.1f  3d %.1f  hud %.1f  screens %.1f ms | vram free %d KB\n",
+			state, probe_ms[0], probe_ms[1], probe_ms[2], probe_ms[3], (int)(vramSpaceFree() / 1024));
+		memset(probe_ms, 0, sizeof(probe_ms));
+	}
+	probe_frame = ((frames % 300) == 150);
 
 	int stereo = 0;
 	u64 t_present0 = osGetTime();
