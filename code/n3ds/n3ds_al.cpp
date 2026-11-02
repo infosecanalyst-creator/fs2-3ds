@@ -272,6 +272,9 @@ static void start_mixer(void)
 	if (!Mix_thread) Mix_thread = threadCreate(mix_thread_func, NULL, 32 * 1024, prio - 3, -2, false);
 }
 
+static void stop_mixer(void);
+extern "C" void n3ds_audio_shutdown(void) { stop_mixer(); }
+
 static void stop_mixer(void)
 {
 	if (!Ndsp_ok) return;
