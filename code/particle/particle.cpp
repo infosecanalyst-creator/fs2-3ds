@@ -601,7 +601,7 @@ void particle_render_all()
 				continue;
 			}
 
-			if (!Cmdline_nohtl)
+			// New 3DS: the batcher always gets world positions (it projects them itself)
 				g3_transfer_vertex(&pos_htl, &temp);
 
 			// don't bother rotating again
@@ -617,7 +617,7 @@ void particle_render_all()
 				continue;
 			}
 
-			if (!Cmdline_nohtl)
+			// New 3DS: the batcher always gets world positions (it projects them itself)
 				g3_transfer_vertex(&pos_htl, &p->pos);
 		}
 
@@ -651,7 +651,7 @@ void particle_render_all()
 				// draw as a regular bitmap
 				else {
 					int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
-					batch_add_bitmap( framenum, tmap_flags, (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius, alpha );
+					batch_add_bitmap( framenum, tmap_flags, &pos_htl, p->particle_index % 8, p->radius, alpha );
 				}
 
 				break;
@@ -680,7 +680,7 @@ void particle_render_all()
 				}
 				// draw as a regular bitmap
 				else {
-					PARTICLE_FIRE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
+					PARTICLE_FIRE_batcher[cur_frame].draw_bitmap( &pos_htl, p->particle_index % 8, p->radius );
 				}
 
 				break;
@@ -712,7 +712,7 @@ void particle_render_all()
 					// as part of a coding mistake I thought the freaky UV changing from the orient var was really cool
 					// and added some realism to the smoke effect.  so, it's not using the original particle_index
 					// for UV orient like all of the other effects but the current particle offset instead. - taylor
-					PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, (i + cur_frame) % 8, p->radius );
+					PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap( &pos_htl, (i + cur_frame) % 8, p->radius );
 				}
 
 				break;
@@ -741,7 +741,7 @@ void particle_render_all()
 				}
 				// draw as a regular bitmap
 				else {
-					PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
+					PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap( &pos_htl, p->particle_index % 8, p->radius );
 				}
 
 				break;

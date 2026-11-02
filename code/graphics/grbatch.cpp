@@ -548,6 +548,27 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 
 void geometry_batcher::render(int flags)
 {
+	if (n_to_render && Cmdline_nohtl) {
+		// Without hardware T&L the batch's world-space triangles have to be rotated,
+		// projected and clipped here - otherwise lasers, glows, particles and
+		// explosions are never seen (fs2_open 3.6.10 only did this for HTL).
+		int tflags = flags & ~(TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRILIST | TMAP_FLAG_TRISTRIP);
+		vertex tv[3];
+		vertex *pl[3] = { &tv[0], &tv[1], &tv[2] };
+		for (int t = 0; t < n_to_render; t++) {
+			for (int k = 0; k < 3; k++) {
+				vertex *src = &vert[t * 3 + k];
+				vec3d w;
+				vm_vert2vec(src, &w);
+				tv[k] = *src;
+				g3_rotate_vertex(&tv[k], &w);
+				g3_project_vertex(&tv[k]);
+			}
+			g3_draw_poly(3, pl, tflags);
+		}
+		n_to_render = 0;
+		return;
+	}
 	if (n_to_render) {
 		g3_draw_poly( n_to_render * 3, vert_list, flags | TMAP_FLAG_TRILIST);
 		n_to_render = 0;

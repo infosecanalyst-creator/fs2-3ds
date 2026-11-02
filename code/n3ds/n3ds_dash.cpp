@@ -55,50 +55,44 @@ struct screen_help {
 
 static const screen_help Help[] = {
 	{ GS_STATE_INITIAL_PLAYER_SELECT, "PILOT SELECT", {
-		"Pick your pilot in the list, then Select (lower right).",
-		"New pilot: Create, then type a callsign on the keyboard.",
-		"Pilot files live in sdmc:/3ds/freespace2/.fs2_open", NULL } },
+		"Pick your pilot, then Select (lower right).",
+		"New pilot: Create, then type a callsign.", NULL } },
 	{ GS_STATE_MAIN_MENU, "MAIN HALL", {
-		"Point at a room - its name shows on this screen.",
-		"Press A to go in.",
-		"Ready Room: campaign   Tech Room: ship and weapon data",
-		"Barracks: pilots and medals   Options: detail and sound",
-		"Lower detail in Options if a battle feels slow.", NULL } },
+		"Point at a room, then press A to go in.",
+		"The Ready Room (middle door) starts the campaign.",
+		"Options: lower detail if battles feel slow.", NULL } },
 	{ GS_STATE_CMD_BRIEF, "COMMAND BRIEFING", {
-		"Orders from command for the coming operation.",
-		"Arrows step through the pages.",
-		"Continue (lower right) goes on to the mission briefing.", NULL } },
+		"Continue (lower right) goes to the briefing.",
+		"Arrows step through the pages.", NULL } },
 	{ GS_STATE_BRIEFING, "MISSION BRIEFING", {
+		"Commit (lower right) launches the mission.",
 		"Arrows step through the briefing stages.",
-		"Ship Selection / Weapon Loadout (top left) change your fit.",
-		"Commit (lower right) launches the mission.", NULL } },
+		"Ship and weapon tabs are at the top left.", NULL } },
 	{ GS_STATE_SHIP_SELECT, "SHIP SELECTION", {
-		"Drag a ship from the pool onto a wing slot.",
-		"Commit (lower right) launches the mission.", NULL } },
+		"Commit (lower right) launches the mission.",
+		"Drag a ship from the pool onto a wing slot.", NULL } },
 	{ GS_STATE_WEAPON_SELECT, "WEAPON LOADOUT", {
-		"Drag weapons from the list onto your ship's banks.",
-		"Commit (lower right) launches the mission.", NULL } },
+		"Commit (lower right) launches the mission.",
+		"Drag weapons onto your ship's banks.", NULL } },
 	{ GS_STATE_DEBRIEF, "DEBRIEFING", {
-		"How the mission went, and what command thinks of it.",
 		"Accept (lower right) records the result.", NULL } },
 	{ GS_STATE_OPTIONS_MENU, "OPTIONS", {
-		"Detail tab: Medium is the New 3DS default.",
-		"Lower it for smoother battles, raise it for looks.",
-		"Controls are fixed on 3DS - see the manual.", NULL } },
+		"Detail tab: lower it for smoother battles.",
+		"Controls are fixed - see the manual.", NULL } },
 	{ GS_STATE_CONTROL_CONFIG, "CONTROLS", {
 		"The 3DS buttons are mapped for you.",
-		"SELECT + START opens the manual with the full list.", NULL } },
+		"The MANUAL button lists them all.", NULL } },
 	{ GS_STATE_HUD_CONFIG, "HUD CONFIG", {
-		"Tap a gauge to toggle it or change its colour.", NULL } },
+		"Click a gauge to toggle it.", NULL } },
 	{ GS_STATE_TECH_MENU, "TECH ROOM", {
-		"Ship and weapon database, intelligence, cutscenes.", NULL } },
+		"Ship and weapon data, intel, cutscenes.", NULL } },
 	{ GS_STATE_BARRACKS_MENU, "BARRACKS", {
 		"Pilots, squadron logos and service records.",
 		"Make Active switches pilot.", NULL } },
 	{ GS_STATE_CAMPAIGN_ROOM, "CAMPAIGN ROOM", {
 		"Choose or restart a campaign.", NULL } },
 	{ GS_STATE_SIMULATOR_ROOM, "SIMULATOR", {
-		"Replay campaign missions and single missions.", NULL } },
+		"Replay missions you have flown.", NULL } },
 	{ GS_STATE_TRAINING_MENU, "TRAINING", { NULL } },
 	{ GS_STATE_GAME_PAUSED, "PAUSED", {
 		"START or B returns to the cockpit.", NULL } },
@@ -109,7 +103,7 @@ static const screen_help Help[] = {
 	{ GS_STATE_SHOW_GOALS, "MISSION GOALS", { NULL } },
 	{ GS_STATE_MISSION_LOG_SCROLLBACK, "MISSION LOG", { NULL } },
 	{ GS_STATE_RED_ALERT, "RED ALERT", {
-		"No time for a briefing - Continue to launch.", NULL } },
+		"No briefing - Continue to launch.", NULL } },
 	{ GS_STATE_FICTION_VIEWER, "FICTION", { NULL } },
 	{ GS_STATE_GAMEPLAY_HELP, "HELP", { NULL } },
 	{ GS_STATE_LOOP_BRIEF, "SPECIAL MISSION", { NULL } },
@@ -172,6 +166,37 @@ static int wrapped(int x, int y, const char *text, int lh)
 	return y;
 }
 
+/* how many lines wrapped() would use for text at x */
+static int wrapped_lines(int x, const char *text)
+{
+	int save = Wrap_bottom;
+	Wrap_bottom = 1 << 20;
+	/* measure by drawing off-screen-free: replicate the wrap without drawing */
+	char line[160];
+	int maxw = DASH_W - x - 6, n = 0;
+	const char *p = text;
+	while (*p) {
+		int len = 0, last_space = -1;
+		while (p[len]) {
+			if (p[len] == ' ') last_space = len;
+			if (len + 1 >= (int)sizeof(line)) break;
+			memcpy(line, p, len + 1); line[len + 1] = 0;
+			int w, h;
+			gr_get_string_size(&w, &h, line);
+			if (w > maxw) break;
+			len++;
+		}
+		int take = len;
+		if (p[len] && last_space > 0) take = last_space;
+		if (take <= 0) take = 1;
+		p += take;
+		while (*p == ' ') p++;
+		n++;
+	}
+	Wrap_bottom = save;
+	return n;
+}
+
 /* copy a campaign mission file name without its extension */
 static void mission_label(char *out, int outlen, const char *name)
 {
@@ -183,14 +208,13 @@ static void mission_label(char *out, int outlen, const char *name)
 
 /* ---- touch buttons on the dashboard */
 struct dash_button { int x, y, w, h; const char *label; };
-#define BTN_Y 178
+#define BTN_Y 184
 #define BTN_H 26
 static const dash_button Dash_buttons[] = {
-	{   2, BTN_Y, 62, BTN_H, "BACK" },
-	{  66, BTN_Y, 62, BTN_H, "ENTER" },
-	{ 130, BTN_Y, 62, BTN_H, "ZOOM -" },
-	{ 194, BTN_Y, 62, BTN_H, "ZOOM +" },
-	{ 258, BTN_Y, 60, BTN_H, "MANUAL" },
+	{   2, BTN_Y, 77, BTN_H, "BACK" },
+	{  81, BTN_Y, 77, BTN_H, "ENTER" },
+	{ 160, BTN_Y, 77, BTN_H, "ZOOM" },
+	{ 239, BTN_Y, 79, BTN_H, "MANUAL" },
 };
 #define NUM_DASH_BUTTONS ((int)(sizeof(Dash_buttons) / sizeof(Dash_buttons[0])))
 static int Dash_pressed = -1;
@@ -220,9 +244,8 @@ void n3ds_dash_touch(int held, int x, int y, int pressed)
 		switch (Dash_pressed) {
 			case 0: n3ds_tap_key(KEY_ESC); break;
 			case 1: n3ds_tap_key(KEY_ENTER); break;
-			case 2: n3ds_menu_zoom(-1); break;
-			case 3: n3ds_menu_zoom(+1); break;
-			case 4: n3ds_manual_toggle(); break;
+			case 2: n3ds_menu_zoom(0); break;      /* 0 = cycle */
+			case 3: n3ds_manual_toggle(); break;
 		}
 		Dash_pressed = -1;
 	}
@@ -282,23 +305,33 @@ void n3ds_dash_draw(void)
 	gr_string(6, 4, title, false);
 	gr_set_font(FONT1);
 
-	/* pilot and campaign */
-	Wrap_bottom = BTN_Y - 4;
-	int y = 27;
+	/* pilot and campaign: label column sized to the widest label */
+	int lw = 0;
+	{
+		const char *labels[] = { "PILOT", "CAMPAIGN", "NEXT", "POINTER" };
+		for (int i = 0; i < 4; i++) {
+			gr_get_string_size(&w, &hh, labels[i]);
+			if (w > lw) lw = w;
+		}
+	}
+	int vx = 6 + lw + 8;
+	Wrap_bottom = BTN_Y - 2;
+	int y = 26;
 	if (Player && Player->callsign[0]) {
 		int r = Player->stats.rank;
 		if (r < 0) r = 0;
 		if (r >= NUM_RANKS) r = NUM_RANKS - 1;
 		label(6, y, "PILOT");
 		gr_set_color(235, 235, 235);
-		sprintf(buf, "%s, %s - %d kills, %u missions", Player->callsign, Ranks[r].name,
-			Player->stats.kill_count_ok, Player->stats.missions_flown);
-		y = wrapped(62, y, buf, 12);
+		sprintf(buf, "%s, %s - %d kills", Player->callsign, Ranks[r].name, Player->stats.kill_count_ok);
+		gr_get_string_size(&w, &hh, buf);
+		if (w > DASH_W - vx - 6) sprintf(buf, "%s, %s", Player->callsign, Ranks[r].name);
+		y = wrapped(vx, y, buf, 12);
 
 		if (Campaign.num_missions > 0) {
 			label(6, y, "CAMPAIGN");
 			gr_set_color(235, 235, 235);
-			y = wrapped(62, y, Campaign.name, 12);
+			y = wrapped(vx, y, Campaign.name, 12);
 			char next[40];
 			int n = Campaign.next_mission;
 			if (n >= 0 && n < Campaign.num_missions)
@@ -308,7 +341,7 @@ void n3ds_dash_draw(void)
 			label(6, y, "NEXT");
 			gr_set_color(235, 235, 235);
 			sprintf(buf, "%s (%d of %d flown)", next, Campaign.num_missions_completed, Campaign.num_missions);
-			y = wrapped(62, y, buf, 12);
+			y = wrapped(vx, y, buf, 12);
 		}
 	} else {
 		value(6, y, "No pilot selected yet.");
@@ -321,39 +354,42 @@ void n3ds_dash_draw(void)
 
 	/* what the pointer is over (screens that name their regions, like the main hall) */
 	label(6, y, "POINTER");
-	if (Dash_frame - Hover_frame <= 2 && Hover_text[0]) {
+	if (Dash_frame - Hover_frame <= 6 && Hover_text[0]) {
 		gr_set_color(255, 255, 160);
-		y = wrapped(62, y, Hover_text, 12);
+		y = wrapped(vx, y, Hover_text, 12);
 	} else {
 		gr_set_color(110, 110, 110);
-		gr_string(62, y, "-", false);
+		gr_string(vx, y, "-", false);
 		y += 12;
 	}
 	if (popup_active()) {
 		gr_set_color(255, 160, 120);
-		y = wrapped(62, y, "A message is waiting for an answer.", 12);
+		y = wrapped(vx, y, "Message - answer it on top.", 12);
 	}
 
 	y += 1;
 	hline(y);
 	y += 4;
 
-	/* help for this screen */
+	/* help for this screen, most important line first. A line that would not fit
+	   completely is left out instead of being cut off. */
 	if (h) {
 		gr_set_color(210, 210, 210);
-		for (int i = 0; i < 6 && h->lines[i]; i++)
+		for (int i = 0; i < 6 && h->lines[i]; i++) {
+			if (y + 12 * wrapped_lines(6, h->lines[i]) > Wrap_bottom) break;
 			y = wrapped(6, y, h->lines[i], 12);
+		}
 	}
 
 	draw_buttons();
 
 	/* controls footer */
 	gr_set_color(24, 44, 74);
-	gr_rect(0, DASH_H - 30, DASH_W, 30, false);
+	gr_rect(0, DASH_H - 29, DASH_W, 29, false);
 	gr_set_color(200, 200, 200);
 	Wrap_bottom = DASH_H;
-	wrapped(6, DASH_H - 28, "Pad / C-Stick: pointer   A: click   X: Enter", 13);
-	wrapped(6, DASH_H - 15, "B: back   L / R: zoom   SELECT+START: manual", 13);
+	gr_string(6, DASH_H - 27, "Pad / C-Stick: pointer   A: click", false);
+	gr_string(6, DASH_H - 14, "X: Enter   B: back   L / R: zoom", false);
 
 	gr_reset_clip();
 }

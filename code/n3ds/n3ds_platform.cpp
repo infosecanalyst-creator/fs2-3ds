@@ -30,6 +30,7 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 #include "graphics/2d.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/sound.h"
+#include "popup/popup.h"
 
 #define FS2_DIR "sdmc:/3ds/freespace2"
 
@@ -233,13 +234,19 @@ static int scale_axis(int v, int range)
 /* ---- menu view on the top screen: zoom levels show 400x240, 533x320 or the whole
    800x480 engine frame; the view scrolls to keep the pointer on screen */
 static const float Menu_zooms[3] = { 0.5f, 0.75f, 1.0f };   /* LCD pixels per engine pixel */
-static int menu_zoom = 2;
+static int menu_zoom = 1;                                   /* start at 0.75: popups fit */
 static float view_x = 0, view_y = 0;
 
 static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
 
+static int held_touch_now(void) { return (hidKeysHeld() & BTN_TOUCH) ? 1 : 0; }
+
 extern "C" void n3ds_menu_zoom(int delta)
 {
+	if (delta == 0) {               /* ZOOM button: cycle */
+		menu_zoom = (menu_zoom + 1) % 3;
+		return;
+	}
 	menu_zoom += delta;
 	if (menu_zoom < 0) menu_zoom = 0;
 	if (menu_zoom > 2) menu_zoom = 2;
@@ -309,7 +316,7 @@ extern "C" void n3ds_input_poll(void)
 				float m = sqrtf((float)mag);
 				float t = (m - 18.0f) / (range[si] - 18.0f);
 				if (t > 1.0f) t = 1.0f;
-				float speed = (1.0f + 11.0f * t * t) / menu_zoom_scale();   /* screen pixels per frame */
+				float speed = (2.0f + 12.0f * t * sqrtf(t)) / menu_zoom_scale();   /* screen pixels per frame */
 				vx += dx / m * speed;
 				vy -= dy / m * speed;
 			}
@@ -674,6 +681,17 @@ extern "C" void n3ds_present(void)
 		/* ---- top: the menu, at a readable zoom; the view follows the pointer */
 		float z = menu_zoom_scale();
 		float ww = 400.0f / z, wh = 240.0f / z;            /* engine pixels in view */
+		/* a popup opening: centre the view (and the pointer) on it - popups sit in the
+		   middle of the screen and are wider than the 1:1 view */
+		static int was_popup = 0;
+		int popup = popup_active();
+		if (popup && !was_popup) {
+			view_x = (N3DS_GAME_W - ww) * 0.5f;
+			view_y = (N3DS_GAME_H - wh) * 0.5f;
+			touch_x = N3DS_GAME_W / 2;
+			touch_y = N3DS_GAME_H / 2;
+		}
+		was_popup = popup;
 		const float margin = 48.0f / z;
 		if (touch_x < view_x + margin) view_x = touch_x - margin;
 		if (touch_x > view_x + ww - margin) view_x = touch_x - ww + margin;
@@ -690,13 +708,16 @@ extern "C" void n3ds_present(void)
 			src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
 		compose_end();
 
-		/* ---- bottom: the manual, or the dashboard - nothing that is on the top screen */
-		overlay_begin();
-		if (n3ds_manual_is_open())
-			n3ds_manual_draw();
-		else
+		/* ---- bottom: the dashboard - nothing that is on the top screen. It only changes
+		   when something happens, so it is redrawn at 20 Hz (every frame while touched). */
+		static int dash_tick = 0;
+		if ((held_touch_now() || (dash_tick++ % 3) == 0)) {
+			overlay_begin();
 			n3ds_dash_draw();
-		overlay_to(PGL_TARGET_BOTTOM, 320);
+			overlay_to(PGL_TARGET_BOTTOM, 320);
+		} else {
+			bottom = 0;
+		}
 	}
 
 	int stereo = 0;

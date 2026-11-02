@@ -509,6 +509,10 @@ void training_obj_display()
 		return;
 	}
 
+#ifdef SCP_3DS
+	return;		// New 3DS: directives are on the touchscreen panel (n3ds_directives)
+#endif
+
 	if ( !hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
 		// Always draw the directives display if this is a training mission
 		if ( !(The_mission.game_type & MISSION_TYPE_TRAINING) ) {
@@ -1283,6 +1287,11 @@ void message_training_display()
 		return;
 	}
 
+#ifdef SCP_3DS
+	Training_message_visible = 1;	// New 3DS: the text is shown on the touchscreen panel
+	return;
+#endif
+
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
 	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
@@ -1388,3 +1397,48 @@ void training_fail()
 	//	Also ensure that a special failure debriefing is given.  Must mention firing at instructor.
 	//	Ask Sandeep to write it (or you can).
 }
+
+
+#ifdef SCP_3DS
+// ---- New 3DS touchscreen panel: training message and directives as plain text
+
+// returns 1 and the current training message while one is up
+int n3ds_training_text(char *out, int outlen)
+{
+	if (Training_failure || timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf))
+		return 0;
+	strncpy(out, Training_buf, outlen - 1);
+	out[outlen - 1] = 0;
+	return 1;
+}
+
+// fills up to max directive lines; status: 0 current, 1 key prompt, 2 failed, 3 done
+int n3ds_directives(char lines[][128], int *status, int max)
+{
+	int n = 0, end = Training_obj_num_lines, offset = 0;
+	if (end > max) { offset = end - max; end = max; }
+	for (int i = 0; i < end; i++) {
+		int z = TRAINING_OBJ_LINES_MASK(i + offset);
+		char buf[256];
+		int st = 0;
+		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
+			message_translate_tokens(buf, Mission_events[z].objective_key_text);
+			st = 1;
+		} else {
+			strcpy(buf, Mission_events[z].objective_text);
+			if (Mission_events[z].count)
+				sprintf(buf + strlen(buf), " [%d]", Mission_events[z].count);
+			switch (mission_get_event_status(z)) {
+				case EVENT_FAILED: st = 2; break;
+				case EVENT_SATISFIED: st = 3; break;
+				default: st = 0; break;
+			}
+		}
+		strncpy(lines[n], buf, 127);
+		lines[n][127] = 0;
+		status[n] = st;
+		n++;
+	}
+	return n;
+}
+#endif

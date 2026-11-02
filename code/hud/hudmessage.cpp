@@ -1054,6 +1054,14 @@ void hud_sourced_print(int source, char *msg)
 	// add message to the scrollback log first
 	hud_add_msg_to_scrollback(msg, source, timestamp());
 
+#ifdef SCP_3DS
+	{
+		// New 3DS: messages are shown on the touchscreen panel, not the top-screen HUD
+		extern void n3ds_panel_message(int source, const char *msg);
+		n3ds_panel_message(source, msg);
+	}
+#endif
+
 	ptr = strstr(msg, NOX(": ")) + 2;
 	if (ptr) {
 		gr_get_string_size(&sw, NULL, msg, ptr - msg);			// get width of the speaker field
