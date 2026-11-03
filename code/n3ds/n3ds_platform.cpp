@@ -39,11 +39,15 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 /* ------------------------------------------------------------------ logging */
 
 static FILE *n3ds_logfile = NULL;
+static int n3ds_quit = 0;
 
 extern "C" void n3ds_log(const char *fmt, ...)
 {
 	if (!n3ds_logfile) {
-		n3ds_logfile = fopen(FS2_DIR "/fs2_3ds.log", "w");
+		static int opened_before = 0;
+		/* first open of a run truncates; a reopen (after the quit path closed it) appends */
+		n3ds_logfile = fopen(FS2_DIR "/fs2_3ds.log", opened_before ? "a" : "w");
+		opened_before = 1;
 		if (!n3ds_logfile) return;
 	}
 	static u64 t0 = 0;
@@ -58,6 +62,7 @@ extern "C" void n3ds_log(const char *fmt, ...)
 
 extern "C" void n3ds_fatal(const char *msg)
 {
+	if (n3ds_quit) _exit(0);     /* errors while closing down: just leave */
 	n3ds_log("FATAL: %s\n", msg);
 	errorConf err;
 	errorInit(&err, ERROR_TEXT_WORD_WRAP, CFG_LANGUAGE_EN);
@@ -100,7 +105,6 @@ extern "C" int n3ds_keyboard(int password, const char *initial, char *out, int o
 
 /* ------------------------------------------------------------------ init */
 
-static int n3ds_quit = 0;
 static GLuint n3ds_main_tex = 0;
 static GLuint n3ds_overlay_tex = 0;   /* panel / manual / dashboard are drawn here, never into the game's frame */
 static GLuint n3ds_snap_tex = 0;      /* engine save_screen copy */
@@ -271,6 +275,7 @@ extern "C" void n3ds_tap_key(int key)
 
 extern "C" void n3ds_input_poll(void)
 {
+	if (n3ds_quit) return;
 	if (!aptMainLoop()) {
 		/* HOME -> Close (or power off): the system waits for us to exit, so do it right
 		   away instead of running the engine's long shutdown. Save the pilot first. */
@@ -284,7 +289,9 @@ extern "C" void n3ds_input_poll(void)
 		pglExit();
 		hidExit();
 		gfxExit();
-		exit(0);
+		/* _exit, not exit: the engine's atexit handlers would start the slow full
+		   shutdown (and draw with freed buffers) - the system only needs us gone */
+		_exit(0);
 	}
 
 	hidScanInput();
