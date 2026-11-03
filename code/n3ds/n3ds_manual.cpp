@@ -79,6 +79,7 @@ static const manual_section Sections[] = {
 		"",
 		"HULL, SHLD, AFTB and WPN bars show your ship.",
 		"SPD is your speed, THR your throttle setting.",
+		"An M beside SPD: matching the target's speed.",
 		"PRI / SEC: selected weapons and missiles left.",
 		"The box below shows training text, directives",
 		"and the latest radio messages.",

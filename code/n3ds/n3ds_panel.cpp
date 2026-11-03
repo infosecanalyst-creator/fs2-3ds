@@ -24,6 +24,7 @@
 #include "ai/ai.h"
 #include "hud/hudets.h"
 #include "math/vecmat.h"
+#include "playerman/player.h"
 #include "weapon/weapon.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
@@ -221,6 +222,11 @@ void n3ds_panel_draw(void)
 		sprintf(buf, "SPD %d", (int)Player_obj->phys_info.fspeed);
 		gr_set_color(200, 200, 200);
 		gr_string(4, 58, buf, false);
+		if (Player && (Player->flags & PLAYER_FLAGS_MATCH_TARGET)) {
+			/* matching the target's speed */
+			gr_set_color(255, 220, 80);
+			gr_string(4 + text_w(buf) + 8, 58, "M", false);
+		}
 		gr_string(122, 58, "THR", false);
 		panel_bar(162, 59, 82, 7, Player_obj->phys_info.forward_thrust, 255, 180, 60);
 
