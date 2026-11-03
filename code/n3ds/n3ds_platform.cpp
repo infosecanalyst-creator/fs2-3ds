@@ -795,3 +795,54 @@ extern "C" void n3ds_present(void)
 	}
 	t_last = osGetTime();
 }
+
+/* ------------------------------------------------------------------ key names */
+/* What to call a game key in training text and directives ("Press $T$" -> "Press Y").
+   Mirrors n3ds_keys / n3ds_select_keys above and the cockpit panel buttons. */
+struct key_name { int key; const char *name; };
+static const key_name Key_names[] = {
+	{ KEY_TAB,                 "A" },
+	{ KEY_X,                   "B" },
+	{ KEY_Y,                   "X" },
+	{ KEY_T,                   "Y" },
+	{ KEY_LCTRL,               "R" },
+	{ KEY_RCTRL,               "R" },
+	{ KEY_SPACEBAR,            "L" },
+	{ KEY_H,                   "D-Pad Up" },
+	{ KEY_M,                   "D-Pad Down" },
+	{ KEY_PERIOD,              "D-Pad Left" },
+	{ KEY_DIVIDE,              "D-Pad Right" },
+	{ KEY_ESC,                 "START" },
+	{ KEY_C,                   "SELECT" },
+	{ KEY_A,                   "ZR" },
+	{ KEY_Z,                   "ZL" },
+	{ KEY_BACKSP,              "ZL (hold)" },
+	{ KEY_SLASH,               "ZR (hold)" },
+	{ KEY_LBRACKET,            "ZL / ZR" },
+	{ KEY_RBRACKET,            "ZL / ZR" },
+	{ KEY_F,                   "SELECT+Y" },
+	{ KEY_S,                   "SELECT+X" },
+	{ KEY_Q,                   "SELECT+A" },
+	{ KEY_R,                   "SELECT+Up" },
+	{ KEY_B,                   "SELECT+Down" },
+	{ KEY_F3,                  "SELECT+Left" },
+	{ KEY_PADPLUS,             "SELECT+Right" },
+	{ KEY_HOME,                "the panel's S +" },
+	{ KEY_END,                 "the panel's S -" },
+	{ KEY_INSERT,              "the panel's W +" },
+	{ KEY_DELETE,              "the panel's W -" },
+	{ KEY_PAGEUP,              "the panel's E +" },
+	{ KEY_PAGEDOWN,            "the panel's E -" },
+	{ KEY_SHIFTED | KEY_R,     "ORDERS (rearm)" },
+	{ KEY_PAUSE,               "SELECT+START" },
+};
+
+extern "C++" const char *n3ds_key_name(int keycode)
+{
+	if (keycode < 0)
+		return NULL;
+	for (unsigned i = 0; i < sizeof(Key_names) / sizeof(Key_names[0]); i++)
+		if (Key_names[i].key == keycode)
+			return Key_names[i].name;
+	return "the panel / ORDERS";   /* no 3DS button: never show a PC key */
+}

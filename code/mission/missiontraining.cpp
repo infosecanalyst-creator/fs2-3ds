@@ -1407,9 +1407,19 @@ int n3ds_training_text(char *out, int outlen)
 {
 	if (Training_failure || timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf))
 		return 0;
-	strncpy(out, Training_buf, outlen - 1);
-	out[outlen - 1] = 0;
-	return 1;
+	// the display code cuts Training_buf into NUL-terminated lines, so join the lines back
+	int pos = 0;
+	out[0] = 0;
+	for (int i = 0; i < Training_num_lines && pos < outlen - 2; i++) {
+		const char *l = Training_lines[i];
+		int len = Training_line_sizes[i];
+		while (len > 0 && *l == ' ') { l++; len--; }
+		if (pos && pos < outlen - 2) out[pos++] = ' ';
+		for (int k = 0; k < len && l[k] && pos < outlen - 1; k++)
+			out[pos++] = l[k];
+		out[pos] = 0;
+	}
+	return pos > 0;
 }
 
 // fills up to max directive lines; status: 0 current, 1 key prompt, 2 failed, 3 done

@@ -159,7 +159,7 @@ static int wrap_lines(const char *text, int maxw, char out[][96], int maxlines)
 
 #define BOX_Y 96
 #define BOX_BOTTOM 172
-#define LINE_H 11
+#define LINE_H 10
 
 void n3ds_panel_draw(void)
 {
@@ -257,10 +257,19 @@ void n3ds_panel_draw(void)
 		char lines[8][96];
 		char tbuf[512];
 		if (n3ds_training_text(tbuf, sizeof(tbuf))) {
-			int n = wrap_lines(tbuf, TEXT_W - 4, lines, 8);
+			char tl[16][96];
+			int n = wrap_lines(tbuf, TEXT_W - 4, tl, 16);
+			int fit = (BOX_BOTTOM - y) / LINE_H - 2;          /* keep room for the key prompt */
+			if (fit < 2) fit = 2;
+			int first = 0;
+			if (n > fit) {
+				/* too long for the box: show it a page at a time, turning every 3 s */
+				int pages = (n + fit - 1) / fit;
+				first = ((timestamp() / 3000) % pages) * fit;
+			}
 			gr_set_color(140, 200, 255);
-			for (int i = 0; i < n && y + LINE_H <= BOX_BOTTOM; i++, y += LINE_H)
-				gr_string(5, y, lines[i], false);
+			for (int i = first; i < n && i < first + fit; i++, y += LINE_H)
+				gr_string(5, y, tl[i], false);
 		}
 		char dl[3][128];
 		int dst[3];

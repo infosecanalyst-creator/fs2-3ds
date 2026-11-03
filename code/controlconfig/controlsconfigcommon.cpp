@@ -871,6 +871,15 @@ char *translate_key(char *key)
 
 	code = Control_config[index].key_id;
 	Failed_key_index = index;
+#ifdef SCP_3DS
+	{
+		// New 3DS: name the 3DS button (or panel button) instead of the PC key
+		extern const char *n3ds_key_name(int keycode);
+		const char *n = n3ds_key_name(code);
+		if (n)
+			return (char *)n;
+	}
+#endif
 	if (code < 0) {
 		code = Control_config[index].joy_id;
 		if (code >= 0)
