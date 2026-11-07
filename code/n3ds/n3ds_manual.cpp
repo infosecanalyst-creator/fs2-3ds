@@ -47,7 +47,9 @@ static const manual_section Sections[] = {
 	{ "FLYING", {
 		"Circle Pad    pitch and turn",
 		"C-Stick       roll",
-		"ZR / ZL       throttle up / down (hold)",
+		"ZR            throttle up (hold)",
+		"SELECT+ZR     throttle down (hold)",
+		"ZL            swap screens",
 		"A             afterburner (hold)",
 		"R             fire primary (hold)",
 		"L             fire secondary",

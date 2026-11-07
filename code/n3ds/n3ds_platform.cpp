@@ -192,7 +192,6 @@ static const keymap n3ds_keys[] = {
 	{ BTN_START,   KEY_ESC,                    KEY_ESC },     /* in-game menu */
 	{ BTN_SELECT,  KEY_C,                      0 },             /* comms (wingman orders) */
 	{ BTN_ZR,      KEY_A,                      0 },             /* throttle up (hold) */
-	{ BTN_ZL,      KEY_Z,                      0 },             /* throttle down (hold) */
 };
 
 /* hold SELECT + button for secondary functions in flight */
@@ -204,6 +203,7 @@ static const keymap n3ds_select_keys[] = {
 	{ BTN_DDOWN,   KEY_B,                      0 },             /* next bomb */
 	{ BTN_DLEFT,   KEY_F3,                     0 },             /* target-view toggle */
 	{ BTN_DRIGHT,  KEY_PADPLUS,                0 },             /* radar range */
+	{ BTN_ZR,      KEY_Z,                      0 },             /* throttle down (hold) */
 };
 
 static int key_held[256];
@@ -245,7 +245,12 @@ static float view_x = 0, view_y = 0;
 
 static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
 
-static int held_touch_now(void) { return (hidKeysHeld() & BTN_TOUCH) ? 1 : 0; }
+/* ZL swaps the screens: the cockpit / menu picture goes on the touchscreen (scaled to
+   320 wide), the panel / dashboard / manual buttons go on the top screen (centred).
+   Touch is off while swapped. */
+static int swapped = 0;
+
+static int held_touch_now(void) { return (!swapped && (hidKeysHeld() & BTN_TOUCH)) ? 1 : 0; }
 
 extern "C" void n3ds_menu_zoom(int delta)
 {
@@ -298,6 +303,9 @@ extern "C" void n3ds_input_poll(void)
 	u32 held = hidKeysHeld();
 	u32 down = hidKeysDown();
 	u32 up = hidKeysUp();
+	if (down & BTN_ZL) swapped = !swapped;
+	held &= ~BTN_ZL; down &= ~BTN_ZL; up &= ~BTN_ZL;
+	if (swapped) { held &= ~BTN_TOUCH; down &= ~BTN_TOUCH; up &= ~BTN_TOUCH; }
 	if (down) {
 		touchPosition ltp; hidTouchRead(&ltp);
 		n3ds_log("input down %08lx touch %d,%d\n", (unsigned long)down, ltp.px, ltp.py);
@@ -611,6 +619,16 @@ static void overlay_to(int target, int w)
 	compose_src_tex = 0;
 }
 
+/* like overlay_to, but into a destination rectangle of the screen (scaled / centred) */
+static void overlay_to_ex(int target, int w, float dx0, float dy0, float dx1, float dy1)
+{
+	compose_src_tex = n3ds_overlay_tex;
+	compose_begin(target);
+	blit_main(dx0, dy0, dx1, dy1, 0, 0, (float)w, 240);
+	compose_end();
+	compose_src_tex = 0;
+}
+
 /* ---- engine save_screen / restore_screen (popups, pause): GPU copy of the frame */
 static int snap_valid = 0;
 static float snap_scale = 1.0f;
@@ -696,18 +714,26 @@ extern "C" void n3ds_present(void)
 	pglSetRenderScale(1.0f);
 
 	int bottom = 1;
+	/* swapped: the picture is drawn to the bottom every frame, so always present it */
 	if (n3ds_manual_is_open()) {
 		/* manual: text on top, section buttons on the touchscreen */
 		overlay_begin();
 		n3ds_manual_draw_text();
-		overlay_to(PGL_TARGET_TOP, 400);
+		if (swapped) overlay_to_ex(PGL_TARGET_BOTTOM, 400, 0, 24, 320, 216);
+		else overlay_to(PGL_TARGET_TOP, 400);
 		overlay_begin();
 		n3ds_manual_draw();
-		overlay_to(PGL_TARGET_BOTTOM, 320);
+		if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+		else overlay_to(PGL_TARGET_BOTTOM, 320);
 	} else if (flight) {
 		/* ---- top: the cockpit view (rendered at the LCD's own 400x240) */
-		compose_begin(PGL_TARGET_TOP);
-		blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
+		if (swapped) {
+			compose_begin(PGL_TARGET_BOTTOM);
+			blit_main(0, 24, 320, 216, src_x0, src_y0, src_x1, src_y1);
+		} else {
+			compose_begin(PGL_TARGET_TOP);
+			blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
+		}
 		compose_end();
 
 		/* ---- bottom: the manual, or the cockpit panel (drawn by the engine into the
@@ -716,11 +742,12 @@ extern "C" void n3ds_present(void)
 			overlay_begin();
 			n3ds_manual_draw();
 			overlay_to(PGL_TARGET_BOTTOM, 320);
-		} else if (frames & 1) {
+		} else if (swapped || (frames & 1)) {
 			n3ds_prof_begin(N3DS_PROF_PANEL);
 			overlay_begin();
 			n3ds_panel_draw();
-			overlay_to(PGL_TARGET_BOTTOM, 320);
+			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+			else overlay_to(PGL_TARGET_BOTTOM, 320);
 			n3ds_prof_end(N3DS_PROF_PANEL);
 		} else {
 			bottom = 0;
@@ -751,18 +778,25 @@ extern "C" void n3ds_present(void)
 		if (view_y < 0) view_y = 0;
 		/* map the view (engine coords) into wherever this frame was rendered */
 		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
-		compose_begin(PGL_TARGET_TOP);
-		blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
-			src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
+		if (swapped) {
+			compose_begin(PGL_TARGET_BOTTOM);
+			blit_main(0, 24, 320, 216, src_x0 + view_x * kx, src_y0 + view_y * ky,
+				src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
+		} else {
+			compose_begin(PGL_TARGET_TOP);
+			blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
+				src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
+		}
 		compose_end();
 
 		/* ---- bottom: the dashboard - nothing that is on the top screen. It only changes
 		   when something happens, so it is redrawn at 20 Hz (every frame while touched). */
 		static int dash_tick = 0;
-		if ((held_touch_now() || (dash_tick++ % 3) == 0)) {
+		if ((held_touch_now() || swapped || (dash_tick++ % 3) == 0)) {
 			overlay_begin();
 			n3ds_dash_draw();
-			overlay_to(PGL_TARGET_BOTTOM, 320);
+			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+			else overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else {
 			bottom = 0;
 		}
@@ -822,11 +856,11 @@ static const key_name Key_names[] = {
 	{ KEY_ESC,                 "START" },
 	{ KEY_C,                   "SELECT" },
 	{ KEY_A,                   "ZR" },
-	{ KEY_Z,                   "ZL" },
-	{ KEY_BACKSP,              "ZL (hold)" },
+	{ KEY_Z,                   "SELECT+ZR" },
+	{ KEY_BACKSP,              "SELECT+ZR (hold)" },
 	{ KEY_SLASH,               "ZR (hold)" },
-	{ KEY_LBRACKET,            "ZL / ZR" },
-	{ KEY_RBRACKET,            "ZL / ZR" },
+	{ KEY_LBRACKET,            "ZR / SELECT+ZR" },
+	{ KEY_RBRACKET,            "ZR / SELECT+ZR" },
 	{ KEY_F,                   "SELECT+Y" },
 	{ KEY_S,                   "SELECT+X" },
 	{ KEY_Q,                   "SELECT+A" },
