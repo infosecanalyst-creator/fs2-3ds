@@ -103,6 +103,13 @@ static const manual_section Sections[] = {
 		"D-Pad                 arrow keys",
 		"L / R                 zoom the view out / in",
 		"ZOOM button           cycle the zoom levels",
+		"ZL                    swap screens",
+		"",
+		"SCREENS SWAPPED (ZL)",
+		"The whole menu is on the touchscreen: tap it",
+		"with the stylus like a mouse. The dashboard",
+		"moves to the top screen. In this manual, drag",
+		"the text to scroll. Press ZL again to swap back.",
 		"",
 		"The top-screen view scrolls when the pointer",
 		"nears its edge. Zoom out (L) to see the whole",
@@ -174,6 +181,13 @@ void n3ds_manual_scroll(int axis)
 		float v = 1.0f + 9.0f * t * t;
 		Manual_scroll += (axis > 0) ? -v : v;
 	}
+	if (Manual_scroll < 0) Manual_scroll = 0;
+	if (Manual_scroll > Manual_max_scroll) Manual_scroll = (float)Manual_max_scroll;
+}
+
+void n3ds_manual_scroll_by(float px)
+{
+	Manual_scroll += px;
 	if (Manual_scroll < 0) Manual_scroll = 0;
 	if (Manual_scroll > Manual_max_scroll) Manual_scroll = (float)Manual_max_scroll;
 }

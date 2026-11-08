@@ -305,6 +305,9 @@ extern "C" void n3ds_input_poll(void)
 	u32 up = hidKeysUp();
 	if (down & BTN_ZL) swapped = !swapped;
 	held &= ~BTN_ZL; down &= ~BTN_ZL; up &= ~BTN_ZL;
+	/* swapped: the touchscreen shows the game picture, so the stylus works on that
+	   picture (menus: it is the mouse; manual: drag scrolls) instead of the panels */
+	u32 raw_touch_held = held & BTN_TOUCH;
 	if (swapped) { held &= ~BTN_TOUCH; down &= ~BTN_TOUCH; up &= ~BTN_TOUCH; }
 	if (down) {
 		touchPosition ltp; hidTouchRead(&ltp);
@@ -365,8 +368,23 @@ extern "C" void n3ds_input_poll(void)
 			if (down & BTN_L) n3ds_menu_zoom(-1);
 			if (down & BTN_R) n3ds_menu_zoom(+1);
 		}
-		/* A = left mouse button */
-		int now = (held & BTN_A) ? 1 : 0;
+		/* swapped: the stylus on the menu picture (whole screen, 0..320 x 24..216) is the
+		   mouse. The button goes down one frame after the pointer moves there, so the
+		   menu has seen the pointer over the button before the click lands. */
+		static int stylus_frames = 0;
+		int stylus = 0;
+		if (swapped && !n3ds_manual_is_open() && raw_touch_held && tp.py >= 20 && tp.py < 220) {
+			int ty = tp.py < 24 ? 24 : (tp.py > 215 ? 215 : tp.py);
+			touch_x = tp.px * N3DS_GAME_W / 320;
+			touch_y = (ty - 24) * N3DS_GAME_H / 192;
+			if (touch_x > N3DS_GAME_W - 1) touch_x = N3DS_GAME_W - 1;
+			if (touch_y > N3DS_GAME_H - 1) touch_y = N3DS_GAME_H - 1;
+			stylus = (++stylus_frames >= 2);
+		} else {
+			stylus_frames = 0;
+		}
+		/* A (or the stylus) = left mouse button */
+		int now = ((held & BTN_A) || stylus) ? 1 : 0;
 		if (now != touch_down) {
 			/* make sure the cursor position is updated before the click lands */
 			mouse_mark_button(MOUSE_LEFT_BUTTON, now);
@@ -394,7 +412,18 @@ extern "C" void n3ds_input_poll(void)
 		if (down & BTN_A)      n3ds_manual_select();
 		if (down & BTN_R)      n3ds_manual_page(1);
 		if (down & BTN_L)      n3ds_manual_page(-1);
-		n3ds_manual_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
+		if (swapped) {
+			/* the text is on the touchscreen: drag it to scroll */
+			static int last_ty = -1;
+			if (raw_touch_held) {
+				if (last_ty >= 0) n3ds_manual_scroll_by((last_ty - tp.py) * 240.0f / 192.0f);
+				last_ty = tp.py;
+			} else {
+				last_ty = -1;
+			}
+		} else {
+			n3ds_manual_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
+		}
 		if (down & (BTN_B | BTN_START)) {
 			n3ds_manual_close();
 			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
@@ -779,9 +808,9 @@ extern "C" void n3ds_present(void)
 		/* map the view (engine coords) into wherever this frame was rendered */
 		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
 		if (swapped) {
+			/* the whole screen (5:3, like 320x192) so the stylus can reach everything */
 			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 24, 320, 216, src_x0 + view_x * kx, src_y0 + view_y * ky,
-				src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
+			blit_main(0, 24, 320, 216, src_x0, src_y0, src_x1, src_y1);
 		} else {
 			compose_begin(PGL_TARGET_TOP);
 			blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
