@@ -197,6 +197,7 @@ void _batchSubmit(void);
 typedef struct {
 	u32 ends, batches, arrayDraws, flushes, verts;
 	u64 flushWaitTicks, swapWaitTicks;
+	u32 swapTimeouts;
 } pglStatsInternal;
 extern pglStatsInternal pglStats;
 void _stateDefault();

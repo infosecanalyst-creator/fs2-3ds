@@ -260,9 +260,21 @@ static void _waitPreviousSwap(void)
 			_doPendingSwap();          /* queue idle but callback raced us */
 		else
 			svcSleepThread(100000);
+		/* watchdog: never hang on lost swap bookkeeping - force the swap after 250 ms */
+		if (svcGetSystemTick() - t0 > (u64)(SYSCLOCK_ARM11 / 4)) {
+			gxCmdQueueWait(&pglState->gxQueue, 50000000LL);
+			if (!_swapPending) _swapPending = 1;
+			_doPendingSwap();
+			_swapsDone = _swapsRequested;
+			pglStats.swapTimeouts++;
+			break;
+		}
 	}
-	while (_vblankCount == _swapVblank)
-		gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
+	{
+		u64 tv = svcGetSystemTick();
+		while (_vblankCount == _swapVblank && svcGetSystemTick() - tv < (u64)(SYSCLOCK_ARM11 / 20))
+			gspWaitForEvent(GSPGPU_EVENT_VBlank0, true);
+	}
 	pglStats.swapWaitTicks += svcGetSystemTick() - t0;
 }
 
@@ -310,6 +322,7 @@ void pglGetStats(pglFrameStats *out, int reset)
 		out->verts = pglStats.verts;
 		out->flushWaitMs = (float)((double)pglStats.flushWaitTicks / (SYSCLOCK_ARM11 / 1000.0));
 		out->swapWaitMs = (float)((double)pglStats.swapWaitTicks / (SYSCLOCK_ARM11 / 1000.0));
+		out->swapTimeouts = pglStats.swapTimeouts;
 	}
 	if (reset)
 		memset(&pglStats, 0, sizeof(pglStats));

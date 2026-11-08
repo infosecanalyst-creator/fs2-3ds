@@ -530,14 +530,14 @@ static void prof_report(int frames_in_window, u64 window_ticks, int state)
 	pglGetStats(&gs, 1);
 	float n = (float)frames_in_window;
 	float ms = ticks_ms(window_ticks);
-	n3ds_log("perf state %d: %.1f fps | ms/frame sim %.1f 3d %.1f hud %.1f panel %.1f present %.1f | gpu-wait %.1f swap-wait %.1f | per frame: %u polys -> %u draws, %u arrays, %u flushes, %u verts | linear free %d KB\n",
+	n3ds_log("perf state %d: %.1f fps | ms/frame sim %.1f 3d %.1f hud %.1f panel %.1f present %.1f | gpu-wait %.1f swap-wait %.1f | per frame: %u polys -> %u draws, %u arrays, %u flushes, %u verts | linear free %d KB | swap watchdog %u\n",
 		state, n * 1000.0f / ms,
 		ticks_ms(prof_total[N3DS_PROF_SIM]) / n, ticks_ms(prof_total[N3DS_PROF_3D]) / n,
 		ticks_ms(prof_total[N3DS_PROF_HUD]) / n, ticks_ms(prof_total[N3DS_PROF_PANEL]) / n,
 		ticks_ms(prof_total[N3DS_PROF_PRESENT]) / n,
 		gs.flushWaitMs / n, gs.swapWaitMs / n,
 		(unsigned)(gs.ends / n), (unsigned)(gs.batches / n), (unsigned)(gs.arrayDraws / n),
-		(unsigned)(gs.flushes / n), (unsigned)(gs.verts / n), (int)(linearSpaceFree() / 1024));
+		(unsigned)(gs.flushes / n), (unsigned)(gs.verts / n), (int)(linearSpaceFree() / 1024), gs.swapTimeouts);
 	memset(prof_total, 0, sizeof(prof_total));
 }
 
@@ -837,7 +837,7 @@ extern "C" void n3ds_present(void)
 			state, probe_ms[0], probe_ms[1], probe_ms[2], probe_ms[3], (int)(vramSpaceFree() / 1024));
 		memset(probe_ms, 0, sizeof(probe_ms));
 	}
-	probe_frame = ((frames % 300) == 150);
+	probe_frame = (state == GS_STATE_GAME_PLAY) && ((frames % 300) == 150);   /* flight only */
 
 	int stereo = 0;
 	u64 t_present0 = osGetTime();

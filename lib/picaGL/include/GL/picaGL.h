@@ -32,6 +32,7 @@ void pglPresentScreensEx(int stereo, int bottom);   /* bottom = 0: leave the tou
 typedef struct {
 	unsigned ends, batches, arrayDraws, flushes, verts;
 	float flushWaitMs, swapWaitMs;
+	unsigned swapTimeouts;
 } pglFrameStats;
 void pglGetStats(pglFrameStats *out, int reset);
 
