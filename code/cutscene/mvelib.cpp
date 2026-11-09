@@ -1,19 +1,4 @@
-/*
- * $Logfile: /Freespace2/src/cutscene/mvelib.cpp $
- * $Revision: 2.1.2.1 $
- * $Date: 2006-08-19 04:14:57 $
- * $Author: taylor $
- *
- * main lib for using MVEs
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2006/05/13 06:59:48  taylor
- * MVE player (audio only works with OpenAL builds!)
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "cutscene/mvelib.h"
@@ -78,11 +63,12 @@ MVEFILE *mvefile_open(char *filename)
 	char *p = strchr( lower_name, '.' );
 	if ( p ) *p = 0;
 
-	SAFE_STRCAT( lower_name, ".mve", sizeof(lower_name) );
+	strcat_s( lower_name, ".mve" );
 
 	// NOTE: CF_TYPE *must* be ANY to get movies off of the CDs
 	// assume lower case filename for *nix
-	if ( (file->stream = cfopen(lower_name, "rb", CFILE_NORMAL, CF_TYPE_ANY)) ) {
+	file->stream = cfopen(lower_name, "rb", CFILE_NORMAL, CF_TYPE_ANY);
+	if ( file->stream ) {
 		cf_opened = 1;
 	}
 

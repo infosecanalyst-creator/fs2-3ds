@@ -7,141 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/GameHelp/GameplayHelp.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-02 19:42:14 $
- * $Author: taylor $
- *
- * Module for displaying in-game help
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/02/23 04:51:56  taylor
- * some bm_unload() -> bm_release() changes to save bmpman slots
- *
- * Revision 2.5  2004/07/26 20:47:30  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:47  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:01:58  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:02  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:42  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:07  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 8     9/08/99 2:38p Jefff
- * sound pausing going to menu from game
- * 
- * 7     9/01/99 2:56p Jefff
- * a few control key description changes
- * 
- * 6     7/29/99 4:43p Jefff
- * updated for fs2 -- fixed buttons, added "press esc" text, hi-res
- * support, the works.
- * 
- * 5     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 4     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 21    6/17/98 11:01a Lawrance
- * ensure translated descriptions appear in the online help
- * 
- * 20    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 19    5/17/98 3:33p Lawrance
- * Add 'target last ship to send transmission' key to online help
- * 
- * 18    5/15/98 8:36p Lawrance
- * Add 'target ship that last sent transmission' target key
- * 
- * 17    5/09/98 4:52p Lawrance
- * Implement padlock view (up/rear/left/right)
- * 
- * 16    4/27/98 10:11a Lawrance
- * Add in disabled beep for missing buttons
- * 
- * 15    4/25/98 1:25p Lawrance
- * Change screen shot key to Print Scrn
- * 
- * 14    4/22/98 2:50p John
- * Made PrintScreen actually be Shift+PrintScreen.
- * 
- * 13    4/18/98 9:21p Lawrance
- * show correct key binding for screen shots
- * 
- * 12    4/11/98 7:59p Lawrance
- * Allow space, tab and enter to cycle through pages
- * 
- * 11    4/05/98 7:44p Lawrance
- * remove obsolete 'show goals' binding
- * 
- * 10    4/02/98 11:40a Lawrance
- * check for #ifdef DEMO instead of #ifdef DEMO_RELEASE
- * 
- * 9     4/01/98 2:22p Lawrance
- * remove hotkey references in on-line help for demo builds
- * 
- * 8     3/31/98 4:57p Lawrance
- * update text for taking a screen shot
- * 
- * 7     3/30/98 1:31p Lawrance
- * Take out debug key help
- * 
- * 6     3/25/98 5:34p Dave
- * First rev of multiplayer online key help.
- * 
- * 5     3/25/98 2:16p Dave
- * Select random default image for newly created pilots. Fixed several
- * multi-pause messaging bugs. Begin work on online help for multiplayer
- * keys.
- * 
- * 4     3/18/98 12:03p John
- * Marked all the new strings as externalized or not.
- * 
- * 3     3/16/98 5:53p Lawrance
- * Fix bug that was causing joystick only bindings to mess up
- * 
- * 2     3/09/98 9:54p Lawrance
- * integrate new art for gameplay help
- * 
- * 1     3/09/98 5:05p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #include "gamesequence/gamesequence.h"
 #include "freespace2/freespace.h"
@@ -151,7 +17,7 @@
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "sound/audiostr.h"
 
 
@@ -254,7 +120,7 @@ char *gameplay_help_control_text(int id, char *buf)
 	ci = &Control_config[id];
 
 	if ( ci->key_id >= 0 ) {
-		sprintf(buf, textify_scancode(ci->key_id));
+		strcpy(buf, textify_scancode(ci->key_id));
 		has_key=1;
 	}
 
@@ -287,45 +153,45 @@ void gameplay_help_blit_control_line(int x, int y, int id)
 	buf[0] = 0;
 
 	if ( ci->key_id >= 0 ) {
-		sprintf(buf, textify_scancode(ci->key_id));
+		strcpy_s(buf, textify_scancode(ci->key_id));
 		has_key=1;
 	}
 
 	if ( ci->joy_id >= 0 ) {
 		if ( has_key ) {
-			strcat(buf, XSTR( ", ", 129));
+			strcat_s(buf, XSTR( ", ", 129));
 		}
-		strcat(buf, Joy_button_text[ci->joy_id]);
+		strcat_s(buf, Joy_button_text[ci->joy_id]);
 		has_joy=1;
 	}
 
 	if ( !has_key && !has_joy ) {
-		strcpy(buf, XSTR( "no binding", 130));
+		strcpy_s(buf, XSTR( "no binding", 130));
 	}
 
-	gr_string(x,y,buf);
+	gr_string(x,y,buf,GR_RESIZE_MENU);
 
-//	gr_string(x+KEY_DESCRIPTION_OFFSET,y,ci->text);
-	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id));
+//	gr_string(x+KEY_DESCRIPTION_OFFSET,y,ci->text,GR_RESIZE_MENU);
+	gr_string(x+KEY_DESCRIPTION_OFFSET, y, XSTR(ci->text, CONTROL_CONFIG_XSTR + id), GR_RESIZE_MENU);
 }
 
-void gameplay_help_blit_control_line_raw(int x, int y, char *control_text, char *control_description)
+void gameplay_help_blit_control_line_raw(int x, int y, const char *control_text, const char *control_description)
 {
-	gr_string(x,y,control_text);
-	gr_string(x+KEY_DESCRIPTION_OFFSET,y,control_description);
+	gr_string(x,y,control_text,GR_RESIZE_MENU);
+	gr_string(x+KEY_DESCRIPTION_OFFSET,y,control_description,GR_RESIZE_MENU);
 }
 
 // game_play_help_set_title() will display the title for the help screen and
 // set the font for the rest of the screen
-void gameplay_help_set_title(char *title)
+void gameplay_help_set_title(const char *title)
 {
 	int sy=TITLE_Y;
 	char buf[128];
 
 	gr_set_color_fast(&Color_bright);
-	gr_printf(0x8000,sy,title);
+	gr_printf_menu(0x8000,sy,title);
 	sprintf(buf, XSTR( "Page %d of %d", 132),  Current_help_page+1, Gp_last_screen+1);
-	gr_printf(0x8000,sy+gr_get_font_height()+2,buf);
+	gr_printf_menu(0x8000,sy+gr_get_font_height()+2,buf);
 	gr_set_color_fast(&Color_normal);
 }
 
@@ -402,7 +268,7 @@ void gameplay_help_goto_next_screen()
 void gameplay_help_leave()
 {
 	// unpause all game sounds
-	beam_unpause_sounds();
+	weapon_unpause_sounds();
 	audiostream_unpause_all();
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
@@ -498,7 +364,7 @@ void gameplay_help_draw_text()
 			y_offset += separation;
 
 			gr_set_color_fast(&Color_bright);
-			gr_printf(0x8000,y_offset,XSTR( "Function Keys", 134));
+			gr_printf_menu(0x8000,y_offset,XSTR( "Function Keys", 134));
 			gr_set_color_fast(&Color_normal);
 
 			y_offset += separation;
@@ -509,18 +375,14 @@ void gameplay_help_draw_text()
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F2", 137), XSTR( "options screen (available anywhere in game)", 138));
 
-			#ifndef FS2_DEMO
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F3", 139), XSTR( "hotkey assignment", 140));
-			#endif
 
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F4", 141), XSTR( "HUD message scroll-back", 142));
 
-			#ifndef FS2_DEMO
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "F5...F12", 143), XSTR( "hotkeys", 144));
-			#endif
 
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset,y_offset, XSTR( "Shift-Esc", 145), XSTR( "quit FreeSpace 2 immediately", 146));
@@ -673,8 +535,6 @@ void gameplay_help_draw_text()
 			y_offset += separation;
 			gameplay_help_blit_control_line(x_offset, y_offset,STOP_TARGETING_SUBSYSTEM);
 
-			#ifndef FS2_DEMO
-
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR( "F5...F12", 143), XSTR( "Select target assigned to that hotkey", 150));
 
@@ -683,8 +543,6 @@ void gameplay_help_draw_text()
 
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR( "Alt-Shift-F5...F12", 153), XSTR( "Clear that hotkey", 154));
-
-			#endif
 
 			break;
 
@@ -728,10 +586,8 @@ void gameplay_help_draw_text()
 			y_offset += separation;
 			gameplay_help_blit_control_line(x_offset, y_offset,WARP_MESSAGE);
 
-			#ifndef FS2_DEMO
 			y_offset += separation;
 			gameplay_help_blit_control_line_raw(x_offset, y_offset, XSTR( "F5...F12", 143), XSTR( "send specified order to these target(s)", 156));
-			#endif
 			break;
 
 		case GP_HELP_WEAPON_KEYS:
@@ -899,7 +755,7 @@ void gameplay_help_draw_text()
 
 			// ingame messaging
 			gr_set_color_fast(&Color_bright);
-			gr_printf(0x8000,y_offset,XSTR( "Ingame messaging keys (tap for text, hold for voice)", 168));
+			gr_printf_menu(0x8000,y_offset,XSTR( "Ingame messaging keys (tap for text, hold for voice)", 168));
 			gr_set_color_fast(&Color_normal);
 			
 			y_offset += separation;
@@ -933,7 +789,7 @@ void gameplay_help_do_frame(float frametime)
 	}
 
 	// make sure game sounds are paused
-	beam_pause_sounds();
+	weapon_pause_sounds();
 	audiostream_pause_all();
 
 	k = Ui_window.process() & ~KEY_DEBUGGED;
@@ -948,7 +804,7 @@ void gameplay_help_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();

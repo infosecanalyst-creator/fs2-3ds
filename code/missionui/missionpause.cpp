@@ -7,98 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-03-26 08:23:06 $
- * $Author: taylor $
- * 
- * $Log: not supported by cvs2svn $
- * Revision 2.17  2006/03/21 14:19:18  taylor
- * add commands to view from and change target in viewer mode pause
- * also add reset ability to both view mode and hud state to return to pre-pause settings
- *
- * Revision 2.16  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.15  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.14  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.13  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.12  2005/06/19 02:38:33  taylor
- * fix possible crash from popups, especially in multi
- *
- * Revision 2.11  2005/03/25 06:57:36  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.10  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.9  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.8  2005/02/21 09:00:58  wmcoolmon
- * Multi-res support
- *
- * Revision 2.7  2004/07/26 20:47:40  Kazan
- * remove MCD complete
- *
- * Revision 2.6  2004/07/12 16:32:55  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.5  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.3  2002/10/22 17:42:09  randomtiger
- * Fixed lighting bug that caused special pause to crash on debug build.
- * Also added TAB functionality for special pause that toggles HUD. - RT
- *
- * Revision 2.2  2002/10/19 03:50:29  randomtiger
- * Added special pause mode for easier action screenshots.
- * Added new command line parameter for accessing all single missions in tech room. - RT
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 7     7/29/99 10:48p Dave
- * Multiplayer pause screen.
- * 
- * 6     6/29/99 7:39p Dave
- * Lots of small bug fixes.
- * 
- * 5     6/09/99 2:17p Dave
- * Fixed up pleasewait bitmap rendering.
- * 
- *
- * $NoKeywords: $
- */
+
 
 
 #include "missionui/missionpause.h"
@@ -113,7 +22,7 @@
 #include "object/object.h"
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"	
+#include "weapon/weapon.h"	
 #include "controlconfig/controlsconfig.h"
 #include "network/multi_pause.h"
 
@@ -195,8 +104,8 @@ void pause_init()
 
 	Assert( !(Game_mode & GM_MULTIPLAYER) );
 
-	// pause all beam weapon sounds
-	beam_pause_sounds();
+	// pause all weapon sounds
+	weapon_pause_sounds();
 
 	if (Pause_type == PAUSE_TYPE_NORMAL)	{
 		Pause_saved_screen = gr_save_screen();
@@ -205,8 +114,6 @@ void pause_init()
 	// pause all game music
 	audiostream_pause_all();
 
-	//JAS: REMOVED CALL TO SET INTERFACE PALETTE TO GET RID OF SCREEN CLEAR WHEN PAUSING
-	//common_set_interface_palette();  // set the interface palette
 	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
 
 	Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
@@ -221,7 +128,7 @@ extern int button_function(int n);
 void pause_do()
 {
 	int k;
-	char *pause_str = XSTR("Paused", 767);
+	const char *pause_str = XSTR("Paused", 767);
 	int str_w, str_h;
 	// next two are for view resetting
 	static int previous_Viewer_mode = -1;
@@ -246,13 +153,13 @@ void pause_do()
 			gr_set_bitmap(Pause_background_bitmap);
 
 			// draw the bitmap
-			gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1]);
+			gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1], GR_RESIZE_MENU);
 			
 			// draw "Paused" on it
 			gr_set_color_fast(&Color_normal);
 			gr_set_font(FONT2);
 			gr_get_string_size(&str_w, &str_h, pause_str);
-			gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str, false);
+			gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, pause_str, GR_RESIZE_MENU);
 			gr_set_font(FONT1);
 		}
 	}
@@ -337,8 +244,8 @@ void pause_close()
 
 	Assert( !(Game_mode & GM_MULTIPLAYER) );
 
-	// unpause all beam weapon sounds
-	beam_unpause_sounds();
+	// unpause all weapon sounds
+	weapon_unpause_sounds();
 
 	// deinit stuff
 	if(Pause_saved_screen != -1) {

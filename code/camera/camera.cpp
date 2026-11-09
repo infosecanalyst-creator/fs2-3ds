@@ -9,6 +9,9 @@
 #include "model/model.h" //polymodel, model_get
 #include "playerman/player.h" //player_get_padlock_orient
 #include "ship/ship.h" //compute_slew_matrix
+#include "graphics/font.h"
+#include "mod_table/mod_table.h"
+#include "globalincs/linklist.h"
 
 //*************************IMPORTANT GLOBALS*************************
 float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
@@ -17,14 +20,11 @@ warp_camera Warp_camera;
 
 //*************************OTHER STUFF*************************
 //Some global vars
-std::vector<subtitle> Subtitles;
-std::vector<camera*> Cameras;
+SCP_vector<subtitle> Subtitles;
+SCP_vector<camera*> Cameras;
 //Preset cameras
 camid Current_camera;
 camid Main_camera;
-
-//*************************INTERNAL FUNCS*************************
-//static avd_camera *cam_upgrade_to_avd(camera *cam);
 
 //*************************CLASS: camera*************************
 //This is where the camera class beings! :D
@@ -32,7 +32,6 @@ camera::camera(char *in_name, int in_signature)
 {
 	set_name(in_name);
 	sig = in_signature;
-//	flags = CAM_DEFAULT_FLAGS;
 
 	reset();
 }
@@ -48,7 +47,7 @@ camera::~camera()
 
 void camera::clear()
 {
-	strcpy(name, "");
+	strcpy_s(name, "");
 	sig = -1;
 	reset();
 }
@@ -74,31 +73,11 @@ void camera::reset()
 	pos_y.clear();
 	pos_z.clear();
 
-	/*
-	ori_p.clear();
-	ori_b.clear();
-	ori_h.clear();
-	*/
-	/*
-	ori_progress.clear();
-	ori_initial = ori_final = vmd_identity_matrix;
-	*/
 	for(int i = 0; i < 9; i++)
 	{
 		ori[i].clear();
 		ori[i].set(vmd_identity_matrix.a1d[i]);
 	}
-	/*
-	flags = CAM_DEFAULT_FLAGS;
-
-	desired_position = position = vmd_zero_vector;
-	
-	translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
-
-	vm_set_identity(&orientation);
-	vm_set_identity(&desired_orientation);
-	rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
-	*/
 }
 
 void camera::set_name(char *in_name)
@@ -132,6 +111,27 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 
 	object_host = object_h(objp);
 	object_host_submodel = n_object_host_submodel;
+	set_custom_position_function(NULL);
+	set_custom_orientation_function(NULL);
+	if(n_object_host_submodel > 0)
+	{
+		if(objp->type == OBJ_SHIP)
+		{
+			ship_subsys* ssp = GET_FIRST(&Ships[objp->instance].subsys_list);
+			while ( ssp != END_OF_LIST( &Ships[objp->instance].subsys_list ) )
+			{
+				if(ssp->system_info->subobj_num == n_object_host_submodel)
+				{
+					if(ssp->system_info->type == SUBSYSTEM_TURRET)
+					{
+						set_custom_position_function(get_turret_cam_pos);
+						set_custom_orientation_function(get_turret_cam_orient);
+					}
+				}
+				ssp = GET_NEXT( ssp );
+			}
+		}
+	}
 }
 
 void camera::set_object_target(object *objp, int n_object_target_submodel)
@@ -143,15 +143,19 @@ void camera::set_object_target(object *objp, int n_object_target_submodel)
 	object_target_submodel = n_object_target_submodel;
 }
 
-//Custom function receives the already-modified current position value.
-//It should be replaced or added to as the custom function modifier sees fit.
+/**
+ * Custom function receives the already-modified current position value.
+ * It should be replaced or added to as the custom function modifier sees fit.
+ */
 void camera::set_custom_position_function(void (*n_func_custom_position)(camera *cam, vec3d *camera_pos))
 {
 	func_custom_position = n_func_custom_position;
 }
 
-//Custom function receives the already-modified current orientation value.
-//It should be replaced or added to as the custom function modifier sees fit.
+/**
+ * Custom function receives the already-modified current orientation value.
+ * It should be replaced or added to as the custom function modifier sees fit.
+ */
 void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(camera *cam, matrix *camera_ori))
 {
 	func_custom_orientation = n_func_custom_orientation;
@@ -159,7 +163,7 @@ void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(c
 
 void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time, float in_translation_deceleration_time, float in_end_velocity)
 {
-	if(in_translation_time == 0.0f && in_translation_acceleration_time == 0.0f && in_translation_deceleration_time == 0.0f)
+	if(in_position != NULL && in_translation_time == 0.0f && in_translation_acceleration_time == 0.0f && in_translation_deceleration_time == 0.0f)
 	{
 		c_pos = *in_position;
 		pos_x.set(c_pos.xyz.x);
@@ -192,7 +196,7 @@ void camera::set_translation_velocity(vec3d *in_velocity, float in_acceleration_
 
 void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
 {
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f && in_rotation_deceleration_time == 0.0f)
+	if(in_orientation != NULL && in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f && in_rotation_deceleration_time == 0.0f)
 	{
 		c_ori = *in_orientation;
 		for(int i = 0; i < 9; i++)
@@ -211,26 +215,6 @@ void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float 
 
 	for(int i = 0; i < 9; i++)
 		ori[i].setAVD(in_orientation->a1d[i], in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time, 0.0f);
-	//WMC - This stationary check is here because it's a lot more
-	//accurate to directly save the matrix, if we've been provided one.
-	//IMPORTANT: Without this chunk, the HUD and view waves around with
-	//				the main camera.
-	/*
-	angles a;
-	vm_extract_angles_matrix(&a, in_orientation);
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f)
-	{
-		c_ori = *in_orientation;
-		ori_p.set(a.p);
-		ori_b.set(a.b);
-		ori_h.set(a.h);
-		flags |= CAM_STATIONARY_ORI;
-		return;
-	}
-
-	//Continue on
-	this->set_rotation(&a, in_rotation_time, in_rotation_acceleration_time);
-	*/
 }
 
 void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
@@ -238,33 +222,6 @@ void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_ro
 	matrix mtx = IDENTITY_MATRIX;
 	vm_rotate_matrix_by_angles(&mtx, in_angles);
 	this->set_rotation(&mtx, in_rotation_time, in_rotation_acceleration_time, in_rotation_deceleration_time);
-	/*
-	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f)
-	{
-		ori_p.set(in_angles->p);
-		ori_b.set(in_angles->b);
-		ori_h.set(in_angles->h);
-
-		c_ori = vmd_identity_matrix;
-		vm_rotate_matrix_by_angles(&c_ori, in_angles);
-
-		flags |= CAM_STATIONARY_ORI;
-		return;
-	}
-
-	flags &= ~CAM_STATIONARY_ORI;
-	if(in_angles == NULL)
-	{
-		ori_p.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		ori_b.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		ori_h.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
-		return;
-	}
-
-	ori_p.setAVD(in_angles->p, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	ori_b.setAVD(in_angles->b, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	ori_h.setAVD(in_angles->h, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
-	*/
 }
 
 void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float in_rotation_acceleration_time, float in_rotation_deceleration_time)
@@ -293,27 +250,6 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 void camera::set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time)
 {
 	Error(LOCATION, "This function is disabled until further notice.");
-	/*
-	ori_p.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->p);
-	ori_b.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->b);
-	ori_h.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->h);
-	*/
-
-	/*if(in_rotation_rate == NULL)
-	{
-		rotation_rate.p = rotation_rate.b = rotation_rate.h = 0.0f;
-
-		rotation_rate_delta_time = rotation_rate_delta_time_left = in_rotation_acceleration_time = 0.0f;
-		rotation_rate_decel_time_til = -1.0f;
-		return;
-	}
-
-	rotation_rate_delta_time = rotation_rate_delta_time_left = in_rotation_acceleration_time;
-	rotation_rate_decel_time_til = -1.0f;
-
-	rotation_rate_delta.p = in_rotation_rate->p / in_rotation_acceleration_time;
-	rotation_rate_delta.b = in_rotation_rate->b / in_rotation_acceleration_time;
-	rotation_rate_delta.h = in_rotation_rate->h / in_rotation_acceleration_time;*/
 }
 
 void camera::do_frame(float in_frametime)
@@ -357,12 +293,14 @@ float camera::get_fov()
 	return c_fov;
 }
 
+eye* get_submodel_eye(polymodel *pm, int submodel_num);
 void camera::get_info(vec3d *position, matrix *orientation)
 {
-	//WTF?
 	if(position == NULL && orientation == NULL)
 		return;
-
+	
+	eye* eyep = NULL;
+	vec3d host_normal;
 	//POSITION
 	if(!(flags & CAM_STATIONARY_POS) || object_host.IsValid())
 	{
@@ -391,7 +329,18 @@ void camera::get_info(vec3d *position, matrix *orientation)
 			}
 			else
 			{
-				model_find_world_point( &c_pos, &pt, pm->id, object_host_submodel, &objp->orient, &objp->pos );
+				eyep = get_submodel_eye(pm, object_host_submodel);
+				if(eyep)
+				{
+					vec3d c_pos_in;
+					find_submodel_instance_point_normal( &c_pos_in, &host_normal, objp, eyep->parent, &eyep->pnt, &eyep->norm);
+					vm_vec_unrotate(&c_pos, &c_pos_in, &objp->orient);
+					vm_vec_add2(&c_pos, &objp->pos);
+				}
+				else
+				{
+					model_find_world_point( &c_pos, &pt, pm->id, object_host_submodel, &objp->orient, &objp->pos );
+				}
 			}
 		}
 		else
@@ -400,7 +349,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		}
 
 		//Do custom position stuff, if needed
-		if(func_custom_position != NULL)
+		if(func_custom_position != NULL && !eyep)
 		{
 			func_custom_position(this, &c_pos);
 		}
@@ -412,6 +361,7 @@ void camera::get_info(vec3d *position, matrix *orientation)
 	//ORIENTATION
 	if(orientation != NULL)
 	{
+		bool target_set = false;
 		if(!(flags & CAM_STATIONARY_ORI) || object_target.IsValid() || object_host.IsValid())
 		{
 			if(object_target.IsValid())
@@ -441,26 +391,24 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				vec3d targetvec;
 				vm_vec_normalized_dir(&targetvec, &target_pos, &c_pos);
 				vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
+				target_set = true;
 			}
 			else if(object_host.IsValid())
 			{
-				c_ori = object_host.objp->orient;
+				if(eyep)
+				{
+					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp->orient.vec.uvec)?NULL:&object_host.objp->orient.vec.uvec, NULL);
+					target_set = true;
+				}
+				else
+				{
+					c_ori = object_host.objp->orient;
+				}
 			}
 			else
 			{
 				c_ori = vmd_identity_matrix;
 			}
-
-			//Do human interaction
-			//WMC - Nevermind for now, maybe toggleable later.
-			/*
-			if ( Viewer_obj == object_host.objp || Viewer_mode & VM_CHASE ) {
-				if ( Viewer_mode & VM_PADLOCK_ANY ) {
-					player_get_padlock_orient(&c_ori);
-				} else {
-					compute_slew_matrix(&c_ori, &Viewer_slew_angles);
-				}
-			}*/
 
 			matrix mtxA = c_ori;
 			matrix mtxB = IDENTITY_MATRIX;
@@ -471,24 +419,18 @@ void camera::get_info(vec3d *position, matrix *orientation)
 				mtxB.a1d[i] = pos;
 			}
 			vm_matrix_x_matrix(&c_ori, &mtxA, &mtxB);
-			/*
-			angles a;
-			ori_p.get(&a.p, NULL);
-			ori_b.get(&a.b, NULL);
-			ori_h.get(&a.h, NULL);
 
-			vm_rotate_matrix_by_angles(&c_ori, &a);
-			*/
-			//vm_angles_2_matrix(&c_ori, &a);
+			vm_orthogonalize_matrix(&c_ori);
 		}
 		//Do custom orientation stuff, if needed
-		if(func_custom_orientation != NULL)
+		if(func_custom_orientation != NULL && !target_set)
 		{
 			func_custom_orientation(this, &c_ori);
 		}
 		*orientation = c_ori;
 	}
 }
+
 //*************************warp_camera*************************
 warp_camera::warp_camera()
 {
@@ -501,16 +443,7 @@ warp_camera::warp_camera(object *objp)
 	vec3d object_pos = objp->pos;
 	matrix tmp;
 	ship_get_eye(&object_pos, &tmp, objp);
-	/*
-	//matrix tmp_m = vmd_identity_matrix;
-	camid cid = ship_get_eye( objp );
-	if(cid.isValid())
-	{
-		camera *cam = cid.getCamera();
-		cam->get_info(&player_pos, NULL);
-		//tmp_m = *cam->get_orientation();
-	}
-	*/
+
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.rvec, 0.0f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.uvec, 0.952f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.fvec, -1.782f );
@@ -556,7 +489,6 @@ void warp_camera::set_velocity( vec3d *in_vel, bool instantaneous )
 
 }
 
-//
 void warp_camera::do_frame(float in_frametime)
 {
 	vec3d new_vel, delta_pos;
@@ -566,8 +498,6 @@ void warp_camera::do_frame(float in_frametime)
 	apply_physics( c_damping, c_desired_vel.xyz.z, c_vel.xyz.z, in_frametime, &new_vel.xyz.z, &delta_pos.xyz.z );
 
 	c_vel = new_vel;
-
-//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.xyz.x, Camera_velocity.xyz.y, Camera_velocity.xyz.z ));
 
 	vm_vec_add2( &c_pos, &delta_pos );
 
@@ -588,9 +518,6 @@ void warp_camera::do_frame(float in_frametime)
 		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
 		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
 
-		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.xyz.x, tmp.xyz.y ));
-
-		//mprintf(( "Changing velocity!\n" ));
 		this->set_velocity( &tmp, 0 );
 	}
 
@@ -613,43 +540,56 @@ void warp_camera::get_info(vec3d *position, matrix *orientation)
 //*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
-subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width)
+subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* in_imageanim, float in_display_time, float in_fade_time, const color *in_text_color, int in_text_fontnum, bool center_x, bool center_y, int in_width, int in_height, bool in_post_shaded)
 {
+	SCP_string text_buf;
+
 	// basic init, this always has to be done
 	memset( imageanim, 0, sizeof(imageanim) );
+	memset( &text_pos, 0, 2*sizeof(int) );
+	memset( &image_pos, 0, 4*sizeof(int) );
 	image_id = -1;
 
 	if ( ((in_text != NULL) && (strlen(in_text) <= 0)) && ((in_imageanim != NULL) && (strlen(in_imageanim) <= 0)) )
 		return;
 
+	if (in_text != NULL && in_text[0] != '\0')
+	{
+		text_buf = in_text;
+		sexp_replace_variable_names_with_values(text_buf);
+		in_text = text_buf.c_str();
+	}
+
 
 	int num_text_lines = 0;
-	char *text_line_ptrs[MAX_SUBTITLE_LINES];
+	const char *text_line_ptrs[MAX_SUBTITLE_LINES];
 	int text_line_lens[MAX_SUBTITLE_LINES];
 
 	//Setup text
-	if ( (in_text != NULL) && (strlen(in_text) > 0) ) {
-		num_text_lines = split_str(in_text, in_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
-		std::string temp_str;
+	if ( (in_text != NULL) && (in_text[0] != '\0') ) {
+		int split_width = (in_width > 0) ? in_width : 200;
+
+		num_text_lines = split_str(in_text, split_width, text_line_lens, text_line_ptrs, MAX_SUBTITLE_LINES);
 		for(int i = 0; i < num_text_lines; i++)
 		{
-			temp_str.assign(text_line_ptrs[i], text_line_lens[i]);
-			text_lines.push_back(temp_str);
+			text_buf.assign(text_line_ptrs[i], text_line_lens[i]);
+			text_lines.push_back(text_buf);
 		}
 	}
 
 	//Setup text color
-	if(in_text_color)
+	if(in_text_color != NULL)
 		text_color = *in_text_color;
 	else
 		gr_init_alphacolor(&text_color, 255, 255, 255, 255);
+	text_fontnum = in_text_fontnum;
 
 	//Setup display and fade time
 	display_time = fl_abs(in_display_time);
 	fade_time = fl_abs(in_fade_time);
 
 	//Setup image
-	if ( (in_imageanim != NULL) && (strlen(in_imageanim) > 0) )
+	if ( (in_imageanim != NULL) && (in_imageanim[0] != '\0') )
 	{
 		image_id = bm_load(in_imageanim);
 
@@ -659,11 +599,20 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 	//Setup pos
 	int w=0, h=0, tw=0, th=0;
-	float deltax, deltay;
-	image_pos[0] = 0;
-	image_pos[1] = 0;
 	if(center_x || center_y)
 	{
+		// switch font because we need to measure it
+		int old_fontnum;
+		if (text_fontnum >= 0)
+		{
+			old_fontnum = gr_get_current_fontnum();
+			gr_set_font(text_fontnum);
+		}
+		else
+		{
+			old_fontnum = -1;
+		}
+
 		//Get text size
 		for(int i = 0; i < num_text_lines; i++)
 		{
@@ -675,10 +624,21 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 			th += h;
 		}
 
+		// restore old font
+		if (old_fontnum >= 0)
+		{
+			gr_set_font(old_fontnum);
+		}
+
 		//Get image size
 		if(image_id != -1)
 		{
 			bm_get_info(image_id, &w, &h);
+			if (in_width > 0)
+				w = in_width;
+			if (in_height > 0)
+				h = in_height;
+
 			tw += w;
 			if(h > th)
 				th = h;
@@ -686,47 +646,34 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 
 		//Center it?
 		if(center_x)
-			image_pos[0] = (gr_screen.max_w - tw)/2;
+			image_pos.x = (gr_screen.max_w - tw)/2;
 		if(center_y)
-			image_pos[1] = (gr_screen.max_h - th)/2;
+			image_pos.y = (gr_screen.max_h - th)/2;
 	}
+
 	if(in_x_pos < 0 && !center_x)
-		image_pos[0] += gr_screen.max_w + in_x_pos;
+		image_pos.x += gr_screen.max_w + in_x_pos;
 	else if(!center_x)
-		image_pos[0] += in_x_pos;
+		image_pos.x += in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
-		image_pos[1] += gr_screen.max_h + in_y_pos;
+		image_pos.y += gr_screen.max_h + in_y_pos;
 	else if(!center_y)
-		image_pos[1] += in_y_pos;
+		image_pos.y += in_y_pos;
+
+	image_pos.w = in_width;
+	image_pos.h = in_height;
 
 	if(image_id != -1)
-	{
-		text_pos[0] = (float) (image_pos[0] + w);	//Still set from bm_get_info call
-		if (!center_x)
-		{
-			deltax = text_pos[0] / 1024.0f;	//MikeStar;
-			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-		}
-	}
+		text_pos.x = image_pos.x + w;	//Still set from bm_get_info call
 	else
-	{
-		text_pos[0] = (float) image_pos[0];
-		if (!center_x)
-		{
-			deltax = text_pos[0] / 1024.0f;	//MikeStar;
-			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
-		}
-	}
-	text_pos[1] = (float) image_pos[1];
-	if (!center_y)
-	{
-		deltay = text_pos[1] / 768.0f;	//MikeStar;
-		text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
-	}
+		text_pos.x = image_pos.x;
+	text_pos.y = image_pos.y;
 
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
+
+	post_shaded = in_post_shaded;
 }
 
 void subtitle::do_frame(float frametime)
@@ -752,20 +699,59 @@ void subtitle::do_frame(float frametime)
 
 	gr_set_color_fast(&text_color);
 
-	int font_height = gr_get_font_height();
-	int x = fl2i(text_pos[0]);
-	int y = fl2i(text_pos[1]);
-
-	for(unsigned int i = 0; i < text_lines.size(); i++)
+	// save old font and set new font
+	int old_fontnum;
+	if (text_fontnum >= 0)
 	{
-		gr_string(x, y, (char*)text_lines[i].c_str(), false);
+		old_fontnum = gr_get_current_fontnum();
+		gr_set_font(text_fontnum);
+	}
+	else
+	{
+		old_fontnum = -1;
+	}
+
+	int font_height = gr_get_font_height();
+	int x = text_pos.x;
+	int y = text_pos.y;
+
+
+	for(SCP_vector<SCP_string>::iterator line = text_lines.begin(); line != text_lines.end(); ++line)
+	{
+		gr_string(x, y, (char*)line->c_str(), GR_RESIZE_NONE);
 		y += font_height;
 	}
 
-	if(image_id != -1)
+	// restore old font
+	if (old_fontnum >= 0)
+	{
+		gr_set_font(old_fontnum);
+	}
+
+	if(image_id >= 0)
 	{
 		gr_set_bitmap(image_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, text_color.alpha/255.0f);
-		gr_bitmap(image_pos[0], image_pos[1], false);
+
+		// scaling?
+		if (image_pos.w > 0 || image_pos.h > 0)
+		{
+			int orig_w, orig_h;
+			vec3d scale;
+
+			bm_get_info(image_id, &orig_w, &orig_h);
+			scale.xyz.x = (image_pos.w > 0) ? (image_pos.w / (float) orig_w) : 1.0f;
+			scale.xyz.y = (image_pos.h > 0) ? (image_pos.h / (float) orig_h) : 1.0f;
+			scale.xyz.z = 1.0f;
+
+			gr_push_scale_matrix(&scale);
+			gr_bitmap(fl2i(image_pos.x / scale.xyz.x), fl2i(image_pos.y / scale.xyz.y), GR_RESIZE_NONE);
+			gr_pop_scale_matrix();
+		}
+		// no scaling
+		else
+		{
+			gr_bitmap(image_pos.x, image_pos.y, GR_RESIZE_NONE);
+		}
 	}
 
 	time_displayed += frametime;
@@ -782,14 +768,13 @@ subtitle::~subtitle()
 
 void subtitle::clone(const subtitle &sub)
 {
-	uint i = 0;
 
-	for (i = 0; i < sub.text_lines.size(); i++) {
-		text_lines.push_back(sub.text_lines[i]);
-	}
+	text_lines = sub.text_lines;
+	text_fontnum = sub.text_fontnum;
 
-	text_pos[0] = sub.text_pos[0];
-	text_pos[1] = sub.text_pos[1];
+	// copy the structs
+	text_pos = sub.text_pos;
+	image_pos = sub.image_pos;
 
 	display_time = sub.display_time;
 	fade_time = sub.fade_time;
@@ -804,11 +789,10 @@ void subtitle::clone(const subtitle &sub)
 		image_id = -1;
 	}
 
-	image_pos[0] = sub.image_pos[0];
-	image_pos[1] = sub.image_pos[1];
-
 	time_displayed = sub.time_displayed;
 	time_displayed_end = sub.time_displayed_end;
+
+	post_shaded = sub.post_shaded;
 }
 
 const subtitle &subtitle::operator=(const subtitle &sub)
@@ -859,7 +843,7 @@ int camid::getSignature()
 
 bool camid::isValid()
 {
-	if(idx < 0 || idx >= Cameras.size())
+	if(idx >= Cameras.size())
 		return false;
 
 	if(Cameras[idx] == NULL)
@@ -882,14 +866,6 @@ void cam_close()
 {
 	//Set Current_camera to nothing
 	Current_camera = camid();
-	for(unsigned int i = 0; i < Cameras.size(); i++)
-	{
-		if(Cameras[i] != NULL)
-		{
-			delete Cameras[i];
-			Cameras[i] = NULL;
-		}
-	}
 	Cameras.clear();
 }
 
@@ -922,29 +898,9 @@ camid cam_create(char *n_name, vec3d *n_pos, matrix *n_ori, object *n_object, in
 		strncpy(buf, n_name, NAME_LENGTH-1);
 
 	//Find a free slot
-	for(uint i = 0; i < Cameras.size(); i++)
-	{
-		if(Cameras[i] == NULL)
-		{
-			cam = new camera(buf, sig);
-			cid = camid(i, sig);
-			Cameras[i] = cam;
-			break;
-		}
-		else if(Cameras[i]->is_empty())
-		{
-			delete Cameras[i];
-			cam = new camera(buf, sig);
-			cid = camid(i, sig);
-			Cameras[i] = cam;
-		}
-	}
-	if(cam == NULL)
-	{
-		cam = new camera(buf, sig);
-		cid = camid(Cameras.size(), sig);
-		Cameras.push_back(cam);
-	}
+	cam = new camera(buf, sig);
+	cid = camid(Cameras.size(), sig);
+	Cameras.push_back(cam);
 
 	//Set attributes
 	if(n_pos != NULL)
@@ -967,7 +923,7 @@ void cam_delete(camid cid)
 
 void cam_do_frame(float frametime)
 {
-	unsigned int i,size=Cameras.size();
+	size_t i,size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
 		if(Cameras[i] != NULL)
@@ -977,7 +933,7 @@ void cam_do_frame(float frametime)
 
 camid cam_get_camera(uint idx)
 {
-	if(idx < 0 || idx >= Cameras.size())
+	if(idx >= Cameras.size())
 		return camid();
 
 	return camid(idx, Cameras[idx]->get_signature());
@@ -993,10 +949,12 @@ uint cam_get_num()
 	return Cameras.size();
 }
 
-//Looks up camera by name, returns -1 on failure
+/**
+ * Looks up camera by name, returns -1 on failure
+ */
 camid cam_lookup(char *name)
 {
-	unsigned int i,size=Cameras.size();
+	size_t i, size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
 		if(Cameras[i] != NULL && !stricmp(Cameras[i]->get_name(), name))
@@ -1019,12 +977,15 @@ bool cam_set_camera(camid cid)
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = cid;
 
-	if(!Camera_hud_draw_saved)
+	if (!Cutscene_camera_displays_hud) 
 	{
-		Camera_hud_draw_value = hud_get_draw();
-		Camera_hud_draw_saved = true;
+		if(!Camera_hud_draw_saved)
+		{
+			Camera_hud_draw_value = hud_get_draw();
+			Camera_hud_draw_saved = true;
+		}
+		hud_set_draw(0);
 	}
-	hud_set_draw(0);
 	return true;
 }
 
@@ -1032,37 +993,11 @@ void cam_reset_camera()
 {
 	Viewer_mode &= ~VM_FREECAMERA;
 
-	hud_set_draw(Camera_hud_draw_value);
-	Camera_hud_draw_saved = false;
-}
-
-//Functions must delete the original camera after calling this function.
-//Note that due to the esoteric nature of this function, it should not
-//be used outside camera.cpp
-/*
-static avd_camera *cam_upgrade_to_avd(camera *cam)
-{
-	for(uint i = 0; i < Cameras.size(); i++)
+	if (!Cutscene_camera_displays_hud) 
 	{
-		if(Cameras[i] == cam)
-			break;
+		hud_set_draw(Camera_hud_draw_value);
+		Camera_hud_draw_saved = false;
 	}
-
-	if(i == Cameras.size())
-		return NULL;
-
-	avd_camera *avdcam = new avd_camera(cam);
-
-	//Make the switch
-	Cameras[i] = avdcam;
-
-	return avdcam;
-}
-*/
-
-void subtitles_init()
-{
-	//Do nothing!!
 }
 
 void subtitles_close()
@@ -1072,9 +1007,75 @@ void subtitles_close()
 
 void subtitles_do_frame(float frametime)
 {
-	unsigned int i,size=Subtitles.size();
-	for(i = 0; i < size; i++)
+	SCP_vector<subtitle>::iterator sub;
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
 	{
-		Subtitles[i].do_frame(frametime);
+		if ( !sub->is_post_shaded( ) )
+			sub->do_frame(frametime);
 	}
+}
+
+void subtitles_do_frame_post_shaded(float frametime)
+{
+	SCP_vector<subtitle>::iterator sub;
+	for(sub = Subtitles.begin(); sub != Subtitles.end(); ++sub)
+	{
+		if ( sub->is_post_shaded( ) )
+			sub->do_frame(frametime);
+	}
+}
+
+vec3d normal_cache;
+
+void get_turret_cam_pos(camera *cam, vec3d *pos)
+{
+	object_h obj(cam->get_object_host());
+	if(!obj.IsValid())
+		return;
+	ship* shipp = &Ships[cam->get_object_host()->instance];
+	ship_subsys* ssp = GET_FIRST(&shipp->subsys_list);
+	while ( ssp != END_OF_LIST( &shipp->subsys_list ) )
+	{
+		if(ssp->system_info->subobj_num == cam->get_object_host_submodel())
+		{
+			ship_get_global_turret_gun_info(cam->get_object_host(), ssp, pos, &normal_cache, 1, NULL);
+			vec3d offset = vmd_zero_vector;
+			offset.xyz.x = 0.0001f;
+			vm_vec_add2(pos, &offset); // prevent beam turrets from crashing with a nullvec
+			break;
+		}
+		ssp = GET_NEXT( ssp );
+	}
+}
+
+void get_turret_cam_orient(camera *cam, matrix *ori)
+{
+	object_h obj(cam->get_object_host());
+	if(!obj.IsValid())
+		return;
+	vm_vector_2_matrix(ori, &normal_cache, vm_vec_same(&normal_cache, &cam->get_object_host()->orient.vec.uvec)?NULL:&cam->get_object_host()->orient.vec.uvec, NULL);
+}
+
+eye* get_submodel_eye(polymodel *pm, int submodel_num)
+{
+	if(pm->n_view_positions > 0)
+	{
+		for(int i = 0; i < pm->n_view_positions; ++i)
+		{
+			if(pm->view_positions[i].parent == submodel_num)
+			{
+				return &pm->view_positions[i];
+			}
+			int sm = pm->submodel[submodel_num].first_child;
+			while(sm > 0) //look for eyepoints attached to children, important for turret arms
+			{
+				if(pm->view_positions[i].parent == sm)
+				{
+					return &pm->view_positions[i];
+				}
+				sm = pm->submodel[sm].next_sibling;
+			}
+		}
+	}
+	return NULL;
 }

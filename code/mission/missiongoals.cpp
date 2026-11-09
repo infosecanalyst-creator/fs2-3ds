@@ -7,409 +7,13 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.18.2.1 $
- * $Date: 2006-09-08 06:14:43 $
- * $Author: taylor $
- *
- * Module for working with Mission goals
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.18  2005/10/10 17:21:05  taylor
- * remove NO_NETWORK
- *
- * Revision 2.17  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.16  2005/07/18 03:45:07  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.15  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.14  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.13  2005/05/12 17:49:13  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.12  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.11  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.10  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.9  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.8  2004/03/28 17:49:55  taylor
- * runtime language selection, mantis:0000133
- *
- * Revision 2.7  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.6  2004/02/14 00:18:34  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.5  2003/10/08 06:32:06  argv
- * Negative repeat count means repeat indefinitely. A trivial change, it should not break anything.
- *
- * Revision 2.4  2003/09/13 06:02:06  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.4  2002/05/13 21:43:38  mharris
- * A little more network and sound cleanup
- *
- * Revision 1.3  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.2  2002/05/07 03:00:17  mharris
- * make Goal_text static
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 15    10/27/99 5:22p Jefff
- * Some coord changes for german ver
- * 
- * 14    9/06/99 9:46p Jefff
- * skip mission support
- * 
- * 13    8/28/99 4:54p Dave
- * Fixed directives display for multiplayer clients for wings with
- * multiple waves. Fixed hud threat indicator rendering color.
- * 
- * 12    8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 11    8/03/99 6:21p Jefff
- * fixed stupid bug with objectives screen key
- * 
- * 10    7/29/99 2:58p Jefff
- * Ingame objective screen icon key now uses normal objective icons and
- * text is drawn in code.
- * 
- * 9     7/24/99 4:19p Dave
- * Fixed dumb code with briefing bitmaps. Made d3d zbuffer work much
- * better. Made model code use zbuffer more intelligently.
- * 
- * 8     7/10/99 1:44p Andsager
- * Modified directives listing so that current and recently
- * satisfied/failed directives stay on screen.
- * 
- * 7     2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 6     2/02/99 4:35p Neilk
- * fixed coordinate problem where primary goals was on top of interface in
- * mission briefing
- * 
- * 5     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 4     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 127   9/15/98 11:44a Dave
- * Renamed builtin ships and wepaons appropriately in FRED. Put in scoring
- * scale factors. Fixed standalone filtering of MD missions to non-MD
- * hosts.
- * 
- * 126   6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 125   5/21/98 2:47a Lawrance
- * Fix some problems with event music
- * 
- * 124   4/15/98 9:05a Allender
- * fix skpping of training mission with branchs
- * 
- * 123   4/08/98 10:34p Allender
- * make threat indicators work in multiplayer.  Fix socket problem (once
- * and for all???)
- * 
- * 122   4/03/98 2:47p Allender
- * made directives act different when multiple waves of a wing take a long
- * time to reappear
- * 
- * 121   4/01/98 9:21p John
- * Made NDEBUG, optimized build with no warnings or errors.
- * 
- * 120   3/31/98 5:18p John
- * Removed demo/save/restore.  Made NDEBUG defined compile.  Removed a
- * bunch of debug stuff out of player file.  Made model code be able to
- * unload models and malloc out only however many models are needed.
- *  
- * 
- * 119   3/31/98 4:42p Allender
- * mission objective support for team v. team mode.  Chatbox changes to
- * make input box be correct length when typing
- * 
- * 118   3/23/98 1:39p Hoffoss
- * Fixed bug where long objects weren't being split at the right point.
- * 
- * 117   3/17/98 12:40a Lawrance
- * Add missing struct members to state
- * 
- * 116   3/09/98 4:24p Lawrance
- * Don't play directive sound effect if gauge is disabled
- * 
- * 115   3/04/98 5:51p Hoffoss
- * Fixed warning
- * 
- * 114   3/02/98 9:30p Allender
- * make sexpression evaluation for arrivals/departures and goals happen
- * every frame
- * 
- * 113   3/02/98 10:08a Hoffoss
- * Fixed bugs in saving/restoring state.
- * 
- * 112   2/27/98 4:37p Hoffoss
- * Combined Objectives screen into Mission Log screen.
- * 
- * 111   2/26/98 10:07p Hoffoss
- * Rewrote state saving and restoring to fix bugs and simplify the code.
- * 
- * 110   2/23/98 3:06p Hoffoss
- * Made objectives with only one target not show the [1] thing after it.
- * 
- * 109   2/22/98 4:30p John
- * More string externalization classification
- * 
- * 108   2/22/98 12:19p John
- * Externalized some strings
- * 
- * 107   2/20/98 8:33p Lawrance
- * Added mission_goals_incomplete()
- * 
- * 106   2/06/98 12:12a Lawrance
- * Play sound effect when continue is pressed.
- * 
- * 105   2/05/98 10:14p Lawrance
- * Implement Save and Quit
- * 
- * 104   2/04/98 4:32p Allender
- * support for multiple briefings and debriefings.  Changes to mission
- * type (now a bitfield).  Bitfield defs for multiplayer modes
- * 
- * 103   1/30/98 4:24p Hoffoss
- * Added a 3 second delay for directives before they get displayed.
- * 
- * 102   1/29/98 10:26a Hoffoss
- * Made changes so arrow buttons repeat scrolling when held down.
- * 
- * 101   1/28/98 6:19p Dave
- * Reduced standalone memory usage ~8 megs. Put in support for handling
- * multiplayer submenu handling for endgame, etc.
- * 
- * 100   1/27/98 11:00a Lawrance
- * Fix bug with showing number of resolved goals in the objective status
- * popup.
- * 
- * 99    1/27/98 10:56a Allender
- * slight changes to scoring stuff.  Added work for Baranec :-)
- * 
- * 98    1/26/98 10:02p Allender
- * some scoring stuff
- * 
- * 97    1/20/98 2:26p Hoffoss
- * Removed references to timestamp_ticker, used timestamp() instead.
- * 
- * 96    1/19/98 9:37p Allender
- * Great Compiler Warning Purge of Jan, 1998.  Used pragma's in a couple
- * of places since I was unsure of what to do with code.
- * 
- * 95    1/15/98 5:23p Lawrance
- * Add HUD gauge to indicate completed objectives.
- * 
- * 94    1/15/98 1:29p Hoffoss
- * Made chained events only check next event if that event is also
- * chained.
- * 
- * 93    1/13/98 5:37p Dave
- * Reworked a lot of standalone interface code. Put in single and
- * multiplayer popups for death sequence. Solidified multiplayer kick
- * code.
- * 
- * 92    1/12/98 5:17p Allender
- * fixed primary fired problem and ship warp out problem.  Made new
- * mission goal info packet to deal with goals more accurately. 
- * 
- * 91    1/11/98 10:02p Allender
- * removed <winsock.h> from headers which included it.  Made psnet_socket
- * type which is defined just as SOCKET type is.
- * 
- * 90    1/10/98 1:14p John
- * Added explanation to debug console commands
- * 
- * 89    1/08/98 10:26a Lawrance
- * Delay directive success sound effect about 1/2 second.
- * 
- * 88    1/07/98 6:46p Lawrance
- * If a goal is invalid, ignore it when evaluating mission success.
- * 
- * 87    1/07/98 11:09a Lawrance
- * Add sound hook for when directive gets completed.
- * 
- * 86    1/02/98 3:07p Hoffoss
- * Changed sexp evaluation to every half second.
- * 
- * 85    12/27/97 8:08p Lawrance
- * get savegames working again
- * 
- * 84    12/26/97 10:02p Lawrance
- * Add event music for when goals fail.
- * 
- * 83    12/22/97 6:07p Hoffoss
- * Made directives flash when completed, fixed but with is-destroyed
- * operator.
- * 
- * 82    12/21/97 4:33p John
- * Made debug console functions a class that registers itself
- * automatically, so you don't need to add the function to
- * debugfunctions.cpp.  
- * 
- * 81    12/19/97 12:43p Hoffoss
- * Changed code to allow counts in directives.
- * 
- * 80    12/15/97 5:26p Allender
- * temporary code to display for 5 second completion status of objectives
- * 
- * 79    12/03/97 4:16p Hoffoss
- * Changed sound stuff used in interface screens for interface purposes.
- * 
- * 78    12/03/97 11:35a Hoffoss
- * Made changes to HUD messages send throughout the game.
- * 
- * 77    12/02/97 10:47a Hoffoss
- * Changed mention of goals to objectives.
- * 
- * 76    12/01/97 12:26a Lawrance
- * Add flag  MGF_NO_MUSIC to mission_goal struct, to avoid playing music
- * for certain goals
- * 
- * 75    11/21/97 2:16p Allender
- * debug keys to mark all goals (p/s/b) as satisfied
- * 
- * 74    11/17/97 11:45a Johnson
- * when marking goals false, add log entry.  Be sure that "delay" function
- * check for equal to delay as well
- * 
- * 73    11/13/97 10:16p Hoffoss
- * Added icons to mission log scrollback.
- * 
- * 72    11/13/97 4:05p Hoffoss
- * Added hiding code for mission log entries.
- * 
- * 71    11/05/97 7:11p Hoffoss
- * Made changed to the hud message system.  Hud messages can now have
- * sources so they can be color coded.
- * 
- * 70    11/02/97 10:09p Lawrance
- * add missing fields from mission_event to save/restore
- * 
- * 69    10/31/97 4:28p Allender
- * fail all incomplete mission goals when mission is over
- * 
- * 68    10/29/97 11:06a Jasen
- * eval goals/events every 1.75 seconds instead of every 2.5 seconds for
- * slightly more accurate timing of events
- * 
- * 67    10/28/97 10:05a Allender
- * added function to mark all goals as failed
- * 
- * 66    10/28/97 9:33a Lawrance
- * change 'Alt-Q' in HUD message to use text for bound key
- * 
- * 65    10/27/97 5:03p Hoffoss
- * Fixed comment.
- * 
- * 64    10/23/97 2:16p Johnson
- * make pointers point to NULl after freeing to prevent problems when
- * tried to free multiple times
- * 
- * 63    10/16/97 2:35p Hoffoss
- * Enhanced the mission goals screen a little.
- * 
- * 62    10/16/97 1:28p Hoffoss
- * New mission goals screen implemented.
- * 
- * 61    10/10/97 6:15p Hoffoss
- * Implemented a training objective list display.
- * 
- * 60    10/09/97 4:44p Hoffoss
- * Dimmed training window glass and made it less transparent, added flags
- * to events, set he stage for detecting current events.
- * 
- * 59    10/06/97 4:11p Lawrance
- * add missing field from mission_events to save/restore
- * 
- * 58    10/03/97 4:14p Hoffoss
- * Augmented event debug view code.
- * 
- * 57    9/30/97 10:01a Hoffoss
- * Added event chaining support to Fred and FreeSpace.
- * 
- * 56    9/29/97 1:58p Hoffoss
- * Need to check in changes so I can get merged code to continue working
- * on event chaining code.
- *
-*/
+
 
 
 #include "mission/missiongoals.h"
 #include "mission/missionlog.h"
 #include "missionui/missionscreencommon.h"
+#include "debugconsole/console.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hud.h"
@@ -428,6 +32,8 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multi_team.h"
+#include "network/multi_sexp.h"
+#include "mod_table/mod_table.h"
 
 
 
@@ -556,16 +162,18 @@ struct goal_buttons {
 struct goal_text {
 	int m_num_lines;
 	int m_line_sizes[MAX_GOAL_LINES];
-	char *m_lines[MAX_GOAL_LINES];
+	const char *m_lines[MAX_GOAL_LINES];
 
 	void init();
-	int add(char *text = NULL);
+	int add(const char *text = NULL);
 	void display(int n, int y);
 };
 
 int Num_mission_events;
 int Num_goals = 0;								// number of goals for this mission
-int Event_index;  // used by sexp code to tell what event it came from
+int Event_index = -1;  // used by sexp code to tell what event it came from
+bool Log_event = false;
+bool Snapshot_all_events = false;
 int Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
@@ -578,7 +186,7 @@ static goal_text Goal_text;
 static int Mission_directive_sound_timestamp;	// timestamp to control when directive succcess sound gets played
 static int Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
 
-char *Goal_type_text(int n)
+const char *Goal_type_text(int n)
 {
 	switch (n) {
 		case 0:	
@@ -678,7 +286,7 @@ void goal_list::icons_display(int yoff)
 
 			if ((y >= Goal_screen_text_y - ys / 2) && (y + ys <= Goal_screen_text_y + Goal_screen_text_h + ys / 2)) {
 				gr_set_bitmap(bmp);
-				gr_bitmap(Goal_screen_icon_x, y);
+				gr_bitmap(Goal_screen_icon_x, y, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -697,7 +305,7 @@ void goal_text::init()
 // Adds lines of goal text.  If passed NULL (or nothing passed) a blank line is added.  If
 // the text is too long, it is automatically split into more than one line.
 // Returns the number of lines added.
-int goal_text::add(char *text)
+int goal_text::add(const char *text)
 {
 	int max, count;
 
@@ -740,8 +348,8 @@ void goal_text::display(int n, int y)
 		y1 = y + h / 2 - 1;
 
 		// custom_size me
-		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1);
-		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1);
+		gr_line(Goal_screen_icon_x, y1, Goal_screen_text_x - 2, y1, GR_RESIZE_MENU);
+		gr_line(Goal_screen_text_x + w + 1, y1, Goal_screen_icon_x + Goal_screen_text_w, y1, GR_RESIZE_MENU);
 
 	} else {
 		gr_set_color_fast(&Color_text_normal);
@@ -749,7 +357,7 @@ void goal_text::display(int n, int y)
 		buf[m_line_sizes[n]] = 0;
 	}
 
-	gr_printf(Goal_screen_text_x, y, buf);
+	gr_printf_menu(Goal_screen_text_x, y, buf);
 }
 
 // mission_init_goals: initializes info for goals.  Called as part of mission initialization.
@@ -772,6 +380,7 @@ void mission_init_goals()
 		Mission_events[i].satisfied_time = 0;
 		Mission_events[i].born_on_date = 0;
 		Mission_events[i].team = -1;
+		Mission_events[i].mission_log_flags = 0;
 	}
 
 	Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP);
@@ -890,9 +499,6 @@ void mission_show_goals_init()
 	Goal_incomplete_bitmap = bm_load("ObjIncomp");
 	Goal_failed_bitmap = bm_load("ObjFail");
 
-
-	// if (Goal_incomplete_bitmap < 0) Int3();
-
 	if (Goals_screen_bg_bitmap < 0) {
 		Warning(LOCATION, "Could not load the background bitmap: ObjectivesBG.pcx");
 	}
@@ -952,7 +558,7 @@ void mission_show_goals_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Goals_screen_bg_bitmap);
 	if (Goals_screen_bg_bitmap >= 0) {
 		gr_set_bitmap(Goals_screen_bg_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 	Goals_screen_ui_window.draw();
 
@@ -1052,8 +658,6 @@ int ML_objectives_init(int x, int y, int w, int h)
 	Goal_incomplete_bitmap = bm_load("ObjIncomp");
 	Goal_failed_bitmap = bm_load("ObjFail");
 
-	// if (Goal_incomplete_bitmap < 0) Int3();
-
 	return Goal_text.m_num_lines;
 }
 
@@ -1096,26 +700,26 @@ void ML_render_objectives_key()
 	// display icon key at the bottom
 	if (Lcl_gr) {
 		gr_set_bitmap(Goal_complete_bitmap);
-		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][0][0], Objective_key_icon_coords_gr[gr_screen.res][0][1]);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][0][0], Objective_key_icon_coords_gr[gr_screen.res][0][1], GR_RESIZE_MENU);
 		gr_set_bitmap(Goal_incomplete_bitmap);
-		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][1][0], Objective_key_icon_coords_gr[gr_screen.res][1][1]);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][1][0], Objective_key_icon_coords_gr[gr_screen.res][1][1], GR_RESIZE_MENU);
 		gr_set_bitmap(Goal_failed_bitmap);
-		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][2][0], Objective_key_icon_coords_gr[gr_screen.res][2][1]);
+		gr_bitmap(Objective_key_icon_coords_gr[gr_screen.res][2][0], Objective_key_icon_coords_gr[gr_screen.res][2][1], GR_RESIZE_MENU);
 
-		gr_string(Objective_key_text_coords_gr[gr_screen.res][0][0], Objective_key_text_coords_gr[gr_screen.res][0][1] , XSTR("Complete",	1437));
-		gr_string(Objective_key_text_coords_gr[gr_screen.res][1][0], Objective_key_text_coords_gr[gr_screen.res][1][1] , XSTR("Incomplete", 1438));
-		gr_string(Objective_key_text_coords_gr[gr_screen.res][2][0], Objective_key_text_coords_gr[gr_screen.res][2][1] , XSTR("Failed",		1439));
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][0][0], Objective_key_text_coords_gr[gr_screen.res][0][1] , XSTR("Complete",	1437), GR_RESIZE_MENU);
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][1][0], Objective_key_text_coords_gr[gr_screen.res][1][1] , XSTR("Incomplete", 1438), GR_RESIZE_MENU);
+		gr_string(Objective_key_text_coords_gr[gr_screen.res][2][0], Objective_key_text_coords_gr[gr_screen.res][2][1] , XSTR("Failed",		1439), GR_RESIZE_MENU);
 	} else {
 		gr_set_bitmap(Goal_complete_bitmap);
-		gr_bitmap(Objective_key_icon_coords[gr_screen.res][0][0], Objective_key_icon_coords[gr_screen.res][0][1]);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][0][0], Objective_key_icon_coords[gr_screen.res][0][1], GR_RESIZE_MENU);
 		gr_set_bitmap(Goal_incomplete_bitmap);
-		gr_bitmap(Objective_key_icon_coords[gr_screen.res][1][0], Objective_key_icon_coords[gr_screen.res][1][1]);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][1][0], Objective_key_icon_coords[gr_screen.res][1][1], GR_RESIZE_MENU);
 		gr_set_bitmap(Goal_failed_bitmap);
-		gr_bitmap(Objective_key_icon_coords[gr_screen.res][2][0], Objective_key_icon_coords[gr_screen.res][2][1]);
+		gr_bitmap(Objective_key_icon_coords[gr_screen.res][2][0], Objective_key_icon_coords[gr_screen.res][2][1], GR_RESIZE_MENU);
 
-		gr_string(Objective_key_text_coords[gr_screen.res][0][0], Objective_key_text_coords[gr_screen.res][0][1] , XSTR("Complete",	1437));
-		gr_string(Objective_key_text_coords[gr_screen.res][1][0], Objective_key_text_coords[gr_screen.res][1][1] , XSTR("Incomplete", 1438));
-		gr_string(Objective_key_text_coords[gr_screen.res][2][0], Objective_key_text_coords[gr_screen.res][2][1] , XSTR("Failed",		1439));
+		gr_string(Objective_key_text_coords[gr_screen.res][0][0], Objective_key_text_coords[gr_screen.res][0][1] , XSTR("Complete",	1437), GR_RESIZE_MENU);
+		gr_string(Objective_key_text_coords[gr_screen.res][1][0], Objective_key_text_coords[gr_screen.res][1][1] , XSTR("Incomplete", 1438), GR_RESIZE_MENU);
+		gr_string(Objective_key_text_coords[gr_screen.res][2][0], Objective_key_text_coords[gr_screen.res][2][1] , XSTR("Failed",		1439), GR_RESIZE_MENU);
 	}
 }
 
@@ -1152,9 +756,9 @@ void multi_player_maybe_add_score (int score, int team)
 	}
 }
 
-// temporary hook for temporarily displaying objective completion/failure
-// extern void message_training_add_simple( char *text );
-
+/**
+ * Hook for temporarily displaying objective completion/failure
+ */
 void mission_goal_status_change( int goal_num, int new_status)
 {
 	int type;
@@ -1176,10 +780,9 @@ void mission_goal_status_change( int goal_num, int new_status)
 			// only do HUD and music is goals are my teams goals.
 			if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team)) ) {
 				hud_add_objective_messsage(type, new_status);
-				if ( !Mission_goals[goal_num].flags & MGF_NO_MUSIC ) {	// maybe play event music
+				if ( !( Mission_goals[goal_num].flags & MGF_NO_MUSIC ) ) {	// maybe play event music
 					event_music_primary_goal_failed();
 				}
-				//HUD_sourced_printf(HUD_SOURCE_FAILED, "%s goal failed at time %6.1f!", Goal_type_text(type), f2fl(Missiontime) );
 			}
 		}
 		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name, NULL, goal_num );
@@ -1284,6 +887,8 @@ void mission_process_event( int event )
 	int store_count = Mission_events[event].count;
 
 	int result, sindex;
+	bool bump_timestamp = false; 
+	Log_event = false;
 
 	Directive_count = 0;
 	Event_index = event;
@@ -1292,19 +897,37 @@ void mission_process_event( int event )
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
-		if (event > 0){
-			if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
-				sindex = -1;  // bypass evaluation
+		// What everyone expected the chaining behavior to be, as specified in Karajorma's original fix to Mantis #82
+		if (Alternate_chaining_behavior) {
+			if (event > 0){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + i2f(Mission_events[event].chain_delay) > Missiontime)){
+					sindex = -1;  // bypass evaluation
+				}
 			}
 		}
+		// Volition's original chaining behavior as used in retail and demonstrated in e.g. btm-01.fsm (or btm-01.fs2 in the Port)
+		else {
+			if (event > 0){
+				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + i2f(Mission_events[event].chain_delay) > Missiontime)){
+					sindex = -1;  // bypass evaluation
+				}
+			}
 
-		if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
-			sindex = -1;  // bypass evaluation
+			if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
+				sindex = -1;  // bypass evaluation
+			}
 		}
 	}
 
 	if (sindex >= 0) {
 		Sexp_useful_number = 1;
+		if (Snapshot_all_events || Mission_events[event].mission_log_flags != 0) {
+			Log_event = true;
+			
+			Current_event_log_buffer = &Mission_events[event].event_log_buffer;
+			Current_event_log_variable_buffer = &Mission_events[event].event_log_variable_buffer;
+			Current_event_log_argument_buffer = &Mission_events[event].event_log_argument_buffer;
+		}
 		result = eval_sexp(sindex);
 
 		// if the directive count is a special value, deal with that first.  Mark the event as a special
@@ -1326,9 +949,15 @@ void mission_process_event( int event )
 		if (Sexp_useful_number){
 			Mission_events[event].flags |= MEF_CURRENT;
 		}
+
+		if ((Mission_events[event].mission_log_flags != 0) || Snapshot_all_events){
+			maybe_write_to_event_log(result);
+		}
 	}
 
-	Event_index = 0;
+	Log_event = false;
+
+	Event_index = -1;
 	Mission_events[event].result = result;
 
 	// if the sexpression is known false, then no need to evaluate anymore
@@ -1345,6 +974,17 @@ void mission_process_event( int event )
 		Mission_events[event].satisfied_time = Missiontime;
 		if ( Mission_events[event].objective_text ) {
 			Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+		}
+	}
+
+	// decrement the trigger count.  When at 0, set the repeat count to 0 so we don't eval this function anymore
+	if (result && (Mission_events[event].trigger_count > 0) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) ) {
+		Mission_events[event].trigger_count--;
+		if (Mission_events[event].trigger_count == 0) {
+			 Mission_events[event].repeat_count = 0; 
+		}
+		else {
+			bump_timestamp = true;
 		}
 	}
 
@@ -1365,11 +1005,12 @@ void mission_process_event( int event )
 				// deal with the player's score
 				Player->stats.m_score += (int)(Mission_events[event].score * scoring_get_scale_factor());			
 			}
-		} else {
-			// set the timestamp to time out 'interval' seconds in the future.  We must also reset the
-			// value at the sexpresion node to unknown so that it will get reevaled
+		}
+		// Set the timestamp for the next check on this event unless we only have a trigger count and no repeat count and 
+		// this event didn't trigger this frame. 
+		else if (bump_timestamp || (!( Mission_events[event].repeat_count == -1 && Mission_events[event].trigger_count > 0 ))) {
+			// set the timestamp to time out 'interval' seconds in the future.  
 			Mission_events[event].timestamp = timestamp( Mission_events[event].interval * 1000 );
-//			Sexp_nodes[Mission_events[event].formula].value = SEXP_UNKNOWN;
 		}
 	}
 
@@ -1391,7 +1032,7 @@ void mission_maybe_play_directive_success_sound()
 
 void mission_eval_goals()
 {
-	int i, result, goal_changed = 0;
+	int i, result;
 
 	// before checking whether or not we should evaluate goals, we should run through the events and
 	// process any whose timestamp is valid and has expired.  This would catch repeating events only
@@ -1420,18 +1061,12 @@ void mission_eval_goals()
 		if (Mission_goals[i].satisfied == GOAL_INCOMPLETE) {
 			result = eval_sexp(Mission_goals[i].formula);
 			if ( Sexp_nodes[Mission_goals[i].formula].value == SEXP_KNOWN_FALSE ) {
-				goal_changed = 1;
 				mission_goal_status_change( i, GOAL_FAILED );
 
 			} else if (result) {
-				goal_changed = 1;
 				mission_goal_status_change(i, GOAL_COMPLETE );
 			} // end if result
-			
-			// tell the player how to end the mission
-			//if ( goal_changed && mission_evaluate_primary_goals() != PRIMARY_GOALS_INCOMPLETE ) {
-			//	HUD_sourced_printf(HUD_SOURCE_IMPORTANT, "Press %s to end mission and return to base", textify_scancode(Control_config[END_MISSION].key_id) );
-			//}
+
 		}	// end if goals[i].satsified != GOAL_COMPLETE
 	} // end for
 
@@ -1445,6 +1080,11 @@ void mission_eval_goals()
 				mission_process_event( i );
 			}
 		}
+	}
+
+	// send and remaining sexp data to the clients
+	if (MULTIPLAYER_MASTER) {
+		multi_sexp_flush_packet();
 	}
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
@@ -1461,6 +1101,8 @@ void mission_eval_goals()
 	if (Game_mode & GM_STANDALONE_SERVER){
 		std_multi_update_goals();
 	}
+	
+	Snapshot_all_events = false;
 }
 
 //	evaluate_primary_goals() will determine if the primary goals for a mission are complete
@@ -1623,77 +1265,101 @@ void mission_goal_mark_events_complete()
 }
 
 // some debug console functions to help list and change the status of mission goals
-DCF(show_mission_goals,"List and change the status of mission goals")
+DCF(show_mission_goals,"Lists the status of mission goals")
 {
 	int i, type;
 
-	if (Dc_command)
-		Dc_status = 1;
-
-	if (Dc_help) {
+	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: show_mission_goals\n\nList all mission goals and their current status.\n");
-		Dc_status = 0;
+		return;
 	}
 
-	if (Dc_status) {
-		for (i=0; i<Num_goals; i++) {
-			type = Mission_goals[i].type & GOAL_TYPE_MASK;
-			dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name, Goal_type_text(type));
-			if ( Mission_goals[i].satisfied == GOAL_COMPLETE )
-				dc_printf("satisfied.\n");
-			else if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE )
-				dc_printf("not satisfied\n");
-			else if ( Mission_goals[i].satisfied == GOAL_FAILED )
-				dc_printf("failed\n");
-			else
-				dc_printf("\t[unknown goal status].\n");
-		}
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		// Don't do anything, but advance the parser past the flag
 	}
+
+	for (i=0; i<Num_goals; i++) {
+		type = Mission_goals[i].type & GOAL_TYPE_MASK;
+		dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name, Goal_type_text(type));
+		if ( Mission_goals[i].satisfied == GOAL_COMPLETE )
+			dc_printf("satisfied.\n");
+		else if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE )
+			dc_printf("unsatisfied\n");
+		else if ( Mission_goals[i].satisfied == GOAL_FAILED )
+			dc_printf("failed\n");
+		else
+			dc_printf("Warning! Mission goal %i is in an invalid state! (value: %i)", i, Mission_goals[i].satisfied);
+	}
+	
 }
 
 //XSTR:OFF
-DCF(change_mission_goal, "Change the mission goal")
+DCF(change_mission_goal, "Changes the mission goal status")
 {
 	int num;
+	bool val_b;
+	char *string;
 
-	if ( Dc_command ) {
-		dc_get_arg(ARG_INT);
-		if ( Dc_arg_int >= Num_goals ) {
-			dc_printf ("First parameter must be a valid goal number.\n");
-			return;
-		}
-
-		num = Dc_arg_int;
-		dc_get_arg(ARG_TRUE|ARG_FALSE|ARG_STRING);
-		if ( Dc_arg_type & ARG_TRUE )
-			Mission_goals[num].satisfied = GOAL_COMPLETE;
-		else if ( Dc_arg_type & ARG_FALSE )
-			Mission_goals[num].satisfied = GOAL_FAILED;
-		else if ( Dc_arg_type & ARG_NONE )
-			Mission_goals[num].satisfied = GOAL_INCOMPLETE;
-		else if ( Dc_arg_type & ARG_STRING) {
-			if ( !stricmp(Dc_arg, "satisfied") )
-				Mission_goals[num].satisfied = GOAL_COMPLETE;
-			else if ( !stricmp( Dc_arg, "failed") )
-				Mission_goals[num].satisfied = GOAL_FAILED;
-			else if ( !stricmp( Dc_arg, "unknown") )
-				Mission_goals[num].satisfied = GOAL_INCOMPLETE;
-			else
-				dc_printf("Unknown status %s.  Use 'satisfied', 'failed', or 'unknown'\n", Dc_arg);
-		}
-	}
-
-	if ( Dc_help ) {
-		dc_printf("Usage: change_mission_goal <goal_num> <status>\n");
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: change_mission_goal <goal_num> [status]\n");
 		dc_printf("<goal_num> --  Integer number of goal to change.  See show_mission_goals\n");
-		dc_printf("<status>   --  [bool] where a true value makes the goal satisfied,\n");
-		dc_printf("               a false value makes the goal failed.\n");
-		dc_printf("The <status> field may also be one of 'satisfied', 'failed', or 'unknown'\n");
-		dc_printf("\nExamples:\n\n'change_mission_goal 1 true' makes goal 1 successful.\n");
-		dc_printf("'change_mission_goal 2' marks goal 2 not complete\n");
-		dc_printf("'change_mission_goal 0 satisfied' marks goal 0 as satisfied\n");
-		Dc_status = 0;
+		dc_printf("[status]   --  Goal status to change to.\n\n");
+
+		dc_printf("The optional [status] field may be either a bool type or a string.\n");
+		dc_printf("\ttrue  -- Goal status set to 'complete'\n");
+		dc_printf("\tfalse -- Goal status set to 'failed'\n\n");
+
+		dc_printf("A string value of 'satisfied', 'failed', or 'unknown' will set the goal status to the respective state.\n");
+		dc_printf("If [status] is not given, then the goal status will be set to 'unknown'");
+
+		dc_printf("Examples:\n");
+		dc_printf("\t'change_mission_goal 1 true'  makes goal 1 as successful.\n");
+		dc_printf("\t'change_mission_goal 2'       marks goal 2 as unknown/incomplete\n");
+		dc_printf("\t'change_mission_goal 0 satisfied'    marks goal 0 as satisfied\n");
+		return;
 	}
+
+	dc_stuff_int(&num);
+	if ( num >= Num_goals ) {
+		dc_printf (" Error: Invalid value for <goal_num>. Valid values: 0 - %i\n", Num_goals);
+		return;
+	}
+
+	if (dc_optional_string("satisfied")) {
+		Mission_goals[num].satisfied = GOAL_COMPLETE;
+
+	} else if (dc_optional_string("failed")) {
+		Mission_goals[num].satisfied = GOAL_FAILED;
+
+	} else if (dc_optional_string("unsatisfied")) {
+		Mission_goals[num].satisfied = GOAL_INCOMPLETE;
+
+	} else if (dc_maybe_stuff_boolean(&val_b)) {
+		val_b ? Mission_goals[num].satisfied = GOAL_COMPLETE : Mission_goals[num].satisfied = GOAL_FAILED;
+
+	} else {
+		// No argument given
+		Mission_goals[num].satisfied = GOAL_INCOMPLETE;
+	}
+
+	switch(Mission_goals[num].satisfied) {
+	case GOAL_COMPLETE:
+		string = "satisfied";
+		break;
+
+	case GOAL_FAILED:
+		string = "failed";
+		break;
+
+	case GOAL_INCOMPLETE:
+		string = "unsatisfied";
+		break;
+
+	default:
+		dc_printf("Warning! Mission goal %i is in an invalid state! (value: %i)", num, Mission_goals[num].satisfied);
+		return;
+	}
+	dc_printf("Mission goal %i set to '%s'\n", num, string);
 }
 //XSTR:ON
 

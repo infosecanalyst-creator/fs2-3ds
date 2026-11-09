@@ -7,153 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-03 16:18:19 $
- * $Author: taylor $
- *
- * <insert description of file here>
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/02/04 10:12:30  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.6  2004/07/26 20:47:33  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:51  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2003/11/11 02:15:44  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.3  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/29 20:12:31  penguin
- * added #ifdef _WIN32 around windows-specific system headers
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/17 03:01:29  mharris
- * ifdef WIN#@ around numlock stuff
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 6     10/29/99 6:10p Jefff
- * squashed the y/z german issues once and for all
- * 
- * 5     6/07/99 1:21p Dave
- * Fixed debug console scrolling problem. Thread related.
- * 
- * 4     6/02/99 6:18p Dave
- * Fixed TNT lockup problems! Wheeeee!
- * 
- * 3     11/05/98 4:18p Dave
- * First run nebula support. Beefed up localization a bit. Removed all
- * conditional compiles for foreign versions. Modified mission file
- * format.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 37    6/19/98 3:50p Lawrance
- * change GERMAN to GR_BUILD
- * 
- * 36    6/17/98 11:05a Lawrance
- * translate french and german keys
- * 
- * 35    6/12/98 4:49p Hoffoss
- * Added code to remap scancodes for german and french keyboards.
- * 
- * 34    5/20/98 12:10a Mike
- * Remove mprintfs.
- * 
- * 33    5/19/98 12:19p Mike
- * Cheat codes!
- * 
- * 32    5/19/98 12:28a Mike
- * Cheat stuff.
- * 
- * 31    5/18/98 11:01p Mike
- * Adding support for cheat system.
- * 
- * 30    5/11/98 12:09a Lawrance
- * Put in code to turn on/off NumLock key when running under 95
- * 
- * 29    5/01/98 4:23p Lawrance
- * Remap the scancode for the UK "\" key
- * 
- * 28    4/18/98 12:42p John
- * Added code to use DirectInput to read keyboard. Took out because it
- * didn't differentiate btwn Pause and Numlock and sometimes Ctrl.
- * 
- * 27    4/13/98 10:16a John
- * Switched gettime back to timer_get_milliseconds, which is now thread
- * safe.
- * 
- * 26    4/12/98 11:08p Lawrance
- * switch back to using gettime() in separate threads
- * 
- * 25    4/12/98 5:31p Lawrance
- * use timer_get_milliseconds() instead of gettime()
- * 
- * 24    3/25/98 8:08p John
- * Restructured software rendering into two modules; One for windowed
- * debug mode and one for DirectX fullscreen.   
- * 
- * 23    1/23/98 3:49p Mike
- * Fix bug in negative time-down due to latency.
- * 
- * 22    1/07/98 6:41p Lawrance
- * Pass message latency to the keyboard lib.
- * 
- * 21    11/17/97 10:42a John
- * On Debug+Backsp, cleared out keys so that it looks like nothing ever
- * happened, so they're not stuck down.
- * 
- * 20    11/14/97 4:33p Mike
- * Change Debug key to backquote (from F11).
- * Balance a ton of subsystems in ships.tbl.
- * Change "Heavy Laser" to "Disruptor".
- * 
- * 19    9/13/97 9:30a Lawrance
- * added ability to block certain keys from the keyboard
- * 
- * 18    9/10/97 6:02p Hoffoss
- * Added code to check for key-pressed sexp operator in FreeSpace as part
- * of training mission stuff.
- * 
- * 17    9/09/97 11:08a Sandeep
- * fixed warning level 4
- * 
- * 16    7/29/97 5:30p Lawrance
- * move gettime() to timer module
- * 
- * 15    4/22/97 10:56a John
- * fixed some resource leaks.
- * 
- * 14    2/03/97 4:23p Allender
- * use F11 as debug key now
- * 
- * 13    1/10/97 5:15p Mike
- * Moved ship-specific parameters from obj_subsystem to ship_subsys.
- * 
- * Added turret code to AI system.
- *
- * $NoKeywords: $
- */
+
 
 //#define USE_DIRECTINPUT
 
@@ -172,6 +26,7 @@
 #include "io/timer.h"
 #include "localization/localize.h"
 #include "parse/scripting.h"
+#include "cmdline/cmdline.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -236,30 +91,63 @@ int shifted_ascii_table[128] =
   255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,
   255,255,255,255,255,255,255,255 };
 
-// used to limit the keypresses that are accepted from the keyboard
-#define MAX_FILTER_KEYS 64
-int Num_filter_keys;
-int Key_filter[MAX_FILTER_KEYS];
-
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
-static int Key_running_NT = 0;		// NT is the OS
+
+#ifdef _WIN32
+    static int Key_running_NT = 0;		// NT is the OS
+#endif
 
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
 #ifdef SCP_UNIX
+/**
+ * Keyboard layouts
+ */
+enum KeyboardLayout {
+	KEYBOARD_LAYOUT_DEFAULT, //!< American
+	KEYBOARD_LAYOUT_QWERTZ,  //!< German
+	KEYBOARD_LAYOUT_AZERTY   //!< French
+};
+
 void FillSDLArray ()
 {
-	SDLtoFS2[SDLK_0] = KEY_0;
-	SDLtoFS2[SDLK_1] = KEY_1;
-	SDLtoFS2[SDLK_2] = KEY_2;
-	SDLtoFS2[SDLK_3] = KEY_3;
-	SDLtoFS2[SDLK_4] = KEY_4;
-	SDLtoFS2[SDLK_5] = KEY_5;
-	SDLtoFS2[SDLK_6] = KEY_6;
-	SDLtoFS2[SDLK_7] = KEY_7;
-	SDLtoFS2[SDLK_8] = KEY_8;
-	SDLtoFS2[SDLK_9] = KEY_9;
+	KeyboardLayout layout = KEYBOARD_LAYOUT_DEFAULT;
+	
+	if (Cmdline_keyboard_layout) {
+		if (!strcmp(Cmdline_keyboard_layout, "qwertz")) {
+			layout = KEYBOARD_LAYOUT_QWERTZ;
+		}
+		
+		if (!strcmp(Cmdline_keyboard_layout, "azerty")) {
+			layout = KEYBOARD_LAYOUT_AZERTY;
+		}
+
+	}
+
+	if(layout == KEYBOARD_LAYOUT_AZERTY) {
+		SDLtoFS2[SDLK_WORLD_64] = KEY_0;
+		SDLtoFS2[SDLK_AMPERSAND] = KEY_1;
+		SDLtoFS2[SDLK_WORLD_73] = KEY_2;
+		SDLtoFS2[SDLK_QUOTEDBL] = KEY_3;
+		SDLtoFS2[SDLK_QUOTE] = KEY_4;
+		SDLtoFS2[SDLK_LEFTPAREN] = KEY_5;
+		SDLtoFS2[SDLK_MINUS] = KEY_6;
+		SDLtoFS2[SDLK_WORLD_72] = KEY_7;
+		SDLtoFS2[SDLK_UNDERSCORE] = KEY_8;
+		SDLtoFS2[SDLK_WORLD_71] = KEY_9;
+	} else {
+		SDLtoFS2[SDLK_0] = KEY_0;
+		SDLtoFS2[SDLK_1] = KEY_1;
+		SDLtoFS2[SDLK_2] = KEY_2;
+		SDLtoFS2[SDLK_3] = KEY_3;
+		SDLtoFS2[SDLK_4] = KEY_4;
+		SDLtoFS2[SDLK_5] = KEY_5;
+		SDLtoFS2[SDLK_6] = KEY_6;
+		SDLtoFS2[SDLK_7] = KEY_7;
+		SDLtoFS2[SDLK_8] = KEY_8;
+		SDLtoFS2[SDLK_9] = KEY_9;
+	}
 
 	SDLtoFS2[SDLK_a] = KEY_A;
 	SDLtoFS2[SDLK_b] = KEY_B;
@@ -288,21 +176,7 @@ void FillSDLArray ()
 	SDLtoFS2[SDLK_y] = KEY_Y;
 	SDLtoFS2[SDLK_z] = KEY_Z;
 
-	if (Lcl_gr) {
-		SDLtoFS2[SDLK_WORLD_63] = KEY_MINUS;
-		SDLtoFS2[SDLK_WORLD_20] = KEY_EQUAL;
-		SDLtoFS2[SDLK_MINUS] = KEY_DIVIDE;
-		SDLtoFS2[SDLK_HASH] = KEY_SLASH;
-		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
-		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
-		SDLtoFS2[SDLK_WORLD_86] = KEY_SEMICOL;
-
-		SDLtoFS2[SDLK_WORLD_92] = KEY_LBRACKET;
-		SDLtoFS2[SDLK_PLUS] = KEY_RBRACKET;
-
-		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
-		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
-	} else {
+	if(layout == KEYBOARD_LAYOUT_DEFAULT) {
 		SDLtoFS2[SDLK_MINUS] = KEY_MINUS;
 		SDLtoFS2[SDLK_EQUALS] = KEY_EQUAL;
 		SDLtoFS2[SDLK_SLASH] = KEY_DIVIDE; // No idea - DDOI
@@ -317,6 +191,38 @@ void FillSDLArray ()
 
 		SDLtoFS2[SDLK_BACKQUOTE] = KEY_LAPOSTRO;
 		SDLtoFS2[SDLK_QUOTE] = KEY_RAPOSTRO;
+	}
+
+	if(layout == KEYBOARD_LAYOUT_QWERTZ) {
+		SDLtoFS2[SDLK_WORLD_63] = KEY_MINUS;
+		SDLtoFS2[SDLK_WORLD_20] = KEY_EQUAL;
+		SDLtoFS2[SDLK_MINUS] = KEY_DIVIDE;
+		SDLtoFS2[SDLK_HASH] = KEY_SLASH;
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_PERIOD] = KEY_PERIOD;
+		SDLtoFS2[SDLK_WORLD_86] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_WORLD_92] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_PLUS] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_CARET] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_WORLD_68] = KEY_RAPOSTRO;
+	}
+
+	if(layout == KEYBOARD_LAYOUT_AZERTY) {
+		SDLtoFS2[SDLK_RIGHTPAREN] = KEY_MINUS;
+		SDLtoFS2[SDLK_EQUALS] = KEY_EQUAL;
+		SDLtoFS2[SDLK_EXCLAIM] = KEY_DIVIDE;
+		SDLtoFS2[SDLK_ASTERISK] = KEY_SLASH;
+		SDLtoFS2[SDLK_COMMA] = KEY_COMMA;
+		SDLtoFS2[SDLK_COLON] = KEY_PERIOD;
+		SDLtoFS2[SDLK_SEMICOLON] = KEY_SEMICOL;
+
+		SDLtoFS2[SDLK_CARET] = KEY_LBRACKET;
+		SDLtoFS2[SDLK_DOLLAR] = KEY_RBRACKET;
+
+		SDLtoFS2[SDLK_WORLD_18] = KEY_LAPOSTRO;
+		SDLtoFS2[SDLK_WORLD_89] = KEY_RAPOSTRO;
 	}
 
 	SDLtoFS2[SDLK_ESCAPE] = KEY_ESC;
@@ -802,53 +708,12 @@ void key_mark( uint code, int state, uint latency )
 		code = KEY_SLASH;
 	}
 
-	if(Lcl_fr){
-		switch (code) {
-		case KEY_A:
-			code = KEY_Q;
-			break;
-
-		case KEY_M:
-			code = KEY_COMMA;
-			break;
-
-		case KEY_Q:
-			code = KEY_A;
-			break;
-
-		case KEY_W:
-			code = KEY_Z;
-			break;
-
-		case KEY_Z:
-			code = KEY_W;
-			break;
-
-		case KEY_SEMICOL:
-			code = KEY_M;
-			break;
-
-		case KEY_COMMA:
-			code = KEY_SEMICOL;
-			break;
-		}
-#if defined(SCP_UNIX) && !defined(__APPLE__)
-	} else if(Lcl_gr){
-		switch (code) {
-		case KEY_Y:
-			code = KEY_Z;
-			break;
-
-		case KEY_Z:
-			code = KEY_Y;
-			break;
-		}
-#endif
-	}
+#ifndef SCP_UNIX
 
 	if ( (code == 0xc5) && !Key_running_NT ) {
 		key_turn_off_numlock();
 	}
+#endif
 
 	Assert( code < NUM_KEYS );	
 
@@ -859,34 +724,38 @@ void key_mark( uint code, int state, uint latency )
 	scancode = code & (NUM_KEYS-1);
 	breakbit = !state;
 	
-	if (breakbit)	{
+	if (breakbit) {
 		// Key going up
 		keyd_last_released = scancode;
 		keyd_pressed[scancode] = 0;
 		key_data.NumUps[scancode]++;
 
-		//	What is the point of this code?  "temp" is never used!
+		// What is the point of this code?  "temp" is never used!
 		temp = 0;
 		temp |= keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT];
 		temp |= keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT];
 		temp |= keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL];
-//#ifndef NDEBUG
 		temp |= keyd_pressed[KEY_DEBUG_KEY];
-//#endif	
-		if (event_time < key_data.TimeKeyWentDown[scancode])
+	
+		if (event_time < key_data.TimeKeyWentDown[scancode]) {
 			key_data.TimeKeyHeldDown[scancode] = 0;
-		else
+		} else {
 			key_data.TimeKeyHeldDown[scancode] += event_time - key_data.TimeKeyWentDown[scancode];
+		}
 
 		Current_key_down = scancode;
-		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+		if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 			Current_key_down |= KEY_SHIFTED;
+		}
 
-		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+		if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 			Current_key_down |= KEY_ALTED;
+		}
 
-		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+		if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 			Current_key_down |= KEY_CTRLED;
+		}
+
 		Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 		Script_system.RunCondition(CHA_KEYRELEASED);
 		Script_system.RemHookVar("Key");
@@ -894,29 +763,27 @@ void key_mark( uint code, int state, uint latency )
 		// Key going down
 		keyd_last_pressed = scancode;
 		keyd_time_when_last_pressed = event_time;
-		if (!keyd_pressed[scancode])	{
+		if (!keyd_pressed[scancode]) {
 			// First time down
 			key_data.TimeKeyWentDown[scancode] = event_time;
 			keyd_pressed[scancode] = 1;
 			key_data.NumDowns[scancode]++;
 			key_data.down_check[scancode]++;
 
-//			mprintf(( "Scancode = %x\n", scancode ));
-
-//			if ( scancode == KEY_BREAK )
-//				Int3();
-
-
 			//WMC - For scripting
 			Current_key_down = scancode;
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 				Current_key_down |= KEY_SHIFTED;
+			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 				Current_key_down |= KEY_ALTED;
+			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 				Current_key_down |= KEY_CTRLED;
+			}
+
 			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down));
 			Script_system.RunCondition(CHA_KEYPRESSED);
 			Script_system.RemHookVar("Key");
@@ -928,24 +795,22 @@ void key_mark( uint code, int state, uint latency )
 		if ( scancode!=0xAA ) {
 			keycode = (unsigned short)scancode;
 
-			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] )
+			if ( keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT] ) {
 				keycode |= KEY_SHIFTED;
+			}
 
-			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] )
+			if ( keyd_pressed[KEY_LALT] || keyd_pressed[KEY_RALT] ) {
 				keycode |= KEY_ALTED;
+			}
 
-			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] )
+			if ( keyd_pressed[KEY_LCTRL] || keyd_pressed[KEY_RCTRL] ) {
 				keycode |= KEY_CTRLED;
+			}
 
 #ifndef NDEBUG
-			if ( keyd_pressed[KEY_DEBUG_KEY] )
+			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
 				keycode |= KEY_DEBUGGED;
-//			if ( keycode == (KEY_BACKSP + KEY_DEBUGGED) )	{
-//				keycode = 0;
-//				keyd_pressed[KEY_DEBUG_KEY] = 0;
-//				keyd_pressed[KEY_BACKSP] = 0;
-//				Int3();
-//			}
+			}
 #else
 			if ( keyd_pressed[KEY_DEBUG_KEY] ) {
 				mprintf(("Cheats_enabled = %i, Key_normal_game = %i\n", Cheats_enabled, Key_normal_game));
@@ -956,33 +821,20 @@ void key_mark( uint code, int state, uint latency )
 
 #endif
 
-			if ( keycode )	{
+			if ( keycode ) {
 				temp = key_data.keytail+1;
 				if ( temp >= KEY_BUFFER_SIZE ) temp=0;
 
-				if (temp!=key_data.keyhead)	{
-					int i, accept_key = 1;
-					// Num_filter_keys will only be non-zero when a key filter has
-					// been explicity set up via key_set_filter()
-					for ( i = 0; i < Num_filter_keys; i++ ) {
-						accept_key = 0;
-						if ( Key_filter[i] == keycode ) {
-							accept_key = 1;
-							break;
-						}
-					}
-
-					if ( accept_key ) {
-						key_data.keybuffer[key_data.keytail] = keycode;
-						key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
-						key_data.keytail = temp;
-					}
+				if (temp!=key_data.keyhead) {
+					key_data.keybuffer[key_data.keytail] = keycode;
+					key_data.time_pressed[key_data.keytail] = keyd_time_when_last_pressed;
+					key_data.keytail = temp;
 				}
 			}
 		}
 	}
 
-	LEAVE_CRITICAL_SECTION( key_lock );		
+	LEAVE_CRITICAL_SECTION( key_lock );
 }
 
 #ifdef USE_DIRECTINPUT
@@ -1030,9 +882,6 @@ void key_init()
 	// Clear the keyboard array
 	key_flush();
 
-	// Clear key filter
-	key_clear_filter();
-
 	LEAVE_CRITICAL_SECTION( key_lock );
 
 #ifdef _WIN32
@@ -1078,40 +927,6 @@ void key_got_focus()
 	
 	key_flush();	
 }
-
-// Restricts the keys that are accepted from the keyboard
-//
-//	filter_array	=>		array of keys to act as a filter
-//	num				=>		number of keys in filter_array
-//
-void key_set_filter(int *filter_array, int num)
-{
-	int i;
-
-	if ( num >= MAX_FILTER_KEYS ) {
-		Int3();
-		num = MAX_FILTER_KEYS;
-	}
-
-	Num_filter_keys = num;
-
-	for ( i = 0; i < num; i++ ) {
-		Key_filter[i] = filter_array[i];
-	}
-}
-
-// Clear the key filter, so all keypresses are accepted from keyboard 
-//
-void key_clear_filter()
-{
-	int i;
-
-	Num_filter_keys = 0;
-	for ( i = 0; i < MAX_FILTER_KEYS; i++ ) {
-		Key_filter[i] = -1;
-	}
-}
-
 
 #ifdef USE_DIRECTINPUT
 

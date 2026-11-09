@@ -7,555 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Weapon.h $
- * <insert description of file here>
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.69.2.3  2007/02/12 00:54:31  taylor
- * make use of generic_anim and generic_bitmap where possible
- * bunch of cleanup and little optimizations
- * add "+remove" tbl option to completely get rid of particular beam sections
- * delayed loading of bitmaps, will only do it after all tbl/tbm have been parsed
- * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
- * bug fix and optimization for laser color setting
- *
- * Revision 2.69.2.2  2006/12/26 05:32:59  taylor
- * make weapon_expl info dynamic
- *
- * Revision 2.69.2.1  2006/09/11 01:17:07  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 2.69  2006/02/25 21:47:19  Goober5000
- * spelling
- *
- * Revision 2.68  2006/02/15 07:19:50  wmcoolmon
- * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
- *
- * Revision 2.67  2006/01/30 06:33:19  taylor
- * add transparent, cycling alpha, and no-light options for weapons
- *
- * Revision 2.66  2006/01/09 04:53:41  phreak
- * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
- *
- * Revision 2.65  2005/12/29 08:08:42  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.64  2005/12/15 06:03:50  phreak
- * Countermeasres parameters.  Lets users specify how easily missiles are spoofed by countermeasures
- *
- * A missile is given a seeker strength.  Aspect default of 2.  Heat default of 3.  This is a missile's resistance to spoofage
- * A countermesaure is given an effectiveness for each type.  The defaults for countermeasure heat and aspect effectiveness are both 1.
- * Also gave the countermeasure an effective range.  Default is 300 meters.
- *
- * A missiles chance of being spoofed is calculated by <cm type effectiveness>/<seeker strength>
- * So by default, 1/2 of aspect seekers will be fooled by a countermeasures, while 1/3 of heat seekers would be spoofed by default.
- *
- * Also i gave the option of aspect missiles having a view cone different from 180 degrees.  This parameter is optional and doesn't effect anything already there.
- *
- * Revision 2.63  2005/12/12 21:32:14  taylor
- * allow use of a specific LOD for ship and weapon rendering in the hud targetbox
- *
- * Revision 2.62  2005/12/04 19:02:36  wmcoolmon
- * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
- *
- * Revision 2.61  2005/11/22 00:01:11  taylor
- * combine weapon_info_close() and weapon_close()
- * changes to allow use of weapon_expl.tbl and the modular table versions once more
- *  - the tables aren't required (but a warning will be produced if weapon_expl.tbl doesn't exist)
- *  - don't back load LODs, if it's not there then don't use it
- *  - handle a couple of error conditions a bit better
- *
- * Revision 2.60  2005/11/08 01:04:02  wmcoolmon
- * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
- *
- * Revision 2.59  2005/10/30 06:44:59  wmcoolmon
- * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
- *
- * Revision 2.58  2005/10/14 07:22:24  Goober5000
- * removed an unneeded parameter and renamed some stuff
- * --Goober5000
- *
- * Revision 2.57  2005/10/11 08:30:37  taylor
- * fix memory freakage from dynamic spawn weapon types
- *
- * Revision 2.56  2005/10/09 03:13:13  wmcoolmon
- * Much better laser weapon/pof handling, removed a couple unneccessary
- * warnings (used to try and track down a bug)
- *
- * Revision 2.55  2005/10/09 00:43:09  wmcoolmon
- * Extendable modular tables (XMTs); added weapon dialogs to the Lab
- *
- * Revision 2.54  2005/07/24 06:01:37  wmcoolmon
- * Multiple shockwaves support.
- *
- * Revision 2.53  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.52  2005/06/30 00:36:10  Goober5000
- * Removed "beam no whack" as setting the beam's mass to 0 achieves the same effect.
- * --Goober5000
- *
- * Revision 2.51  2005/06/02 02:41:52  wmcoolmon
- * Protected ships are safe from spawning weapons. :)
- *
- * Revision 2.50  2005/05/08 20:20:06  wmcoolmon
- * armor.tbl revamp
- *
- * Revision 2.49  2005/04/24 12:47:36  taylor
- * little cleanup of laser rendering
- *  - fix animated glows
- *  - proper alpha modification (still messed up somewhere though, shows in neb missions)
- *  - remove excess batch_render()
- *
- * Revision 2.48  2005/04/15 06:23:18  wmcoolmon
- * Local codebase commit; adds armor system.
- *
- * Revision 2.47  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.46  2005/04/02 21:34:08  phreak
- * put First_secondary_index back in so FRED can compile.
- * The weapons list is also sorted whenever all loading is done so lasers and beams always
- * come before missiles.  FRED's loadout code needs this behavior to stick.
- *
- * Revision 2.45  2005/03/25 06:57:38  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.44  2005/03/08 03:50:19  Goober5000
- * edited for language ;)
- * --Goober5000
- *
- * Revision 2.43  2005/03/03 16:40:29  taylor
- * animated beam muzzle glows
- *
- * Revision 2.42  2005/03/01 06:55:45  bobboau
- * oh, hey look I've commited something :D
- * animation system, weapon models detail box alt-tab bug, probly other stuff
- *
- * Revision 2.41  2005/02/19 07:54:33  wmcoolmon
- * Removed trails limit
- *
- * Revision 2.40  2005/02/18 04:54:44  wmcoolmon
- * Added $Tech Model (after +Tech Description)
- *
- * Revision 2.39  2005/02/04 20:06:10  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.38  2005/02/03 01:26:45  phreak
- * revert to default d-missile behavior if the electroinics parameters aren't specified.
- * added an option to customize the old-style disruption calculation as well.
- *
- * Revision 2.37  2005/01/28 04:05:05  phreak
- * shockwave weapons now work properly with the electronics (d-missible) tag
- * added in a "randomness factor" for electronics parameters.  This adds or subtracts
- * a random value between 0 and this factor to the disruption time.  This was hard coded
- * to be 4 seconds in retail.
- *
- * Revision 2.36  2004/12/23 23:35:02  wmcoolmon
- * Added +Hud Image: for weapons, which replaces the weapon name in the list with an image.
- *
- * Revision 2.35  2004/11/21 11:38:17  taylor
- * support for animated beam sections
- * various weapon-only-used fixes
- * remove the -1 frame fix since it was fixed elsewhere
- *
- * Revision 2.34  2004/09/10 13:50:09  et1
- * Implemented "+WeaponMinRange" token
- *
- * Revision 2.33  2004/08/11 05:06:36  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.32  2004/07/31 08:57:22  et1
- * Implemented "+SwarmWait:"-token
- *
- * Revision 2.31  2004/07/14 01:27:01  wmcoolmon
- * Better -load_only_used handling; added mark_weapon_used(weapon ID), which does check for IDs of -1.
- *
- * Revision 2.30  2004/07/11 03:22:54  bobboau
- * added the working decal code
- *
- * Revision 2.29  2004/06/05 19:15:39  phreak
- * spawn weapons can now be specified to be spawned at different angles other than
- * the sphere thats used in retail
- *
- * Revision 2.28  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.27  2003/12/17 16:41:25  phreak
- * "small only" weapons flag added. weapon shoots at small ships like fighters
- *
- * Revision 2.26  2003/12/15 21:30:24  phreak
- * upped MAX_WEAPON_TYPES to 300 when INF_BUILD is defined
- *
- * Revision 2.25  2003/11/11 02:15:41  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.24  2003/11/09 07:36:52  Goober5000
- * fixed spelling
- * --Goober5000
- *
- * Revision 2.23  2003/10/25 06:56:07  bobboau
- * adding FOF stuff,
- * and fixed a small error in the matrix code,
- * I told you it was indeed suposed to be gr_start_instance_matrix
- * in g3_done_instance,
- * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
- *
- * Revision 2.22  2003/10/13 05:57:50  Kazan
- * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap
- * Added "beam no whack" flag for beams - said beams NEVER whack
- * Some reliability updates in FS2NetD
- *
- * Revision 2.21  2003/09/26 14:37:16  bobboau
- * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
- * still needs a lot of work, ubt the frame rates were getting with it are incredable
- * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
- * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
- * and weapons, I think these should be modifyed to be sent through hardware,
- * it would be slightly faster and it would likely fix the problem
- *
- * also the thruster glow/particle stuff I did is now in.
- *
- * Revision 2.20  2003/09/13 06:02:04  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.17  2003/08/22 07:35:09  bobboau
- * specular code should be bugless now,
- * cell shadeing has been added activated via the comand line '-cell',
- * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
- *
- * Revision 2.16  2003/08/06 17:36:17  phreak
- * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
- *
- * Revision 2.15  2003/06/25 03:21:03  phreak
- * added support for weapons that only fire when tagged
- * also added limited firing range for local ssms
- *
- * Revision 2.14  2003/06/12 17:45:54  phreak
- * local ssm warpin is now handled better than what i committed earlier
- *
- * Revision 2.13  2003/06/11 03:06:07  phreak
- * local subspace missiles are now in game. yay
- *
- * Revision 2.12  2003/05/03 23:47:04  phreak
- * added multipliers for beam turrets and sensors for disruptor missiles
- *
- * Revision 2.11  2003/05/03 16:44:18  phreak
- * changed around the way disruptor weapons work
- *
- * Revision 2.10  2003/03/29 09:42:05  Goober5000
- * made beams default shield piercing again
- * also added a beam no pierce command line flag
- * and fixed something else which I forgot :P
- * --Goober5000
- *
- * Revision 2.9  2003/03/03 04:28:37  Goober5000
- * fixed the tech room bug!  yay!
- * --Goober5000
- *
- * Revision 2.8  2003/02/25 06:22:50  bobboau
- * fixed a bunch of fighter beam bugs,
- * most notabley the sound now works corectly,
- * and they have limeted range with atenuated damage (table option)
- * added bank specific compatabilities
- *
- * Revision 2.7  2003/02/16 05:14:29  bobboau
- * added glow map nebula bug fix for d3d, someone should add a fix for glide too
- * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
- *
- * Revision 2.6  2002/12/10 05:43:33  Goober5000
- * Full-fledged ballistic primary support added!  Try it and see! :)
- *
- * Revision 2.5  2002/12/07 01:37:43  bobboau
- * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
- * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
- * it needs a better renderer, but is in prety good shape for now,
- * I also (think) I squashed a bug in the warpmodel code
- *
- * Revision 2.4  2002/11/14 04:18:17  bobboau
- * added warp model and type 1 glow points
- * and well as made the new glow file type,
- * some general improvement to fighter beams,
- *
- * Revision 2.3  2002/11/11 20:11:02  phreak
- * changed around the 'weapon_info' struct to allow for custom corkscrew missiles
- *
- * Revision 2.2  2002/10/19 19:29:29  bobboau
- * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
- *
- * Revision 2.1  2002/08/01 01:41:11  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 34    9/06/99 12:46a Andsager
- * Add weapon_explosion_ani LOD
- * 
- * 33    8/27/99 1:34a Andsager
- * Modify damage by shockwaves for BIG|HUGE ships.  Modify shockwave damge
- * when weapon blows up.
- * 
- * 32    8/24/99 10:47a Jefff
- * tech room weapon anims.  added tech anim field to weapons.tbl
- * 
- * 31    8/10/99 5:30p Jefff
- * Added tech_title string to weapon_info.  Changed parser accordingly.
- * 
- * 30    8/02/99 5:16p Dave
- * Bumped up weapon title string length from 32 to 48
- * 
- * 29    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 28    6/30/99 5:53p Dave
- * Put in new anti-camper code.
- * 
- * 27    6/21/99 7:25p Dave
- * netplayer pain packet. Added type E unmoving beams.
- * 
- * 26    6/14/99 10:45a Dave
- * Made beam weapons specify accuracy by skill level in the weapons.tbl
- * 
- * 25    6/04/99 2:16p Dave
- * Put in shrink effect for beam weapons.
- * 
- * 24    6/01/99 8:35p Dave
- * Finished lockarm weapons. Added proper supercap weapons/damage. Added
- * awacs-set-radius sexpression.
- * 
- * 23    5/27/99 6:17p Dave
- * Added in laser glows.
- * 
- * 22    5/20/99 7:00p Dave
- * Added alternate type names for ships. Changed swarm missile table
- * entries.
- * 
- * 21    4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 20    4/28/99 3:11p Andsager
- * Stagger turret weapon fire times.  Make turrets smarter when target is
- * protected or beam protected.  Add weaopn range to weapon info struct.
- * 
- * 19    4/22/99 11:06p Dave
- * Final pass at beam weapons. Solidified a lot of stuff. All that remains
- * now is to tweak and fix bugs as they come up. No new beam weapon
- * features.
- * 
- * 18    4/19/99 11:01p Dave
- * More sophisticated targeting laser support. Temporary checkin.
- * 
- * 17    4/16/99 5:54p Dave
- * Support for on/off style "stream" weapons. Real early support for
- * target-painting lasers.
- * 
- * 16    4/02/99 9:55a Dave
- * Added a few more options in the weapons.tbl for beam weapons. Attempt
- * at putting "pain" packets into multiplayer.
- * 
- * 15    3/31/99 8:24p Dave
- * Beefed up all kinds of stuff, incluging beam weapons, nebula effects
- * and background nebulae. Added per-ship non-dimming pixel colors.
- * 
- * 14    3/23/99 11:03a Dave
- * Added a few new fields and fixed parsing code for new weapon stuff.
- * 
- * 13    3/19/99 9:52a Dave
- * Checkin to repair massive source safe crash. Also added support for
- * pof-style nebulae, and some new weapons code.
- * 
- * 12    1/29/99 12:47a Dave
- * Put in sounds for beam weapon. A bunch of interface screens (tech
- * database stuff).
- * 
- * 11    1/27/99 9:56a Dave
- * Temporary checkin of beam weapons for Dan to make cool sounds.
- * 
- * 10    1/25/99 5:03a Dave
- * First run of stealth, AWACS and TAG missile support. New mission type
- * :)
- * 
- * 9     1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 8     1/21/99 10:45a Dave
- * More beam weapon stuff. Put in warmdown time.
- * 
- * 7     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 6     11/14/98 5:33p Dave
- * Lots of nebula work. Put in ship contrails.
- * 
- * 5     10/26/98 9:42a Dave
- * Early flak gun support.
- * 
- * 4     10/16/98 3:42p Andsager
- * increase MAX_WEAPONS and MAX_SHIPS and som header files
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 100   9/04/98 3:52p Dave
- * Put in validated mission updating and application during stats
- * updating.
- * 
- * 99    9/01/98 4:25p Dave
- * Put in total (I think) backwards compatibility between mission disk
- * freespace and non mission disk freespace, including pilot files and
- * campaign savefiles.
- * 
- * 98    8/28/98 3:29p Dave
- * EMP effect done. AI effects may need some tweaking as required.
- * 
- * 97    8/25/98 1:49p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 96    8/18/98 10:15a Dave
- * Touchups on the corkscrew missiles. Added particle spewing weapons.
- * 
- * 95    8/17/98 5:07p Dave
- * First rev of corkscrewing missiles.
- * 
- * 94    5/18/98 1:58a Mike
- * Make Phoenix not be fired at fighters (but yes bombers).
- * Improve positioning of ships in guard mode.
- * Make turrets on player ship not fire near end of support ship docking.
- * 
- * 93    5/15/98 5:37p Hoffoss
- * Added new 'tech description' fields to ship and weapon tables, and
- * added usage of it in tech room.
- * 
- * 92    5/06/98 8:06p Dave
- * Made standalone reset properly under weird conditions. Tweak
- * optionsmulti screen. Upped MAX_WEAPONS to 350. Put in new launch
- * countdown anim. Minro ui fixes/tweaks.
- * 
- * 91    5/05/98 11:15p Lawrance
- * Optimize weapon flyby sound determination
- * 
- * 90    5/05/98 4:08p Hoffoss
- * Added WIF_PLAYER_ALLOWED to check what is valid for the weaponry pool
- * in Fred.
- * 
- * 89    4/23/98 5:50p Hoffoss
- * Added tracking of techroom database list info in pilot files, added
- * sexp to add more to list, made mouse usable on ship listing in tech
- * room.
- * 
- * 88    4/19/98 9:21p Sandeep
- * 
- * 87    4/13/98 5:11p Mike
- * More improvement to countermeasure code.
- * 
- * 86    4/10/98 11:02p Mike
- * Make countermeasures less effective against aspect seekers than against
- * heat seekers.
- * Make AI ships match bank with each other when attacking a faraway
- * target.
- * Make ships not do silly loop-de-loop sometimes when attacking a faraway
- * target.
- * 
- * 85    4/10/98 4:52p Hoffoss
- * Made several changes related to tooltips.
- * 
- * 84    4/02/98 11:40a Lawrance
- * check for #ifdef DEMO instead of #ifdef DEMO_RELEASE
- * 
- * 83    4/01/98 5:35p John
- * Made only the used POFs page in for a level.   Reduced some interp
- * arrays.    Made custom detail level work differently.
- * 
- * 82    3/21/98 3:37p Mike
- * Fix/optimize attacking of big ships.
- * 
- * 81    3/15/98 9:44p Lawrance
- * Get secondary weapons for turrets working
- * 
- * 79    3/12/98 1:24p Mike
- * When weapons linked, increase firing delay.
- * Free up weapon slots for AI ships, if necessary.
- * Backside render shield effect.
- * Remove shield hit triangle if offscreen.
- * 
- * 78    3/11/98 4:34p John
- * Made weapons have glow & thrusters.
- * 
- * 77    3/04/98 8:51a Mike
- * Working on making ships better about firing Synaptic.
- * 
- * 76    3/03/98 5:12p Dave
- * 50% done with team vs. team interface issues. Added statskeeping to
- * secondary weapon blasts. Numerous multiplayer ui bug fixes.
- * 
- * 75    3/02/98 10:00a Sandeep
- * 
- * 74    2/15/98 11:28p Allender
- * allow increase in MAX_WEAPON_TYPES by chaning all bitfield references
- * 
- * 73    2/11/98 1:52p Sandeep
- * 
- * 72    2/02/98 8:47a Andsager
- * Ship death area damage applied as instantaneous damage for small ships
- * and shockwaves for large (>50 radius) ships.
- * 
- * 71    1/29/98 11:48a John
- * Added new counter measure rendering as model code.   Made weapons be
- * able to have impact explosion.
- * 
- * 70    1/23/98 5:08p John
- * Took L out of vertex structure used B (blue) instead.   Took all small
- * fireballs out of fireball types and used particles instead.  Fixed some
- * debris explosion things.  Restructured fireball code.   Restructured
- * some lighting code.   Made dynamic lighting on by default. Made groups
- * of lasers only cast one light.  Made fireballs not cast light.
- * 
- * 69    1/21/98 7:20p Lawrance
- * removed unused mount_size member
- * 
- * 68    1/19/98 10:01p Lawrance
- * Implement "Electronics" missiles
- * 
- * 67    1/17/98 10:04p Lawrance
- * Implementing "must lock to fire" missiles.  Fix couple bugs with rearm
- * time display.
- * 
- * 66    1/17/98 4:45p Mike
- * Better support for AI selection of secondary weapons.
- * 
- * 65    1/16/98 11:43a Mike
- * Fix countermeasures.
- * 
- * 64    1/15/98 11:13a John
- * Added code for specifying weapon trail bitmaps in weapons.tbl
- * 
- * 63    1/06/98 6:58p Lawrance
- * Add wp->turret_subsys, which gets set when a turret fires a weapon.
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef _WEAPON_H
 #define _WEAPON_H
@@ -566,16 +18,15 @@
 #include "weapon/trails.h"
 #include "weapon/shockwave.h"
 #include "graphics/generic.h"
+#include "model/model.h"
 
-#include <vector>
+class object;
+class ship_subsys;
 
-struct object;
-struct ship_subsys;
-
-#define	WP_UNUSED	-	1
-#define	WP_LASER		0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
-#define	WP_MISSILE		1
-#define	WP_BEAM			2
+#define	WP_UNUSED			-1
+#define	WP_LASER			0		// PLEASE NOTE that this flag specifies ballistic primaries as well - Goober5000
+#define	WP_MISSILE			1
+#define	WP_BEAM				2
 extern char *Weapon_subtype_names[];
 extern int Num_weapon_subtypes;
 
@@ -588,6 +39,7 @@ extern int Num_weapon_subtypes;
 
 #define WIF_DEFAULT_VALUE	0
 #define WIF2_DEFAULT_VALUE	0
+#define WIF3_DEFAULT_VALUE	0
 
 #define	WIF_HOMING_HEAT	(1 << 0)				//	if set, this weapon homes via seeking heat
 #define	WIF_HOMING_ASPECT	(1 << 1)				//	if set, this weapon homes via chasing aspect
@@ -601,7 +53,7 @@ extern int Num_weapon_subtypes;
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
 #define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
-#define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
+#define	WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
 #define	WIF_SWARM			(1 << 10)			// Missile "swarms".. ie changes heading and twists on way to target
@@ -611,7 +63,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_BOMB				(1 << 14)			// Bomb-type missile, can be targeted
 #define	WIF_HUGE				(1 << 15)			//	Huge damage (generally 500+), probably only fired at huge ships.
 #define	WIF_NO_DUMBFIRE	(1	<<	16)			// Missile cannot be fired dumbfire (ie requires aspect lock)
-#define  WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
+#define	WIF_THRUSTER		(1 << 17)			// Has thruster cone and/or glow
 #define	WIF_IN_TECH_DATABASE		(1 << 18)
 #define	WIF_PLAYER_ALLOWED		(1 << 19)   // allowed to be on starting wing ships/in weaponry pool
 #define	WIF_BOMBER_PLUS	(1 << 20)			//	Fire this missile only at a bomber or big ship.  But not a fighter.
@@ -619,14 +71,15 @@ extern int Num_weapon_subtypes;
 #define	WIF_CORKSCREW		(1 << 21)			// corkscrew style missile
 #define	WIF_PARTICLE_SPEW	(1 << 22)			// spews particles as it travels
 #define	WIF_EMP				(1 << 23)			// weapon explodes with a serious EMP effect
-#define  WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
+#define	WIF_ENERGY_SUCK	(1 << 24)			// energy suck primary (impact effect)
 #define	WIF_FLAK				(1 << 25)			// use for big-ship turrets - flak gun
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
-#define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
-#define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+#define	WIF_LOCKARM			(1 << 29)			// if the missile was fired without a lock, it does significanlty less damage on impact
+#define	WIF_STREAM			(1 << 30)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
+// NOTE: the remaining WIF is reserved for a flag that truly needs to be in the WIF_ flag field,
+// as opposed to any typical new flag that can be added to WIF3
 
 #define WIF2_BALLISTIC					(1 << 0)	// ballistic primaries - Goober5000
 #define WIF2_PIERCE_SHIELDS				(1 << 1)	// shield pierceing -Bobboau
@@ -639,10 +92,41 @@ extern int Num_weapon_subtypes;
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
+#define WIF2_SMART_SPAWN				(1 << 11)   // Spawn weapon that is fired via turrets like normal weapons
+#define WIF2_INHERIT_PARENT_TARGET		(1 << 12)   // child weapons home in on the target their parent is homing on.
+#define WIF2_NO_EMP_KILL				(1 << 13)	// though weapon has hitpoints it can not be disabled by EMP
+#define WIF2_VARIABLE_LEAD_HOMING		(1 << 14)	// allows user defined scaler to be added to lead (to enable, lead, pure or lag pursuit for missiles)
+#define WIF2_UNTARGETED_HEAT_SEEKER		(1 << 15)	// forces heat seeker to lose target immeadiately (and acquire a random new one)
+#define WIF2_HARD_TARGET_BOMB			(1 << 16)	// removes the radius doubling effect bombs have for collisions
+#define WIF2_NON_SUBSYS_HOMING			(1 << 17)	// spreads fired missiles around the target ships hull
+#define WIF2_NO_LIFE_LOST_IF_MISSED		(1 << 18)	// prevents game from shortening the lifeleft of the missed but still homing missiles
+#define WIF2_CUSTOM_SEEKER_STR			(1 << 19)	// sets the game to use custom seeker strengths instead of default values
+#define WIF2_CAN_BE_TARGETED			(1 << 20)	// allows non-bomb weapons to be targeted
+#define WIF2_SHOWN_ON_RADAR				(1 << 21)	// allows non-bombs be visible on radar
+#define WIF2_SHOW_FRIENDLY				(1 << 22)	// allows friendly weapon radar dots be drawn
+#define WIF2_CAPITAL_PLUS				(1 << 23)   // AI will not use this weapon on fighters or bombers
+#define WIF2_EXTERNAL_WEAPON_FP			(1 << 24)	// will try to use external models FPs if possible
+#define WIF2_EXTERNAL_WEAPON_LNCH		(1 << 25)	// render external secondary as a launcher
+#define WIF2_TAKES_BLAST_DAMAGE			(1 << 26)	// This weapon can take blast damage
+#define WIF2_TAKES_SHOCKWAVE_DAMAGE		(1 << 27)	// This weapon can take shockwave damage
+#define WIF2_DONT_SHOW_ON_RADAR			(1 << 28)   // Force a weapon to not show on radar
+#define WIF2_RENDER_FLAK				(1 << 29)	// Even though this is a flak weapon, render the shell
+#define WIF2_CIWS						(1 << 30)	// This weapons' burst and shockwave damage can damage bombs (Basically, a reverse for TAKES_BLAST/SHOCKWAVE_DAMAGE
+#define WIF2_ANTISUBSYSBEAM				(1 << 31)	// This beam can target subsystems as per normal
+
+#define WIF3_NOLINK						(1 << 0)	// This weapon can not be linked with others
+#define WIF3_USE_EMP_TIME_FOR_CAPSHIP_TURRETS	(1 << 1)	// override MAX_TURRET_DISRUPT_TIME in emp.cpp - Goober5000
+#define WIF3_NO_LINKED_PENALTY			(1 << 2)	// This weapon does not count into linked firing penalty
+#define WIF3_NO_HOMING_SPEED_RAMP 		(1 << 3)	// Disables the 1s long speed ramping when firing locked-on secondaries
+#define WIF3_CMEASURE_ASPECT_HOME_ON	(1 << 4)	// This countermeasure flag makes aspect seekers home on the countermeasure instead of going into dumbfire mode
+#define WIF3_TURRET_INTERCEPTABLE		(1 << 5)	// These two flags mark a weapon as being interceptable by the AI
+#define WIF3_FIGHTER_INTERCEPTABLE		(1 << 6)	// (like WIF_BOMB), without forcing it to be tagetable -MageKing17
+#define WIF3_AOE_ELECTRONICS			(1 << 7)	// Apply electronics effect across the weapon's entire area of effect instead of just on the impacted ship -MageKing17
+
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
-#define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
+#define WIF_HURTS_BIG_SHIPS			(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
 
@@ -656,12 +140,28 @@ extern int Num_weapon_subtypes;
 #define WF_LOCKED_WHEN_FIRED			(1<<5)		// fired with a lock
 #define WF_DESTROYED_BY_WEAPON		(1<<6)		// destroyed by damage from other weapon
 #define WF_SPAWNED					(1<<7)		//Spawned from a spawning type weapon
+#define WF_HOMING_UPDATE_NEEDED		(1<<8)		// this is a newly spawned homing weapon which needs to update client machines
+
+// flags for setting burst fire 
+#define WBF_FAST_FIRING				(1<<0)		// burst is to use only the firewait to determine firing delays
+#define WBF_RANDOM_LENGTH			(1<<1)		// burst is to fire random length bursts
+
+//particle names go here -nuke
+#define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
+#define PSPEW_DEFAULT	0			//std fs2 pspew
+#define PSPEW_HELIX		1			//q2 style railgun trail
+#define PSPEW_SPARKLER	2			//random particles in every direction, can be sperical or ovoid
+#define PSPEW_RING		3			//outward expanding ring
+#define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
+
+#define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
+#define MAX_WEP_DAMAGE_SLOTS	32		//Maximum number of ships which can be counted as killer or assits on destroying this weapon
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon
 	int		team;								// The team of the ship that fired this
-	int		species;							// The species of the ship that fired this
+	int		species;							// The species of the ship that fired thisz
 	float		lifeleft;						// life left on this weapon	
 	vec3d	start_pos;
 
@@ -701,7 +201,8 @@ typedef struct weapon {
 	short	cscrew_index;						// corkscrew info index
 
 	// particle spew info
-	int		particle_spew_time;			// time to spew next bunch of particles	
+	int		particle_spew_time[MAX_PARTICLE_SPEWERS];			// time to spew next bunch of particles	
+	float	particle_spew_rand;				// per weapon randomness value used by some particle spew types -nuke
 
 	// flak info
 	short flak_index;							// flak info index
@@ -719,15 +220,24 @@ typedef struct weapon {
 	ubyte alpha_backward;		// 1 = move in reverse (ascending in value)
 	float alpha_current;		// the current alpha value
 
+	float weapon_max_vel;		// might just as well store the data here
+	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
+								// currently only gets set when weapon_info->acceleration_time is used
+
+	bool collisionOccured;
+	mc_info collisionInfo; // The last collision of this weapon or NULL if it had none
+	//Scoring stuff
+	float total_damage_received;        // total damage received (for scoring purposes)
+	float damage_ship[MAX_WEP_DAMAGE_SLOTS];    // damage applied from each player
+	int   damage_ship_id[MAX_WEP_DAMAGE_SLOTS]; // signature of the damager (corresponds to each entry in damage_ship)
+
+	int hud_in_flight_snd_sig;					// Signature of the sound played while the weapon is in flight
 } weapon;
 
 
 // info specific to beam weapons
-#define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
 	float width;							// width of the section
-	ubyte rgba_inner[4];					// for non-textured beams
-	ubyte rgba_outer[4];					// for non-textured beams
 	float flicker;							// how much it flickers (0.0 to 1.0)
 	float z_add;							// is this necessary?
 	float tile_factor;						// texture tile factor -Bobboau
@@ -746,7 +256,7 @@ typedef struct beam_weapon_info {
 	float beam_particle_radius;			// radius of beam particles
 	float beam_particle_angle;			// angle of beam particle spew cone
 	generic_anim beam_particle_ani;		// particle_ani
-	float beam_miss_factor[NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by skill level
+	float beam_iff_miss_factor[MAX_IFFS][NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by parent iff and player skill level
 	int beam_loop_sound;				// looping beam sound
 	int beam_warmup_sound;				// warmup sound
 	int beam_warmdown_sound;			// warmdown sound
@@ -758,7 +268,24 @@ typedef struct beam_weapon_info {
 	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
+	float beam_width;					// width of the beam (for certain collision checks)
 } beam_weapon_info;
+
+typedef struct particle_spew_info {	//this will be used for multi spews
+	// particle spew stuff
+	int particle_spew_type;			//added pspew type field -nuke
+	int particle_spew_count;
+	int particle_spew_time;
+	float particle_spew_vel;
+	float particle_spew_radius;
+	float particle_spew_lifetime;
+	float particle_spew_scale;
+	float particle_spew_z_scale;	//length value for some effects -nuke
+	float particle_spew_rotation_rate;	//rotation rate for some particle effects -nuke
+	vec3d particle_spew_offset;			//offsets and normals, yay!
+	vec3d particle_spew_velocity;
+	generic_anim particle_spew_anim;
+} particle_spew_info;
 
 typedef struct spawn_weapon_info 
 {
@@ -777,23 +304,37 @@ extern weapon Weapons[MAX_WEAPONS];
 
 #define WEAPON_TITLE_LEN			48
 
+enum InFlightSoundType
+{
+	TARGETED,
+	UNTARGETED,
+	ALWAYS
+};
+
+#define MAX_SUBSTITUTION_PATTERNS	10
+
 typedef struct weapon_info {
 	char	name[NAME_LENGTH];				// name of this weapon
+	char	alt_name[NAME_LENGTH];			// alt name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
-	int	subtype;								// one of the WP_* macros above
-	int	render_type;						//	rendering method, laser, pof, avi
+	int		subtype;								// one of the WP_* macros above
+	int		render_type;						//	rendering method, laser, pof, avi
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
-	int	model_num;							// modelnum of weapon -- -1 if no model
-	char external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
-	int external_model_num;					//the model rendered on the weapon points of a ship
-	int hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
-
+	int		model_num;							// modelnum of weapon -- -1 if no model
+	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
+	int		external_model_num;					//the model rendered on the weapon points of a ship
+	int		hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
+	int		num_detail_levels;					// number of LODs defined in table (optional)
+	int		detail_distance[MAX_MODEL_DETAIL_LEVELS]; // LOD distances define in table (optional)
 	char	*tech_desc;								// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
-
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
+
+	vec3d	closeup_pos;						// position for camera to set an offset for viewing the weapon model
+	float	closeup_zoom;						// zoom when using weapon model in closeup view in loadout selection
+
 	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
 
@@ -805,7 +346,9 @@ typedef struct weapon_info {
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 
-	float	max_speed;							// initial speed of the weapon
+	float	max_speed;							// max speed of the weapon
+	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
+	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
@@ -818,23 +361,20 @@ typedef struct weapon_info {
 	float arm_dist;
 	float arm_radius;
 	float det_range;
-	float	det_radius;					//How far from target or target subsystem it blows up
-	/*float	blast_force;						// force this weapon exhibits when hitting an object
-	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
-	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/
-
-	//int		shockwave_info_index;
-	//char	shockwave_name[NAME_LENGTH];
-	//char	shockwave_pof_name[NAME_LENGTH];	// Name of the pof for the shockwave, if useing it's own
-	//int		shockwave_model;					//model for the shock wave -Bobboau
+	float det_radius;					//How far from target or target subsystem it blows up
+	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
+	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
+	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
 
 	float	armor_factor, shield_factor, subsystem_factor;	//	in 0.0..2.0, scale of damage done to type of thing
 	float life_min;
 	float life_max;
-	float	lifetime;							//	How long this thing lives.
+	float max_lifetime ;						// How long this weapon will actually live for
+	float	lifetime;						// How long the AI thinks this thing lives (used for distance calculations etc)
 	float energy_consumed;					// Energy used up when weapon is fired
 	int	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 	int wi_flags2;							// stupid int wi_flags, only 32 bits... argh - Goober5000
+	int wi_flags3;							// stupid int wi_flags2, only 32 bits... argh - The E
 	float turn_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
@@ -860,6 +400,8 @@ typedef struct weapon_info {
 	// Seeker strength - for countermeasures overhaul.
 	float seeker_strength;
 
+	int pre_launch_snd;
+	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	int	launch_snd;
 	int	impact_snd;
 	int disarmed_impact_snd;
@@ -870,12 +412,24 @@ typedef struct weapon_info {
 
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in weapon selection
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
+	int 	selection_effect;
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
 
 	int dinky_impact_weapon_expl_index;
 	float dinky_impact_explosion_radius;
+
+	int flash_impact_weapon_expl_index;
+	float flash_impact_explosion_radius;
+
+	int piercing_impact_weapon_expl_index;
+	float piercing_impact_explosion_radius;
+	int piercing_impact_particle_count;
+	float piercing_impact_particle_life;
+	float piercing_impact_particle_velocity;
+	float piercing_impact_particle_back_velocity;
+	float piercing_impact_particle_variance;
 
 	// EMP effect
 	float emp_intensity;					// intensity of the EMP effect
@@ -898,14 +452,8 @@ typedef struct weapon_info {
 	// SSM
 	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
 
-	// particle spew stuff
-	int particle_spew_count;
-	int particle_spew_time;
-	float particle_spew_vel;
-	float particle_spew_radius;
-	float particle_spew_lifetime;
-	float particle_spew_scale;
-	generic_anim particle_spew_anim;
+	// now using new particle spew struct -nuke
+	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
@@ -913,13 +461,6 @@ typedef struct weapon_info {
 	float cs_twist;
 	int cs_crotate;
 	int cs_delay;
-
-	generic_bitmap decal_texture;
-	int decal_glow_texture_id;
-	int decal_burn_texture_id;
-	generic_bitmap decal_backface_texture;
-	int decal_burn_time;
-	float decal_rad;
 
 	//electronics info - phreak 5/3/03
 	int elec_time;				//how long it lasts, in milliseconds
@@ -937,8 +478,11 @@ typedef struct weapon_info {
 	float lssm_warpin_radius;
 	float lssm_lock_range;
 
-	float			field_of_fire;	//cone the weapon will fire in, 0 is strait all the time-Bobboau
-	int				shots;			//the number of shots that will be fired at a time, 
+	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
+	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
+	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
+	float max_fof_spread;			//The maximum fof increase that the shots can spread to
+	int	  shots;					//the number of shots that will be fired at a time, 
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
 
@@ -958,16 +502,42 @@ typedef struct weapon_info {
 	float weapon_submodel_rotate_vel;
 	
 	int damage_type_idx;
+	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
+
+	int armor_type_idx;	// Weapon armor type
+
 
 	// transparency/alpha info
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
 
-	//WMC - scripting stuff
-	script_hook sc_collide_ship;
-	script_hook sc_collide_weapon;
+	int weapon_hitpoints;
 
+	int	burst_shots;
+	float burst_delay;
+	int burst_flags;
+
+	// Thruster effects
+	generic_anim	thruster_flame;
+	generic_anim	thruster_glow;
+	float			thruster_glow_factor;
+
+	float			target_lead_scaler;
+	int				targeting_priorities[32];
+	int				num_targeting_priorities;
+
+	// the optional pattern of weapons that this weapon will fire
+	size_t			num_substitution_patterns;
+	int				weapon_substitution_pattern[MAX_SUBSTITUTION_PATTERNS]; //weapon_indexes
+	char			weapon_substitution_pattern_names[MAX_SUBSTITUTION_PATTERNS][NAME_LENGTH]; // weapon names so that we can generate the indexs after sort
+
+	int			score; //Optional score for destroying the weapon
+
+	int hud_tracking_snd; // Sound played when this weapon tracks a target
+	int hud_locked_snd; // Sound played when this weapon locked onto a target
+	int hud_in_flight_snd; // Sound played while the weapon is in flight
+	InFlightSoundType in_flight_play_type; // The status when the sound should be played
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -986,7 +556,11 @@ typedef struct weapon_expl_lod {
 	int	num_frames;
 	int	fps;
 
-	weapon_expl_lod() { memset(this, 0, sizeof(weapon_expl_lod)); bitmap_id = -1; }
+	weapon_expl_lod( ) 
+		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
+	{ 
+		filename[ 0 ] = 0;
+	}
 } weapon_expl_lod;
 
 typedef struct weapon_expl_info	{
@@ -997,7 +571,7 @@ typedef struct weapon_expl_info	{
 class weapon_explosions
 {
 private:
-	std::vector<weapon_expl_info> ExplosionInfo;
+	SCP_vector<weapon_expl_info> ExplosionInfo;
 	int GetIndex(char *filename);
 
 public:
@@ -1019,13 +593,12 @@ extern int Default_cmeasure_index;
 
 extern int Num_player_weapon_precedence;				// Number of weapon types in Player_weapon_precedence
 extern int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, precedence list for player weapon selection
-extern char	*Weapon_names[MAX_WEAPON_TYPES];
 
 #define WEAPON_INDEX(wp)				(wp-Weapons)
 #define WEAPON_INFO_INDEX(wip)		(wip-Weapon_info)
 
 
-int weapon_info_lookup(char *name = NULL);
+int weapon_info_lookup(const char *name = NULL);
 void weapon_init();					// called at game startup
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
@@ -1049,15 +622,14 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0);
+int weapon_create( vec3d * pos, matrix * orient, int weapon_type, int parent_obj, int group_id=-1, int is_locked = 0, int is_spawned = 0, float fof_cooldown = 0.0f, ship_subsys * src_turret = NULL);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // for weapons flagged as particle spewers, spew particles. wheee
 void weapon_maybe_spew_particle(object *obj);
 
-
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos );
-int weapon_name_lookup(char *name);
+bool weapon_armed(weapon *wp, bool hit_target);
+void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant = -1 );
 int cmeasure_name_lookup(char *name);
 void spawn_child_weapons( object *objp );
 
@@ -1087,7 +659,15 @@ void weapon_get_laser_color(color *c, object *objp);
 
 void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed);
 
+void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index);
+
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
+
+// Pauses all running weapon sounds
+void weapon_pause_sounds();
+
+// Unpauses all running weapon sounds
+void weapon_unpause_sounds();
 
 #endif

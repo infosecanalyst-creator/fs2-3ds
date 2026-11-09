@@ -7,77 +7,12 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDlock.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * Header file for missile locking code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 12    4/08/98 8:33p Lawrance
- * Make player re-acquire lock when targeting subsystems on a locked ship.
- * 
- * 11    3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 10    2/28/98 7:03p Lawrance
- * Change player missile locking to use dot product, so we can use it in
- * the external views
- * 
- * 9     1/23/98 6:25p Lawrance
- * Change player missile locking to lock on subsystem points automatically
- * 
- * 8     1/21/98 7:20p Lawrance
- * Make subsystem locking only work with line-of-sight, cleaned up locking
- * code, moved globals to player struct.
- * 
- * 7     1/19/98 10:02p Lawrance
- * Fix bug with locking on friendlies
- * 
- * 6     11/17/97 6:37p Lawrance
- * new gauges: extended target view, new lock triangles, support ship view
- * 
- * 5     4/13/97 3:53p Lawrance
- * separate out the non-rendering dependant portions of the HUD ( sounds,
- * updating lock position, changing targets, etc) and put into
- * hud_update_frame()
- * 
- * 4     3/19/97 5:53p Lawrance
- * integrating new Misc_sounds[] array (replaces old Game_sounds
- * structure)
- * 
- * 3     1/02/97 7:12p Lawrance
- * adding hooks for more sounds
- * 
- * 2     12/23/96 7:53p Lawrance
- * missile locking working in new source files
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _HUDLOCK_H
 #define _HUDLOCK_H
+
+#include "hud/hud.h"
 
 void hud_init_missile_lock();
 void hud_draw_lock_triangles(int center_x, int center_y, float frametime);
@@ -87,5 +22,42 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos);
 void hud_do_lock_indicator(float frametime);
 void hud_stop_looped_locking_sounds();
 void hud_lock_reset(float lock_time_scale=1.0f);
+
+class HudGaugeLock: public HudGauge
+{
+protected:
+	hud_anim Lock_gauge;
+	hud_anim Lock_anim;
+
+	bool loop_locked_anim;
+
+	int Lock_gauge_half_w;
+	int Lock_gauge_half_h;
+	int Lockspin_half_w;
+	int Lockspin_half_h;
+	float Lock_triangle_height;
+	float Lock_triangle_base;
+	int Lock_target_box_width;
+	int Lock_target_box_height;
+
+	int Rotate_time_id;
+	int Lock_gauge_draw_stamp;
+	int Lock_gauge_draw;
+public:
+	HudGaugeLock();
+	void initBitmaps(char *lock_gauge_fname, char *lock_anim_fname);
+	void initGaugeHalfSize(int w, int h);
+	void initSpinHalfSize(int w, int h);
+	void initTriHeight(float h);
+	void initTriBase(float length);
+	void initTargetBoxSize(int w, int h);
+	void initLoopLockedAnim(bool loop);
+
+	void render(float frametime);
+	void renderLockTriangles(int center_x, int center_y, float frametime);
+	void renderLockTrianglesOld(int center_x, int center_y, int radius);
+	void pageIn();
+	void initialize();
+};
 
 #endif

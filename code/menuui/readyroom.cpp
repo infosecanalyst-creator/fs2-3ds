@@ -7,210 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.23.2.6 $
- * $Date: 2007-11-20 01:11:10 $
- * $Author: Goober5000 $
- *
- * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.23.2.5  2007/02/11 09:09:55  taylor
- * fix simroom crash bug from Goober's rencent change
- * add NULL handling to make sure we don't crap out on sorting
- *
- * Revision 2.23.2.4  2006/10/01 19:27:28  taylor
- * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
- * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
- *
- * Revision 2.23.2.3  2006/08/28 17:14:52  taylor
- * stupid, stupid, stupid...
- *  - fix AVI/MPG movie playback
- *  - fix missing campaign craziness
- *
- * Revision 2.23.2.2  2006/08/27 18:11:37  taylor
- * quite a few fixes to handle missing campaigns better
- * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
- * clean up the getting of a list of available campaigns
- * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
- * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
- * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
- *
- * Revision 2.23.2.1  2006/07/08 18:09:41  taylor
- * remove -allslev
- * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
- * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed
- *
- * Revision 2.23  2006/04/14 18:44:16  taylor
- * remove all of the *_ex() parsing functions added for use by EFFs
- * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
- * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
- *   (should work ok with FRED2, but I wasn't able to test it)
- *
- * Revision 2.22  2006/01/13 08:27:43  taylor
- * swap order of pilot read and reset-to-defaults so that the various entries in the pilot file don't get clobbered needlessly
- *
- * Revision 2.21  2005/10/30 19:22:31  wmcoolmon
- * Display a special dialog if the player tries to continue a campaign with no missions
- *
- * Revision 2.20  2005/09/16 02:51:54  taylor
- * when changing a campaign in the campaign room make sure that the mainhall is properly set without having to play a mission first
- *
- * Revision 2.19  2005/07/18 03:45:07  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.18  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.17  2005/05/12 17:49:13  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.16  2005/04/25 06:36:01  taylor
- * use full size of Campaign_missions[] for simroom filtering, fixes the problem of campaign
- *   missions still showing up in the single list even after filtering
- *
- * Revision 2.15  2005/03/27 06:12:38  taylor
- * some pilot file fixing when going between multi and single (partial fix)
- *
- * Revision 2.14  2005/02/23 04:51:56  taylor
- * some bm_unload() -> bm_release() changes to save bmpman slots
- *
- * Revision 2.13  2005/02/18 20:50:40  wmcoolmon
- * Fixed line misalignment at nonstandard res in the campaign room
- *
- * Revision 2.12  2004/10/31 21:53:24  taylor
- * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
- *
- * Revision 2.11  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.10  2004/07/12 16:32:53  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.9  2004/04/10 16:55:45  Goober5000
- * quashed the slider bug!
- * --Goober5000
- *
- * Revision 2.8  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.7  2003/09/05 04:25:28  Goober5000
- * well, let's see here...
- *
- * * persistent variables
- * * rotating gun barrels
- * * positive/negative numbers fixed
- * * sexps to trigger whether the player is controlled by AI
- * * sexp for force a subspace jump
- *
- * I think that's it :)
- * --Goober5000
- *
- * Revision 2.6  2003/04/06 03:56:54  Goober5000
- * fixed some scrolling issues; added scroll bar to mission select
- * --Goober5000
- *
- * Revision 2.5  2003/04/05 11:09:22  Goober5000
- * fixed some fiddly bits with scrolling and ui stuff
- * --Goober5000
- *
- * Revision 2.4  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.3  2003/03/03 04:28:37  Goober5000
- * fixed the tech room bug!  yay!
- * --Goober5000
- *
- * Revision 2.2  2002/10/19 03:50:29  randomtiger
- * Added special pause mode for easier action screenshots.
- * Added new command line parameter for accessing all single missions in tech room. - RT
- *
- * Revision 2.1.2.2  2002/11/04 21:25:00  randomtiger
- *
- * When running in D3D all ani's are memory mapped for speed, this takes up more memory but stops gametime locking of textures which D3D8 hates.
- * Added new command line tag Cmdline_d3dlowmem for people who don't want to make use of this because they have no memory.
- * Cleaned up some more texture stuff enabled console debug for D3D.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 20    9/30/99 5:59p Jefff
- * fixed compile error in OEM ver
- * 
- * 19    9/08/99 12:28p Jefff
- * 
- * 18    9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 17    9/02/99 2:33p Jefff
- * column heading coordinate changes
- * 
- * 16    8/22/99 4:16p Jefff
- * scroll button coord fixes
- * 
- * 15    7/20/99 1:49p Dave
- * Peter Drake build. Fixed some release build warnings.
- * 
- * 14    7/19/99 2:13p Dave
- * Added some new strings for Heiko.
- * 
- * 13    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 12    7/09/99 5:54p Dave
- * Seperated cruiser types into individual types. Added tons of new
- * briefing icons. Campaign screen.
- * 
- * 11    2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 10    1/30/99 9:01p Dave
- * Coord fixes.
- * 
- * 9     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 8     1/29/99 12:47a Dave
- * Put in sounds for beam weapon. A bunch of interface screens (tech
- * database stuff).
- * 
- * 7     12/11/98 4:35p Andsager
- * Fix sim room bug when no standalone missions
- * 
- * 6     12/07/98 5:02p Dan
- * Removed improper use of bitmap filename with extension,
- * 
- * 5     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- *    
- *
- * $NoKeywords: $
- */
+
 
 #include <ctype.h>
 
@@ -226,6 +23,7 @@
 #include "freespace2/freespace.h"
 #include "playerman/player.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
@@ -323,7 +121,7 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		sim_room_buttons("2_LMB_07",	10,	732,	64,	739,	7),
 		sim_room_buttons("2_LMB_08",	854,	681,	800, 704,	8),
 		sim_room_buttons("2_LMB_09",	914,	681,	915, 660,	9),
-		sim_room_buttons("2_LMB_10",	854,	728,	800, 728,	10),
+		sim_room_buttons("2_LMB_10",	854,	728,	780, 736,	10),
 
 		sim_room_buttons("2_TDB_00",	12,	5,		59,	12,	0),
 		sim_room_buttons("2_TDB_01",	12,	31,	59,	37,	1),
@@ -420,9 +218,11 @@ static int list_w1;
 static int list_w2;
 static int list_h;
 static int Background_bitmap;
-static int Old_main_hall = 0;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
+
+int Sim_room_overlay_id;
+int Campaign_room_overlay_id;
 
 // globals
 bool Campaign_room_no_campaigns = false;
@@ -466,9 +266,9 @@ void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = N
 // Finds a hash value for mission filename
 //
 // returns hash value
-int hash_filename(char *filename) {
+int hash_filename(const char *filename) {
 	ulonglong hash_val = 0;
-	char *ptr = filename;
+	const char *ptr = filename;
 	
 	// Don't hash .fsm extension, convert all to upper case
 	for (int i=0; i < ((signed int)(strlen(filename)) - 4); i++) {
@@ -524,7 +324,7 @@ int hash_insert(char *filename) {
 // Checks if a filename already exitst in the hash table
 //
 // returns 1 if found (collision), 0 if no collision
-int campaign_mission_hash_collision(char *filename)
+int campaign_mission_hash_collision(const char *filename)
 {
 	int hash_val = hash_filename(filename);
 	hash_node *cur_node = Campaign_mission_hash_table[hash_val];
@@ -604,40 +404,8 @@ int sim_room_line_add(int type, char *name, char *filename, int x, int y, int fl
 	return Num_lines++;
 }
 
-// filter out all multiplayer campaigns
-int campaign_room_campaign_filter(char *filename)
-{
-	Int3();
-
-	return 0;
-
-	// obsolete, moved all of this to global mission_campaign_build_list() - taylor
-
-/*	int type, max_players;
-	char name[NAME_LENGTH], *desc = NULL;
-
-	#ifdef OEM_BUILD
-	// also need to check if this is the builtin campaign
-	if ( game_find_builtin_mission(filename) && mission_campaign_get_info(filename, name, &type, &max_players, &desc) ) {
-	#else
-	if ( mission_campaign_get_info(filename, name, &type, &max_players, &desc) ) {
-	#endif
-		if ( type == CAMPAIGN_TYPE_SINGLE ) {			
-			Campaign_file_names_temp[Num_campaigns] = vm_strdup(filename);
-			Campaign_descs_temp[Num_campaigns++] = desc;
-			return 1;			
-		}
-	}
-
-	if (desc){
-		vm_free(desc);
-	}
-
-	return 0;*/
-}
-
 // build up a list of all missions in all campaigns.
-int sim_room_campaign_mission_filter(char *filename)
+int sim_room_campaign_mission_filter(const char *filename)
 {
 	int num;
 
@@ -651,7 +419,7 @@ int sim_room_campaign_mission_filter(char *filename)
 }
 
 // filter out all missions already used in existing campaigns
-int sim_room_standalone_mission_filter(char *filename)
+int sim_room_standalone_mission_filter(const char *filename)
 {
 	int type;
 	char mission_name[255];
@@ -692,7 +460,7 @@ int build_standalone_mission_list_do_frame()
 
 	if (Num_standalone_missions > 0) {  // sanity check
 		if (strlen(Mission_filenames[Num_standalone_missions_with_info]) < MAX_FILENAME_LEN - 4) { // sanity check?
-			strcpy(filename, Mission_filenames[Num_standalone_missions_with_info]);
+			strcpy_s(filename, Mission_filenames[Num_standalone_missions_with_info]);
 
 			// update popup		
 			memset(str, 0, 256);
@@ -700,7 +468,7 @@ int build_standalone_mission_list_do_frame()
 			popup_change_text(str);
 
 			// tack on an extension
-			strcat(filename, FS_MISSION_FILE_EXT);
+			strcat_s(filename, FS_MISSION_FILE_EXT);
 			if (!get_mission_info(filename)) {			
 				Standalone_mission_names[Num_standalone_missions_with_info] = vm_strdup(The_mission.name);
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
@@ -813,7 +581,7 @@ void sim_room_build_listing()
 						// determine some extra information
 						int flags = 0;
 						memset(full_filename, 0, 256);
-						strcpy(full_filename, cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT));
+						strcpy_s(full_filename, cf_add_ext(Mission_filenames[i], FS_MISSION_FILE_EXT));
 						fs_builtin_mission *fb = game_find_builtin_mission(full_filename);						
 						if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 							flags |= READYROOM_FLAG_FROM_VOLITION;
@@ -839,7 +607,7 @@ void sim_room_build_listing()
 					// determine some extra information
 					int flags = 0;
 					memset(full_filename, 0, 256);
-					strcpy(full_filename, cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT));
+					strcpy_s(full_filename, cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT));
 					fs_builtin_mission *fb = game_find_builtin_mission(full_filename);
 					if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 						flags |= READYROOM_FLAG_FROM_VOLITION;
@@ -1026,7 +794,7 @@ int sim_room_maybe_resume_savegame()
 	// Generate the save-game filename for this campaign
 	memset(savegame_filename, 0, _MAX_FNAME);
 	mission_campaign_savefile_generate_root(savegame_filename);
-	strcat(savegame_filename, NOX("svg"));
+	strcat_s(savegame_filename, NOX("svg"));
 
 	// Decide if we should offer choice to resume this savegame
 	if ( sim_room_can_resume_savegame(savegame_filename) ) {
@@ -1080,14 +848,14 @@ int readyroom_continue_campaign()
 	if ( !(Game_mode & GM_MULTIPLAYER) && !Campaign.loop_enabled && (Campaign.current_mission == -1) &&
 		(Campaign.prev_mission != -1) && (Campaign.next_mission != -1) )
 	{
-		if (Campaign.missions[Campaign.prev_mission].has_mission_loop) {
+		if (Campaign.missions[Campaign.prev_mission].flags & CMISSION_FLAG_HAS_LOOP) {
 			// NOTE: the order of these calls is *very* important
 
 			// we must manually set the current mission to the *previous* mission and the mission name.
 			// this isn't the same thing that is done in mission_campaign_next_mission(), but it's
 			// cleaner to do this here than it is to hack that function to do the same thing
 			Campaign.current_mission = Campaign.prev_mission;
-			strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+			strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
 
 			// set the bit for campaign mode
 			Game_mode |= GM_CAMPAIGN_MODE;
@@ -1107,31 +875,14 @@ int readyroom_continue_campaign()
 	int mc_rval = mission_campaign_next_mission();
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
-#ifdef FS2_DEMO
-		int reset_campaign = 0;
-		reset_campaign = popup(PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Demo Campaign Is Over.  Would you like to play the campaign again?", 111) );
-		if ( reset_campaign == 1 ) {
-			mission_campaign_savefile_delete(Campaign.filename);
-			mission_campaign_load(Campaign.filename);
-			mission_campaign_next_mission();
-		} else {
-			return -1;
-		}
-#else
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(0, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The campaign is over.  To replay the campaign, either create a new pilot or restart the campaign in the campaign room.", 112) );
 		return -1;
-#endif
 	}
 	else if(mc_rval == -2)
 	{
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(0, 1, POPUP_OK, NOX("The current campaign has no missions") );
-		return -1;
-	}
-
-	// CD CHECK
-	if(!game_do_cd_mission_check(Game_current_mission_filename)){		
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, NOX("The current campaign has no missions") );
 		return -1;
 	}
 
@@ -1149,16 +900,12 @@ void sim_room_commit()
 		return;
 	}
 
-	strncpy(Game_current_mission_filename, sim_room_lines[Selected_line].filename, MAX_FILENAME_LEN);
+	strcpy_s(Game_current_mission_filename, sim_room_lines[Selected_line].filename);
 
 	Game_mode &= ~(GM_CAMPAIGN_MODE);						// be sure this bit is clear
 
-	// CD CHECK
-	if(game_do_cd_mission_check(Game_current_mission_filename)){		
-		// don't resume savegame, proceed to briefing
-		gameseq_post_event(GS_EVENT_START_GAME);
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
-	}
+	gameseq_post_event(GS_EVENT_START_GAME);
+	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }
 
 int sim_room_button_pressed(int n)
@@ -1176,21 +923,15 @@ int sim_room_button_pressed(int n)
 
 		case MISSION_TAB:
 			Simroom_show_all = 0;
-#ifdef OEM_BUILD
-			game_feature_not_in_demo_popup();
-//			gamesnd_play_iface(SND_GENERAL_FAIL);
-			break;
-#else
 			Player->readyroom_listing_mode = MODE_MISSIONS;
 			Selected_line = Scroll_offset = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
 			sim_room_build_listing();
 			break;
-#endif
 
 		case CAMPAIGN_TAB:
 			if ( !strlen(Campaign.filename) ) {
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", -1));
+				popup( PF_USE_AFFIRMATIVE_ICON | PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found, unable to switch to campaign mode!", 1612));
 				break;
 			}
 
@@ -1311,17 +1052,19 @@ void sim_room_init()
 	Background_bitmap = bm_load(Sim_filename[gr_screen.res]);
 
 	// load in help overlay bitmap	
-	help_overlay_load(SIM_ROOM_OVERLAY);
-	help_overlay_set_state(SIM_ROOM_OVERLAY,0);
+	Sim_room_overlay_id = help_overlay_get_index(SIM_ROOM_OVERLAY);
+	help_overlay_set_state(Sim_room_overlay_id,gr_screen.res,0);
 
 	Scroll_offset = Selected_line = 0;
 
-	strcpy(Cur_campaign, Player->current_campaign);
+	strcpy_s(Cur_campaign, Player->current_campaign);
 	if ( !mission_load_up_campaign() ) {
 		mission_campaign_next_mission();
 	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
+
+		mission_campaign_load_failure_popup();
 	}
 
 	Num_campaign_missions = 0;
@@ -1342,15 +1085,15 @@ void sim_room_init()
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if(Background_bitmap != -1){
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 	Ui_window.draw();
 	gr_flip();		
 
 	Get_file_list_filter = sim_room_standalone_mission_filter;
 	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("*"));
-	strcat(wild_card, FS_MISSION_FILE_EXT);
+	strcpy_s(wild_card, NOX("*"));
+	strcat_s(wild_card, FS_MISSION_FILE_EXT);
 	Num_standalone_missions = cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
 
 	// set up slider with 0 items to start
@@ -1411,15 +1154,11 @@ void sim_room_close()
 	// free global Campaign_* list stuff
 	mission_campaign_free_list();
 
-	// unload the overlay bitmap
-	help_overlay_unload(SIM_ROOM_OVERLAY);
-
 	campaign_mission_hash_table_delete();
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
-	mission_campaign_savefile_save();
+	Pilot.save_player();
 
 	// unload special mission icons
 	sim_room_unload_mission_icons();
@@ -1444,7 +1183,7 @@ void sim_room_do_frame(float frametime)
 			break;
 		}
 
-	if ( help_overlay_active(SIM_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Sim_room_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1452,14 +1191,14 @@ void sim_room_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(SIM_ROOM_OVERLAY) ) {
-			help_overlay_set_state(SIM_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Sim_room_overlay_id) ) {
+			help_overlay_set_state(Sim_room_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(SIM_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Sim_room_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1531,7 +1270,7 @@ void sim_room_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();
@@ -1557,19 +1296,19 @@ void sim_room_do_frame(float frametime)
 	gr_set_font(FONT1);
 	if (Player->readyroom_listing_mode == MODE_CAMPAIGNS) {
 		gr_set_color_fast(&Color_text_heading);
-		strcpy(buf, Campaign.name);
+		strcpy_s(buf, Campaign.name);
 		gr_force_fit_string(buf, 255, list_w1);
-		gr_printf(list_x1, Mission_list_coords[gr_screen.res][1], buf);
+		gr_printf_menu(list_x1, Mission_list_coords[gr_screen.res][1], buf);
 
-		if ( strlen(Campaign.filename) > 0 ) {			
+		if (Campaign.filename[0] != '\0') {			
 			sprintf(buf, NOX("%s%s"), Campaign.filename, FS_CAMPAIGN_FILE_EXT);
 			gr_force_fit_string(buf, 255, list_w2);
-			gr_printf(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
+			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], buf);		
 
 			// blit the proper icons if necessary
 			char full_name[256];
 			memset(full_name, 0, 256);
-			strcpy(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
+			strcpy_s(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
 			fs_builtin_mission *fb = game_find_builtin_mission(full_name);
 			if(fb != NULL){
 				// sim_room_blit_icons(0, Mission_list_coords[gr_screen.res][1], fb, 0);
@@ -1595,14 +1334,14 @@ void sim_room_do_frame(float frametime)
 		else
 			gr_set_color_fast(&Color_text_normal);
 
-		strcpy(buf, sim_room_lines[line].name);
+		strcpy_s(buf, sim_room_lines[line].name);
 		gr_force_fit_string(buf, 255, list_x1 + list_w1 - sim_room_lines[line].x);
-		gr_printf(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, buf);
 
 		if (sim_room_lines[line].filename) {
-			strcpy(buf, sim_room_lines[line].filename);
+			strcpy_s(buf, sim_room_lines[line].filename);
 			gr_force_fit_string(buf, 255, list_w2);
-			gr_printf(list_x2, y, buf);
+			gr_printf_menu(list_x2, y, buf);
 		}
 
 		// blit additional icon information
@@ -1616,7 +1355,7 @@ void sim_room_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(SIM_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Sim_room_overlay_id, gr_screen.res);
 
 	gr_flip();
 }
@@ -1635,7 +1374,7 @@ void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb, in
 	// if the line is flagged as a volition file
 	if(is_from_volition && (Mission_icon_bitmaps[MISSION_ICON_VOLITION] >= 0)){		
 		gr_set_bitmap(Mission_icon_bitmaps[MISSION_ICON_VOLITION]);
-		gr_bitmap(Sim_volition_icon_x[gr_screen.res], y_start + MISSION_ICON_VOLITION_Y_OFFSET);
+		gr_bitmap(Sim_volition_icon_x[gr_screen.res], y_start + MISSION_ICON_VOLITION_Y_OFFSET, GR_RESIZE_MENU);
 	}	
 }
 
@@ -1717,7 +1456,7 @@ static int Desc_scroll_offset;
 static int Selected_campaign_index;
 static int Active_campaign_index;
 
-char *Info_text_ptrs[MAX_INFO_LINES];
+const char *Info_text_ptrs[MAX_INFO_LINES];
 int Num_info_lines, Info_text_line_size[MAX_INFO_LINES];
 
 void campaign_room_build_listing()
@@ -1794,8 +1533,10 @@ int campaign_room_reset_campaign(int n)
 		strcat(filename, FS_CAMPAIGN_FILE_EXT);
 
 		mission_campaign_savefile_delete(filename);
-		mission_campaign_load(filename);
+		mission_campaign_load(filename, NULL, 1 , false); // retail doesn't reset stats when resetting the campaign
 		mission_campaign_next_mission();
+
+		vm_free(filename);
 
 		return 0;
 	}
@@ -1828,10 +1569,7 @@ void campaign_room_commit()
 		}
 
 		mission_campaign_load(Campaign_file_names[Selected_campaign_index]);
-		strcpy(Player->current_campaign, Campaign.filename);  // track new campaign for player
-
-		// Goober5000 - reset player-persistent variables
-		Player->num_variables = 0;
+		strcpy_s(Player->current_campaign, Campaign.filename);  // track new campaign for player
 	}
 
 	if (mission_campaign_next_mission()) {  // is campaign and next mission valid?
@@ -1893,9 +1631,6 @@ int campaign_room_button_pressed(int n)
 					// reset tech database to what's in the tables
 					tech_reset_to_default();
 				}
-
-				// Goober5000 - reset player-persistent variables
-				Player->num_variables = 0;
 			}
 
 			break;
@@ -1911,7 +1646,6 @@ void campaign_room_init()
 
 	list_h = Mission_list_coords[gr_screen.res][3];
 
-	// common_set_interface_palette("InterfacePalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Campaign_mask_filename[gr_screen.res]);
 
@@ -1946,14 +1680,11 @@ void campaign_room_init()
 	Background_bitmap = bm_load(Campaign_filename[gr_screen.res]);
 
 	// load in help overlay bitmap	
-	help_overlay_load(CAMPAIGN_ROOM_OVERLAY);
-	help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY,0);
+	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
+	help_overlay_set_state(Campaign_room_overlay_id,gr_screen.res,0);
 
 	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
-
-	// Goober5000 - dumb hack, since main hall can be set in multiple places
-	Old_main_hall = Player->main_hall;
 
 	// this stuff needs to happen before the mission_campaign_build_list() call
 	load_failed = mission_load_up_campaign();
@@ -1962,6 +1693,8 @@ void campaign_room_init()
 	} else {
 		Campaign.filename[0] = 0;
 		Campaign.num_missions = 0;
+
+		mission_campaign_load_failure_popup();
 	}
 
 	// we need descriptions too, so "true" it
@@ -1990,22 +1723,9 @@ void campaign_room_close()
 	// free the global Campaign_* list stuff
 	mission_campaign_free_list();
 
-	// unload the overlay bitmap
-	help_overlay_unload(CAMPAIGN_ROOM_OVERLAY);
-
-	// be sure that we are going to use the correct mainhall
-	if ( (Player != NULL) && (Campaign.current_mission >= 0) ) {
-		Player->main_hall = Campaign.missions[Campaign.current_mission].main_hall;
-
-		// we might need to switch the music
-		if (main_hall_get_music_index(Player->main_hall) != main_hall_get_music_index(Old_main_hall))
-			main_hall_stop_music();
-	}
-
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
-	mission_campaign_savefile_save();
+	Pilot.save_player();
 }
 
 void campaign_room_do_frame(float frametime)
@@ -2016,7 +1736,7 @@ void campaign_room_do_frame(float frametime)
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 
-	if ( help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
+	if ( help_overlay_active(Campaign_room_overlay_id) ) {
 		// Cr_buttons[gr_screen.res][CR_HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -2024,14 +1744,14 @@ void campaign_room_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
-			help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY, 0);
+		if ( help_overlay_active(Campaign_room_overlay_id) ) {
+			help_overlay_set_state(Campaign_room_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(CAMPAIGN_ROOM_OVERLAY) ) {
+	if ( !help_overlay_active(Campaign_room_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -2086,7 +1806,7 @@ void campaign_room_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	Ui_window.draw();
@@ -2102,13 +1822,13 @@ void campaign_room_do_frame(float frametime)
 		if (!stricmp(sim_room_lines[line].filename, Campaign.filename)) {
 			gr_set_color_fast(&Color_white);
 			i = y + font_height / 2 - 1;
-			gr_circle(Cr_list_coords[gr_screen.res][0] - 6, i, 5);
+			gr_circle(Cr_list_coords[gr_screen.res][0] - 6, i, 5, GR_RESIZE_MENU);
 
 			gr_set_color_fast(&Color_bright_white);
-			gr_line(Cr_list_coords[gr_screen.res][0] - 10, i, Cr_list_coords[gr_screen.res][0] - 8, i);
-			gr_line(Cr_list_coords[gr_screen.res][0] - 6, i - 4, Cr_list_coords[gr_screen.res][0] - 6, i - 2);
-			gr_line(Cr_list_coords[gr_screen.res][0] - 4, i, Cr_list_coords[gr_screen.res][0] - 2, i);
-			gr_line(Cr_list_coords[gr_screen.res][0] - 6, i + 2, Cr_list_coords[gr_screen.res][0] - 6, i + 4);
+			gr_line(Cr_list_coords[gr_screen.res][0] - 10, i, Cr_list_coords[gr_screen.res][0] - 8, i, GR_RESIZE_MENU);
+			gr_line(Cr_list_coords[gr_screen.res][0] - 6, i - 4, Cr_list_coords[gr_screen.res][0] - 6, i - 2, GR_RESIZE_MENU);
+			gr_line(Cr_list_coords[gr_screen.res][0] - 4, i, Cr_list_coords[gr_screen.res][0] - 2, i, GR_RESIZE_MENU);
+			gr_line(Cr_list_coords[gr_screen.res][0] - 6, i + 2, Cr_list_coords[gr_screen.res][0] - 6, i + 4, GR_RESIZE_MENU);
 		}
 
 		if (line == Selected_campaign_index)
@@ -2118,9 +1838,9 @@ void campaign_room_do_frame(float frametime)
 		else
 			gr_set_color_fast(&Color_text_normal);
 
-		strcpy(buf, sim_room_lines[line].name);
+		strcpy_s(buf, sim_room_lines[line].name);
 		gr_force_fit_string(buf, 255, Cr_list_coords[gr_screen.res][0] + Cr_list_coords[gr_screen.res][2] - sim_room_lines[line].x);
-		gr_printf(sim_room_lines[line].x, y, buf);
+		gr_printf_menu(sim_room_lines[line].x, y, buf);
 		line++;
 	}
 
@@ -2140,19 +1860,19 @@ void campaign_room_do_frame(float frametime)
 		strncpy(line_text, Info_text_ptrs[i], Info_text_line_size[i]);
 		line_text[Info_text_line_size[i]] = 0;
 		drop_white_space(line_text);
-		gr_string(Cr_info_coords[gr_screen.res][0], Cr_info_coords[gr_screen.res][1] + y, line_text);
+		gr_string(Cr_info_coords[gr_screen.res][0], Cr_info_coords[gr_screen.res][1] + y, line_text, GR_RESIZE_MENU);
 		y += font_height;
 		i++;
 	}
 
 	if (Num_campaigns < 1) {
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "No campaigns are available!", -1));
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "No campaigns are available!", 1613));
 		Campaign_room_no_campaigns = true;
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CAMPAIGN_ROOM_OVERLAY);
+	help_overlay_maybe_blit(Campaign_room_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

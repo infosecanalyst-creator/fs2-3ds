@@ -7,359 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.25.2.1 $
- * $Date: 2007-08-19 22:15:06 $
- * $Author: karajorma $
- *
- * Special code for training missions.  Stuff like displaying training messages in
- * the special training window, listing the training objectives, etc.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.25  2006/03/19 05:05:59  taylor
- * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
- * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
- *
- * Revision 2.24  2006/01/30 06:58:10  taylor
- * try and handle things like $$ and ## a bit better (this worked for what I threw at it but please double-check me here Goober)
- *
- * Revision 2.23  2006/01/27 06:21:10  Goober5000
- * replace quick sort with insertion sort in many places
- * --Goober5000
- *
- * Revision 2.22  2005/10/28 14:49:35  taylor
- * some minor cleanup and compiler warning fixes
- *
- * Revision 2.21  2005/10/27 16:24:24  taylor
- * some minor fixes to message_translate_tokens(), fixes a bug and adds some out-of-bounds checks
- *
- * Revision 2.20  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.19  2005/07/22 10:18:40  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.18  2005/07/18 03:45:07  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.17  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.16  2005/06/30 01:48:52  Goober5000
- * * NOX'd none.wav
- * * changed comparisons on none.wav to only look at the first four letters in case
- *   we don't have an extension or in case some weirdo decides to put none.ogg
- * * simulated speech pre-empts "beeps" in in-game messages
- * --Goober5000
- *
- * Revision 2.15  2005/06/16 05:17:31  Goober5000
- * fixed a CVS log spelling error, plus fixed a tricky sexp allocation bug
- * --Goober5000
- *
- * Revision 2.14  2005/05/26 05:07:19  Goober5000
- * some bracket happiness, plus fixed the training message version of the crazy semicolon bug
- * (thanks to taylor for fixing the regular message version)
- * --Goober500
- *
- * Revision 2.13  2005/05/23 05:55:13  taylor
- * more from Jens...
- *  - make sure that a frame number doesn't get carried over to non-animated weapon glows
- *  - move the line splitting code in missiontraining.cpp so that we don't have to worry about EOS chars
- *
- * Revision 2.12  2005/05/13 02:56:34  taylor
- * more malloc->vm_malloc, free->vm_free, strdup->vm_strdup fixage
- *
- * Revision 2.11  2005/05/12 03:50:10  Goober5000
- * repeating messages with variables should work properly now
- * --Goober5000
- *
- * Revision 2.10  2005/05/12 01:34:50  Goober5000
- * removed variables in messages for now
- * --Goober5000
- *
- * Revision 2.9  2005/05/11 08:10:20  Goober5000
- * variables should now work properly in messages that are sent multiple times
- * --Goober5000
- *
- * Revision 2.8  2005/04/24 03:01:56  wmcoolmon
- * Might as well fix trainer messages too.
- *
- * Revision 2.7  2005/04/11 05:48:34  taylor
- * make sure use an insensitive case check for Messages[] names (Jens Granseuer)
- * little clarification of if-else block in message_training_queue()
- *
- * Revision 2.6  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.5  2004/07/26 20:47:38  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2002/12/23 01:47:17  Goober5000
- * removed stipulation that "Instructor" be present for training-message sexp to work
- * --Goober5000
- *
- * (This is fun! :))
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.4  2002/05/13 21:09:28  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.3  2002/05/10 06:08:08  mharris
- * Porting... added ifndef NO_SOUND
- *
- * Revision 1.2  2002/05/09 23:02:57  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 10    8/27/99 2:20p Andsager
- * Sort directives by born on date
- * 
- * 9     8/22/99 7:57p Alanl
- * fix bug that was scaling down mission training voice twice
- * 
- * 8     8/02/99 7:29p Jefff
- * moved instructor text in hi res
- * 
- * 7     8/02/99 3:49p Jefff
- * moved directives window down in 1024
- * 
- * 6     7/10/99 1:44p Andsager
- * Modified directives listing so that current and recently
- * satisfied/failed directives stay on screen.
- * 
- * 5     6/10/99 3:43p Dave
- * Do a better job of syncing text colors to HUD gauges.
- * 
- * 4     2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 58    8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 57    6/13/98 5:19p Hoffoss
- * externalized control config texts.
- * 
- * 56    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 55    6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 54    5/23/98 4:14p John
- * Added code to preload textures to video card for AGP.   Added in code
- * to page in some bitmaps that weren't getting paged in at level start.
- * 
- * 53    5/16/98 9:13p Allender
- * don't display the directive display in multiplayer
- * 
- * 52    5/07/98 11:59p Mike
- * Don't show training popup for unbound key unless in training mission.
- * (Happens in demo01)
- * 
- * 51    4/30/98 12:01a Lawrance
- * using nprintf((Warning,...)) when audiostream can't be opened
- * 
- * 50    4/27/98 11:20a Hoffoss
- * Doubled TRAINING_MESSAGE_QUEUE_MAX.
- * 
- * 49    4/22/98 3:21p Hoffoss
- * Fixed slight training message problems with training_failure state.
- * 
- * 48    4/16/98 4:33p Hoffoss
- * Added support for detecting instructor terminating training due to
- * player shooting at him.
- * 
- * 47    4/15/98 10:16p Mike
- * Training mission #5.
- * Fix application of subsystem damage.
- * 
- * 46    4/15/98 5:25p Lawrance
- * only show damage gauge when training message not visible
- * 
- * 45    4/03/98 2:52p Allender
- * use Missiontime insteadof timestamp() for objective display
- * 
- * 44    3/31/98 5:23p Hoffoss
- * Fixed bug with training message token handling.
- * 
- * 43    3/18/98 6:22p John
- * Made directives display wiggle when afterburner is on
- * 
- * 42    3/11/98 2:46p Hoffoss
- * Shortened the width of the training message window so it doesn't
- * overlap other hud objects.
- * 
- * 41    2/23/98 8:31a John
- * More string externalization
- * 
- * 40    2/22/98 4:30p John
- * More string externalization classification
- * 
- * 39    2/04/98 4:32p Allender
- * support for multiple briefings and debriefings.  Changes to mission
- * type (now a bitfield).  Bitfield defs for multiplayer modes
- * 
- * 38    1/30/98 4:24p Hoffoss
- * Added a 3 second delay for directives before they get displayed.
- * 
- * 37    1/26/98 6:27p Lawrance
- * Change popups to use '&' meta-char for underlined hotkey.
- * 
- * 36    1/22/98 11:46p Hoffoss
- * Fixed linking problem with Fred.
- * 
- * 35    1/22/98 11:00p Mike
- * Fix Fred link error by commenting out line, email Hoffoss with info.
- * 
- * 34    1/22/98 4:15p Hoffoss
- * Added code to allow popup to tell player he needs to bind a key for the
- * training mission.
- * 
- * 33    1/20/98 2:26p Hoffoss
- * Removed references to timestamp_ticker, used timestamp() instead.
- * 
- * 32    1/19/98 9:37p Allender
- * Great Compiler Warning Purge of Jan, 1998.  Used pragma's in a couple
- * of places since I was unsure of what to do with code.
- * 
- * 31    1/15/98 6:00p Hoffoss
- * Added option to quit menu (in game) to restart the mission.  Doesn't
- * seem to quite work, though.  Checking code in so someone else can look
- * into it.
- * 
- * 30    1/09/98 10:47a Lawrance
- * Only clear auto-target, linking etc. when actually starting a training
- * mission.
- * 
- * 29    1/08/98 4:07p Hoffoss
- * Made objective key text appear in Green.
- * 
- * 28    1/06/98 2:07p Lawrance
- * strip leading whitespace on training message lines
- * 
- * 27    1/05/98 11:05p Lawrance
- * Clear primary/secondary linking if playing a training mission.
- * 
- * 26    1/05/98 10:03p Lawrance
- * Fix HUD gauge flag that didn't get changed.
- * 
- * 25    1/05/98 4:04p Hoffoss
- * Changed training-message sexp operator to allow it to control the length of
- * time a message is displayed for.
- * 
- * 24    1/05/98 11:16a Mike
- * Clear auto-targeting and auto-speed-matching in a training mission.
- * 
- * 23    1/02/98 9:10p Lawrance
- * Big changes to how colors get set on the HUD.
- * 
- * 22    12/22/97 6:07p Hoffoss
- * Made directives flash when completed, fixed but with is-destroyed
- * operator.
- * 
- * 21    12/19/97 12:43p Hoffoss
- * Changed code to allow counts in directives.
- * 
- * 20    12/18/97 11:53a Lawrance
- * fix bug with displaying hud directives
- * 
- * 19    12/16/97 9:13p Lawrance
- * Integrate new gauges into HUD config.
- * 
- * 18    12/15/97 5:26p Allender
- * temporary code to display for 5 second completion status of objectives
- * 
- * 17    11/20/97 1:10a Lawrance
- * add support for voice volumes
- * 
- * 16    11/17/97 6:38p Lawrance
- * move directives window down
- * 
- * 15    11/14/97 1:24p Lawrance
- * draw 'directives' as the title
- * 
- * 14    11/14/97 1:21p Lawrance
- * split directives lines if they get too long
- * 
- * 13    11/12/97 6:00p Hoffoss
- * Added training messages to hud scrollback log.
- * 
- * 12    11/11/97 10:27p Lawrance
- * implement new HUD directives gauge
- * 
- * 11    11/11/97 12:59a Lawrance
- * move objective window up slightly
- * 
- * 10    10/21/97 7:18p Hoffoss
- * Overhauled the key/joystick control structure and usage throughout the
- * entire FreeSpace code.  The whole system is very different now.
- * 
- * 9     10/21/97 3:35p Dan
- * ALAN: if wave file doesn't exist, don't play it
- * 
- * 8     10/17/97 6:39p Hoffoss
- * Added delayability to key-pressed operator and training-message operator.
- * 
- * 7     10/17/97 10:23a Hoffoss
- * Added more comments.
- * 
- * 6     10/14/97 11:35p Lawrance
- * change snd_load parameters
- * 
- * 5     10/13/97 4:33p Hoffoss
- * Made training messages go away after time.
- * 
- * 4     10/13/97 3:24p Hoffoss
- * Made it so training message text can be arbitrarily bolded.
- * 
- * 3     10/10/97 6:15p Hoffoss
- * Implemented a training objective list display.
- * 
- * 2     10/09/97 4:44p Hoffoss
- * Dimmed training window glass and made it less transparent, added flags
- * to events, set he stage for detecting current events.
- * 
- * 1     10/09/97 2:41p Hoffoss
- *
- * $NoKeywords: $
- */
+
 
 
 #include "mission/missiontraining.h"
@@ -381,19 +29,15 @@
 #include "ship/ship.h"
 #include "parse/sexp.h"
 #include "network/multi.h"
+#include "mod_table/mod_table.h"
 
 
 
 #define MAX_TRAINING_MESSAGE_LINES		10
-//#define TRAINING_MESSAGE_WINDOW_X			174
-//#define TRAINING_MESSAGE_WINDOW_Y			40
 #define TRAINING_MESSAGE_WINDOW_WIDTH	266
 #define TRAINING_LINE_WIDTH			250  // width in pixels of actual text
 #define TRAINING_TIMING					150  // milliseconds per character to display messages
 #define TRAINING_TIMING_BASE			1000  // Minimum milliseconds to display any message
-//#define TRAINING_OBJ_WND_X				0		// offset of left edge of window
-//#define TRAINING_OBJ_WND_Y				180	// offset of top edge of window
-//#define TRAINING_OBJ_WND_Y				187	// offset of top edge of window
 #define TRAINING_OBJ_WND_WIDTH		170	// number of pixels wide window is.
 #define TRAINING_OBJ_LINE_WIDTH		150	// number of pixels wide text can be
 #define TRAINING_OBJ_LINES				50		// number of lines to track in objective list
@@ -424,10 +68,12 @@ typedef struct {
 } training_message_queue;
 
 char Training_buf[TRAINING_MESSAGE_LENGTH];
-char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
+const char *Training_lines[MAX_TRAINING_MESSAGE_LINES];  // Training message split into lines
+int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
+
 char Training_voice_filename[NAME_LENGTH];
+int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
 int Training_message_timestamp;
-int Training_line_sizes[MAX_TRAINING_MESSAGE_LINES];
 int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
@@ -467,107 +113,165 @@ void message_translate_tokens(char *buf, char *text);
 static hud_frames Directive_gauge[NUM_DIRECTIVE_GAUGES];
 static int Directive_frames_loaded = 0;
 
-static char *Directive_fnames[3] = 
-{
-//XSTR:OFF
-	"directives1",
-	"directives2",
-	"directives3"
-//XSTR:ON
-};
-
 #define DIRECTIVE_H						9
 #define DIRECTIVE_X						5
 #define NUM_DIRECTIVE_COORDS			3
 #define DIRECTIVE_COORDS_TOP			0
 #define DIRECTIVE_COORDS_MIDDLE		1
 #define DIRECTIVE_COORDS_TITLE		2
-static int Directive_coords[GR_NUM_RESOLUTIONS][NUM_DIRECTIVE_COORDS][2] =
-{
-	{
-		// GR_640
-		{5,178},
-		{5,190},
-		{7,180}
-	},
-	{
-		// GR_1024
-		{5,278},
-		{5,290},
-		{7,280}
-	}
-};
 
-// displays (renders) the training objectives list
-void training_obj_display()
+HudGaugeDirectives::HudGaugeDirectives():
+HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+{
+}
+
+void HudGaugeDirectives::initHeaderOffsets(int x, int y)
+{
+	header_offsets[0] = x;
+	header_offsets[1] = y;
+}
+
+void HudGaugeDirectives::initMiddleFrameOffsetY(int y)
+{
+	middle_frame_offset_y = y;
+}
+
+void HudGaugeDirectives::initTextStartOffsets(int x, int y)
+{
+	text_start_offsets[0] = x;
+	text_start_offsets[1] = y;
+}
+
+void HudGaugeDirectives::initTextHeight(int h)
+{
+	text_h = h;
+}
+
+void HudGaugeDirectives::initMaxLineWidth(int w)
+{
+	max_line_width = w;
+}
+
+void HudGaugeDirectives::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
+void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+{
+	directives_top.first_frame = bm_load_animation(fname_top, &directives_top.num_frames);
+	if ( directives_top.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_top);
+	}
+
+	directives_middle.first_frame = bm_load_animation(fname_middle, &directives_middle.num_frames);
+	if ( directives_middle.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_middle);
+	}
+
+	directives_bottom.first_frame = bm_load_animation(fname_bottom, &directives_bottom.num_frames);
+	if ( directives_bottom.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname_bottom);
+	}
+}
+
+bool HudGaugeDirectives::canRender()
+{
+#ifdef SCP_3DS
+	return false;		// New 3DS: directives are on the touchscreen panel (n3ds_directives)
+#endif
+	if (sexp_override) {
+		return false;
+	}
+
+	if(hud_disabled_except_messages()) {
+		return false;
+	}
+
+	if (hud_disabled() && !hud_disabled_except_messages()) {
+		return false;
+	}
+
+	// force the directives list to display in training missions even if this gauge isn't active.
+	if(!active && !(The_mission.game_type & MISSION_TYPE_TRAINING))
+		return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	if (gauge_config == HUD_ETS_GAUGE) {
+		if (Ships[Player_obj->instance].flags2 & SF2_NO_ETS) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void HudGaugeDirectives::pageIn()
+{
+	bm_page_in_aabitmap(directives_top.first_frame, directives_top.num_frames);
+	bm_page_in_aabitmap(directives_middle.first_frame, directives_middle.num_frames);
+	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
+}
+
+void HudGaugeDirectives::render(float frametime)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, height, end, offset, bx, by, y_count;
+	int i, t, x, y, z, end, offset, bx, by, y_count;
 	color *c;
 
 	if (!Training_obj_num_lines){
 		return;
 	}
 
-#ifdef SCP_3DS
-	return;		// New 3DS: directives are on the touchscreen panel (n3ds_directives)
-#endif
-
-	if ( !hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
-		// Always draw the directives display if this is a training mission
-		if ( !(The_mission.game_type & MISSION_TYPE_TRAINING) ) {
-			return;
-		}
-	}
-
-	// don't ever display directives display in multiplayer missions
-	// if ( Game_mode & GM_MULTIPLAYER ){
-	// 	return;
-	// }
-
-	height = gr_get_font_height();
-
 	offset = 0;
 	end = Training_obj_num_lines;
-	if (end > TRAINING_OBJ_DISPLAY_LINES) {
-		end = TRAINING_OBJ_DISPLAY_LINES;
+	if (end > Max_directives) {
+		end = Max_directives;
 		offset = Training_obj_num_lines - end;
 	}
 
 	// draw top of objective display
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+	setGaugeColor();
 
-	GR_AABITMAP(Directive_gauge[0].first_frame, Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TOP][0]+fl2i(HUD_offset_x), Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TOP][1]+fl2i(HUD_offset_y));
-	// gr_set_bitmap(Directive_gauge[0].first_frame);
-	// gr_aabitmap(Directive_coords[DIRECTIVE_COORDS_TOP][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TOP][1]+fl2i(HUD_offset_y));
+	renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
-	emp_hud_printf(Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TITLE][0]+fl2i(HUD_offset_x), Directive_coords[gr_screen.res][DIRECTIVE_COORDS_TITLE][1]+fl2i(HUD_offset_y), EG_OBJ_TITLE, XSTR( "directives", 422));
-	// gr_printf(Directive_coords[DIRECTIVE_COORDS_TITLE][0]+fl2i(HUD_offset_x), Directive_coords[DIRECTIVE_COORDS_TITLE][1]+fl2i(HUD_offset_y), XSTR( "directives", 422));
-	
-	bx = DIRECTIVE_X+fl2i(HUD_offset_x);
-	by = Directive_coords[gr_screen.res][DIRECTIVE_COORDS_MIDDLE][1]+fl2i(HUD_offset_y);
+	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, XSTR( "directives", 422));
+
+	bx = position[0];
+	by = position[1] + middle_frame_offset_y;
 
 	y_count = 0;
 	for (i=0; i<end; i++) {
-		x = DIRECTIVE_X + 3 + fl2i(HUD_offset_x);
-		y = Training_obj_window_coords[gr_screen.res][1] + fl2i(HUD_offset_y) + y_count * height + height / 2 + 1;
+		x = position[0] + text_start_offsets[0];
+		y = position[1] + text_start_offsets[1] + y_count * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
 			message_translate_tokens(buf, Mission_events[z].objective_key_text);  // remap keys
-//			gr_set_color_fast(&Color_normal);
 			c = &Color_bright_green;
 		} else {
-			strcpy(buf, Mission_events[z].objective_text);
+			strcpy_s(buf, Mission_events[z].objective_text);
 			if (Mission_events[z].count){
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
-			if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+			if((MULTI_TEAM) && (Net_player != NULL)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
@@ -575,17 +279,14 @@ void training_obj_display()
 
 			switch (mission_get_event_status(z)) {
 			case EVENT_CURRENT:
-//				gr_set_color_fast(&Color_bright_white);
 				c = &Color_bright_white;
 				break;
 
 			case EVENT_FAILED:
-//				gr_set_color_fast(&Color_bright_red);
 				c = &Color_bright_red;
 				break;
 
 			case EVENT_SATISFIED:
-//				gr_set_color_fast(&Color_bright_blue);
 				t = Mission_events[z].satisfied_time;
 				if (t + i2f(2) > Missiontime) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
@@ -601,55 +302,47 @@ void training_obj_display()
 		}
 
 		// maybe split the directives line
-		second_line = split_str_once(buf, 167);
+		second_line = split_str_once(buf, max_line_width);
 		Assert( second_line != buf );
 
 		// blit the background frames
-		// hud_set_default_color();
-		hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+		setGaugeColor();
 
-		GR_AABITMAP(Directive_gauge[1].first_frame, bx, by);
-		// gr_set_bitmap(Directive_gauge[1].first_frame);
-		// gr_aabitmap(bx, by);
+		renderBitmap(directives_middle.first_frame, bx, by);
 		
-		by += DIRECTIVE_H;
+		by += text_h;
 
 		if ( second_line ) {
-			GR_AABITMAP(Directive_gauge[1].first_frame, bx, by);
-			// gr_set_bitmap(Directive_gauge[1].first_frame);
-			// gr_aabitmap(bx, by);
+			renderBitmap(directives_middle.first_frame, bx, by);
 			
-			by += DIRECTIVE_H;
+			by += text_h;
 		}
 
 		// blit the text
 		gr_set_color_fast(c);
 		
-		emp_hud_string(x, y, EG_OBJ1 + i, buf);
-		// gr_printf(x, y, buf);
+		renderString(x, y, EG_OBJ1 + i, buf);
 		
 		y_count++;
 
 		if ( second_line ) {
-			y = Training_obj_window_coords[gr_screen.res][1] + fl2i(HUD_offset_y) + y_count * height + height / 2 + 1;
+			y = position[1] + text_start_offsets[1] + y_count * text_h;
 			
-			emp_hud_string(x+12, y, EG_OBJ1 + i + 1, second_line);
-			// gr_printf(x+12, y, second_line);
+			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			
 			y_count++;
 		}
 	}
 
 	// draw the bottom of objective display
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_DIRECTIVES_VIEW);
+	setGaugeColor();
 
-	GR_AABITMAP(Directive_gauge[2].first_frame, bx, by);
-	// gr_set_bitmap(Directive_gauge[2].first_frame);
-	// gr_aabitmap(bx, by);
+	renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
 }
 
-// mission initializations (called once before a new mission is started)
+/**
+ * Mission initializations (called once before a new mission is started)
+ */
 void training_mission_init()
 {
 	int i;
@@ -658,6 +351,9 @@ void training_mission_init()
 	Training_obj_num_lines = 0;
 	Training_message_queue_count = 0;
 	Training_failure = 0;
+	if (Max_directives > TRAINING_OBJ_LINES) {
+		Max_directives = TRAINING_OBJ_LINES;
+	}
 	for (i=0; i<TRAINING_OBJ_LINES; i++)
 		Training_obj_lines[i] = -1;
 
@@ -665,17 +361,9 @@ void training_mission_init()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 		Training_message_queue[i].special_message = NULL;
 
-	if ( !Directive_frames_loaded ) {
-		for ( i = 0; i < NUM_DIRECTIVE_GAUGES; i++ ) {
-			Directive_gauge[i].first_frame = bm_load_animation(Directive_fnames[i], &Directive_gauge[i].num_frames);
-			if ( Directive_gauge[i].first_frame < 0 ) {
-				Warning(LOCATION,"Cannot load hud ani: %s\n", Directive_fnames[i]);
-			}
-		}
-
-		Directive_frames_loaded = 1;
-	}
-
+	// The E: This is now handled by the new HUD code. No need to check here.
+	Directive_frames_loaded = 1;
+	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
@@ -704,8 +392,11 @@ int comp_training_lines_by_born_on_date(const void *m1, const void *m2)
 }
 
 
-// now sort list of events
-// sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
+/**
+ * Sort list of training events
+ *
+ * Sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
+ */
 #define MIN_SATISFIED_TIME		5
 #define MIN_FAILED_TIME			7
 void sort_training_objectives()
@@ -717,7 +408,7 @@ void sort_training_objectives()
 
 	// get the index of the first directive that will be displayed
 	// if less than 0, display all lines
-	offset = Training_obj_num_lines - TRAINING_OBJ_DISPLAY_LINES;
+	offset = Training_obj_num_lines - Max_directives;
 
 	if (offset <= 0) {
 		return;
@@ -729,7 +420,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				continue ;
 			}
@@ -765,7 +456,7 @@ void sort_training_objectives()
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
-		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+		if(MULTI_TEAM && (Net_player != NULL)){
 			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;
@@ -784,7 +475,7 @@ void sort_training_objectives()
 			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
-				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
+				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		}
 	}
@@ -803,7 +494,7 @@ void sort_training_objectives()
 
 		// find first slot that can be bumped
 		// look at the last (N-4 to N) positions
-		for (slot_idx=0; slot_idx<TRAINING_OBJ_DISPLAY_LINES; slot_idx++) {
+		for (slot_idx=0; slot_idx<Max_directives; slot_idx++) {
 			if ( Training_obj_lines[i+offset] & TRAINING_OBJ_STATUS_KNOWN ) {
 				break;
 			}
@@ -828,8 +519,11 @@ void sort_training_objectives()
 	}
 }
 
-// called at same rate as goals/events are evaluated.  Maintains the objectives listing, adding,
-// removing and updating items
+/**
+ * Maintains the objectives listing, adding, removing and updating items
+ *
+ * Called at same rate as goals/events are evaluated.  
+ */
 void training_check_objectives()
 {
 	int i, event_idx, event_status;
@@ -837,7 +531,7 @@ void training_check_objectives()
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + 3000) ) {
+		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + Directive_wait_time) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
@@ -905,7 +599,9 @@ void training_check_objectives()
 	sort_training_objectives();
 }
 
-// called to do cleanup when leaving a mission
+/**
+ * Do cleanup when leaving a mission
+ */
 void training_mission_shutdown()
 {
 	int i;
@@ -935,7 +631,9 @@ void training_mission_shutdown()
 	*Training_buf = 0;
 }
 
-// translates special tokens.  Handles one token only.
+/**
+ * Translates special tokens.  Handles one token only.
+ */
 char *translate_message_token(char *str)
 {
 	if (!stricmp(str, NOX("wp"))) {
@@ -946,13 +644,14 @@ char *translate_message_token(char *str)
 	return NULL;
 }
 
-// translates all special tokens in a message, producing the new finalized message to be displayed
+/**
+ * Translates all special tokens in a message, producing the new finalized message to be displayed
+ */
 void message_translate_tokens(char *buf, char *text)
 {
-	char temp[40], *toke1, *toke2, *ptr, *orig_buf;
+	char temp[40], *toke1, *toke2, *ptr;
 	int r;
 
-	orig_buf = buf;
 	*buf = 0;
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
@@ -1028,9 +727,12 @@ void message_translate_tokens(char *buf, char *text)
 	return;
 }
 
-// plays the voice file associated with a training message.  Automatically streams the file
-// from disk if it's over 100k, otherwise plays it as a normal file in memory.  Returns -1
-// if it didn't play, otherwise index of voice
+/**
+ * Plays the voice file associated with a training message.
+ *
+ * Automatically streams the file from disk if it's over 100k, otherwise plays it as 
+ * a normal file in memory.  Returns -1 if it didn't play, otherwise index of voice
+ */
 int message_play_training_voice(int index)
 {
 	int len;
@@ -1075,22 +777,20 @@ int message_play_training_voice(int index)
 					Training_voice_handle = audiostream_open(Message_waves[index].name, ASF_VOICE);
 					if (Training_voice_handle < 0) {
 						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));
-					//	Warning(LOCATION, "Unable to load voice file %s\n", Message_waves[index].name);
 					}
 				}
 			}  // Training_voice should be valid and loaded now
 
 			Training_voice_type = 1;
 			if (Training_voice_handle >= 0)
-				audiostream_play(Training_voice_handle, Master_voice_volume, 0);
+				audiostream_play(Training_voice_handle, (Master_voice_volume * aav_voice_volume), 0);
 
 			Training_voice = index;
 			return Training_voice;
 
 		} else {
 			game_snd tmp_gs;
-			memset(&tmp_gs, 0, sizeof(game_snd));
-			strcpy(tmp_gs.filename, Message_waves[index].name);
+			strcpy_s(tmp_gs.filename, Message_waves[index].name);
 			Message_waves[index].num = snd_load(&tmp_gs, 0);
 			if (Message_waves[index].num < 0) {
 				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
@@ -1118,9 +818,12 @@ int message_play_training_voice(int index)
 	return Training_voice;
 }
 
-// one time initializations done when we want to display a new training mission.  This does
-// all the processing and setup required to actually display it, including starting the
-// voice file playing
+/** 
+ * One time initializations done when we want to display a new training mission.
+ * 
+ * This does all the processing and setup required to actually display it, including 
+ * starting the voice file playing
+ */
 void message_training_setup(int m, int length, char *special_message)
 {
 	if ((m < 0) || !Messages[m].message[0]) {  // remove current message from the screen
@@ -1139,7 +842,9 @@ void message_training_setup(int m, int length, char *special_message)
 	// moved from message_training_display() because we got rid of an extra buffer and we have to determine
 	// the number of lines earlier to avoid inadvertant modification of Training_buf.  - taylor
 	training_process_message(Training_buf);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_lengths, Training_lines, MAX_TRAINING_MESSAGE_LINES);
+
+	Assert( Training_num_lines >= 0 );
 
 	if (message_play_training_voice(Messages[m].wave_info.index) < 0) {
 		if (length > 0)
@@ -1151,22 +856,9 @@ void message_training_setup(int m, int length, char *special_message)
 		Training_message_timestamp = 0;
 }
 
-// adds simple text to the directives display
-/*id message_training_add_simple( char *text )
-{
-	int i;
-
-	training_process_message(text);
-	HUD_add_to_scrollback(Training_buf, HUD_SOURCE_TRAINING);
-	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
-	Assert(Training_num_lines > 0);
-	for (i=0; i<Training_num_lines; i++)
-		Training_lines[i][Training_line_sizes[i]] = 0;
-
-	Training_message_timestamp = timestamp(5000);
-} */
-
-// add a message to the queue to be sent later.
+/**
+ * Add a message to the queue to be sent later
+ */
 void message_training_queue(char *text, int timestamp, int length)
 {
 	int m;
@@ -1199,7 +891,7 @@ void message_training_queue(char *text, int timestamp, int length)
 		}
 
 		// Goober5000 - replace variables if necessary
-		strcpy(temp_buf, Messages[m].message);
+		strcpy_s(temp_buf, Messages[m].message);
 		if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
 			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf);
 
@@ -1207,34 +899,40 @@ void message_training_queue(char *text, int timestamp, int length)
 	}
 }
 
-// Goober5000 - removes current message from the queue
+/**
+ * Removes current message from the queue
+ */
 void message_training_remove_from_queue(int idx)
-{	
-	Training_message_queue[idx].length = -1;
-	Training_message_queue[idx].num = -1;
-	Training_message_queue[idx].timestamp = -1;
-
+{
+	// we're overwriting all messages with the next message, but to
+	// avoid memory leaks, we should free the special message entry
 	if (Training_message_queue[idx].special_message != NULL)
 	{
 		vm_free(Training_message_queue[idx].special_message);
 		Training_message_queue[idx].special_message = NULL;
 	}
 
+	// replace current message with the one above it, etc.
 	for (int j=idx+1; j<Training_message_queue_count; j++)
 		Training_message_queue[j - 1] = Training_message_queue[j];
+
+	// delete the topmost message
 	Training_message_queue_count--;
+	Training_message_queue[Training_message_queue_count].length = -1;
+	Training_message_queue[Training_message_queue_count].num = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
-// check the training message queue to see if we should play a new message yet or not.
-// Goober5000: removed stipulation of instructor being present
+/**
+ * Check the training message queue to see if we should play a new message yet or not.
+ */
 void message_training_queue_check()
 {
 	int i, iship_num;
 
 	// get the instructor's ship.
 	iship_num = ship_name_lookup(NOX("instructor"));
-//	if ( iship_num == -1 )	// commented out by Goober5000
-//		return;
 
 	// if the instructor is dying or departing, do nothing
 	if ( iship_num != -1 )	// added by Goober5000
@@ -1255,15 +953,20 @@ void message_training_queue_check()
 	}
 }
 
-// displays (renders) the training message to the screen
-void message_training_display()
+void message_training_update_frame()
 {
-	char *str, buf[256];
-	int i, z, x, y, height, mode, count;
+	int z;
+
+	if ((Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+		return;
+	}
+	
+	if ( hud_disabled() && !hud_disabled_except_messages()) {
+		return;
+	}
 
 	Training_message_visible = 0;
 	message_training_queue_check();
-	training_obj_display();
 
 	if (Training_failure){
 		return;
@@ -1273,17 +976,74 @@ void message_training_display()
 		return;
 	}
 
-	// next two lines moved to message_training_setup() - taylor
-//	training_process_message(Training_buf);
-//	Training_num_lines = split_str(Training_buf, TRAINING_LINE_WIDTH, Training_line_sizes, Training_lines, MAX_TRAINING_MESSAGE_LINES);
-
-	Assert(Training_num_lines > 0);
-	for (i=0; i<Training_num_lines; i++) {
-		Training_lines[i][Training_line_sizes[i]] = 0;
-		drop_leading_white_space(Training_lines[i]);
-	}
+	// the code that preps the training message and counts the number of lines
+	// has been moved to message_training_setup()
 
 	if (Training_num_lines <= 0){
+		return;
+	}
+
+	Training_message_visible = 1;
+
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
+		if (Training_voice_type)
+			z = audiostream_is_playing(Training_voice_handle);
+		else
+			z = snd_is_playing(Training_voice_handle);
+
+		if (!z)
+			Training_message_timestamp = timestamp(2000);  // 2 second delay
+ 	}
+
+	Training_message_method = 0;
+}
+
+HudGaugeTrainingMessages::HudGaugeTrainingMessages():
+HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+{
+}
+
+bool HudGaugeTrainingMessages::canRender()
+{
+	if (hud_disabled() && !hud_disabled_except_messages()) {
+		return false;
+	}
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void HudGaugeTrainingMessages::pageIn()
+{
+}
+
+/**
+ * Displays (renders) the training message to the screen
+ */
+void HudGaugeTrainingMessages::render(float frametime)
+{
+	const char *str;
+	char buf[256];
+	int i, z, x, y, height, mode, count;
+
+	if (Training_failure){
+		return;
+	}
+
+	if (timestamp_elapsed(Training_message_timestamp) || !strlen(Training_buf)){
 		return;
 	}
 
@@ -1292,23 +1052,28 @@ void message_training_display()
 	return;
 #endif
 
+	if (Training_num_lines <= 0){
+		return;
+	}
+
+	gr_set_screen_scale(base_w, base_h);
 	height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
-	gr_shade(Training_message_window_coords[gr_screen.res][0], Training_message_window_coords[gr_screen.res][1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+	gr_shade(position[0], position[1], TRAINING_MESSAGE_WINDOW_WIDTH, Training_num_lines * height + height);
+	gr_reset_screen_scale();
 
 	gr_set_color_fast(&Color_bright_blue);
 	mode = count = 0;
-	Training_message_visible = 1;
 	for (i=0; i<Training_num_lines; i++) {  // loop through all lines of message
 		str = Training_lines[i];
 		z = 0;
-		x = Training_message_window_coords[gr_screen.res][0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
-		y = Training_message_window_coords[gr_screen.res][1] + i * height + height / 2 + 1;
+		x = position[0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
+		y = position[1] + i * height + height / 2 + 1;
 
-		while (*str) {  // loop through each character of each line
+		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (str == Training_message_mods[count].pos)) {
 				buf[z] = 0;
-				gr_printf(x, y, buf);
+				renderPrintf(x, y, buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
@@ -1330,30 +1095,14 @@ void message_training_display()
 
 		if (z) {
 			buf[z] = 0;
-			gr_printf(x, y, "%s", buf);
+			renderPrintf(x, y, "%s", buf);
 		}
 	}
-
-	Training_message_method = 0;
-//	if (Training_message_method) {
-//		char *message = "Press a key to continue";
-
-//		gr_get_string_size(&i, NULL, message);
-//		gr_printf(TRAINING_MESSAGE_WINDOW_X + TRAINING_MESSAGE_WINDOW_WIDTH / 2 - i / 2, TRAINING_MESSAGE_WINDOW_Y + (Training_num_lines + 2) * height, message);
-//	}
-
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
-		if (Training_voice_type)
-			z = audiostream_is_playing(Training_voice_handle);
-		else
-			z = snd_is_playing(Training_voice_handle);
-
-		if (!z)
-			Training_message_timestamp = timestamp(2000);  // 2 second delay
- 	}
 }
 
-// processes a new training message to get hilighting information and store it in internal structures.
+/**
+ * Processes a new training message to get hilighting information and store it in internal structures.
+ */
 void training_process_message(char *message)
 {
 	int count;
@@ -1412,7 +1161,7 @@ int n3ds_training_text(char *out, int outlen)
 	out[0] = 0;
 	for (int i = 0; i < Training_num_lines && pos < outlen - 2; i++) {
 		const char *l = Training_lines[i];
-		int len = Training_line_sizes[i];
+		int len = Training_line_lengths[i];
 		while (len > 0 && *l == ' ') { l++; len--; }
 		if (pos && pos < outlen - 2) out[pos++] = ' ';
 		for (int k = 0; k < len && l[k] && pos < outlen - 1; k++)

@@ -7,98 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.14.2.2 $
- * $Date: 2007-09-02 02:07:41 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.14.2.1  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 2.14  2005/10/14 07:22:24  Goober5000
- * removed an unneeded parameter and renamed some stuff
- * --Goober5000
- *
- * Revision 2.13  2005/10/10 17:21:04  taylor
- * remove NO_NETWORK
- *
- * Revision 2.12  2005/07/22 10:18:38  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.11  2005/07/13 03:15:51  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.10  2005/04/05 05:53:17  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.9  2005/03/25 06:57:34  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.8  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.7  2004/09/17 07:11:02  Goober5000
- * moved ssm stuff to header file so it would work in FRED
- * --Goober5000
- *
- * Revision 2.6  2004/08/23 04:00:15  Goober5000
- * ship-tag and ship-untag
- * --Goober5000
- *
- * Revision 2.5  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:49  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/19 12:29:02  unknownplayer
- * Woohoo! Killed two birds with one stone!
- * Fixed the 'black screen around dialog boxes' problem and also the much more serious freezing problem experienced by Goober5000. It wasn't a crash, just an infinite loop. DX8 merge is GO! once again :)
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.2  2002/05/03 22:07:08  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 5     6/01/99 8:35p Dave
- * Finished lockarm weapons. Added proper supercap weapons/damage. Added
- * awacs-set-radius sexpression.
- * 
- * 4     4/28/99 11:36p Dave
- * Tweaked up subspace missile strike a bit,
- * 
- * 3     4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 2     4/20/99 6:39p Dave
- * Almost done with artillery targeting. Added support for downloading
- * images on the PXO screen.
- * 
- * 1     4/20/99 12:00a Dave
- * 
- * 
- * $NoKeywords: $
- */
+
 
 
 #include "hud/hudartillery.h"
@@ -112,7 +21,9 @@
 #include "ai/ai.h"
 #include "globalincs/alphacolors.h"
 #include "network/multi.h"
-
+#include "hud/hudmessage.h"
+#include "sound/sound.h"
+#include "gamesnd/gamesnd.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -187,14 +98,30 @@ void ssm_init()
 			stuff_float(&s->warp_radius);
 			required_string("+WarpTime:");
 			stuff_float(&s->warp_time);
+			// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
+			if ( (s->warp_time) < 4.0f) {
+				// So let's warn them before they try to use it, shall we?
+				Warning(LOCATION, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in weapon '%s'.\n Setting to 4.0, please check and set to a number 4.0 or greater!\n", s->warp_time, weapon_name);
+				// And then make the Assert obsolete -- Zacam
+				s->warp_time = 4.0f;
+			}
 			required_string("+Radius:");
 			stuff_float(&s->radius);
 			required_string("+Offset:");
 			stuff_float(&s->offset);
+			if (optional_string("+HUD Message:")) 
+				stuff_boolean(&s->send_message);
+			else
+				s->send_message = true;
+			if (optional_string("+Custom Message:")) {
+				stuff_string(s->message, F_NAME, NAME_LENGTH);
+				s->use_custom_message = true;
+			}
+			parse_sound("+Alarm Sound:", &s->sound_index, s->name);
 
 			// see if we have a valid weapon
 			s->weapon_info_index = -1;
-			s->weapon_info_index = weapon_name_lookup(weapon_name);
+			s->weapon_info_index = weapon_info_lookup(weapon_name);
 			if(s->weapon_info_index >= 0){
 				// valid
 				Ssm_info_count++;
@@ -307,6 +234,16 @@ void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *ov
 		ssm->done_flags[idx] = 0;
 		ssm->fireballs[idx] = -1;
 	}
+	
+	if(Ssm_info[ssm_index].send_message) {
+		if (!Ssm_info[ssm_index].use_custom_message)
+			HUD_printf(XSTR("Firing artillery", 1570));
+		else
+			HUD_printf(Ssm_info[ssm_index].message);
+	}
+	if (Ssm_info[ssm_index].sound_index >= 0) {
+		snd_play(&Snds[Ssm_info[ssm_index].sound_index]);
+	}
 }
 
 // delete a finished ssm effect
@@ -363,9 +300,11 @@ void ssm_process()
 						// fire the missile and flash the screen
 						weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
 
-                        Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
-                        Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
-                        Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						if (weapon_objnum >= 0) {
+							Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
+							Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
+							Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
+						}
 
 						// this makes this particular missile done
 						moveup->done_flags[idx] = 1;

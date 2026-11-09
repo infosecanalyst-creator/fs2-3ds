@@ -7,159 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.11.2.1 $
- * $Date: 2006-10-24 13:18:35 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.11  2006/03/30 04:15:20  Goober5000
- * hehe, grammar
- * --Goober5000
- *
- * Revision 2.10  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.9  2005/07/13 03:35:32  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.7  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.6  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 7     3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 6     3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 5     2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 4     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 3     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 18    6/13/98 9:32p Mike
- * Kill last character in file which caused "Find in Files" to report the
- * file as "not a text file."
- * 
- * 17    6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 16    6/13/98 3:19p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 15    5/13/98 6:54p Dave
- * More sophistication to PXO interface. Changed respawn checking so
- * there's no window for desynchronization between the server and the
- * clients.
- * 
- * 14    5/08/98 5:05p Dave
- * Go to the join game screen when quitting multiplayer. Fixed mission
- * text chat bugs. Put mission type symbols on the create game list.
- * Started updating standalone gui controls.
- * 
- * 13    5/02/98 5:38p Dave
- * Put in new tracker API code. Put in ship information on mp team select
- * screen. Make standalone server name permanent. Fixed standalone server
- * text messages.
- * 
- * 12    4/23/98 6:18p Dave
- * Store ETS values between respawns. Put kick feature in the text
- * messaging system. Fixed text messaging system so that it doesn't
- * process or trigger ship controls. Other UI fixes.
- * 
- * 11    4/22/98 4:59p Allender
- * new multiplayer dead popup.  big changes to the comm menu system for
- * team vs. team.  Start of debriefing stuff for team vs. team  Make form
- * on my wing work with individual ships who have high priority orders
- * 
- * 10    4/16/98 6:35p Dave
- * Display more informative prompt when typing in a text message.
- * 
- * 9     4/06/98 10:24p Dave
- * Fixed up Netgame.respawn for the standalone case.
- * 
- * 8     4/05/98 3:30p Dave
- * Print netplayer messages in brighter green on the hud, with
- * accompanying sound. Echo netplayer messages on sending machine. Fixed
- * standalone sequencing bug where host never get the "enter mission"
- * button.
- * 
- * 7     4/04/98 4:22p Dave
- * First rev of UDP reliable sockets is done. Seems to work well if not
- * overly burdened.
- * 
- * 6     4/03/98 1:03a Dave
- * First pass at unreliable guaranteed delivery packets.
- * 
- * 5     4/02/98 5:50p Dave
- * Put in support for standard comm messages to get sent to netplayers as
- * well as ai ships. Make critical button presses not get evaluated on the
- * observer.
- * 
- * 4     4/01/98 5:56p Dave
- * Fixed a messaging bug which caused msg_all mode in multiplayer not to
- * work. Compile out a host of multiplayer options not available in the
- * demo.
- * 
- * 3     3/27/98 11:57a Dave
- * Put in expression checking for text messages.
- * 
- * 2     3/25/98 2:16p Dave
- * Select random default image for newly created pilots. Fixed several
- * multi-pause messaging bugs. Begin work on online help for multiplayer
- * keys.
- * 
- * 1     3/19/98 5:04p Dave
- *  
- * 
- * $NoKeywords: $
- */
+
 
 
 #include <ctype.h>
@@ -384,7 +232,7 @@ int multi_msg_text_process(int k)
 
 	// backspace
 	case KEY_BACKSP:
-		if(strlen(Multi_msg_text) > 0){
+		if(Multi_msg_text[0] != '\0'){
 			Multi_msg_text[strlen(Multi_msg_text)-1] = '\0';
 		}
 		break;
@@ -404,7 +252,7 @@ int multi_msg_text_process(int k)
 		if(strlen(Multi_msg_text) < MULTI_MSG_MAX_LEN){
 			str[0] = (char)key_to_ascii(k);
 			str[1] = '\0';
-			strcat(Multi_msg_text,str);		
+			strcat_s(Multi_msg_text,str);		
 		}
 		break;
 	}
@@ -424,7 +272,7 @@ int multi_msg_message_text(char *txt)
 	switch(Multi_msg_mode){
 	// messaging all players
 	case MULTI_MSG_ALL:
-		strcpy(txt,XSTR("ALL : ",694));
+		strcpy(txt, XSTR("ALL : ",694));
 		break;
 
 	// messaging friendly players
@@ -451,7 +299,7 @@ int multi_msg_message_text(char *txt)
 }
 
 // display ingame,inmission message text
-void multi_msg_display_mission_text(char *msg,int player_index)
+void multi_msg_display_mission_text(const char *msg, int player_index)
 {
 	// play a cue voice sound and text to speech if not from this player
 	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
@@ -467,34 +315,14 @@ void multi_msg_display_mission_text(char *msg,int player_index)
 }
 
 // if the passed net_player's callsign matches the reg expression of the passed expr
-int multi_msg_matches_expr(net_player *np,char *expr)
+int multi_msg_matches_expr(net_player *np, const char *expr)
 {
-	char callsign[CALLSIGN_LEN+1];
-	int len,idx;
-
 	// some error checking
 	if((np == NULL) || (expr == NULL) || (strlen(expr) <= 0)){
 		return 0;
 	}
 
-	// get the completely lowercase callsign
-	memset(callsign,0,CALLSIGN_LEN+1);
-	len = strlen(np->m_player->callsign);
-	for(idx=0;idx<len;idx++){
-		callsign[idx] = (char)tolower(np->m_player->callsign[idx]);
-	}
-
-	// see if this guy's callsign matches the expr
-	len = strlen(expr);
-	for(idx=0;idx<len;idx++){
-		// look for non-matching characters
-		if(callsign[idx] != expr[idx]){
-			return 0;
-		}
-	}
-				
-	// matches
-	return 1;
+	return stricmp(expr, np->m_player->callsign) ? 0 : 1 ; 
 }
 
 // if text input mode is active, clear it
@@ -528,7 +356,7 @@ int multi_msg_check_command(char *str)
 	}
 
 	// we don't want to modify the original string, which strtok() does
-	strcpy(temp_str, str);
+	strcpy_s(temp_str, str);
 
 	// try and find a command prefix
 	prefix = strtok(temp_str, ":");
@@ -541,7 +369,7 @@ int multi_msg_check_command(char *str)
 		return 0;
 	
 	// store the text as the actual parameter
-	strcpy(param, predicate);
+	strcpy_s(param, predicate);
 	drop_leading_white_space(param);
 
 	// go through all existing commands and see what we can do
@@ -555,10 +383,10 @@ int multi_msg_check_command(char *str)
 		}
 	}
 
-	/*
+	
 	// apply the results as a general expression, if we're in message all mode
 	if(Multi_msg_mode == MULTI_MSG_ALL){
-		strcpy(Multi_msg_text,param);
+		strcpy_s(Multi_msg_text,param);
 
 		// send the chat packet
 		send_game_chat_packet(Net_player, Multi_msg_text, MULTI_MSG_EXPR,NULL, prefix);
@@ -569,7 +397,7 @@ int multi_msg_check_command(char *str)
 		// return true
 		return 1;
 	}	
-	*/
+	
 
 	// no commands performed
 	return 0;
@@ -640,7 +468,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case ATTACK_TARGET_ITEM :
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Attack %s",700),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -650,7 +478,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISABLE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Disable %s",701),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -660,7 +488,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case PROTECT_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Protect %s",702),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -670,7 +498,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case IGNORE_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Ignore %s",703),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -680,7 +508,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISARM_TARGET_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP)){
 			sprintf(temp_string,XSTR("Disarm %s",704),Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -690,7 +518,7 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 	case DISABLE_SUBSYSTEM_ITEM:
 		if((target_obj != NULL) && (target_obj->type == OBJ_SHIP) && (subsys_type != -1) && (subsys_type != 0)){
 			sprintf(temp_string,XSTR("Disable subsystem %s on %s",705),Multi_msg_subsys_name[subsys_type],Ships[target_obj->instance].ship_name);
-			strcat(hud_string,temp_string);
+			strcat_s(hud_string,temp_string);
 		} else {
 			should_display = 0;
 		}
@@ -698,17 +526,17 @@ void multi_msg_show_squadmsg(net_player *source,int command,ushort target_sig,in
 
 	// form on my wing
 	case FORMATION_ITEM:		
-		strcat(hud_string,XSTR("Form on my wing",706));		
+		strcat_s(hud_string,XSTR("Form on my wing",706));		
 		break;
 
 	// cover me
 	case COVER_ME_ITEM:
-		strcat(hud_string,XSTR("Cover me",707));
+		strcat_s(hud_string,XSTR("Cover me",707));
 		break;
 
 	// engage enemy
 	case ENGAGE_ENEMY_ITEM:
-		strcat(hud_string,XSTR("Engage enemy!",708));
+		strcat_s(hud_string,XSTR("Engage enemy!",708));
 		break;
 
 	default :

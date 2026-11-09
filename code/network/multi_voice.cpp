@@ -7,239 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_voice.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.9  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/05/12 17:49:15  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.7  2005/03/02 21:18:20  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.6  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.5  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 9     3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 8     3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 7     1/08/99 4:42p Anoop
- * Fixed memory overwrite problem.
- * 
- * 6     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 5     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 4     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 43    6/16/98 4:22p Allender
- * fix Net_player reference problem
- * 
- * 42    6/13/98 9:32p Mike
- * Kill last character in file which caused "Find in Files" to report the
- * file as "not a text file."
- * 
- * 41    6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 40    6/13/98 3:19p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 39    6/12/98 2:49p Dave
- * Patch 1.02 changes.
- * 
- * 38    5/27/98 4:14p Dave
- * Spiffed up text display for voice status.
- * 
- * 37    5/27/98 1:15p Dave
- * Change pxo login failure popup text. Put in message display of player
- * who is currently doing voice.
- * 
- * 36    5/24/98 3:45a Dave
- * Minor object update fixes. Justify channel information on PXO. Add a
- * bunch of configuration stuff for the standalone.
- * 
- * 35    5/24/98 12:12a Frank
- * Make sure recording clients don't ever send/store/handle packets past
- * the limit of the accum buffer.
- * 
- * 34    5/22/98 9:35p Dave
- * Put in channel based support for PXO. Put in "shutdown" button for
- * standalone. UI tweaks for TvT
- * 
- * 33    5/20/98 2:24a Dave
- * Fixed server side voice muting. Tweaked multi debrief/endgame
- * sequencing a bit. Much friendlier for stats tossing/accepting now.
- * 
- * 32    4/25/98 2:02p Dave
- * Put in multiplayer context help screens. Reworked ingame join ship
- * select screen. Fixed places where network timestamps get hosed.
- * 
- * 31    4/21/98 4:44p Dave
- * Implement Vasudan ships in multiplayer. Added a debug function to bash
- * player rank. Fixed a few rtvoice buffer overrun problems. Fixed ui
- * problem in options screen. 
- * 
- * 30    4/17/98 5:27p Dave
- * More work on the multi options screen. Fixed many minor ui todo bugs.
- * 
- * 29    4/09/98 11:01p Dave
- * Put in new multi host options screen. Tweaked multiplayer options a
- * bit.
- * 
- * 28    4/08/98 10:11a Dave
- * Fixed a voice packet indexing problem.
- * 
- * 27    4/07/98 5:42p Dave
- * Put in support for ui display of voice system status (recording,
- * playing back, etc). Make sure main hall music is stopped before
- * entering a multiplayer game via ingame join.
- * 
- * 26    4/04/98 4:22p Dave
- * First rev of UDP reliable sockets is done. Seems to work well if not
- * overly burdened.
- * 
- * 25    4/03/98 4:22p Allender
- * Fixed a bug where voice recording was not cut off after MAX_TIME.
- * 
- * 24    4/03/98 1:03a Dave
- * First pass at unreliable guaranteed delivery packets.
- * 
- * 23    3/30/98 6:27p Dave
- * Put in a more official set of multiplayer options, including a system
- * for distributing netplayer and settings.
- * 
- * 22    3/27/98 9:46a Dave
- * Made default quality of sound 10.
- * 
- * 21    3/26/98 6:01p Dave
- * Put in file checksumming routine in cfile. Made pilot pic xferring more
- * robust. Cut header size of voice data packets in half. Put in
- * restricted game host query system.
- * 
- * 20    3/25/98 8:36p Dave
- * Removed potential bug spots from voice code.
- * 
- * 19    3/25/98 2:16p Dave
- * Select random default image for newly created pilots. Fixed several
- * multi-pause messaging bugs. Begin work on online help for multiplayer
- * keys.
- * 
- * 18    3/24/98 5:00p Dave
- * Fixed several ui bugs. Put in pre and post voice stream playback sound
- * fx. Put in error specific popups for clients getting dropped from games
- * through actions other than their own.
- * 
- * 17    3/23/98 7:18p Dave
- * Converted voice to use streaming of packets as they are recorded.
- * 
- * 16    3/22/98 7:13p Lawrance
- * Get streaming of recording voice working
- * 
- * 15    3/20/98 1:01p Dave
- * Made the token system for multi_voice more reliable. Fixed a bug where
- * standalones and other server who can't play sound don't route
- * multi_voice correctly.
- * 
- * 14    3/19/98 5:05p Dave
- * Put in support for targeted multiplayer text and voice messaging (all,
- * friendly, hostile, individual).
- * 
- * 13    3/18/98 5:52p Dave
- * Put in netgame password popup. Numerous ui changes. Laid groundwork for
- * streamed multi_voice data.
- * 
- * 12    3/18/98 3:32p Dave
- * Put in a hook for streamed rtvoice data from the rtvoice system.
- * 
- * 11    3/18/98 9:43a Dave
- * Removed an uninitialized data warning.
- * 
- * 10    3/17/98 12:30a Dave
- * Put in hud support for rtvoice. Several ui interface changes.
- * 
- * 9     3/16/98 2:35p Dave
- * Numerous bug fixes. Made the "cue sound" sound play before incoming
- * voice. 
- * 
- * 8     3/15/98 4:17p Dave
- * Fixed oberver hud problems. Put in handy netplayer macros. Reduced size
- * of network orientation matrices.
- * 
- * 7     3/04/98 4:36p Dave
- * Fixed a compiler warning.
- * 
- * 6     2/26/98 6:01p Dave
- * Made voice playback work correctly under NT.
- * 
- * 5     2/26/98 5:01p Dave
- * Fixed a multi_voice_reset() bug.
- * 
- * 4     2/26/98 4:21p Dave
- * More robust multiplayer voice.
- * 
- * 3     2/25/98 8:58p Dave
- * Got first full implementation of multi voice done.
- * 
- * 2     2/24/98 11:56p Lawrance
- * Change real-time voice code to provide the uncompressed size on decode.
- * 
- * 1     2/24/98 10:12p Dave
- * Initial pass at multiplayer voice streaming.
- *  
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi_voice.h"
@@ -254,7 +22,7 @@
 #include "menuui/optionsmenumulti.h"
 #include "network/multi.h"
 #include "playerman/player.h"
-
+#include "debugconsole/console.h"
 
 
 // --------------------------------------------------------------------------------------------------
@@ -715,16 +483,17 @@ void multi_voice_process()
 // voice settings debug console function
 void multi_voice_dcf()
 {
-	dc_get_arg(ARG_STRING);
+	SCP_string arg;
+	int value;
+
+	dc_stuff_string_white(arg);
 
 	// set the quality of sound
-	if (strcmp(Dc_arg, NOX("qos")) == 0) {
-		dc_get_arg(ARG_INT);
-		if(Dc_arg_type & ARG_INT){
-			if((Dc_arg_int >= 1) && (Dc_arg_int <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-				multi_voice_set_vars(Dc_arg_int,-1);
-				dc_printf("Quality of sound : %d\n",Dc_arg_int);
-			}
+	if (arg == NOX("qos")) {
+		dc_stuff_int(&value);
+		if((value >= 1) && (value <= 10) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+			multi_voice_set_vars(value,-1);
+			dc_printf("Quality of sound : %d\n", value);
 		}
 	}
 }
@@ -1120,7 +889,8 @@ void multi_voice_release_token()
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// mark the token as being released
 		int stream_index = multi_voice_find_token(MY_NET_PLAYER_NUM);
-		Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
+		if (stream_index != -1)
+			Multi_voice_stream[stream_index].token_status = MULTI_VOICE_TOKEN_INDEX_RELEASED;
 				
 		// timestamp this guy so that he can't get the token back immediately
 		Net_player->s_info.voice_token_timestamp = timestamp(Netgame.options.voice_token_wait);
@@ -1241,7 +1011,7 @@ void multi_voice_set_vars(int qos,int duration)
 // <server> process a request for the token
 void multi_voice_process_token_request(int player_index)
 {
-	int stream_index,idx;
+	int idx;
 	
 	// if we're not doing voice on this server, return now
 	if(Netgame.options.flags & MSO_FLAG_NO_VOICE){
@@ -1260,7 +1030,6 @@ void multi_voice_process_token_request(int player_index)
 	}
 
 	// attempt to find a free token token
-	stream_index = -1;
 	for(idx=0;idx<MULTI_VOICE_MAX_STREAMS;idx++){
 		if(Multi_voice_stream[idx].token_status == MULTI_VOICE_TOKEN_INDEX_FREE){
 			multi_voice_give_token(idx,player_index);
@@ -1297,7 +1066,7 @@ void multi_voice_player_send_stream()
 	ubyte data[MAX_PACKET_SIZE],code,*rbuf,msg_mode,chunk_index;
 	ushort chunk_size,uc_size;
 	int packet_size = 0;
-	int sound_size,size_sent,uncompressed_size,target_index,max_chunk_size;
+	int sound_size,size_sent,target_index,max_chunk_size;
 	float gain;
 	double d_gain;
 
@@ -1305,7 +1074,7 @@ void multi_voice_player_send_stream()
 	Assert(Multi_voice_can_record);
 
 	// get the data	
-	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain, NULL, NULL);
+	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer, &sound_size, &d_gain);
 	gain = (float)d_gain;
 
 	msg_mode = (ubyte)Multi_voice_send_mode;
@@ -1349,8 +1118,8 @@ void multi_voice_player_send_stream()
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
-		Assert(uncompressed_size < MULTI_VOICE_MAX_BUFFER_SIZE);
-		uc_size = (ushort)uncompressed_size;
+		Assert(sound_size < MULTI_VOICE_MAX_BUFFER_SIZE);
+		uc_size = (ushort)sound_size;
 		ADD_USHORT(uc_size);
 
 		// add the chunk index
@@ -1710,8 +1479,7 @@ int multi_voice_max_chunk_size(int msg_mode)
 // process the "next" chunk of standalone valid sound data from the rtvoice system
 void multi_voice_process_next_chunk()
 {			
-	int sound_size,uncompressed_size;	
-	float gain;
+	int sound_size;
 	double d_gain;
 	voice_stream *str;
 
@@ -1719,8 +1487,7 @@ void multi_voice_process_next_chunk()
 	Assert(Multi_voice_can_record);
 
 	// get the data	
-	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer,&sound_size,&uncompressed_size,&d_gain, NULL, NULL);		
-	gain = (float)d_gain;
+	rtvoice_get_data((unsigned char**)&Multi_voice_record_buffer, &sound_size, &d_gain);		
 
 	// if we've reached the max # of packets for this stream, bail
 	if(Multi_voice_current_stream_index >= (MULTI_VOICE_ACCUM_BUFFER_COUNT - 1)){
@@ -1756,7 +1523,7 @@ void multi_voice_process_next_chunk()
 	memcpy(str->accum_buffer[Multi_voice_current_stream_index],Multi_voice_record_buffer,sound_size);
 	str->stream_from = Net_player->player_id;	
 	str->accum_buffer_flags[Multi_voice_current_stream_index] = 1;
-	str->accum_buffer_usize[Multi_voice_current_stream_index] = (ushort)uncompressed_size;
+	str->accum_buffer_usize[Multi_voice_current_stream_index] = (ushort)sound_size;
 	str->accum_buffer_csize[Multi_voice_current_stream_index] = (ushort)sound_size;
 	str->accum_buffer_gain[Multi_voice_current_stream_index] = d_gain;	
 
@@ -1820,16 +1587,17 @@ int multi_voice_process_data_dummy(ubyte *data)
 	GET_DATA(stream_id);
 
 	// get the proper stream index
-	stream_index = multi_voice_get_stream((int)stream_id);
+	if ( (stream_index = multi_voice_get_stream((int)stream_id) ) != -1 ) {
 
-	// set the token timestamp
-	Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
+		// set the token timestamp
+		Multi_voice_stream[stream_index].token_stamp = timestamp(MULTI_VOICE_TOKEN_TIMEOUT);
 
-	// set the last heard time
-	Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
+		// set the last heard time
+		Multi_voice_stream[stream_index].stream_last_heard = timer_get_fixed_seconds();
 
-	// set the timeout timestamp
-	Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);	
+		// set the timeout timestamp
+		Multi_voice_stamps[stream_index] = timestamp(MV_ALG_TIMEOUT);
+	}
 
 	// return bytes processed
 	return offset;
@@ -2074,7 +1842,6 @@ void multi_voice_client_send_pending()
 		// add the current stream id#
 		ADD_DATA(Multi_voice_stream_id);
 
-		Assert(str->accum_buffer_usize[sent] < MULTI_VOICE_MAX_BUFFER_SIZE);
 		uc_size = (ushort)str->accum_buffer_usize[sent];
 		ADD_USHORT(uc_size);
 
@@ -2177,7 +1944,7 @@ void multi_voice_alg_play_window(int stream_index)
 		}
 	
 		// now call the rtvoice playback functions		
-		Multi_voice_stream[stream_index].stream_snd_handle = rtvoice_play_uncompressed(Multi_voice_stream[stream_index].stream_rtvoice_handle,(unsigned char*)Multi_voice_playback_buffer,buffer_offset);	
+		Multi_voice_stream[stream_index].stream_snd_handle = rtvoice_play(Multi_voice_stream[stream_index].stream_rtvoice_handle,(unsigned char*)Multi_voice_playback_buffer,buffer_offset);	
 		Multi_voice_stream[stream_index].stream_start_time = timer_get_fixed_seconds();
 	}
 	
@@ -2273,8 +2040,8 @@ int Multi_voice_test_packet_tossed = 0;
 // process the next chunk of voice data
 void multi_voice_test_process_next_chunk()
 {
-	unsigned char *outbuf,*outbuf_raw;
-	int compressed_size,uncompressed_size,raw_size;
+	unsigned char *outbuf;
+	int size;
 	double gain;
 	
 	// if the test recording stamp is -1, we should stop
@@ -2295,17 +2062,17 @@ void multi_voice_test_process_next_chunk()
 	}
 
 	// otherwise get the compressed and uncompressed data and do something interesting with it
-	rtvoice_get_data(&outbuf,&compressed_size,&uncompressed_size,&gain,&outbuf_raw,&raw_size);	
+	rtvoice_get_data(&outbuf, &size, &gain);	
 
 	// determine whether the packet would have been dropped
-	if(compressed_size > multi_voice_max_chunk_size(MULTI_MSG_ALL)){
+	if (size > multi_voice_max_chunk_size(MULTI_MSG_ALL)) {
 		Multi_voice_test_packet_tossed = 1;
 	} else {
 		Multi_voice_test_packet_tossed = 0;
 	}
 
 	// send the raw output buffer to the voice options screen
-	options_multi_set_voice_data(outbuf_raw,raw_size,outbuf,compressed_size,uncompressed_size,gain);
+	options_multi_set_voice_data(outbuf, size, gain);
 }
 
 // start recording voice locally for playback testing

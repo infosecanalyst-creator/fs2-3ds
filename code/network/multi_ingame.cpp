@@ -7,397 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.27  2005/10/30 20:20:43  Goober5000
- * comment fixage
- *
- * Revision 2.26  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- * Revision 2.25  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.24  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.23  2005/07/07 16:36:58  taylor
- * various compiler warning fixes (some of these from dizzy)
- *
- * Revision 2.22  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.21  2005/04/25 00:28:17  wmcoolmon
- * MAX_SHIP_CLASSES > Num_ship_classes
- *
- * Revision 2.20  2005/04/11 05:50:36  taylor
- * some limits.h fixes to make GCC happier
- * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
- *
- * Revision 2.19  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.18  2005/02/04 20:06:04  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.17  2004/12/14 14:46:13  Goober5000
- * allow different wing names than ABGDEZ
- * --Goober5000
- *
- * Revision 2.16  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.15  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.14  2004/07/12 14:38:12  Kazan
- * fix a small multibug in tables validation (I had added this once before.. where did it go)
- *
- * Revision 2.13  2004/07/12 03:26:03  wmcoolmon
- * Only send ships on the player's team
- *
- * Revision 2.12  2004/07/12 03:19:16  Kazan
- * removed a couple pointless useless messages from the debug console
- *
- * Revision 2.11  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.10  2004/02/04 09:02:44  Goober5000
- * got rid of unnecessary double semicolons
- * --Goober5000
- *
- * Revision 2.9  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.8  2003/09/24 19:35:59  Kazan
- * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
- *
- * Revision 2.7  2003/04/29 01:03:24  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.6  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.5  2003/01/03 21:58:08  Goober5000
- * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
- * has primitive sensors it can't target anything and objects don't appear
- * on radar if they're outside a certain range.  This range can be modified
- * via the sexp primitive-sensors-set-range.
- * --Goober5000
- *
- * Revision 2.4  2002/12/31 18:59:43  Goober5000
- * if it ain't broke, don't fix it
- * --Goober5000
- *
- * Revision 2.2  2002/12/10 05:43:34  Goober5000
- * Full-fledged ballistic primary support added!  Try it and see! :)
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 20    8/03/99 11:02p Dave
- * Maybe fixed sync problems in multiplayer.
- * 
- * 19    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 18    7/28/99 5:33p Dave
- * Nailed the missing stats bug to the wall. Problem was optimized build
- * and using GET_DATA() with array elements. BLECH.
- * 
- * 17    7/26/99 6:07p Dave
- * Removed some warnings.
- * 
- * 16    7/26/99 5:50p Dave
- * Revised ingame join. Better? We'll see....
- * 
- * 15    7/24/99 5:48p Jefff
- * converted to new UI stuff -- added 1024 support
- * 
- * 14    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 13    4/21/99 6:15p Dave
- * Did some serious housecleaning in the beam code. Made it ready to go
- * for anti-fighter "pulse" weapons. Fixed collision pair creation. Added
- * a handy macro for recalculating collision pairs for a given object.
- * 
- * 12    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 11    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 10    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 9     3/01/99 7:39p Dave
- * Added prioritizing ship respawns. Also fixed respawns in TvT so teams
- * don't mix respawn points.
- * 
- * 8     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 7     1/27/99 9:56a Dave
- * Temporary checkin of beam weapons for Dan to make cool sounds.
- * 
- * 6     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 5     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 4     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 83    9/18/98 4:54p Dave
- * Fixed ingame ship select icon problem.
- * 
- * 82    9/18/98 4:23p Dave
- * Reversed the logic on a bogus assert.
- * 
- * 81    9/18/98 3:13p Allender
- * actually delete ships from wings when ingame joining.  Shoudl get over
- * problem were too many ships are presend in the mission since we don't
- * delete unused ships until after ingame join is completed
- * 
- * 80    9/15/98 1:59p Dave
- * Fixed bonehead mistake calling multi_endgame_ending()
- * 
- * 79    9/11/98 4:14p Dave
- * Fixed file checksumming of < file_size. Put in more verbose kicking and
- * PXO stats store reporting.
- * 
- * 78    9/11/98 2:10p Allender
- * base temporary parse object's ai_goals to -1 so that we don't try and
- * free sexpressions that shouldn't be freed
- * 
- * 77    8/07/98 10:16a Allender
- * use obj_set_flags for the COULD_BE_PLAYER flag
- * 
- * 76    7/24/98 9:27a Dave
- * Tidied up endgame sequencing by removing several old flags and
- * standardizing _all_ endgame stuff with a single function call.
- * 
- * 75    6/30/98 2:17p Dave
- * Revised object update system. Removed updates for all weapons. Put
- * button info back into control info packet.
- * 
- * 74    6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 73    6/13/98 3:18p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 72    6/10/98 2:56p Dave
- * Substantial changes to reduce bandwidth and latency problems.
- * 
- * 71    6/04/98 11:46a Dave
- * Drastically reduce size/rate of client control info update packets. Put
- * in rate limiting for object updating from server.
- * 
- * 70    5/26/98 11:54a Allender
- * fix multiplayer problems and sexpression crash
- * 
- * 69    5/25/98 1:33a Allender
- * fixed timestamp problem for client update packets, small fix for ingame
- * validation code
- * 
- * 68    5/24/98 9:17p Allender
- * commented out test code to help rectify bogus player objects when
- * ingame joining
- * 
- * 67    5/23/98 3:16p Allender
- * work on object update packet optimizations (a new updating system).
- * Don't allow medals/promotions/badges when playing singple player
- * missions through the simulator
- * 
- * 66    5/22/98 9:35p Dave
- * Put in channel based support for PXO. Put in "shutdown" button for
- * standalone. UI tweaks for TvT
- * 
- * 65    5/21/98 10:03p Allender
- * add secondary ammo counts to ingame join packets
- * 
- * 64    5/21/98 1:52a Dave
- * Remove obsolete command line functions. Reduce shield explosion packets
- * drastically. Tweak PXO screen even more. Fix file xfer system so that
- * we can guarantee file uniqueness.
- * 
- * 63    5/21/98 12:14a Allender
- * fix ingame join problems
- * 
- * 62    5/20/98 3:25p Allender
- * ingame join changes (which probably won't make the final version).
- * Added RAS code into psnet
- * 
- * 61    5/19/98 11:36p Allender
- * fixed very nasty mask problem with ingame joiner marking player objects
- * incorrectly.  Named ingame joiner ship and observer ship unique names
- * 
- * 60    5/19/98 8:35p Dave
- * Revamp PXO channel listing system. Send campaign goals/events to
- * clients for evaluation. Made lock button pressable on all screens. 
- * 
- * 59    5/18/98 12:41a Allender
- * fixed subsystem problems on clients (i.e. not reporting properly on
- * damage indicator).  Fixed ingame join problem with respawns.  minor
- * comm menu stuff
- * 
- * 58    5/15/98 4:12p Allender
- * removed redbook code.  Put back in ingame join timer.  Major fixups for
- * stats in multiplayer.  Pass correct score, medals, etc when leaving
- * game.  Be sure clients display medals, badges, etc.
- * 
- * 57    5/15/98 1:44p Allender
- * initialize hotkeys when entering the mission ingame joining
- * 
- * 56    5/11/98 4:33p Allender
- * fixed ingame join problems -- started to work on new object updating
- * code (currently ifdef'ed out)
- * 
- * 55    5/09/98 4:31p Chad
- * Fixed weapon recharge rate problem and fixed weapon link status problem
- * for ingame joiners.
- * 
- * 54    5/08/98 11:21a Allender
- * fix ingame join trouble.  Small messaging fix.  Enable collisions for
- * friendlies again
- * 
- * 53    5/03/98 7:04p Dave
- * Make team vs. team work mores smoothly with standalone. Change how host
- * interacts with standalone for picking missions. Put in a time limit for
- * ingame join ship select. Fix ingame join ship select screen for Vasudan
- * ship icons.
- * 
- * 52    5/03/98 2:52p Dave
- * Removed multiplayer furball mode.
- * 
- * 51    5/02/98 1:47a Dave
- * Make sure ingame joiners know how many respawns they have left. Tidy up
- * some multiui stuff.
- * 
- * 50    5/01/98 4:11p Comet
- * Fixed ship_ets bug. I think.
- * 
- * 49    4/30/98 12:49a Allender
- * change ship type and weapons of any player wing ship, not just ones
- * that players currently occupy
- * 
- * 48    4/29/98 9:36p Allender
- * ingame join tweaks.  added network message for countermeasures
- * 
- * 47    4/29/98 12:28p Chad
- * set packet size when selecting a player's ingame choice
- * 
- * 46    4/25/98 2:02p Dave
- * Put in multiplayer context help screens. Reworked ingame join ship
- * select screen. Fixed places where network timestamps get hosed.
- * 
- * 45    4/23/98 11:52p Allender
- * make homing weapons send their homing object.  Fixed ingame joiners so
- * they bash ship types and weapons correctly when joining
- * 
- * 44    4/23/98 1:49a Allender
- * major rearm/repair fixes for multiplayer.  Fixed respawning of AI ships
- * to not respawn until 5 seconds after they die.  Send escort information
- * to ingame joiners
- * 
- * 43    4/22/98 5:53p Dave
- * Large reworking of endgame sequencing. Updated multi host options
- * screen for new artwork. Put in checks for host or team captains leaving
- * midgame.
- * 
- * 42    4/22/98 4:59p Allender
- * new multiplayer dead popup.  big changes to the comm menu system for
- * team vs. team.  Start of debriefing stuff for team vs. team  Make form
- * on my wing work with individual ships who have high priority orders
- * 
- * 41    4/21/98 11:56p Dave
- * Put in player deaths statskeeping. Use arrow keys in the ingame join
- * ship select screen. Don't quit the game if in the debriefing and server
- * leaves.
- * 
- * 40    4/20/98 12:40a Allender
- * fixed nasty problem where network read code was not reentrant.  minor
- * UI tweaks.  ingame joiners now get netgame info correctly.
- * 
- * 39    4/07/98 5:42p Dave
- * Put in support for ui display of voice system status (recording,
- * playing back, etc). Make sure main hall music is stopped before
- * entering a multiplayer game via ingame join.
- * 
- * 38    4/06/98 6:47p Allender
- * be sure that ingame joiner has reasonable current primary and secondary
- * banks
- * 
- * 37    4/06/98 12:33a Allender
- * ingame joiners need to unmark all player ships as could be players
- * before getting ship information from host.  Don't send count with
- * countermeasure fired packet
- * 
- * 36    4/04/98 4:22p Dave
- * First rev of UDP reliable sockets is done. Seems to work well if not
- * overly burdened.
- * 
- * 35    4/04/98 3:55p Allender
- * made ingame join send packet to all other clients in the game when in
- * game joiner selects his ship
- * 
- * 34    4/03/98 1:03a Dave
- * First pass at unreliable guaranteed delivery packets.
- * 
- * 33    4/02/98 5:36p John
- * Made the level paging occur at the same time as the level is read in.
- * 
- * 32    3/31/98 4:03p Allender
- * some ingame join fixed -- make sure ingame joiners have parse objects
- * for all other players
- * 
- * 31    3/24/98 5:12p Allender
- * ingame join packet sequencing
- *
- * $NoKeywords: $
- */
+
 
 
 #include <limits.h>		// this is need even when not building debug!!
@@ -673,7 +283,7 @@ void multi_ingame_sync_init()
 	multi_oo_reset_sequencing();
 
 	// send the file signature to the host for possible mission file transfer
-	strcpy(Netgame.mission_name,Game_current_mission_filename);
+	strcpy_s(Netgame.mission_name,Game_current_mission_filename);
 	send_file_sig_packet(Multi_current_file_checksum,Multi_current_file_length);
 	
 	Ingame_ships_deleted = 0;
@@ -953,7 +563,7 @@ void multi_ingame_load_icons()
 	// traverse through all ship types
 	for(idx=0;idx<Num_ship_classes;idx++){
 		// if there is a valid icon for this ship
-		if((strlen(Ship_info[idx].icon_filename) > 0) && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
+		if((Ship_info[idx].icon_filename[0] != '\0') && (Multi_ingame_num_ship_icons < MULTI_INGAME_MAX_SHIP_ICONS)){
 			// set the ship class
 			Multi_ingame_ship_icon[Multi_ingame_num_ship_icons].ship_class = idx;
 
@@ -999,16 +609,16 @@ void multi_ingame_select_init()
 	// create a ship, then find a ship to copy crucial information from.  Save and restore the wing
 	// number to be safe.
 	/*
-	wingnum_save = Player_start_pobject.wingnum;
-	net_signature = Player_start_pobject.net_signature;
-	goals_save = Player_start_pobject.ai_goals;
-	Player_start_pobject.wingnum = -1;
-	Player_start_pobject.net_signature = 0;
-	Player_start_pobject.ai_goals = -1;
-	objnum = parse_create_object( &Player_start_pobject );
-	Player_start_pobject.wingnum = wingnum_save;
-	Player_start_pobject.net_signature = net_signature;
-	Player_start_pobject.ai_goals = goals_save;
+	wingnum_save = Player_start_pobject->wingnum;
+	net_signature = Player_start_pobject->net_signature;
+	goals_save = Player_start_pobject->ai_goals;
+	Player_start_pobject->wingnum = -1;
+	Player_start_pobject->net_signature = 0;
+	Player_start_pobject->ai_goals = -1;
+	objnum = parse_create_object( Player_start_pobject );
+	Player_start_pobject->wingnum = wingnum_save;
+	Player_start_pobject->net_signature = net_signature;
+	Player_start_pobject->ai_goals = goals_save;
 
 	if ( objnum == -1 ) {
 		nprintf(("Network", "Bailing ingame join because unable to create parse object player ship\n"));
@@ -1020,7 +630,7 @@ void multi_ingame_select_init()
 	Player_obj = &Objects[objnum];
 	Player_obj->net_signature = 0;						
 	Player_ship = &Ships[Player_obj->instance];
-	strcpy(Player_ship->ship_name, NOX("JIP Ship"));
+	strcpy_s(Player_ship->ship_name, NOX("JIP Ship"));
 	Player_ai = &Ai_info[Player_ship->ai_index];
 	*/
 
@@ -1197,7 +807,7 @@ void multi_ingame_select_do()
 	GR_MAYBE_CLEAR_RES(Multi_ingame_bitmap);
 	if(Multi_ingame_bitmap != -1){
 		gr_set_bitmap(Multi_ingame_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_ingame_window.draw();
 
@@ -1226,43 +836,42 @@ void multi_ingame_select_close()
 	Multi_ingame_window.destroy();	
 
 	// stop main hall music
-	main_hall_stop_music();	
+	main_hall_stop_music(true);
 }
 
 // display an individual ships information, starting at the indicated y pixel value
 void multi_ingame_join_display_ship(object *objp,int y_start)
 {
 	int icon_num,idx;
-	ship_info *sip;
 	int y_spacing;
 	ship_weapon *wp;
 
-	sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	int line_height = gr_get_font_height() + 1;
 	
 	// blit the ship name itself
 	gr_set_color_fast(&Color_normal);
-	gr_string(Mi_name_field[gr_screen.res][MI_FIELD_X],y_start+10, Ships[objp->instance].ship_name);
+	gr_string(Mi_name_field[gr_screen.res][MI_FIELD_X],y_start+10, Ships[objp->instance].ship_name, GR_RESIZE_MENU);
 	
 	// blit the ship class icon
 	icon_num = multi_ingame_get_ship_class_icon(Ships[objp->instance].ship_info_index);
 	if(icon_num != -1){
 		gr_set_bitmap(Multi_ingame_ship_icon[icon_num].bmaps[0]);
-		gr_bitmap(Mi_class_field[gr_screen.res][MI_FIELD_X] + 15, y_start);
+		gr_bitmap(Mi_class_field[gr_screen.res][MI_FIELD_X] + 15, y_start, GR_RESIZE_MENU);
 	}
 	
 	gr_set_color_fast(&Color_bright);
 	wp = &Ships[objp->instance].weapons;
 	
 	// blit the ship's primary weapons	
-	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * 10)) / 2;
+	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_primary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_primary_banks;idx++){
-		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->primary_bank_weapons[idx]].name);
+		gr_string(Mi_primary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->primary_bank_weapons[idx]].name, GR_RESIZE_MENU);
 	}
 
 	// blit the ship's secondary weapons	
-	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * 10)) / 2;
+	y_spacing = (Mi_spacing[gr_screen.res] - (wp->num_secondary_banks * line_height)) / 2;
 	for(idx=0;idx<wp->num_secondary_banks;idx++){
-		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * 10), Weapon_info[wp->secondary_bank_weapons[idx]].name);
+		gr_string(Mi_secondary_field[gr_screen.res][MI_FIELD_X], y_start + y_spacing + (idx * line_height), Weapon_info[wp->secondary_bank_weapons[idx]].name, GR_RESIZE_MENU);
 	}	
 
 	// blit the shield/hull integrity
@@ -1283,10 +892,10 @@ void multi_ingame_join_display_avail()
 
 		// draw the border
 		gr_set_color_fast(&Color_bright_blue);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start-1, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start-1);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start + Mi_spacing[gr_screen.res] - 2, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2);
-		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start, Mi_name_field[gr_screen.res][MI_FIELD_X]-1, y_start + Mi_spacing[gr_screen.res] - 2);
-		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start-1, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start-1, GR_RESIZE_MENU);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start + Mi_spacing[gr_screen.res] - 2, (Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
+		gr_line(Mi_name_field[gr_screen.res][MI_FIELD_X]-1,y_start, Mi_name_field[gr_screen.res][MI_FIELD_X]-1, y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
+		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
 	}
 
 	moveup = GET_FIRST(&Ship_obj_list);	
@@ -1333,7 +942,7 @@ void multi_ingame_handle_timeout()
 	/*
 	// uncomment this block to disable the timer
 	gr_set_color_fast(&Color_bright_red);
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], "Timer disabled!!");
+	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], "Timer disabled!!", GR_RESIZE_MENU);
 	return;
 	*/
 
@@ -1349,7 +958,7 @@ void multi_ingame_handle_timeout()
 	gr_set_color_fast(&Color_bright);
 	memset(tl_string,0,100);
 	sprintf(tl_string,XSTR("Time remaining : %d s\n",682),time_left);	
-	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string);
+	gr_string(Multi_ingame_timer_coords[gr_screen.res][0], Multi_ingame_timer_coords[gr_screen.res][1], tl_string, GR_RESIZE_MENU);
 }
 
 
@@ -1434,7 +1043,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		Objects[objnum].net_signature = net_signature;
 
 		// assign any common data
-		strcpy(Ships[ship_num].ship_name, ship_name);
+		strcpy_s(Ships[ship_num].ship_name, ship_name);
 		Ships[ship_num].flags = sflags;
 		Ships[ship_num].flags2 = sflags2;
 		Ships[ship_num].team = team;
@@ -1470,13 +1079,10 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				// Be sure to mark this ship as as a could_be_player
 				obj_set_flags( objp, objp->flags | OF_COULD_BE_PLAYER );
 				objp->flags &= ~OF_PLAYER_SHIP;
-			}
 
-			// if this is a player ship, make sure we find out who's it is and set their objnum accordingly
-			if(team_val != -1){
+                // if this is a player ship, make sure we find out who's it is and set their objnum accordingly
 				for( j = 0; j < MAX_PLAYERS; j++){
-					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {						
-						// nprintf(("Network", "Making %s ship for %s\n", Ships[shipnum].ship_name, Net_players[j].player->callsign));
+					if(MULTI_CONNECTED(Net_players[j]) && (Net_players[j].m_player->objnum == Objects[Ships[idx].objnum].net_signature)) {
 						multi_assign_player_ship( j, objp, Ships[idx].ship_info_index );
 						objp->flags |= OF_PLAYER_SHIP;
 						objp->flags &= ~OF_COULD_BE_PLAYER;
@@ -1655,7 +1261,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// kind of stupid, but bash the name since it won't get recreated properly from
 				// the parse_wing_create_ships call.
 				shipp = &Ships[shipnum];
-				sprintf(shipp->ship_name, NOX("%s %d"), wingp->name, which_one + 1);
+				wing_bash_ship_name(shipp->ship_name, wingp->name, which_one + 1);
 				nprintf(("Network", "Created %s\n", shipp->ship_name));
 
 				objp = &Objects[shipp->objnum];
@@ -1918,7 +1524,7 @@ void multi_ingame_validate_players()
 			int shipnum, objnum, player_objnum;
 
 			player_objnum = Net_players[i].m_player->objnum;
-			if ( (Objects[player_objnum].type != OBJ_SHIP) || (Objects[player_objnum].type != OBJ_GHOST) ) {
+			if ( (Objects[player_objnum].type != OBJ_SHIP) && (Objects[player_objnum].type != OBJ_GHOST) ) {
 				Int3();
 			}
 
@@ -2214,10 +1820,11 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	objp = &Objects[sp->objnum];
 	ADD_USHORT(objp->net_signature);
 	ADD_UINT(objp->flags);
+	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
 	// shield percentages
-	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
+	for(idx=0; idx<objp->n_quadrants; idx++){
 		f_tmp = objp->shield_quadrant[idx];
 		ADD_FLOAT(f_tmp);
 	}
@@ -2231,6 +1838,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	float garbage;
 	int flags;
 	int idx;
+	int n_quadrants;
 	ushort net_sig;
 	object *lookup;
 	float f_tmp;
@@ -2239,14 +1847,15 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
 	GET_INT(flags);
-   
+	GET_INT(n_quadrants);
+
 	// get the object
 	lookup = multi_get_network_object(net_sig);
 	if(lookup == NULL){
 		// read in garbage values if we can't find the ship
 		nprintf(("Network","Got ingame ship update for unknown object\n"));
 		GET_FLOAT(garbage);
-		for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
+		for(idx=0;idx<n_quadrants;idx++){
 			GET_FLOAT(garbage);
 		}
 
@@ -2255,8 +1864,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	}
 	// otherwise read in the ship values
 	lookup->flags = flags;
+	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
-	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
+	for(idx=0;idx<n_quadrants;idx++){
 		GET_FLOAT(f_tmp);
 		lookup->shield_quadrant[idx] = f_tmp;
 	}

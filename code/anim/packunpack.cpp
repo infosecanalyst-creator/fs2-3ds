@@ -7,227 +7,12 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.13.2.2 $
- * $Date: 2007-10-28 16:32:06 $
- * $Author: taylor $
- *
- * Code for handling packing and unpacking in Hoffoss's RLE format, used for
- * Anim files.  Also handles Anim loading, creating Anim instances (for
- * utilizing an Anim), and getting getting frames of the Anim.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.13.2.1  2006/06/22 14:59:44  taylor
- * fix various things that Valgrind has been complaining about
- *
- * Revision 2.13  2006/03/21 00:27:27  taylor
- * some minor cleanup
- *
- * Revision 2.12  2006/01/22 19:57:35  wmcoolmon
- * 0...1...2...4?
- *
- * Revision 2.11  2005/11/13 06:40:19  taylor
- * add support for 8/16/24/32 bit output from ani frame decoder
- *
- * Revision 2.10  2005/05/24 03:13:36  taylor
- * extra check to make sure that RLE reading never goes over frame size in new ANI formats
- *
- * Revision 2.9  2005/05/23 05:58:31  taylor
- * quick catch for some corrupted anis, only a partial fix but it will do until something
- *  a bit more heavy duty comes along in the near future
- *
- * Revision 2.8  2005/05/12 17:49:10  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.7  2004/07/26 20:47:23  Kazan
- * remove MCD complete
- *
- * Revision 2.6  2004/07/12 16:32:41  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.5  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2004/02/14 00:18:29  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.3  2003/10/24 17:35:04  randomtiger
- * Implemented support for 32bit TGA and JPG for D3D
- * Also 32 bit PCX, but it still has some bugs to be worked out
- * Moved convert_24_to_16 out of the bitmap pfunction structures and into packunpack.cpp because thats the only place that uses it.
- *
- * Revision 2.2  2003/03/18 10:07:00  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/11/04 03:02:27  randomtiger
- *
- * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
- * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
- * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
- *
- * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
- * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
- *
- * Rolled back to an old version of bumpman and made a few changes.
- * Added new files: grd3dbumpman.cpp and .h
- * Moved the bitmap init function to after the 3D engine is initialised
- * Added includes where needed
- * Disabled (for now) the D3D8 TGA loading - RT
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 12    7/30/99 10:10p Dave
- * Fixed loading bar in 32 bit mode.
- * 
- * 11    7/18/99 1:59p Johnson
- * Fixed potential anim locking problem.
- * 
- * 10    7/16/99 1:49p Dave
- * 8 bit aabitmaps. yay.
- * 
- * 9     7/13/99 1:15p Dave
- * 32 bit support. Whee!
- * 
- * 8     4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 7     1/14/99 12:48a Dave
- * Todo list bug fixes. Made a pass at putting briefing icons back into
- * FRED. Sort of works :(
- * 
- * 6     12/01/98 5:53p Dave
- * Simplified the way pixel data is swizzled. Fixed tga bitmaps to work
- * properly in D3D and Glide.
- * 
- * 5     12/01/98 8:06a Dave
- * Temporary checkin to fix some texture transparency problems in d3d.
- * 
- * 4     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 3     10/22/98 6:14p Dave
- * Optimized some #includes in Anim folder. Put in the beginnings of
- * parse/localization support for externalized strings and tstrings.tbl
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 30    5/14/98 3:38p John
- * Added in more non-darkening colors for Adam.  Had to fix some bugs in
- * BmpMan and Ani stuff to get this to work.
- * 
- * 29    5/07/98 3:11a Lawrance
- * Implement custom streaming code
- * 
- * 28    11/19/97 8:28p Dave
- * Hooked in Main Hall screen. Put in Anim support for ping ponging
- * animations as well as general reversal of anim direction.
- * 
- * 27    9/09/97 3:39p Sandeep
- * warning level 4 bugs
- * 
- * 26    8/22/97 8:21a Lawrance
- * short circuit key frame check if keyframe matches frame we are
- * searching for
- * 
- * 25    8/21/97 5:11p Lawrance
- * frame numbering for ANI's now is from 0 -> total_frames-1.
- * 
- * 24    8/19/97 10:59a Lawrance
- * fix problem with accessing key frames
- * 
- * 23    7/28/97 10:42p Lawrance
- * re-did interface to unpack_frame() to make more general
- * 
- * 22    7/28/97 10:52a Lawrance
- * correctly set bitmap flags in anim_get_frame()
- * 
- * 21    7/21/97 5:10p Lawrance
- * fix problem that was causing infinite recursion
- * 
- * 20    7/20/97 6:57p Lawrance
- * supporting new RLE format
- * 
- * 19    6/27/97 4:36p Lawrance
- * update pal translation table when gr_screen.signature changes
- * 
- * 18    6/26/97 12:12a Lawrance
- * supporting anti-aliased bitmap animations
- * 
- * 17    6/25/97 3:03p Lawrance
- * fix palette translation problem with anti-alised bitmaps
- * 
- * 16    5/19/97 2:28p Lawrance
- * changes some variables to flags
- * 
- * 15    5/15/97 4:42p Lawrance
- * supporting animations in-game
- * 
- * 14    2/25/97 11:06a Lawrance
- * moved some higher level functions to from PackUnpack to AnimPlay
- * 
- * 13    2/19/97 9:51p Lawrance
- * made keyframe decompression more effecient, moved 
- * default anim FPS to header file
- * 
- * 12    2/19/97 4:00p Lawrance
- * don't assert when cannot find anim filename, return a NULL instead
- * 
- * 11    2/17/97 4:17p Hoffoss
- * modified packing internal format and added random access function to an
- * Anim frame.
- * 
- * 10    2/17/97 2:59p Lawrance
- * integrating into game
- * 
- * 9     2/14/97 11:27p Lawrance
- * optimized unpacking some more (Jason)
- * 
- * 8     2/14/97 11:09p Hoffoss
- * Made optimizations.
- * 
- * 7     2/14/97 10:48p Hoffoss
- * fixed bug.
- * 
- * 6     2/14/97 10:38p Lawrance
- * fixing bugs
- * 
- * 5     2/14/97 5:38p Hoffoss
- * Changes to get AnimCoverter project to compile and link.
- * 
- * 4     2/14/97 3:29p Hoffoss
- * Added header for MSDEV to fill in.
- *
- * $NoKeywords: $
- */
+
 
 #include "anim/packunpack.h"
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
 #include "anim/animplay.h"
-
-
 
 
 const int packer_code = PACKER_CODE;
@@ -264,6 +49,7 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	ptr->instance_count++;
 	inst = (anim_instance *) vm_malloc(sizeof(anim_instance));
 	Assert(inst);
+	memset(inst, 0, sizeof(anim_instance));
 	inst->frame_num = -1;
 	inst->last_frame_num = -1;
 	inst->parent = ptr;
@@ -314,12 +100,7 @@ int anim_get_next_frame(anim_instance *inst)
 		return -1;
 	}
 
-	if (inst->parent->flags & ANF_XPARENT) {
-		// bitmap_flags = BMP_XPARENT;
-		bitmap_flags = 0;
-	} else {
-		bitmap_flags = 0;
-	}
+	bitmap_flags = 0;
 
 	bpp = 16;
 	if(inst->aa_color != NULL){
@@ -381,159 +162,16 @@ ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap
 	return inst->frame;
 }
 
-// --------------------------------------------------------------------
-// anim_get_frame()
-//
-// Get a bitmap id from the anim_instance for the specified frame_num
-//
-//	input:	*inst			=>		pointer to anim instance
-//				frame_num	=>		frame number to get (first frame is 0)
-//				xlate_pal	=>		DEFAULT PARM (value 1): whether to translate the palette
-//										to the current game palette
-//
-int anim_get_frame(anim_instance *inst, int frame_num, int xlate_pal)
-{
-	/*
-	int			bm, bitmap_flags, key = 0, offset = 0;
-	int idx;
-
-	if ((frame_num < 0) || (frame_num >= inst->parent->total_frames))  // illegal frame number
-		return -1;
-
-	int need_reset = 0;
-	if ( anim_instance_is_streamed(inst) ) {
-		if ( inst->file_offset < 0 ) {
-			need_reset = 1;
-		}
-	} else {
-		if ( !inst->data ) {
-			need_reset = 1;
-		}
-	}
-
-	if (need_reset || (inst->frame_num >= inst->parent->total_frames)) {  // reset to valid info
-		inst->data = inst->parent->data;
-		inst->file_offset = inst->parent->file_offset;
-		inst->frame_num = 0;
-	}
-
-	bitmap_flags = 0;
-	if (inst->parent->flags & ANF_XPARENT) {
-		// bitmap_flags = BMP_XPARENT;
-		bitmap_flags = 0;
-	}
-
-	if ( inst->frame_num == frame_num ) {
-		bm = bm_create(16, inst->parent->width, inst->parent->height, inst->frame, bitmap_flags);
-		bm_unload(bm);
-		return bm;
-	}
-
-	if (inst->parent->flags & ANF_XPARENT){
-		// bitmap_flags = BMP_XPARENT;
-		bitmap_flags = 0;
-	} else {
-		bitmap_flags = 0;
-	}
-
-	idx = 0;
-	key = 0;
-	while(idx < inst->parent->num_keys){			
-		if (( (inst->parent->keys[idx].frame_num-1) <= frame_num) && ( (inst->parent->keys[idx].frame_num-1) > key)) {  // find closest key
-			key = inst->parent->keys[idx].frame_num - 1;
-			offset = inst->parent->keys[idx].offset;
-				
-			if ( key == frame_num )
-				break;
-		}
-		idx++;
-	}
-			
-	if ( key == frame_num ) {
-		inst->frame_num = key;
-
-		if ( anim_instance_is_streamed(inst) ) {
-			inst->file_offset = inst->parent->file_offset + offset;
-		} else {
-			inst->data = inst->parent->data + offset;
-		}
-
-		anim_check_for_palette_change(inst);
-
-		if ( anim_instance_is_streamed(inst) ) {
-			if ( xlate_pal ){
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			} else {
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, NULL);
-			}
-		} else {
-			if ( xlate_pal ){
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			} else {
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, NULL);
-			}
-		}
-
-		goto create_bitmap;
-	}
-
-	if (key > inst->frame_num)  // best key is closer than current position
-	{
-		inst->frame_num = key;
-
-		if ( anim_instance_is_streamed(inst) ) {
-			inst->file_offset = inst->parent->file_offset + offset;
-		} else {
-			inst->data = inst->parent->data + offset;
-		}
-
-		anim_check_for_palette_change(inst);
-
-		if ( anim_instance_is_streamed(inst) ) {
-			if ( xlate_pal )
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			else 
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, NULL);
-		} else {
-			if ( xlate_pal )
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			else 
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, NULL);
-		}
-	}
-
-	while (inst->frame_num != frame_num) {
-		anim_check_for_palette_change(inst);
-
-		if ( anim_instance_is_streamed(inst) ) {
-			if ( xlate_pal )
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			else 
-				inst->file_offset = unpack_frame_from_file(inst, inst->frame, inst->parent->width*inst->parent->height, NULL);
-		} else {
-			if ( xlate_pal )
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, inst->parent->palette_translation);
-			else 
-				inst->data = unpack_frame(inst, inst->data, inst->frame, inst->parent->width*inst->parent->height, NULL);
-		}
-		inst->frame_num++;
-	}
-
-	create_bitmap:
-
-	bm = bm_create(16, inst->parent->width, inst->parent->height, inst->frame, bitmap_flags);
-	bm_unload(bm);
-	return bm;
-  */
-	Int3();
-	return -1;
-}
-
-// frame = frame pixel data to pack
-// save = memory to store packed data to
-// size = number of bytes to pack
-// max = maximum number of packed bytes (size of buffer)
-// returns: actual number of bytes data packed to or -1 if error
+/**
+ * @brief Pack key frame
+ *
+ * @param frame Frame pixel data to pack
+ * @param save Memory to store packed data to
+ * @param size Number of bytes to pack
+ * @param max Maximum number of packed bytes (size of buffer)
+ * @param compress_type Compress type
+ * @return Actual number of bytes data packed to or -1 if error
+ */
 int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_type)
 {
 	int last = -32768, count = 0;
@@ -618,14 +256,12 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 							*save++ = (ubyte)last;
 							packed_size++;
 							Assert( last != STD_RLE_CODE );
-//							printf("Just packed %d 1 times, since pixel change, no count included\n",last);
 						}
 						else {
 							count |= STD_RLE_CODE;
 							*save++ = (ubyte)count;
 							*save++ = (ubyte)last;
 							packed_size += 2;
-//							printf("Just packed %d %d times, since pixel change\n",last,count);
 						}
 					}
 		
@@ -642,8 +278,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 					*save++ = (ubyte)last;
 					packed_size += 2;
 					count = 0;
-//					printf("Just packed %d %d times, since count overflow\n",last,count);
-
 				}
 			}	// end for
 
@@ -655,7 +289,6 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 				if ( (count == 1) && !(last & STD_RLE_CODE) ) {
 					*save++ = (ubyte)last;
 					packed_size++;
-//					printf("Just packed %d 1 times, at end since single pixel, no count\n",last);
 					Assert( last != STD_RLE_CODE );
 				}
 				else {
@@ -663,13 +296,11 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 					*save++ = (ubyte)count;
 					*save++ = (ubyte)last;
 					packed_size += 2;
-//					printf("Just packed %d %d times, at end since pixel change\n",last,count);
 				}
 			}
 
 			Assert(packed_size == (save-dest_start) );
 			return packed_size;
-			break;
 			}
 
 		default:
@@ -681,12 +312,17 @@ int pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_
 	return packed_size;
 }
 
-// frame = frame pixel data to pack
-// frame2 = previous frame's pixel data
-// save = memory to store packed data to
-// size = number of bytes to pack
-// max = maximum number of packed bytes (size of buffer)
-// returns: actual number of bytes data packed to or -1 if error
+/**
+ * @brief Pack frame
+ *
+ * @param frame Frame pixel data to pack
+ * @param frame2 Previous frame's pixel data
+ * @param save Memory to store packed data to
+ * @param size Number of bytes to pack
+ * @param max Maximum number of packed bytes (size of buffer)
+ * @param compress_type Compress type
+ * @return Actual number of bytes data packed to or -1 if error
+ */
 int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, int compress_type)
 {
 	int pixel, last = -32768, count = 0, i;
@@ -830,7 +466,6 @@ int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, in
 
 			Assert(packed_size == (save-dest_start) );
 			return packed_size;
-			break;
 			}
 
 		default:
@@ -842,7 +477,11 @@ int pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, in
 	return packed_size;
 }
 
-// convert a 24 bit value to a 16 bit value
+/**
+ * @brief Convert a 24 bit value to a 16 bit value
+ * @param bit_24 24 bit value
+ * @param bit_16 16 bit value (output)
+ */
 void convert_24_to_16(int bit_24, ushort *bit_16)
 {
 	ubyte *pixel = (ubyte*)&bit_24;
@@ -851,7 +490,10 @@ void convert_24_to_16(int bit_24, ushort *bit_16)
 	bm_set_components((ubyte*)bit_16, (ubyte*)&pixel[0], (ubyte*)&pixel[1], (ubyte*)&pixel[2], &alpha);
 }
 
-// unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
+/**
+ * @brief Unpack a pixel given the passed index and the anim_instance's palette
+ * @return Bytes stuffed
+ */
 int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bpp)
 {
 	int bit_24;
@@ -900,7 +542,7 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 				}
 			} else {
 				// stuff the 24 bit value
-				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3); //-V512
 
 				// convert to 16 bit
 				convert_24_to_16(bit_24, &bit_16);
@@ -931,7 +573,10 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 	return pixel_size;
 }
 
-// unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
+/**
+ * @brief Unpack a pixel given the passed index and the anim_instance's palette
+ * @return Bytes stuffed
+ */
 int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0, int aabitmap = 0, int bpp = 8)
 {
 	int bit_24;
@@ -981,7 +626,7 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 				}
 			} else {
 				// stuff the 24 bit value
-				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3);
+				memcpy(&bit_24, &ai->parent->palette[pix * 3], 3); //-V512
 				
 				// convert to 16 bit
 				convert_24_to_16(bit_24, &bit_16);
@@ -1010,10 +655,17 @@ int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0,
 	return (pixel_size * count);
 }
 
-// ptr = packed data to unpack
-// frame = where to store unpacked data to
-// size = total number of unpacked pixels requested
-// pal_translate = color translation lookup table (NULL if no palette translation desired)
+/**
+ * @brief Unpack frame
+ *
+ * @param ai Animation instance
+ * @param ptr Packed data to unpack
+ * @param frame Where to store unpacked data to
+ * @param size Total number of unpacked pixels requested
+ * @param pal_translate Color translation lookup table (NULL if no palette translation desired)
+ * @param aabitmap
+ * @param bpp
+ */
 ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp)
 {
 	int	xlate_pal, value, count = 0;
@@ -1096,9 +748,6 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 		}
 	}
 	else if (*ptr == PACKING_METHOD_RLE) {  // normal frame, Hoffoss's RLE format
-
-// test code, to show unused pixels
-// memset(frame, 255, size);
 	
 		ptr++;
 		while (size > 0) {
@@ -1189,17 +838,23 @@ ubyte	*unpack_frame(anim_instance *ai, ubyte *ptr, ubyte *frame, int size, ubyte
 		}
 	}
 	else {
-	//	Assert(0);  // unknown packing method
+		// unknown packing method
 		return NULL;
 	}
 
 	return ptr;
 }
 
-// ptr = packed data to unpack
-// frame = where to store unpacked data to
-// size = total number of unpacked pixels requested
-// pal_translate = color translation lookup table (NULL if no palette translation desired)
+/**
+ * @brief Unpack frame from file
+ *
+ * @param ai Animation instance
+ * @param frame Where to store unpacked data to
+ * @param size Total number of unpacked pixels requested
+ * @param pal_translate Color translation lookup table (NULL if no palette translation desired)
+ * @param aabitmap
+ * @param bpp
+ */
 int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal_translate, int aabitmap, int bpp)
 {
 	int	xlate_pal, value, count = 0;
@@ -1289,9 +944,6 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 		}
 	}
 	else if (anim_instance_get_byte(ai,offset) == PACKING_METHOD_RLE) {  // normal frame, Hoffoss's RLE format
-
-// test code, to show unused pixels
-// memset(frame, 255, size);
 	
 		offset++;
 		while (size > 0) {
@@ -1386,7 +1038,7 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 		}
 	}
 	else {
-	//	Int3();  // unknown packing method
+		// unknown packing method
 		return -1;
 	}
 
@@ -1394,21 +1046,17 @@ int unpack_frame_from_file(anim_instance *ai, ubyte *frame, int size, ubyte *pal
 }
 
 
-// TODO: actually convert the frame data to correct palette at this point
+/**
+ * @brief Set animation palette
+ * @todo Actually convert the frame data to correct palette at this point
+ */
 void anim_set_palette(anim *ptr)
 {
 	int i, xparent_found = 0;
 	
 	// create the palette translation look-up table
 	for ( i = 0; i < 256; i++ ) {
-
-		//if ( (ptr->palette[i*3] == ptr->xparent_r) && (ptr->palette[i*3+1] == ptr->xparent_g) && (ptr->palette[i*3+2] == ptr->xparent_b) ) {
-		//	ptr->palette_translation[i] = 255;
-		//	xparent_found = 1;
-		//} else	{
-			// ptr->palette_translation[i] = (ubyte)palette_find( ptr->palette[i*3], ptr->palette[i*3+1], ptr->palette[i*3+2] );
-			ptr->palette_translation[i] = (ubyte)i;
-		//}
+		ptr->palette_translation[i] = (ubyte)i;
 	}	
 
 	if ( xparent_found ) {

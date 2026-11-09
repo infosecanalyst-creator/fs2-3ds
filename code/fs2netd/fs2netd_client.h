@@ -7,18 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /freespace2/code/fs2netd/fs2netd_client.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-10-15 06:43:10 $
- * $Author: taylor $
- *
- * FS2NetD client handler (header)
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _FS2NETD_CLIENT_H
 #define _FS2NETD_CLIENT_H
@@ -26,7 +15,7 @@
 #include "network/multi.h"
 
 struct net_addr;
-struct player;
+class player;
 
 // channel to associate when creating a server
 extern char Multi_fs_tracker_channel[];
@@ -58,6 +47,7 @@ extern tracker_game_data Multi_tracker_game_data;
 bool fs2netd_is_online();
 
 void fs2netd_reset_connection();
+void fs2netd_disconnect();
 
 void fs2netd_close();
 
@@ -87,8 +77,8 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 
 void fs2netd_options_config_init();
 
-void fs2netd_add_table_validation(char *tblname);
+void fs2netd_add_table_validation(const char *tblname);
 
-void fs2netd_update_game_count(char *chan_name);
+void fs2netd_update_game_count(const char *chan_name);
 
 #endif // _FS2NETD_CLIENT_H

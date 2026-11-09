@@ -7,472 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
- *
- * C module that controls and manages the message window on the HUD
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.20  2006/03/19 05:05:58  taylor
- * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
- * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
- *
- * Revision 2.19  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.18  2005/10/10 17:21:04  taylor
- * remove NO_NETWORK
- *
- * Revision 2.17  2005/07/25 08:21:59  Goober5000
- * more bugs and tweaks
- * --Goober5000
- *
- * Revision 2.16  2005/07/22 10:18:38  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.15  2005/07/18 03:44:01  taylor
- * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.14  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.13  2005/07/02 19:42:15  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.12  2005/05/12 17:49:12  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.11  2005/03/29 07:03:16  wmcoolmon
- * Removed some warnings under Linux/GCC
- *
- * Revision 2.10  2005/03/05 18:59:28  taylor
- * don't let hud messages walk off screen when res is GR_640
- *
- * Revision 2.9  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.8  2005/02/23 04:51:56  taylor
- * some bm_unload() -> bm_release() changes to save bmpman slots
- *
- * Revision 2.7  2005/02/13 08:37:57  wmcoolmon
- * Made messages display properly in nonstandard resolutions
- *
- * Revision 2.6  2005/01/31 10:34:38  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 2.5  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:49  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 23    9/08/99 5:38p Jefff
- * 
- * 22    9/08/99 2:38p Jefff
- * sound pausing going to menu from game
- * 
- * 21    9/07/99 9:42p Jefff
- * 
- * 20    9/02/99 11:47a Jefff
- * yet another hud message length adjustment.  yeesh.
- * 
- * 19    8/25/99 10:08a Jefff
- * fixed another messge cut-off bug
- * 
- * 18    8/23/99 11:12a Jefff
- * fixed 1024 message cut-off bug
- * 
- * 17    8/20/99 2:26p Jefff
- * hud message text wrapping problem in hires fixed
- * 
- * 16    8/03/99 7:27p Jefff
- * hud messages go completely across screnn in high res now
- * 
- * 15    8/03/99 6:21p Jefff
- * fixed stupid bug with objectives screen key
- * 
- * 14    8/01/99 12:39p Dave
- * Added HUD contrast control key (for nebula).
- * 
- * 13    7/29/99 2:58p Jefff
- * Ingame objective screen icon key now uses normal objective icons and
- * text is drawn in code.
- * 
- * 12    6/16/99 5:26p Dave
- * Fixed some bitmap and coordinate problems on the mission scrollback
- * screen.
- * 
- * 11    6/10/99 3:43p Dave
- * Do a better job of syncing text colors to HUD gauges.
- * 
- * 10    2/02/99 10:13a Neilk
- * fixed more coords
- * 
- * 9     2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 8     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 7     1/30/99 3:09p Neilk
- * More mission log coord fixes
- * 
- * 6     1/30/99 2:59p Neilk
- * Fixed more mission log coords
- * 
- * 5     1/29/99 7:57p Neilk
- * Added support for multiresolutions
- * 
- * 4     1/06/99 2:24p Dave
- * Stubs and release build fixes.
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 89    6/09/98 5:17p Lawrance
- * French/German localization
- * 
- * 88    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 87    5/19/98 8:36p Andsager
- * Fix bug where last line of message log would not show if more than one
- * screen of text.
- * 
- * 86    4/27/98 8:49p Allender
- * make terran command display in white (with correct code anyway).
- * 
- * 85    4/25/98 11:49p Lawrance
- * init pos to zero
- * 
- * 84    4/25/98 9:10p Hoffoss
- * Fixed bug with scrollback origin.
- * 
- * 83    4/25/98 5:22p Hoffoss
- * Fixed some problems with scrolling and positioning, and added code to
- * support pageup/pagedown.
- * 
- * 82    4/14/98 5:06p Dave
- * Don't load or send invalid pilot pics. Fixed chatbox graphic errors.
- * Made chatbox display team icons in a team vs. team game. Fixed up pause
- * and endgame sequencing issues.
- * 
- * 81    4/14/98 2:44p Hoffoss
- * Made arrow keys do what tab does.
- * 
- * 80    4/08/98 4:10p John
- * Removed all remaining traces of the evil gr_init_font_ex.
- * 
- * 79    4/07/98 11:33a Hoffoss
- * Fixed bug where scroll offset was wrong when first entering the F4
- * screen.
- * 
- * 78    4/05/98 3:30p Dave
- * Print netplayer messages in brighter green on the hud, with
- * accompanying sound. Echo netplayer messages on sending machine. Fixed
- * standalone sequencing bug where host never get the "enter mission"
- * button.
- * 
- * 77    3/27/98 11:57a Dave
- * Put in expression checking for text messages.
- * 
- * 76    3/17/98 4:01p Hoffoss
- * Added HUD_SOURCE_TERRAN_CMD and changed code to utilize it when a
- * message is being sent from Terran Command.
- * 
- * 75    3/16/98 5:55p Lawrance
- * Increase width of HUD message line, don't draw lines while comm menu is
- * up
- * 
- * 74    3/12/98 4:03p Hoffoss
- * Changed formatting used in hug scrollbacl log.
- * 
- * 73    3/09/98 4:47p Hoffoss
- * Changed F4 screen to start in objectives mode rather than HUD messages
- * mode.
- * 
- * 72    3/09/98 2:50p Hoffoss
- * Changed to use different palette file, and fixed bug with text
- * overrunning the right edge of screen.
- * 
- * 71    3/02/98 5:42p John
- * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
- * afterburner.  Made gr_set_clip work good with negative x &y.  Made
- * model_caching be on by default.  Made each cached model have it's own
- * bitmap id.  Made asteroids not rotate when model_caching is on.  
- * 
- * 70    2/27/98 4:55p Hoffoss
- * Fixed some alignment problems.
- * 
- * 69    2/27/98 4:37p Hoffoss
- * Combined Objectives screen into Mission Log screen.
- * 
- * 68    2/22/98 4:17p John
- * More string externalization classification... 190 left to go!
- * 
- * 67    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 66    2/06/98 2:58p Hoffoss
- * Fixed bug where mission log scrolls twice when using the arrow keys.
- * 
- * 65    1/29/98 10:26a Hoffoss
- * Made changes so arrow buttons repeat scrolling when held down.
- * 
- * 64    1/20/98 4:39p Hoffoss
- * Added mission time display to scrollback log screen.
- * 
- * 63    1/18/98 5:09p Lawrance
- * Added support for TEAM_TRAITOR
- * 
- * 62    1/12/98 11:16p Lawrance
- * Wonderful HUD config.
- * 
- * 61    1/08/98 1:33p Hoffoss
- * Made scroll offset reset to bottom of list instead of top.
- * 
- * 60    1/05/98 2:59p Hoffoss
- * Fixed bug with messages drawing outside of limits.
- * 
- * 59    1/02/98 9:10p Lawrance
- * Big changes to how colors get set on the HUD.
- * 
- * 58    1/02/98 10:23a Hoffoss
- * Fixed incorrect scrolling directions in message scrollback log.
- * 
- * 57    12/11/97 10:17p Dave
- * Put in some checks to make sure HUD_printfs aren't
- * done in certain multiplayer situations.
- * 
- * 56    12/05/97 2:16p Hoffoss
- * Made hidden hud messages actually not show up in scrollback.
- * 
- * 55    12/03/97 6:07p Dave
- * Added assert that hud scrollback initialized before adding messages to
- * it.
- * 
- * 54    12/03/97 4:16p Hoffoss
- * Changed sound stuff used in interface screens for interface purposes.
- * 
- * 53    12/03/97 11:35a Hoffoss
- * Made changes to HUD messages send throughout the game.
- * 
- * 52    12/02/97 5:57p Hoffoss
- * Changed Hud messaging code to align text to right after sending ship's
- * name.
- * 
- * 51    12/01/97 4:30p Hoffoss
- * Changed code to list hud messages in scrollback from top down.
- * 
- * 50    11/25/97 10:01a Jasen
- * Remoced excess buttons from MessageLog screen.
- * 
- * 49    11/24/97 10:03p Jasen
- * Dang... had to make an entirely new revision of the last button.  :)
- * 
- * 48    11/24/97 9:44p Jasen
- * Changed button name and coords to new exit button.
- * 
- * 47    11/20/97 12:02p Lawrance
- * change Error to nprintf at warning level
- * 
- * 46    11/17/97 6:37p Lawrance
- * new gauges: extended target view, new lock triangles, support ship view
- * 
- * 45    11/14/97 2:46p Lawrance
- * decrease width of HUD message line to 435, so it doesn overlap with
- * message menu
- * 
- * 44    11/13/97 10:16p Hoffoss
- * Added icons to mission log scrollback.
- * 
- * 43    11/13/97 4:05p Hoffoss
- * Added hiding code for mission log entries.
- * 
- * 42    11/12/97 6:00p Hoffoss
- * Added training messages to hud scrollback log.
- * 
- * 41    11/11/97 11:16a Hoffoss
- * Changed hud scrollback to color entire lines.
- * 
- * 40    11/06/97 5:42p Hoffoss
- * Added support for fixed size timstamp rendering.
- * 
- * 39    11/05/97 7:11p Hoffoss
- * Made changed to the hud message system.  Hud messages can now have
- * sources so they can be color coded.
- * 
- * 38    11/04/97 4:56p Jasen
- * Updated coordinates for buttons
- * 
- * 37    11/03/97 10:12p Hoffoss
- * Finished up work on the hud message/mission log scrollback screen.
- * 
- * 36    11/03/97 5:38p Dave
- * Cleaned up more multiplayer sequencing. Added OBJ_OBSERVER module/type.
- * Restructured HUD_config structs/flags.
- * 
- * 35    10/25/97 4:02p Lawrance
- * took out unused hud_message struct members
- * 
- * 34    10/02/97 9:53p Hoffoss
- * Added event evaluation analysis debug screen so we can determine the
- * state of events and their sexp trees to track down logic problems and
- * such.
- * 
- * 33    9/17/97 5:12p John
- * Restructured collision routines.  Probably broke a lot of stuff.
- * 
- * 32    9/08/97 12:01p Lawrance
- * when re-using HUD scrollback entries, ensure memory gets free'ed
- * properly
- * 
- * 31    8/31/97 6:38p Lawrance
- * pass in frametime to do_frame loop
- * 
- * 30    8/22/97 10:03a Lawrance
- * fix exception that occurred when hud scrollback was selected from the
- * main menu
- * 
- * 29    6/23/97 12:03p Lawrance
- * move split_str() to Parselo
- * 
- * 28    6/17/97 12:25p Lawrance
- * HUD message lines are split into multiple lines when they exceed
- * display width
- * 
- * 27    6/12/97 10:23a John
- * added new colors to freespace.  made most menus display the background
- * bitmap rather than dull black screen.
- * 
- * 26    6/11/97 1:12p John
- * Started fixing all the text colors in the game.
- * 
- * 25    4/22/97 3:14p Lawrance
- * only free HUD scrollback messages if they exist
- * 
- * 24    4/15/97 1:26p Lawrance
- * using a static array of nodes to store hud scrollback messages, storage
- * for text is dynamic
- * 
- * 23    4/14/97 9:55a Mike
- * Fixed HUD message system.
- * Better game sequencing.
- * 
- * 22    1/28/97 5:33p Lawrance
- * saving number of msg window lines in save game and player file
- * 
- * 21    1/28/97 4:59p Lawrance
- * allowing number of lines on hud message bar to be configured
- * 
- * 20    1/24/97 9:47a Lawrance
- * made number of message lines in HUD message area confiurable
- * 
- * 19    1/22/97 10:56a Lawrance
- * added check for NULL after malloc()
- * 
- * 18    1/07/97 5:36p Lawrance
- * Enabled save/restore for  old/present/pending hud messages
- * 
- * 17    12/10/96 12:28p Lawrance
- * adding new offscreen target indicator
- * 
- * 16    12/08/96 1:54a Lawrance
- * integrating hud configuration
- * 
- * 15    11/29/96 6:12p Lawrance
- * took out duplicate include of timer.h
- * 
- * 14    11/29/96 11:17a Lawrance
- * added comments, put check in for zero-length HUD messages in the
- * scrollback
- * 
- * 13    11/28/96 6:27p Lawrance
- * added some additional comments
- * 
- * 12    11/27/96 3:20p Lawrance
- * added scroll-back message code
- * 
- * 11    11/22/96 1:00p Lawrance
- * fixed bug when a key held down and created tons of messages
- * 
- * 10    11/22/96 12:35p Lawrance
- * 
- * 9     11/20/96 11:51a Lawrance
- * trying out losing the HUD message shaded area
- * 
- * 8     11/19/96 4:46p Lawrance
- * fixed problem when too many messages were to be displayed at once
- * 
- * 7     11/19/96 3:55p Lawrance
- * modifed HUD message details (scroll speed, fade time etc)
- * 
- * 6     11/19/96 10:16a Lawrance
- * changing to new use of color scheme
- * 
- * 5     11/17/96 5:28p Lawrance
- * using HUD color globals instead of hard-coded numbers
- * 
- * 4     11/15/96 11:46a Lawrance
- * tweaked size of HUD message bar to prevent clipping of g's etc on the
- * bottom line
- * 
- * 3     11/15/96 11:39a Lawrance
- * got HUD messages scrolling
- * 
- * 2     11/15/96 12:11a Lawrance
- * HUD message bar working
- *
- * $NoKeywords: $
- *
-*/
+
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -480,6 +15,7 @@
 
 #include "hud/hud.h"
 #include "hud/hudmessage.h"
+#include "hud/hudconfig.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
@@ -493,15 +29,16 @@
 #include "gamesnd/gamesnd.h"
 #include "mission/missiongoals.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "sound/audiostr.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
 #include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
-
-
+#include "anim/packunpack.h" // for talking heads
+#include "anim/animplay.h"
+#include "parse/scripting.h"
 
 
 /* replaced with those static ints that follow
@@ -571,8 +108,6 @@ static int Hud_mission_log_time2_coords[GR_NUM_RESOLUTIONS][2] = {
 #define SHOW_OBJS_BUTTON	4
 #define ACCEPT_BUTTON		5
 
-#define HUD_MESSAGE_TOTAL_LIFE	14000	// total time a HUD message is alive (in milliseconds)
-
 #define HUD_MSG_LENGTH_MAX		2048
 //#define HUD_MSG_MAX_PIXEL_W	439	// maximum number of pixels wide message display area is
 //#define HUD_MSG_MAX_PIXEL_W	619	// maximum number of pixels wide message display area is
@@ -598,33 +133,13 @@ struct scrollback_buttons {
 	scrollback_buttons(char *name, int x1, int y1, int x2, int y2, int h) : filename(name), x(x1), y(y1), xt(x2), yt(y2), hotspot(h) {}
 };
 
-int Scroll_time_id;
-
-int MSG_WINDOW_X_START = 5;
-int MSG_WINDOW_Y_START = 5;
-int MSG_WINDOW_WIDTH;		// initialed in hud_init_msg_window()
-int MSG_WINDOW_HEIGHT;
-int MSG_WINDOW_FONT_HEIGHT;
-int ACTIVE_BUFFER_LINES	= 4;				// number of HUD messages that can be shown at one time + 1
-int OLD_ACTIVE_BUFFER_LINES;
-
-int Hud_list_start;			// points to the next msg to be printed in the queue
-int Hud_list_end;				// points to the last msg in the queue
-
-int Active_index=0;
-int Scroll_needed=0;
-int Scroll_in_progress=0;
-
-HUD_message_data HUD_pending[SCROLL_BUFFER_LINES];
-Hud_display_info HUD_active_msgs_list[MAX_ACTIVE_BUFFER_LINES];
+SCP_vector<HUD_message_data> HUD_msg_buffer;
 
 int HUD_msg_inited = FALSE;
 
 // There is a maximum number of lines that will be stored in the message scrollback.  Oldest
 // messages are deleted to make way for newest messages.
-// Goober5000 - I think it'd be nice to see *all* the messages
-#define MAX_MSG_SCROLLBACK_LINES	MAX_MISSION_MESSAGES
-//#define MAX_MSG_SCROLLBACK_LINES	100
+#define MAX_MSG_SCROLLBACK_LINES	1000
 line_node Msg_scrollback_lines[MAX_MSG_SCROLLBACK_LINES];
 
 line_node Msg_scrollback_free_list;
@@ -707,32 +222,7 @@ void HUD_init_fixed_text()
 //
 void hud_init_msg_window()
 {
-	int i, h;
-
-	MSG_WINDOW_WIDTH = gr_screen.clip_width_unscaled - 20;
-
-	Hud_list_start = 0;
-	Hud_list_end = 0;
-
-	for (i=0; i<SCROLL_BUFFER_LINES; i++)
-		HUD_pending[i].text[0] = HUD_pending[i].text[MAX_HUD_LINE_LEN - 1] = 0;
-	
-	for ( i=0; i < MAX_ACTIVE_BUFFER_LINES; i++ ) {
-		HUD_active_msgs_list[i].total_life = 1;
-	}
-
-	Scroll_time_id = 1;
-
-	// determine the height of the msg window, which depends on the font height	
-	gr_set_font(FONT1);
-	h = gr_get_font_height();
-
-	//ACTIVE_BUFFER_LINES = Players[Player_num].HUD_config.num_msg_window_lines;
-//	ACTIVE_BUFFER_LINES = HUD_config.num_msg_window_lines;
-	ACTIVE_BUFFER_LINES = 4;
-
-	MSG_WINDOW_FONT_HEIGHT = h;
-	MSG_WINDOW_HEIGHT = MSG_WINDOW_FONT_HEIGHT * (ACTIVE_BUFFER_LINES-1);
+	int i;
 
 	// starting a mission, free the scroll-back buffers, but only if we've been
 	// through this function once already
@@ -749,141 +239,238 @@ void hud_init_msg_window()
 		list_append(&Msg_scrollback_free_list, &Msg_scrollback_lines[i]);
 	}
 
-	Active_index=0;
-	Scroll_needed=0;
-	Scroll_in_progress=0;
-
-	OLD_ACTIVE_BUFFER_LINES = ACTIVE_BUFFER_LINES;
-
 	HUD_init_fixed_text();
 	HUD_msg_inited = TRUE;
 }
 
-// ---------------------------------------------------------------------------------------
-// hud_show_msg_window() will display the active HUD messages on the HUD.  It will scroll
-// the messages up when a new message arrives.  
-//
-void hud_show_msg_window()
+void hud_clear_msg_buffer()
 {
-	int i, index;
+	HUD_msg_buffer.clear();
+}
 
-	hud_set_default_color();
-	gr_set_font(FONT1);
+HudGaugeMessages::HudGaugeMessages():
+HudGauge(HUD_OBJECT_MESSAGES, HUD_MESSAGE_LINES, false, true, (VM_WARP_CHASE), 255, 255, 255)
+{
+}
 
-	HUD_set_clip(MSG_WINDOW_X_START,MSG_WINDOW_Y_START, MSG_WINDOW_WIDTH, MSG_WINDOW_HEIGHT+2);
+void HudGaugeMessages::initMaxLines(int lines)
+{
+	Max_lines = lines + 1; // One additional line that's not displayed to scroll offscreen.
+}
 
-	if ( OLD_ACTIVE_BUFFER_LINES != ACTIVE_BUFFER_LINES ) {
-		// the size of the message window has changed, the best thing to do is to put all
-		// the blank out the current hud messages.  There is no need to add them to the 
-		// scrollback buffer, since they are already there!
-	
-		for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
-			if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
-				HUD_active_msgs_list[i].total_life = 1;
-				Active_index=0;
-			}
+void HudGaugeMessages::initMaxWidth(int width)
+{
+	Window_width = Max_width = width;
+}
+
+void HudGaugeMessages::initScrollTime(int ms)
+{
+	Scroll_time = ms;
+}
+
+void HudGaugeMessages::initStepSize(int h)
+{
+	Step_size = h;
+}
+
+void HudGaugeMessages::initTotalLife(int ms)
+{
+	Total_life = ms;
+}
+
+void HudGaugeMessages::initLineHeight(int h)
+{
+	Line_h = h;
+}
+
+void HudGaugeMessages::initHiddenByCommsMenu(bool hide)
+{
+	Hidden_by_comms_menu = hide;
+}
+
+void HudGaugeMessages::initialize()
+{
+	// calculate the window height based on the number of lines, and line height
+	Window_height = Max_lines * Line_h;
+
+	active_messages.clear();
+	pending_messages = SCP_queue<HUD_message_data>(); // there's no clear() method for queues :/
+
+	Scroll_needed = false;
+	Scroll_in_progress = false;
+	Scroll_time_id = 1;
+
+	HudGauge::initialize();
+}
+
+void HudGaugeMessages::pageIn()
+{
+}
+
+void HudGaugeMessages::processMessageBuffer()
+{
+	int sw, x, offset = 0;
+	size_t i;
+	char *msg;
+	char *split_str, *ptr;
+
+	for ( i = 0; i < HUD_msg_buffer.size(); i++ ) {
+		msg = new char [HUD_msg_buffer[i].text.size()+1];
+		strcpy(msg, HUD_msg_buffer[i].text.c_str());
+
+		ptr = strstr(msg, NOX(": ")) + 2;
+
+		if ( ptr ) {
+			gr_get_string_size(&sw, NULL, msg, ptr - msg);
+			offset = sw;
 		}
-	}
-	
-	OLD_ACTIVE_BUFFER_LINES = ACTIVE_BUFFER_LINES;
 
-	// check if there is a message to display on the HUD, and if there is room to display it
-	if ( Hud_list_start != Hud_list_end && !Scroll_needed) {
+		x = 0;
+		split_str = msg;
 
-		Hud_list_start++;
-
-		// if the pointer exceeds the array size, wrap around to element 1.  element 0 is not used.		
-		if (Hud_list_start >= SCROLL_BUFFER_LINES)
-			Hud_list_start = 1;
-
-		HUD_active_msgs_list[Active_index].msg = HUD_pending[Hud_list_start];
-		HUD_active_msgs_list[Active_index].total_life = timestamp(HUD_MESSAGE_TOTAL_LIFE);
-
-		for (i=Active_index+1; i < Active_index+ACTIVE_BUFFER_LINES; i++) {
-			index = i % ACTIVE_BUFFER_LINES;
-
-			// determine if there are any existing messages, if so need to scroll them up
-
-			if ( !timestamp_elapsed(HUD_active_msgs_list[index].total_life) ) {
-				HUD_active_msgs_list[index].target_y -=  MSG_WINDOW_FONT_HEIGHT;
-				Scroll_needed=1;
+		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != NULL) {		// the 7 is a fudge hack
+			// make sure that split went ok, if not then bail
+			if (ptr == split_str) {
+				break;
 			}
 
+			addPending(split_str, HUD_msg_buffer[i].source, x);
+			split_str = ptr;
+			x = offset;
+		}
+
+		addPending(split_str, HUD_msg_buffer[i].source, x);
+
+		delete[] msg;
+	}
+}
+
+void HudGaugeMessages::addPending(const char *text, int source, int x)
+{
+	Assert(text != NULL);
+
+	HUD_message_data new_message;
+
+	new_message.text = text;
+	new_message.source = source;
+	new_message.x = x;
+
+	pending_messages.push(new_message);
+}
+
+void HudGaugeMessages::scrollMessages()
+{
+	// check if there is a message to display on the HUD, and if there is room to display it
+	if ( !pending_messages.empty() && !Scroll_needed ) {
+		Hud_display_info new_active_msg;
+
+		new_active_msg.msg = pending_messages.front();
+		new_active_msg.total_life = timestamp(Total_life);
+
+		pending_messages.pop();
+
+		for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m ) {
+			// determine if there are any existing messages, if so need to scroll them up
+			if ( !timestamp_elapsed(m->total_life) ) {
+				m->target_y -= Line_h;
+				Scroll_needed = true;
+			}
 		}
 
 		if (Scroll_needed) {
-			HUD_active_msgs_list[Active_index].y = (ACTIVE_BUFFER_LINES-1)*MSG_WINDOW_FONT_HEIGHT;
-			HUD_active_msgs_list[Active_index].target_y = HUD_active_msgs_list[Active_index].y - MSG_WINDOW_FONT_HEIGHT;
-		}
-		else {
-			HUD_active_msgs_list[Active_index].y = (ACTIVE_BUFFER_LINES-2)*MSG_WINDOW_FONT_HEIGHT;
-			HUD_active_msgs_list[Active_index].target_y = HUD_active_msgs_list[Active_index].y;
+			new_active_msg.y = (Max_lines-1)*Line_h;
+			new_active_msg.target_y = new_active_msg.y - Line_h;
+		} else {
+			new_active_msg.y = (Max_lines-2)*Line_h;
+			new_active_msg.target_y = new_active_msg.y;
 		}
 
-		Active_index++;
-		if (Active_index >= ACTIVE_BUFFER_LINES) Active_index = 0;
-
-		if (Hud_list_end == Hud_list_start) {	// just printed the last msg
-			Hud_list_start = Hud_list_end = 0;
-		}
+		active_messages.push_back(new_active_msg);
 	}
 
-	Scroll_in_progress=0;
-	Scroll_needed = 0;
+	Scroll_in_progress = false;
+	Scroll_needed = false;
 
-	for ( i=0; i < ACTIVE_BUFFER_LINES; i++ ) {
+	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ) {
+		if ( !timestamp_elapsed(m->total_life) ) {
+			if ( m->y > m->target_y ) {
+				Scroll_needed = true;
 
-		if ( !timestamp_elapsed(HUD_active_msgs_list[i].total_life) ) {
+				if ( timestamp_elapsed(Scroll_time_id) ) {
+					m->y -= Step_size;
 
-			if (HUD_active_msgs_list[i].y > HUD_active_msgs_list[i].target_y) {
-				Scroll_needed=1;
-				if (timestamp_elapsed(Scroll_time_id) ){
-					HUD_active_msgs_list[i].y -= SCROLL_STEP_SIZE;
-					if (HUD_active_msgs_list[i].y < HUD_active_msgs_list[i].target_y)
-						HUD_active_msgs_list[i].y = HUD_active_msgs_list[i].target_y;
-
-					Scroll_in_progress=1;
-				}
-
-			}
-
-			if ( hud_gauge_active(HUD_MESSAGE_LINES) ) {
-				if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) ) {
-					// set the appropriate color					
-					if(HUD_active_msgs_list[i].msg.source){
-						hud_set_gauge_color(HUD_MESSAGE_LINES, HUD_C_BRIGHT);
-					} else {
-						hud_set_gauge_color(HUD_MESSAGE_LINES);
+					if ( m->y < m->target_y ) {
+						m->y = m->target_y;
 					}
 
-					// print the message out
-					gr_printf(MSG_WINDOW_X_START + HUD_active_msgs_list[i].msg.x - 2, HUD_active_msgs_list[i].y, "%s", HUD_active_msgs_list[i].msg.text);
+					Scroll_in_progress = true;
 				}
+			}
+		} else {
+			*m = active_messages.back();
+			active_messages.pop_back();
+
+			if (active_messages.empty())
+			{
+				// We may not use the iterator any longer
+				break;
+			}
+			else
+			{
+				continue;
 			}
 		}
 
-	} // end for
+		++m;
+	}
 
-	if (Scroll_in_progress)
-		Scroll_time_id = timestamp(SCROLL_TIME);
-
-	HUD_reset_clip();
+	if (Scroll_in_progress) {
+		Scroll_time_id = timestamp(Scroll_time);
+	}
 }
 
-void hud_show_fixed_text()
+void HudGaugeMessages::clearMessages()
 {
-	HUD_ft	*hp;
+	active_messages.clear();
+}
 
-	hp = &HUD_fixed_text[0];
+void HudGaugeMessages::preprocess()
+{
+	setFont();
+	processMessageBuffer();
+	scrollMessages();
+}
 
-	if (!timestamp_elapsed(hp->end_time)) {
-		//gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
-		gr_printf(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
+/**
+ * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
+ * the messages up when a new message arrives.
+ */
+void HudGaugeMessages::render(float frametime)
+{
+	hud_set_default_color();
+
+	// dependant on max_width, max_lines, and line_height
+	setClip(position[0], position[1], Window_width, Window_height+2);
+
+	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
+		if ( !timestamp_elapsed(m->total_life) ) {
+			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
+				// set the appropriate color					
+				if ( m->msg.source ) {
+					setGaugeColor(HUD_C_BRIGHT);
+				} else {
+					setGaugeColor();
+				}
+
+				// print the message out
+				renderPrintf(m->msg.x, m->y, "%s", m->msg.text.c_str());
+			}
+		}
 	}
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
-void HUD_fixed_printf(float duration, char * format, ...)
+void HUD_fixed_printf(float duration, color col, const char *format, ...)
 {
 	va_list	args;
 	char		tmp[HUD_MSG_LENGTH_MAX];
@@ -896,69 +483,35 @@ void HUD_fixed_printf(float duration, char * format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
 	msg_length = strlen(tmp);
-	Assert(msg_length < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 
 	if ( !msg_length ) {
 		nprintf(("Warning", "HUD_fixed_printf ==> attempt to print a 0 length string in msg window\n"));
 		return;
 
 	} else if (msg_length > MAX_HUD_LINE_LEN - 1){
-		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n",MAX_HUD_LINE_LEN,tmp));
+		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN - 1, tmp));
+		tmp[MAX_HUD_LINE_LEN-1] = '\0';
 	}
+
+	strcpy_s(HUD_fixed_text[0].text, tmp);
 
 	if (duration == 0.0f){
 		HUD_fixed_text[0].end_time = timestamp(-1);
 	} else {
 		HUD_fixed_text[0].end_time = timestamp((int) (1000.0f * duration));
 	}
-
-	strncpy(HUD_fixed_text[0].text, tmp, MAX_HUD_LINE_LEN - 1);
-	HUD_fixed_text[0].color = 0xff0000;
+	HUD_fixed_text[0].color = col.red << 16 | col.green << 8 | col.blue; 
 }
 
 //	Clear all pending text.
 void HUD_fixed_printf_reset()
 {
 	HUD_init_fixed_text();
-}
-
-
-// --------------------------------------------------------------------------------------
-// HUD_printf_line() 
-//
-//	Print a single line of text to the HUD.  We know that the text will fit on the screen,
-// since that was taken care of in HUD_printf();
-//
-void HUD_printf_line(char *text, int source, int time = 0, int x = 0)
-{
-	Assert(text != NULL);
-
-	// if the pointer exceeds the array size, wrap around to element 1.  element 0 is not used.		
-	Hud_list_end++;
-	if (Hud_list_end >= SCROLL_BUFFER_LINES)
-		Hud_list_end = 1;
-
-	if (Hud_list_end == Hud_list_start) {
-		nprintf(("Warning", "HUD ==> Exceeded msg scroll buffer, discarding message %s\n", text));
-		Hud_list_end--;
-		if (Hud_list_end == 0)
-			Hud_list_end = SCROLL_BUFFER_LINES - 1;
-		return;
-	}
-
-	if ( strlen(text) > MAX_HUD_LINE_LEN - 1 ){
-		nprintf(("Warning", "HUD_printf_line() ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN, text));
-	}
-
-	strncpy(HUD_pending[Hud_list_end].text, text, MAX_HUD_LINE_LEN - 1);
-	HUD_pending[Hud_list_end].text[MAX_HUD_LINE_LEN - 1] = 0;
-	HUD_pending[Hud_list_end].source = source;
-	HUD_pending[Hud_list_end].time = time;
-	HUD_pending[Hud_list_end].x = x;
 }
 
 // converts a TEAM_* define to a HUD_SOURCE_* define
@@ -974,11 +527,10 @@ int HUD_source_get_team(int source)
 }
 
 
-void HUD_printf(char *format, ...)
+void HUD_printf(const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
-	int len;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -987,30 +539,28 @@ void HUD_printf(char *format, ...)
 	}
 
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
 
-void HUD_ship_sent_printf(int sh, char *format, ...)
+void HUD_ship_sent_printf(int sh, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
+	tmp[sizeof(tmp)-1] = '\0';
 	int len;
 
-	sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
+	snprintf(tmp, sizeof(tmp)-1, NOX("%s: "), Ships[sh].ship_name);
 	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);
 
 	va_start(args, format);
-	vsprintf(tmp + len, format, args);
+	vsnprintf(tmp + len, sizeof(tmp)-1-len, format, args);
 	va_end(args);
 
-	len = strlen(tmp);
-	Assert(len < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
 	hud_sourced_print(HUD_team_get_source(Ships[sh].team), tmp);
 }
 
@@ -1021,7 +571,7 @@ void HUD_ship_sent_printf(int sh, char *format, ...)
 // message on the HUD.  Text is split into multiple lines if width exceeds msg display area
 // width.  'source' is used to indicate who send the message, and is used to color code text.
 //
-void HUD_sourced_printf(int source, char *format, ...)
+void HUD_sourced_printf(int source, const char *format, ...)
 {
 	va_list args;
 	char tmp[HUD_MSG_LENGTH_MAX];
@@ -1033,26 +583,22 @@ void HUD_sourced_printf(int source, char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
-	Assert(strlen(tmp) < HUD_MSG_LENGTH_MAX);	//	If greater than this, probably crashed anyway.
+	tmp[sizeof(tmp)-1] = '\0';
+
 	hud_sourced_print(source, tmp);
 }
 
-void hud_sourced_print(int source, char *msg)
+void hud_sourced_print(int source, const char *msg)
 {
-	char *ptr, *str;
-	//char *src_str, *msg_str;
-	int sw, t, x, offset = 0;
-	//int fudge = (gr_screen.res == GR_640) ? 15 : 50;		// prevents string from running off screen
-
 	if ( !strlen(msg) ) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
 		return;
 	}
 
 	// add message to the scrollback log first
-	hud_add_msg_to_scrollback(msg, source, timestamp());
+	hud_add_msg_to_scrollback(msg, source, Missiontime);
 
 #ifdef SCP_3DS
 	{
@@ -1061,35 +607,22 @@ void hud_sourced_print(int source, char *msg)
 		n3ds_panel_message(source, msg);
 	}
 #endif
+	HUD_message_data new_msg;
 
-	ptr = strstr(msg, NOX(": ")) + 2;
-	if (ptr) {
-		gr_get_string_size(&sw, NULL, msg, ptr - msg);			// get width of the speaker field
-		//if (sw < MSG_WINDOW_WIDTH - 20)
-		offset = sw;
-	}
+	new_msg.text = SCP_string(msg);
+	new_msg.source = source;
+	new_msg.x = 0;
 
-	x = 0;
-	t = timestamp();
-	str = msg;
+	HUD_msg_buffer.push_back(new_msg);
 
-	//Because functions to get font size don't compensate for *actual* screen size
-	int pretend_width = (gr_screen.res == GR_640) ? 620 : 1004;
+    // Invoke the scripting hook
+    Script_system.SetHookVar("Text", 's', const_cast<char*>(msg));
+    Script_system.SetHookVar("SourceType", 'i', &source);
 
-	while ((ptr = split_str_once(str, pretend_width - x - 7)) != NULL) {		// the 7 is a fudge hack
-		// make sure that split went ok, if not then bail
-		if (ptr == str) {
-			Int3();
-			break;
-		}
+    Script_system.RunCondition(CHA_HUDMSGRECEIVED);
 
-		HUD_printf_line(str, source, t, x);
-		str = ptr;
-		x = offset;
-		t = 0;
-	}
-
-	HUD_printf_line(str, source, t, x);
+    Script_system.RemHookVars(2, "Text", "SourceType");
+    
 }
 
 int hud_query_scrollback_size()
@@ -1116,14 +649,14 @@ int hud_query_scrollback_size()
 }
 
 // add text directly to the hud scrollback log, without displaying on the hud
-void HUD_add_to_scrollback(char *text, int source)
+void HUD_add_to_scrollback(const char *text, int source)
 {
 	if (!strlen(text)) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
 		return;
 	}
 
-	hud_add_msg_to_scrollback(text, source, timestamp());
+	hud_add_msg_to_scrollback(text, source, Missiontime);
 }
 
 // hud_add_msg_to_scrollback() adds the new_msg to the scroll-back message list.  If there
@@ -1157,7 +690,7 @@ void hud_add_line_to_scrollback(char *text, int source, int t, int x, int y, int
 	list_append(&Msg_scrollback_used_list, new_line);
 }
 
-void hud_add_msg_to_scrollback(char *text, int source, int t)
+void hud_add_msg_to_scrollback(const char *text, int source, int t)
 {
 	char buf[HUD_MSG_LENGTH_MAX], *ptr, *str;
 	int msg_len, w, max_width, x, offset = 0;
@@ -1169,7 +702,7 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 
 	w = 0;
 	Assert(msg_len < HUD_MSG_LENGTH_MAX);
-	strcpy(buf, text);
+	strcpy_s(buf, text);
 	ptr = strstr(buf, NOX(": "));
 	if (ptr) {
 		gr_get_string_size(&w, NULL, buf, ptr - buf);
@@ -1185,6 +718,8 @@ void hud_add_msg_to_scrollback(char *text, int source, int t)
 	str = buf;
 	while ((ptr = split_str_once(str, max_width - x)) != NULL) {
 		hud_add_line_to_scrollback(str, source, t, x, 1, w);
+		if ( str == ptr )
+			break;
 		str = ptr;
 		x = offset;
 		t = w = 0;
@@ -1409,7 +944,7 @@ void hud_scrollback_init()
 	scrollback_buttons *b;
 
 	// pause all game sounds
-	beam_pause_sounds();
+	weapon_pause_sounds();
 	audiostream_pause_all();
 
 	common_set_interface_palette("BriefingPalette");  // set the interface palette
@@ -1465,7 +1000,7 @@ void hud_scrollback_close()
 	game_flush();
 
 	// unpause all game sounds
-	beam_unpause_sounds();
+	weapon_unpause_sounds();
 	audiostream_unpause_all();
 
 }
@@ -1548,13 +1083,13 @@ void hud_scrollback_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	/*
 	if ((Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES) && (Status_bitmap >= 0)) {
 		gr_set_bitmap(Status_bitmap);
-		gr_bitmap(Hud_mission_log_status_coords[gr_screen.res][0], Hud_mission_log_status_coords[gr_screen.res][1]);
+		gr_bitmap(Hud_mission_log_status_coords[gr_screen.res][0], Hud_mission_log_status_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	}
 	*/
 
@@ -1618,12 +1153,12 @@ void hud_scrollback_do_frame(float frametime)
 					}
 
 					if (node_ptr->time)
-						gr_print_timestamp(Hud_mission_log_list_coords[gr_screen.res][0], Hud_mission_log_list_coords[gr_screen.res][1] + y, node_ptr->time);
+						gr_print_timestamp(Hud_mission_log_list_coords[gr_screen.res][0], Hud_mission_log_list_coords[gr_screen.res][1] + y, node_ptr->time, GR_RESIZE_MENU);
 
 					x = Hud_mission_log_list2_coords[gr_screen.res][0] + node_ptr->x;
-					gr_printf(x, Hud_mission_log_list_coords[gr_screen.res][1] + y, "%s", node_ptr->text);
+					gr_printf_menu(x, Hud_mission_log_list_coords[gr_screen.res][1] + y, "%s", node_ptr->text);
 					if (node_ptr->underline_width)
-						gr_line(x, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, x + node_ptr->underline_width, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1);
+						gr_line(x, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, x + node_ptr->underline_width, Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height - 1, GR_RESIZE_MENU);
 
 					if ((node_ptr->source == HUD_SOURCE_FAILED) || (node_ptr->source == HUD_SOURCE_SATISFIED)) {
 						// draw goal icon
@@ -1633,13 +1168,13 @@ void hud_scrollback_do_frame(float frametime)
 							gr_set_color_fast(&Color_bright_green);
 
 						i = Hud_mission_log_list_coords[gr_screen.res][1] + y + font_height / 2 - 1;
-						gr_circle(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i, 5);
+						gr_circle(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i, 5, GR_RESIZE_MENU);
 
 						gr_set_color_fast(&Color_bright);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 10, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 8, i);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 4, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 2);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 4, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 2, i);
-						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 2, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 4);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 10, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 8, i, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 4, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i - 2, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 4, i, Hud_mission_log_list2_coords[gr_screen.res][0] - 2, i, GR_RESIZE_MENU);
+						gr_line(Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 2, Hud_mission_log_list2_coords[gr_screen.res][0] - 6, i + 4, GR_RESIZE_MENU);
 					}
 
 					y += font_height + node_ptr->y;
@@ -1652,12 +1187,179 @@ void hud_scrollback_do_frame(float frametime)
 	}
 
 	gr_set_color_fast(&Color_text_heading);
-	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, (int) (f2fl(Missiontime) * 1000));
-	gr_string(Hud_mission_log_time2_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, XSTR( "Current time", 289));
+	gr_print_timestamp(Hud_mission_log_time_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, Missiontime, GR_RESIZE_MENU);
+	gr_string(Hud_mission_log_time2_coords[gr_screen.res][0], Hud_mission_log_time_coords[gr_screen.res][1] - font_height, XSTR( "Current time", 289), GR_RESIZE_MENU);
 	gr_flip();
 }
 
 void hud_scrollback_exit()
 {
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+}
+
+HudGaugeTalkingHead::HudGaugeTalkingHead():
+HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, false, true, (VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), 255, 255, 255)
+{
+}
+
+void HudGaugeTalkingHead::initialize()
+{
+	head_anim = NULL;
+	msg_id = -1;
+
+	HudGauge::initialize();
+}
+
+void HudGaugeTalkingHead::initHeaderOffsets(int x, int y)
+{
+	Header_offsets[0] = x;
+	Header_offsets[1] = y;
+}
+
+void HudGaugeTalkingHead::initAnimOffsets(int x, int y)
+{
+	Anim_offsets[0] = x;
+	Anim_offsets[1] = y;
+}
+
+void HudGaugeTalkingHead::initAnimSizes(int w, int h)
+{
+	Anim_size[0] = w;
+	Anim_size[1] = h;
+}
+
+void HudGaugeTalkingHead::initBitmaps(const char *fname)
+{
+	Head_frame.first_frame = bm_load_animation(fname, &Head_frame.num_frames);
+	if ( Head_frame.first_frame == -1 ) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname);
+	}
+}
+
+/**
+ * Create a new head animation object
+ */
+anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_data)
+{
+	anim_play_struct aps;
+
+	anim_play_init(&aps, anim_data, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y), base_w, base_h);
+	aps.start_at = anim_start_frame;
+
+	// aps.color = &HUD_color_defaults[HUD_color_alpha];
+	aps.color = &HUD_config.clr[HUD_TALKING_HEAD]; 
+	// I'd much rather use gr_init_color and retrieve the colors from this object but no, aps.color just happens to be a pointer.
+	// So, just give it the address from the player's HUD configuration. You win, aps.color. I'll take care of you next time. (Swifty)
+
+	return anim_play(&aps);
+}
+
+/**
+ * Renders everything for a head animation except the actual head animation
+ * ANI (see anim_render_all), i.e. the background, border & title
+ * Also checks for when new head ani's need to start playing
+ */
+void HudGaugeTalkingHead::render(float frametime)
+{
+	if ( Head_frame.first_frame == -1 ){
+		return;
+	}
+
+	if(msg_id != -1 && head_anim != NULL) {
+		if(!head_anim->done_playing) {
+			// draw frame
+			// hud_set_default_color();
+			setGaugeColor();
+
+			// clear
+			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
+			gr_clear();
+			resetClip();
+
+			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
+			gr_set_screen_scale(base_w, base_h);
+			setGaugeColor();
+			generic_anim_render(head_anim,frametime, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y));
+			// draw title
+			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
+		} else {
+			for (int j = 0; j < Num_messages_playing; ++j) {
+				if (Playing_messages[j].id == msg_id) {
+					Playing_messages[j].play_anim = false;
+					break;  // only one head ani plays at a time
+				}
+			}
+			msg_id = -1;    // allow repeated messages to display a new head ani
+			head_anim = NULL; // Nothing to see here anymore, move along
+		}
+	}
+	// check playing messages to see if we have any messages with talking animations that need to be created.
+	for (int i = 0; i < Num_messages_playing; i++ ) {
+		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
+			msg_id = Playing_messages[i].id;
+			if (Playing_messages[i].anim_data)
+				head_anim = Playing_messages[i].anim_data;	
+			else
+				head_anim = NULL;
+
+			return;
+		}
+	}
+}
+
+void HudGaugeTalkingHead::pageIn()
+{
+	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
+}
+
+bool HudGaugeTalkingHead::canRender()
+{
+	if (sexp_override) {
+		return false;
+	}
+
+	if (hud_disabled() && !hud_disabled_except_messages()) {
+		return false;
+	}
+
+	if(!active)
+		return false;
+	
+	if ( !(Game_detail_flags & DETAIL_FLAG_HUD) ) {
+		return false;
+	}
+
+	if ((Viewer_mode & disabled_views)) {
+		return false;
+	}
+
+	if(pop_up) {
+		if(!popUpActive()) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+HudGaugeFixedMessages::HudGaugeFixedMessages():
+HudGauge(HUD_OBJECT_FIXED_MESSAGES, HUD_MESSAGE_LINES, false, true, (VM_WARP_CHASE), 255, 255, 255)
+{
+}
+
+void HudGaugeFixedMessages::render(float frametime) {
+	HUD_ft	*hp;
+
+	hp = &HUD_fixed_text[0];
+
+	if (!timestamp_elapsed(hp->end_time)) {
+		gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
+		
+		renderString(position[0], position[1], hp->text);
+		//renderString(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
+	}
+}
+
+void HudGaugeFixedMessages::pageIn()
+{
 }

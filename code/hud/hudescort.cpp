@@ -7,188 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-02-16 05:00:01 $
- * $Author: taylor $
- *
- * C module for managing and displaying ships that are in an escort
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.28  2006/01/27 06:21:10  Goober5000
- * replace quick sort with insertion sort in many places
- * --Goober5000
- *
- * Revision 2.27  2006/01/16 05:54:21  Goober5000
- * use IFF colors in escort list
- *
- * Revision 2.26  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.25  2005/10/10 17:21:04  taylor
- * remove NO_NETWORK
- *
- * Revision 2.24  2005/07/22 10:18:38  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.23  2005/07/13 03:15:51  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.22  2005/03/27 12:28:33  Goober5000
- * clarified max hull/shield strength names and added ship guardian thresholds
- * --Goober5000
- *
- * Revision 2.21  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.20  2005/02/04 10:12:30  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.19  2004/12/25 17:02:18  wmcoolmon
- * Fixed a couple of blonde moments.
- *
- * Revision 2.18  2004/12/24 05:07:05  wmcoolmon
- * NEW_HUD compiles now. :)
- *
- * Revision 2.17  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 2.16  2004/07/12 16:32:49  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.15  2004/07/11 03:22:50  bobboau
- * added the working decal code
- *
- * Revision 2.14  2004/07/09 07:32:55  wmcoolmon
- * Fixed conditional.
- *
- * Revision 2.13  2004/07/09 05:53:05  wmcoolmon
- * Fixed HUD escort list for dogfight mode, and for any usage.
- *
- * Revision 2.12  2004/07/07 23:34:08  Kazan
- * fixed a typo in one of the fs2netd strings
- * played with WMCoolmon's hacked up escort list
- *
- * Revision 2.11  2004/07/07 21:00:07  Kazan
- * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
- *
- * Revision 2.10  2004/07/05 05:09:19  bobboau
- * FVF code, only the data that is needed is sent off to the card,,
- * OGL can take advantage of this if they want but it won't break
- * anything if they don't. also state block code has been implemented,
- * that's totaly internal to D3D no high level code is involved.
- *
- * Revision 2.9  2004/06/28 02:13:07  bobboau
- * high level index buffer suport and d3d implementation,
- * OGL people need to get this working on your end as it's broke now
- *
- * Revision 2.8  2004/06/27 01:47:16  wmcoolmon
- * Unneccessary warning removed, small change for VC6.
- *
- * Revision 2.7  2004/06/26 03:19:53  wmcoolmon
- * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
- * Escort list is now hud_gauges.tbl compatible.
- *
- * Revision 2.6  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.5  2003/04/29 01:03:23  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.4  2003/01/18 09:25:41  Goober5000
- * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
- * than SF_ flags
- * --Goober5000
- *
- * Revision 2.3  2002/12/31 07:26:40  Goober5000
- * added damaged-escort-priority-all sexp
- * --Goober5000
- *
- * Revision 2.2  2002/12/31 05:17:13  Goober5000
- * fixed escort list behavior for stealthy ships
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 22    8/04/99 2:24a Dave
- * Fixed escort gauge ordering for dogfight.
- * 
- * 21    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 20    7/29/99 1:57p Jefff
- * Fixed location of "D" for disabled ships in hi-res
- * 
- * 19    7/22/99 7:49p Dave
- * Show enemy ships on the escort list in red.
- * 
- * 18    6/23/99 10:13p Andsager
- * Fix Baranec hud escort default color bug!
- * 
- * 17    6/10/99 3:43p Dave
- * Do a better job of syncing text colors to HUD gauges.
- * 
- * 16    5/24/99 11:28a Dave
- * Sexpression for adding/removing ships from the hud escort list.
- * 
- * 15    3/30/99 5:40p Dave
- * Fixed reinforcements for TvT in multiplayer.
- * 
- * 14    3/19/99 9:51a Dave
- * Checkin to repair massive source safe crash. Also added support for
- * pof-style nebulae, and some new weapons code.
- * 
- * 14    3/12/99 4:24p Andsager
- * Fix bug where two or more ships are culled from escort list same frame
- * 
- * 13    3/04/99 9:22a Andsager
- * Make escort list work with ship-is-visible.  When not visible, dump,
- * when becoming visible, maybe add.
- * 
- * 12    3/02/99 12:27p Andsager
- * Fixed bug in hud_add_ship_to_escort -- multiple entries and
- * uninitialized entries.
- * 
- * 11    3/02/99 11:45a Anoop
- * put in assert for escort list
- * 
- * 10    3/01/99 12:00p Andsager
- * Fix escort priority to look at newly added ships.
- * 
- * 9     2/03/99 6:13p Andsager
- * Added priorities to escort list.  Folded escort hit info into
- * escort_info struct.
- * 
- * 8     2/01/99 9:47a Jasen
- * Tweaked coords for the monitoring window in hi res. 
- * 
- * 7     1/30/99 7:48p Jasen
- * 
- * 6     1/07/99 9:07a Jasen
- * HUD coords
- * 
- * 5     12/28/98 3:17p Dave
- * Support for multiple hud bitmap filenames for hi-res mode.
- * 
- *
- * $NoKeywords: $
- */
+
 
 
 
@@ -221,19 +40,18 @@ typedef struct escort_info
 	int					objnum;
 	int					obj_signature;	// so we are sure we have a valid objnum
 	int					priority;		// higher priority is higher in the list
-	short					np_id;			// netplayer id (for multiplayer dogfight mode)
-	shield_hit_info	hit_info;
+	short				np_id;			// netplayer id (for multiplayer dogfight mode)
+
+	// These parallel the way the shield_hit_info struct works; intentionally
+	// not using it here because this is a lot simpler and less error-prone
+	int					escort_hit_timer;
+	int					escort_hit_next_flash;
+	bool				escort_show_bright;
 } escort_info;
 
 escort_info		Escort_ships[MAX_COMPLETE_ESCORT_LIST];
 int				Num_escort_ships;
 int				Max_escort_ships = 3;
-
-
-
-
-hud_frames Escort_gauges[NUM_ESCORT_FRAMES];
-int Escort_gauges_loaded = 0;
 
 //int Escort_gauge_y[MAX_ESCORT_SHIPS] = { 219, 230, 241 };
 
@@ -326,52 +144,348 @@ char *Escort_gauge_filenames[GR_NUM_RESOLUTIONS][MAX_ESCORT_SHIPS] =
 
 static int Last_target_index;	// index into Escort_gauges for last targeted via 'Next Escort Target' key
 
-// data needed from HUDshield.cpp
-extern hud_frames Shield_mini_gauge;
+HudGaugeEscort::HudGaugeEscort():
+HudGauge(HUD_OBJECT_ESCORT, HUD_ESCORT_VIEW, false, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
+{
+}
+
+void HudGaugeEscort::initHeaderText(char *text)
+{
+	strcpy_s(header_text, text);
+}
+
+void HudGaugeEscort::initHeaderTextOffsets(int x, int y)
+{
+	header_text_offsets[0] = x;
+	header_text_offsets[1] = y;
+}
+
+void HudGaugeEscort::initListStartOffsets(int x, int y)
+{
+	list_start_offsets[0] = x;
+	list_start_offsets[1] = y;
+}
+
+void HudGaugeEscort::initEntryHeight(int h)
+{
+	entry_h = h;
+}
+
+void HudGaugeEscort::initEntryStaggerWidth(int w)
+{
+	entry_stagger_w = w;
+}
+
+void HudGaugeEscort::initBottomBgOffset(int offset)
+{
+	bottom_bg_offset = offset;
+}
+
+void HudGaugeEscort::initShipNameOffsets(int x, int y)
+{
+	ship_name_offsets[0] = x;
+	ship_name_offsets[1] = y;
+}
+
+void HudGaugeEscort::initShipIntegrityOffsets(int x, int y)
+{
+	ship_integrity_offsets[0] = x;
+	ship_integrity_offsets[1] = y;
+}
+
+void HudGaugeEscort::initShipStatusOffsets(int x, int y)
+{
+	ship_status_offsets[0] = x;
+	ship_status_offsets[1] = y;
+}
+
+void HudGaugeEscort::initShipNameMaxWidth(int w)
+{
+	ship_name_max_width = w;
+}
+
+void HudGaugeEscort::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+{
+	Escort_gauges[0].first_frame = bm_load_animation(fname_top, &Escort_gauges[0].num_frames);
+	if (Escort_gauges[0].first_frame == -1) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_top);
+		return;
+	}
+
+	Escort_gauges[1].first_frame = bm_load_animation(fname_middle, &Escort_gauges[1].num_frames);
+	if (Escort_gauges[1].first_frame == -1) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_middle);
+		return;
+	}
+
+	Escort_gauges[2].first_frame = bm_load_animation(fname_bottom, &Escort_gauges[2].num_frames);
+	if (Escort_gauges[2].first_frame == -1) {
+		Warning(LOCATION, "Could not load in ani: %s\n", fname_bottom);
+		return;
+	}
+}
+
+void HudGaugeEscort::pageIn()
+{
+	int i;
+
+	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
+		bm_page_in_aabitmap( Escort_gauges[i].first_frame, Escort_gauges[i].num_frames);
+	}
+}
+
+int HudGaugeEscort::setGaugeColorEscort(int index, int team)
+{
+	int is_flashing = 0;
+	int is_bright = 0;
+	int seen_from_team = (Player_ship != NULL) ? Player_ship->team : -1;
+
+	// multiplayer dogfight
+	if(MULTI_DOGFIGHT)
+	{
+		setGaugeColor();
+		return 0;
+	}
+	
+	// set flashing color
+	if (!timestamp_elapsed(Escort_ships[index].escort_hit_timer))
+	{
+		is_flashing = 1;
+		if (Escort_ships[index].escort_show_bright)
+		{
+			is_bright = 1;
+		}
+	}
+
+	// Goober5000 - now base this on team color
+	gr_set_color_fast(iff_get_color_by_team_and_object(team, seen_from_team, is_bright, &Objects[Escort_ships[index].objnum]));
+
+
+	// Goober5000 - an alternative; same as original but incorporating teams for non-friendlies
+	/*
+	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
+		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
+	else
+		gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
+	*/
+
+
+	// Goober5000 - original color logic
+	/*
+	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
+		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
+	else
+		gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
+	*/
+
+
+	return is_flashing;
+}
+
+void HudGaugeEscort::render(float frametime)
+{
+	int	i = 0;
+
+	if ( !Show_escort_view ) {
+		return;
+	}
+
+	if ( !Num_escort_ships ) {
+		return;
+	}
+
+	// hud_set_default_color();
+	setGaugeColor();
+
+	// draw the top of the escort view
+	renderBitmap(Escort_gauges[0].first_frame, position[0], position[1]);	
+	renderString(position[0] + header_text_offsets[0], position[1] + header_text_offsets[1], header_text);
+
+	int x = position[0] + list_start_offsets[0];
+	int y = position[1] + list_start_offsets[1];
+
+	//This is temporary
+	Num_escort_ships--;
+	i=0;
+
+	if(Num_escort_ships)
+	{
+		for(; i < Num_escort_ships; i++)
+		{
+			if(i != 0)
+			{
+				x += entry_stagger_w;
+				y += entry_h;
+			}
+			renderBitmap(Escort_gauges[1].first_frame, x, y);
+			
+			//Now we just show the ships info
+			renderIcon(x, y, i);
+		}
+
+		//Increment for last entry
+		x += entry_stagger_w;
+		y += entry_h;
+	}
+
+	//Back to right #
+	Num_escort_ships++;
+
+	//Show the last escort entry
+	renderBitmap(Escort_gauges[2].first_frame, x, y + bottom_bg_offset);
+	renderIcon(x, y, i);
+}
+
+// draw the shield icon and integrity for the escort ship
+void HudGaugeEscort::renderIcon(int x, int y, int index)
+{
+	if(MULTI_DOGFIGHT && index <= 2)
+	{
+		renderIconDogfight(x, y, index);
+		return;
+	}
+
+	float	shields, integrity;
+	int		screen_integrity, offset;
+	char	buf[255];
+
+	object	*objp	= &Objects[Escort_ships[index].objnum];
+	ship	*sp		= &Ships[objp->instance];
+
+	// determine if its "friendly" or not	
+	// Goober5000 - changed in favor of just passing the team
+	setGaugeColorEscort(index, sp->team);
+	/*
+	if(Player_ship != NULL){
+		hud_escort_set_gauge_color(index, (sp->team == Player_ship->team) ? 1 : 0);
+	} else {
+		hud_escort_set_gauge_color(index, 1);
+	}
+	*/
+
+	// draw a 'D' if a ship is disabled
+	if ( (sp->flags & SF_DISABLED) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
+		renderString( x + ship_status_offsets[0], y + ship_status_offsets[1], EG_NULL, XSTR( "D", 284));				
+	}
+
+	// print out ship name
+	strcpy_s(buf, sp->ship_name);
+	gr_force_fit_string(buf, 255, ship_name_max_width);	
+    end_string_at_first_hash_symbol(buf);
+	
+	renderString( x + ship_name_offsets[0], y + ship_name_offsets[1], EG_ESCORT1 + index, buf);	
+
+	// show ship integrity
+	hud_get_target_strength(objp, &shields, &integrity);
+	screen_integrity = fl2i(integrity*100 + 0.5f);
+	offset = 0;
+	if ( screen_integrity < 100 ) {
+		offset = 2;
+		if ( screen_integrity == 0 ) {
+			if ( integrity > 0 ) {
+				screen_integrity = 1;
+			}
+		}
+	}
+	renderPrintf( x+ship_integrity_offsets[0] + offset, y+ship_integrity_offsets[1], EG_NULL, "%d", screen_integrity);
+
+	//Let's be nice.
+	setGaugeColor();
+}
+
+// multiplayer dogfight
+void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
+{
+	int			hull_integrity = 100;
+	char			buf[255];	
+	int			np_index;
+	object		*objp;
+
+	int stat_shift = 40;
+
+	// always use the standard color to avoid confusion
+	setGaugeColor();
+
+	// netplayer index
+	np_index = find_player_id(Escort_ships[index].np_id);
+	if((np_index < 0) || (np_index >= MAX_PLAYERS) || (Net_players[np_index].m_player == NULL)){
+		return;
+	}
+	
+	// print out player name
+	strcpy_s(buf, Net_players[np_index].m_player->callsign);
+	gr_force_fit_string(buf, 255, 100 - stat_shift);
+	renderString( x + ship_name_offsets[0], y + ship_name_offsets[1], EG_ESCORT1 + index, buf);	
+
+	// can we get the player object?
+	objp = NULL;
+	if((Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP)){
+		objp = &Objects[Net_players[np_index].m_player->objnum];
+		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS) && (Ships[objp->instance].ship_info_index >= 0) && (Ships[objp->instance].ship_info_index < MAX_SHIPS)){
+			//
+		} else {
+			return;
+		}
+
+		hull_integrity = (int)(((float)objp->hull_strength / (float)Ships[objp->instance].ship_max_hull_strength) * 100.0f);
+		if(hull_integrity < 0){
+			hull_integrity = 0;
+		}
+	}
+
+	// show ship integrity
+	if(objp == NULL){	
+		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
+	} else {
+		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
+	}
+}
+
+void hud_escort_update_list()
+{
+	if(Num_escort_ships)
+	{
+		for(int i = 0; i < Num_escort_ships; i++)
+		{
+			if (!timestamp_elapsed(Escort_ships[i].escort_hit_timer))
+			{
+				if (timestamp_elapsed(Escort_ships[i].escort_hit_next_flash))
+				{
+					Escort_ships[i].escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
+					Escort_ships[i].escort_show_bright = !Escort_ships[i].escort_show_bright;	// toggle between default and bright frames
+				}
+			}
+		}
+	}
+}
 
 // called from HUD init, loads the bitmap data in once, and resets any data for each level
 void hud_escort_init()
 {
-#ifndef NEW_HUD
-	int i;
-
-	if ( !Escort_gauges_loaded ) {
-		for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-			if ( strlen(current_hud->Escort_filename[i]) ) {
-				Escort_gauges[i].first_frame = bm_load_animation(current_hud->Escort_filename[i], &Escort_gauges[i].num_frames);
-
-				if (Escort_gauges[i].first_frame == -1) {
-					Warning(LOCATION, "Could not load in ani: %s\n", current_hud->Escort_filename[i]);
-					return;
-				}
-			} else {
-				Escort_gauges[i].first_frame = -1;
-			}
-		}
-
-		Escort_gauges_loaded = 1;
-	}
-
 	Last_target_index = -1;
 
 	if (Max_escort_ships > MAX_COMPLETE_ESCORT_LIST) {
 		Max_escort_ships = MAX_COMPLETE_ESCORT_LIST;
 	}
-#endif
 }
 
 // ----------------------------------------------------------------------
 // hud_escort_clear_all()
 //
-void hud_escort_clear_all()
+void hud_escort_clear_all(bool clear_flags)
 {
 	int i;
 
 	Num_escort_ships = 0;
 	for ( i = 0; i < Max_escort_ships; i++ ) {
+		if(clear_flags && (Escort_ships[i].objnum >= 0) && (Objects[Escort_ships[i].objnum].type == OBJ_SHIP) && (Objects[Escort_ships[i].objnum].instance >= 0)){
+			Ships[Objects[Escort_ships[i].objnum].instance].flags &= ~SF_ESCORT;
+		}
 		Escort_ships[i].obj_signature = -99;
 		Escort_ships[i].np_id = -1;
-		shield_info_reset(&Escort_ships[i].hit_info);
+		Escort_ships[i].escort_hit_timer = 0;
+		Escort_ships[i].escort_hit_next_flash = 0;
+		Escort_ships[i].escort_show_bright = false;
 	}
 }
 
@@ -387,7 +501,7 @@ int escort_compare_func(const void *e1, const void *e2)
 	escort2 = (escort_info*) e2;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		int n1, n2;
 
 		n1 = find_player_id(escort1->np_id);
@@ -434,7 +548,7 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 	int idx;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			// break out of the loop when we have reached our max
 			if ( *num_escorts == MAX_COMPLETE_ESCORT_LIST ) {
@@ -449,6 +563,9 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				escorts[*num_escorts].obj_signature = -1;
 				escorts[*num_escorts].priority = -1;
 				escorts[*num_escorts].np_id = Net_players[idx].player_id;
+				escorts[*num_escorts].escort_hit_timer = 0;
+				escorts[*num_escorts].escort_hit_next_flash = 0;
+				escorts[*num_escorts].escort_show_bright = false;
 				(*num_escorts)++;
 			}
 		}
@@ -500,8 +617,8 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 				}
 			}
 
-			// don't process ships that are dying, or objects that should be dead
-			if ( (Ships[objp->instance].flags & (SF_DYING|SF_DEPARTING)) || (objp->flags & OF_SHOULD_BE_DEAD) ){
+			// don't process objects that should be dead
+			if ( objp->flags & OF_SHOULD_BE_DEAD ) {
 				continue;
 			}
 
@@ -510,6 +627,9 @@ void hud_create_complete_escort_list(escort_info *escorts, int *num_escorts)
 			escorts[*num_escorts].obj_signature = objp->signature;
 			escorts[*num_escorts].priority = Ships[objp->instance].escort_priority;
 			escorts[*num_escorts].np_id = -1;
+			escorts[*num_escorts].escort_hit_timer = 0;
+			escorts[*num_escorts].escort_hit_next_flash = 0;
+			escorts[*num_escorts].escort_show_bright = false;
 			(*num_escorts)++;			
 		}
 	}
@@ -546,6 +666,9 @@ void hud_setup_escort_list(int level)
 		Escort_ships[Num_escort_ships].priority = complete_escorts[Num_escort_ships].priority;
 		Escort_ships[Num_escort_ships].objnum = complete_escorts[Num_escort_ships].objnum;
 		Escort_ships[Num_escort_ships].np_id = complete_escorts[Num_escort_ships].np_id;
+		Escort_ships[Num_escort_ships].escort_hit_timer = 0;
+		Escort_ships[Num_escort_ships].escort_hit_next_flash = 0;
+		Escort_ships[Num_escort_ships].escort_show_bright = false;
 	}
 
 	if(level){
@@ -585,7 +708,7 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 	}
 
 	// copy for Escort_ships to complete_escorts to retain hit_info
-	if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
+	if(!MULTI_DOGFIGHT) {
 		for (i=0; i<top_complete_escorts; i++) {
 			for (j=0; j<Num_escort_ships; j++) {
 				if (Escort_ships[j].obj_signature == complete_escorts[i].obj_signature) {
@@ -606,7 +729,9 @@ void merge_escort_lists(escort_info *complete_escorts, int num_complete_escorts)
 				continue;
 			}
 			if ( !valid_hit_info[i] ) {
-				shield_info_reset(&Escort_ships[i].hit_info);
+				Escort_ships[i].escort_hit_timer = 0;
+				Escort_ships[i].escort_hit_next_flash = 0;
+				Escort_ships[i].escort_show_bright = false;
 			}	
 		}
 	}
@@ -657,302 +782,47 @@ void hud_remove_ship_from_escort_index(int dead_index, int objnum)
 
 }
 
-// called once per frame to remove dead or departed ships from the escort list
+// called once per frame to refresh the escort list if important flags changed
 void hud_escort_cull_list()
 {
-	int i, objnum;
+	int i;
 
 	int np_index;
 
 	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			np_index = find_player_id(Escort_ships[i].np_id);
 			
 			// maybe remove him if he left
 			if ( np_index < 0 ) {
-				hud_remove_ship_from_escort_index(i, -1);
-				i--;
+				hud_setup_escort_list(0);
+				break;
 			}
 		}
 	} 
 	// everything else
 	else {
 		for ( i = 0; i < Num_escort_ships; i++ ) {
-			objnum = Escort_ships[i].objnum;
+			int objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & SF_HIDDEN_FROM_SENSORS ) {
-				hud_remove_ship_from_escort_index(i, objnum);
-				i--;
-			}
-		}
-	}
-}
 
-// Set the color for the text to be displayed
-// Goober5000 - changed second parameter from "friendly" (true/false) to "team";
-// also changed from hud color or red to team color
-int hud_escort_set_gauge_color(int index, int team)
-{
-	int is_flashing = 0;
-	int is_bright = 0;
-	int seen_from_team = (Player_ship != NULL) ? Player_ship->team : -1;
-	shield_hit_info	*shi;
-
-	shi = &Escort_ships[index].hit_info;
-
-	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))
-	{
-		hud_set_gauge_color(HUD_ESCORT_VIEW);
-		return 0;
-	}
-	
-	// set flashing color
-	if (!timestamp_elapsed(shi->shield_hit_timers[HULL_HIT_OFFSET]))
-	{
-		if (timestamp_elapsed(shi->shield_hit_next_flash[HULL_HIT_OFFSET]))
-		{
-			shi->shield_hit_next_flash[HULL_HIT_OFFSET] = timestamp(SHIELD_FLASH_INTERVAL);
-			shi->shield_show_bright ^= (1 << HULL_HIT_OFFSET);	// toggle between default and bright frames
-		}
-
-		is_flashing = 1;
-		if (shi->shield_show_bright & (1 << HULL_HIT_OFFSET))
-		{
-			is_bright = 1;
-		}
-	}
-
-
-	// Goober5000 - now base this on team color
-	gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
-
-
-	// Goober5000 - an alternative; same as original but incorporating teams for non-friendlies
-	/*
-	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
-		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
-	else
-		gr_set_color_fast(iff_get_color_by_team(team, seen_from_team, is_bright));
-	*/
-
-
-	// Goober5000 - original color logic
-	/*
-	if ((seen_from_team == team) || (seen_from_team < 0))	// :V: sez assume friendly if Player_ship is NULL
-		hud_set_gauge_color(HUD_ESCORT_VIEW, is_bright ? HUD_C_BRIGHT : HUD_C_DIM);
-	else
-		gr_set_color_fast(is_bright ? &Color_bright_red : &Color_red);
-	*/
-
-
-	return is_flashing;
-}
-
-// multiplayer dogfight
-void hud_escort_show_icon_dogfight(int x, int y, int index)
-{
-#ifndef NEW_HUD
-	int			hull_integrity = 100;
-	char			buf[255];	
-	int			np_index;
-	object		*objp;
-	ship_info	*sip;
-
-	int stat_shift = 40;
-
-	// always use the standard color to avoid confusion
-	hud_set_gauge_color(HUD_ESCORT_VIEW);	
-
-	// netplayer index
-	np_index = find_player_id(Escort_ships[index].np_id);
-	if((np_index < 0) || (np_index >= MAX_PLAYERS) || (Net_players[np_index].m_player == NULL)){
-		return;
-	}
-	
-	// print out player name
-	strcpy(buf, Net_players[np_index].m_player->callsign);
-	gr_force_fit_string(buf, 255, 100 - stat_shift);
-	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
-
-	// can we get the player object?
-	objp = NULL;
-	if((Net_players[np_index].m_player->objnum >= 0) && (Net_players[np_index].m_player->objnum < MAX_OBJECTS) && (Objects[Net_players[np_index].m_player->objnum].type == OBJ_SHIP)){
-		objp = &Objects[Net_players[np_index].m_player->objnum];
-		if((objp->instance >= 0) && (objp->instance < MAX_SHIPS) && (Ships[objp->instance].ship_info_index >= 0) && (Ships[objp->instance].ship_info_index < MAX_SHIPS)){
-			sip = &Ship_info[Ships[objp->instance].ship_info_index];
-		} else {
-			return;
-		}
-
-		hull_integrity = (int)(((float)objp->hull_strength / (float)Ships[objp->instance].ship_max_hull_strength) * 100.0f);
-		if(hull_integrity < 0){
-			hull_integrity = 0;
-		}
-	}
-
-	// show ship integrity
-	if(objp == NULL){	
-		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
-	} else {
-		emp_hud_printf( x+current_hud->Escort_integrity[0] - stat_shift, y+current_hud->Escort_integrity[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
-	}
-#endif
-}
-
-// draw the shield icon and integrity for the escort ship
-void hud_escort_show_icon(int x, int y, int index)
-{
-#ifndef NEW_HUD
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && index <= 2)
-	{
-		hud_escort_show_icon_dogfight(x, y, index);
-		return;
-	}
-
-	float	shields, integrity;
-	int		screen_integrity, offset;
-	char	buf[255];
-
-	object	*objp	= &Objects[Escort_ships[index].objnum];
-	ship	*sp		= &Ships[objp->instance];
-
-	// determine if its "friendly" or not	
-	// Goober5000 - changed in favor of just passing the team
-	hud_escort_set_gauge_color(index, sp->team);
-	/*
-	if(Player_ship != NULL){
-		hud_escort_set_gauge_color(index, (sp->team == Player_ship->team) ? 1 : 0);
-	} else {
-		hud_escort_set_gauge_color(index, 1);
-	}
-	*/
-
-	// draw a 'D' if a ship is disabled
-	if ( (sp->flags & SF_DISABLED) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
-		emp_hud_string( x + current_hud->Escort_status[0], y + current_hud->Escort_status[1], EG_NULL, XSTR( "D", 284));				
-	}
-
-	// print out ship name
-	strcpy(buf, sp->ship_name);
-	gr_force_fit_string(buf, 255, 100);	
-    end_string_at_first_hash_symbol(buf);
-	
-	emp_hud_string( x + current_hud->Escort_name[0], y + current_hud->Escort_name[1], EG_ESCORT1 + index, buf);	
-
-	// show ship integrity
-	hud_get_target_strength(objp, &shields, &integrity);
-	screen_integrity = fl2i(integrity*100 + 0.5f);
-	offset = 0;
-	if ( screen_integrity < 100 ) {
-		offset = 2;
-		if ( screen_integrity == 0 ) {
-			if ( integrity > 0 ) {
-				screen_integrity = 1;
-			}
-		}
-	}
-	emp_hud_printf( x+current_hud->Escort_integrity[0] + offset, y+current_hud->Escort_integrity[1], EG_NULL, "%d", screen_integrity);
-
-	//Let's be nice.
-	hud_set_gauge_color(HUD_ESCORT_VIEW);
-#endif
-}
-
-
-// ----------------------------------------------------------------------
-// hud_display_escort()
-//
-// Display the data on ships in the escort list
-void hud_display_escort()
-{
-#ifndef NEW_HUD
-	int	i = 0;
-
-	if ( !Show_escort_view ) {
-		return;
-	}
-
-	if ( !Num_escort_ships ) {
-		return;
-	}
-
-	// hud_set_default_color();
-	hud_set_gauge_color(HUD_ESCORT_VIEW);
-
-	// draw the top of the escort view
-	GR_AABITMAP(Escort_gauges[0].first_frame, current_hud->Escort_coords[0], current_hud->Escort_coords[1]);	
-	gr_string(current_hud->Escort_htext_coords[0], current_hud->Escort_htext_coords[1], current_hud->Escort_htext);
-
-	int x = current_hud->Escort_coords[0] + current_hud->Escort_list[0];
-	int y = current_hud->Escort_coords[1] + current_hud->Escort_list[1];
-
-	//This is temporary
-	Num_escort_ships--;
-	i=0;
-
-	if(Num_escort_ships)
-	{
-		for(; i < Num_escort_ships; i++)
-		{
-			if(i != 0)
-			{
-				x += current_hud->Escort_entry[0];
-				y += current_hud->Escort_entry[1];
-			}
-			GR_AABITMAP(Escort_gauges[1].first_frame, x, y);
-			
-			//Now we just show the ships info
-			hud_escort_show_icon(x, y, i);
-		}
-
-		//Increment for last entry
-		x += current_hud->Escort_entry_last[0];
-		y += current_hud->Escort_entry_last[1];
-	}
-
-	//Back to right #
-	Num_escort_ships++;
-
-	//Show the last escort entry
-	GR_AABITMAP(Escort_gauges[2].first_frame, x, y);
-	hud_escort_show_icon(x, y, i);
-
-/*
-	if ( Num_escort_ships >= 2 ) {
-		GR_AABITMAP(Escort_gauges[1].first_frame, Escort_coords[gr_screen.res][1][0], Escort_coords[gr_screen.res][1][1]);		
-	}
-
-	if ( Num_escort_ships >= 3 ) {
-		GR_AABITMAP(Escort_gauges[1].first_frame, Escort_coords[gr_screen.res][2][0], Escort_coords[gr_screen.res][2][1]);		
-	}
-	
-	// draw bottom of box
-	GR_AABITMAP(Escort_gauges[2].first_frame, Escort_coords[gr_screen.res][3][0], Escort_coords[gr_screen.res][Num_escort_ships][1]);
-
-	// multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
-		// draw the escort ship data
-		for ( i = 0; i < Num_escort_ships; i++ ) {
-			// oops. only show top 3
-			if(i > 2){
+			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD ) {
+				hud_setup_escort_list(0);
 				break;
-			}
+			} else if ( Objects[objnum].type == OBJ_SHIP ) {
+				int shipnum = Objects[objnum].instance;
+				Assert( shipnum >= 0 && shipnum < MAX_SHIPS );
 
-			// draw
-			hud_escort_show_icon_dogfight(i);
+				if ( (Ships[shipnum].flags & SF_HIDDEN_FROM_SENSORS)
+					|| ((Ships[shipnum].flags2 & SF2_STEALTH) && ((Ships[shipnum].team != Player_ship->team) || (Ships[shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS)))
+				) {
+					hud_setup_escort_list(0);
+					break;
+				}
+			}
 		}
 	}
-	// everything else
-	else {
-		// draw the escort ship data
-		for ( i = 0; i < Num_escort_ships; i++ ) {
-			objp = &Objects[Escort_ships[i].objnum];
-			hud_escort_show_icon(i, objp);
-		}
-	}*/
-#endif
 }
 
 // ----------------------------------------------------------------------
@@ -997,8 +867,11 @@ void hud_add_ship_to_escort(int objnum, int supress_feedback)
 		complete_escorts[num_complete_escorts].objnum = objnum;
 		complete_escorts[num_complete_escorts].obj_signature = Objects[objnum].signature;
 		complete_escorts[num_complete_escorts].priority = Ships[Objects[objnum].instance].escort_priority;
+		complete_escorts[num_complete_escorts].escort_hit_timer = 0;
+		complete_escorts[num_complete_escorts].escort_hit_next_flash = 0;
+		complete_escorts[num_complete_escorts].escort_show_bright = false;
 
-		// remove him from escort list
+		// add him to escort list
 		Ships[Objects[objnum].instance].flags |= SF_ESCORT;
 
 		num_complete_escorts++;
@@ -1039,7 +912,7 @@ void hud_add_remove_ship_escort(int objnum, int supress_feedback)
 	int in_escort, i;
 
 	// no ships on the escort list in multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}
 
@@ -1076,7 +949,7 @@ void hud_remove_ship_from_escort(int objnum)
 	int in_escort, i;
 
 	// no ships on the escort list in multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}
 
@@ -1099,28 +972,25 @@ void hud_remove_ship_from_escort(int objnum)
 	}	
 }
 
-// Called whenever a ship is hit to determine if that ship is in the escort list.  If it
-// is, then start timers to flash the name hull/shield icon for that ship.
+/**
+ * Called whenever a ship is hit to determine if that ship is in the escort list.  If it
+ * is, then start timers to flash the name hull/shield icon for that ship.
+ *
+ * @param objp      The object hit
+ * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
+ */
 void hud_escort_ship_hit(object *objp, int quadrant)
 {
-	int					num, i;
-	shield_hit_info	*shi;
-
 	// no ships on the escort list in multiplayer dogfight
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT)){
+	if(MULTI_DOGFIGHT){
 		return;
 	}
 
-	for ( i = 0; i < Num_escort_ships; i++ ) {
+	for ( int i = 0; i < Num_escort_ships; i++ ) {
 		if ( Escort_ships[i].objnum == OBJ_INDEX(objp) ) {
-			shi = &Escort_ships[i].hit_info;
-			num = Quadrant_xlate[quadrant];
 			hud_gauge_popup_start(HUD_ESCORT_VIEW);
-			if ( quadrant >= 0 ) {
-				shi->shield_hit_timers[num] = timestamp(SHIELD_HIT_DURATION);
-			} else {
-				shi->shield_hit_timers[HULL_HIT_OFFSET] = timestamp(SHIELD_HIT_DURATION);
-			}
+			Escort_ships[i].escort_hit_timer = timestamp(SHIELD_HIT_DURATION);
+			Escort_ships[i].escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
 		}
 	}
 }
@@ -1155,7 +1025,7 @@ int hud_escort_num_ships_on_list()
 int hud_escort_return_objnum(int index)
 {
 	int escort_objnum, escort_sig;
-	if ( index >= Num_escort_ships ) {
+	if ( index >= Num_escort_ships || index >= MAX_COMPLETE_ESCORT_LIST) {
 		return -1;
 	}
 
@@ -1172,16 +1042,6 @@ int hud_escort_return_objnum(int index)
 	}
 
 	return Escort_ships[index].objnum;
-}
-
-
-void hudescort_page_in()
-{
-	int i;
-
-	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-		bm_page_in_aabitmap( Escort_gauges[i].first_frame, Escort_gauges[i].num_frames);
-	}
 }
 
 void hud_escort_add_player(short id)

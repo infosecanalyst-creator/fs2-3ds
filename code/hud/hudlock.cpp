@@ -7,344 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.20.2.2 $
- * $Date: 2008-01-24 03:53:35 $
- * $Author: Goober5000 $
- *
- * C module that controls missile locking
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.20.2.1  2006/08/19 04:38:46  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.20  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.19  2006/01/09 04:51:33  phreak
- * fix compile warnings.
- *
- * Revision 2.18  2005/10/10 17:21:04  taylor
- * remove NO_NETWORK
- *
- * Revision 2.17  2005/09/01 04:14:04  taylor
- * various weapon_range cap fixes for primary, secondary weapons and hud targetting info
- *
- * Revision 2.16  2005/07/24 18:31:59  taylor
- * address possible div-by-0 problem
- *
- * Revision 2.15  2005/07/22 10:18:38  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.14  2005/07/13 03:15:51  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.13  2005/04/05 05:53:17  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.12  2005/03/25 06:57:34  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.11  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.10  2005/02/13 08:36:51  wmcoolmon
- * Lockon should now work properly in nonstandard resolutions
- *
- * Revision 2.9  2004/11/27 10:45:36  taylor
- * some fixes for position problems on the HUD in non-standard resolutions
- * few compiler warning fixes
- *
- * Revision 2.8  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/12 16:32:49  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.6  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.5  2003/09/09 17:18:24  matt
- * Broke stars last commit, fixed -Sticks
- *
- * Revision 2.4  2003/09/09 17:10:55  matt
- * Added -nospec cmd line param to disable specular -Sticks
- *
- * Revision 2.3  2003/06/25 03:13:02  phreak
- * display lock triangle for local ssms only if its in range specified in weapons.tbl
- *
- * Revision 2.2  2003/06/11 02:59:48  phreak
- * local ssm stuff for hud.
- * they are always in lock range due to the subspace drive on them
- * they also can't be targeted when in stage 3.
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.2  2002/05/03 22:07:08  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 19    8/09/99 10:50a Jasenw
- * 
- * 18    7/30/99 5:42p Jasenw
- * changed coords to center HUD lock indicator.
- * 
- * 17    7/28/99 2:49p Andsager
- * Make hud target speed use vm_vec_mag (not vm_vec_mag_quick)
- * 
- * 16    6/08/99 7:41p Dave
- * Animated hud lockup icon a bit differently.
- * 
- * 15    6/08/99 8:35a Jasenw
- * new coords for new lock ani
- * 
- * 14    6/07/99 4:20p Andsager
- * Add HUD color for tagged object.  Apply to target and radar.
- * 
- * 13    6/07/99 1:42p Jasenw
- * 
- * 12    6/04/99 10:58a Dave
- * Updated hud lock gauge.
- * 
- * 11    6/03/99 2:32p Jasenw
- * changed coords for new HUD stuff
- * 
- * 10    6/02/99 5:41p Andsager
- * Reduce range of secondary weapons not fired from turrets in nebula.
- * Reduce range of beams fired from turrrets in nebula
- * 
- * 9     4/23/99 12:01p Johnson
- * Added SIF_HUGE_SHIP
- * 
- * 8     2/25/99 4:19p Dave
- * Added multiplayer_beta defines. Added cd_check define. Fixed a few
- * release build warnings. Added more data to the squad war request and
- * response packets.
- * 
- * 7     1/07/99 9:07a Jasen
- * HUD coords
- * 
- * 6     12/30/98 7:47a Jasen
- * added coordinates for hi res
- * 
- * 5     12/28/98 3:17p Dave
- * Support for multiple hud bitmap filenames for hi-res mode.
- * 
- * 4     12/21/98 5:02p Dave
- * Modified all hud elements to be multi-resolution friendly.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 55    8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 54    5/11/98 3:48p Lawrance
- * Break lock when banks switch
- * 
- * 53    5/10/98 7:05p Dave
- * Fix endgame sequencing ESC key. Changed how host options warning popups
- * are done. Fixed pause/message scrollback/options screen problems in mp.
- * Make sure observer HUD doesn't try to lock weapons.
- * 
- * 52    5/04/98 10:50p Lawrance
- * Don't break lock when switching to secondary weapons of the same type
- * 
- * 51    4/20/98 12:36a Mike
- * Make team vs. team work when player is hostile.  Several targeting
- * problems.
- * 
- * 50    4/15/98 12:55a Lawrance
- * Make shockwave damage 1/4 if bomb detonated by another weapon.  Allow
- * missiles to lock on bombs.
- * 
- * 49    4/13/98 4:52p Allender
- * remove AI_frametime and us flFrametime instead.  Make lock warning work
- * in multiplayer for aspect seeking missiles.  Debris fixups
- * 
- * 48    4/08/98 8:33p Lawrance
- * Make player re-acquire lock when targeting subsystems on a locked ship.
- * 
- * 47    4/03/98 10:29a Mike
- * Make aspect seekers home on a ship even if the targeted subsystem is
- * backfacing.  Too confusing.
- * 
- * 46    3/26/98 5:46p Lawrance
- * call obj_team() instead of ship_team_from_obj()
- * 
- * 45    3/26/98 5:26p John
- * added new paging code. nonfunctional.
- * 
- * 44    3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 43    3/10/98 11:16a Lawrance
- * Fix potential bug with missles not locking on a subsystem that appeared
- * in view
- * 
- * 42    2/28/98 7:03p Lawrance
- * Change player missile locking to use dot product, so we can use it in
- * the external views
- * 
- * 41    2/22/98 4:17p John
- * More string externalization classification... 190 left to go!
- * 
- * 40    1/25/98 10:31p Lawrance
- * Don't draw most hud gauges when viewing from another ship.
- * 
- * 39    1/24/98 4:48p Lawrance
- * Add 'locking_subsys_parent', needed to save/restore locking_subsys
- * pointer.
- * 
- * 38    1/23/98 6:25p Lawrance
- * Change player missile locking to lock on subsystem points automatically
- * 
- * 37    1/21/98 7:20p Lawrance
- * Make subsystem locking only work with line-of-sight, cleaned up locking
- * code, moved globals to player struct.
- * 
- * 36    1/19/98 10:02p Lawrance
- * Fix bug with locking on friendlies
- * 
- * 35    12/30/97 4:28p Lawrance
- * remove .ani extensions from filenames
- * 
- * 34    12/10/97 9:57a Lawrance
- * allow missile locks on all ships but friendly
- * 
- * 33    11/17/97 6:37p Lawrance
- * new gauges: extended target view, new lock triangles, support ship view
- * 
- * 32    11/17/97 5:51p Lawrance
- * fix bug that was sometimes causing lock to not occur
- * 
- * 31    11/13/97 10:46p Lawrance
- * ensure only attempt lock on HOSTILE
- * 
- * 30    11/11/97 12:59a Lawrance
- * fix couple of bugs with lock indicator not going away
- * 
- * 29    11/08/97 11:07p Lawrance
- * add in new lock indicator
- * 
- * 28    10/28/97 9:02a Lawrance
- * don't loop lock sound, some minor reformatting
- * 
- * 27    10/08/97 5:07p Lawrance
- * don't lock on friendly ships
- * 
- * 26    9/07/97 10:02p Lawrance
- * don't lock on a ship if player doesn't have any missiles
- * 
- * 25    7/02/97 9:35a Hoffoss
- * Changed all references to weapon variables in ships to 'weapons'
- * structure variables in ships.
- * 
- * 24    6/05/97 1:07a Lawrance
- * changes to support sound interface
- * 
- * 23    5/20/97 2:45p Mike
- * Move current_target and a bunch of other stuff out of player struct.
- * 
- * 22    4/24/97 10:55a Lawrance
- * added Show_lock_cone to DCF
- * 
- * 21    4/18/97 2:54p Lawrance
- * sounds now have a default volume, when playing, pass a scaling factor
- * not the actual volume
- * 
- * 20    4/15/97 8:36a Lawrance
- * fixed bug where lock indicator was lagging locked target
- * 
- * 19    4/13/97 3:53p Lawrance
- * separate out the non-rendering dependant portions of the HUD ( sounds,
- * updating lock position, changing targets, etc) and put into
- * hud_update_frame()
- * 
- * 18    4/12/97 4:29p Lawrance
- * get missle locking and offscreen indicator working properly with
- * different sized screens
- * 
- * 17    4/10/97 5:29p Lawrance
- * hud rendering split up into hud_render_3d(), hud_render_2d() and
- * hud_render_target_model()
- * 
- * 16    4/09/97 4:34p Lawrance
- * allow looped sounds to be cut off after they complete the full sample
- * duration
- * 
- * 15    3/25/97 8:17p Lawrance
- * don't allow ASPECT homing missles to lock on debris
- * 
- * 14    3/19/97 5:53p Lawrance
- * integrating new Misc_sounds[] array (replaces old Game_sounds
- * structure)
- * 
- * 13    3/10/97 8:53a Lawrance
- * using hud_stop_looped_locking_sounds() in place of
- * hud_stop_looped_sounds()
- * 
- * 12    3/07/97 4:37p Mike
- * Make rockeye missile home.
- * Remove UNKNOWN and NEUTRAL teams.
- * 
- * 11    3/04/97 2:27p Lawrance
- * check to ensure player ship has missile banks
- * 
- * 10    3/04/97 11:19a Lawrance
- * supporting banked weapons
- * 
- * 9     1/23/97 12:00p Lawrance
- * made lock sound play at normal volume.
- * 
- * 8     1/20/97 7:58p John
- * Fixed some link errors with testcode.
- * 
- * 7     1/13/97 5:36p Lawrance
- * integrating new Game_sounds structure for general game sounds
- * 
- * 6     1/06/97 10:43p Lawrance
- * Changes to make save/restore functional
- * 
- * 5     1/02/97 7:12p Lawrance
- * adding hooks for more sounds
- * 
- * 4     1/02/97 10:32a Lawrance
- * fixed some bugs related to stopping looped sounds when targets die and
- * going to menus
- * 
- * 3     12/24/96 4:32p Lawrance
- * some minor improvements
- * 
- * 2     12/23/96 7:53p Lawrance
- * missile locking working in new source files
- *
- * $NoKeywords: $
- */
+
 
 
 #include "hud/hud.h"
@@ -363,9 +26,10 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
-
+vec3d lock_world_pos;
 
 static float Lock_start_dist;
 static int Rotate_time_id = 1;	// timer id for controlling how often to rotate triangles around lock indicator
@@ -401,9 +65,7 @@ int Lock_gauge_half_h[GR_NUM_RESOLUTIONS] = {
 	25
 };
 
-// hud_frames Lock_gauge;
 int Lock_gauge_loaded = 0;
-hud_anim Lock_gauge;
 int Lock_gauge_draw = 0;
 int Lock_gauge_draw_stamp = -1;
 #define LOCK_GAUGE_BLINK_RATE			5			// blinks/sec
@@ -416,7 +78,6 @@ int Lockspin_half_h[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
 	{ 16, 26 },
 	{ 32, 52 }
 };
-hud_anim	Lock_anim;
 
 char Lock_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
 {
@@ -446,24 +107,14 @@ void hud_init_missile_lock()
 	Rotate_time_id = 1;
 
 	// Load in the frames need for the lead indicator
-	if (!Lock_gauge_loaded) {
-		/*
-		Lock_gauge.first_frame = bm_load_animation(Lock_fname[Hud_reticle_style][gr_screen.res], &Lock_gauge.num_frames);
-		if ( Lock_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: Lock_fname[Hud_reticle_style][gr_screen.res]\n");
-		}
-		*/
-		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[Hud_reticle_style][gr_screen.res]);
-		hud_anim_load(&Lock_gauge);
-
-		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[Hud_reticle_style][gr_screen.res]);
-		hud_anim_load(&Lock_anim);
+	//if (!Lock_gauge_loaded) {
+	//Commented out due to changes in HUD loading behaviour. These checks are no longer needed at this point.
 
 		Lock_gauge_loaded = 1;
 		
 		Lock_gauge_draw_stamp = -1;
 		Lock_gauge_draw = 0;
-	}
+	//}
 }
 
 void hud_draw_diamond(int x, int y, int width, int height)
@@ -491,15 +142,79 @@ void hud_draw_diamond(int x, int y, int width, int height)
 	gr_line(x4,y4,x1,y1);
 }
 
+HudGaugeLock::HudGaugeLock():
+HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, false, false, VM_DEAD_VIEW, 255, 255, 255)
+{
+}
+
+void HudGaugeLock::initGaugeHalfSize(int w, int h)
+{
+	Lock_gauge_half_w = w;
+	Lock_gauge_half_h = h;
+}
+
+void HudGaugeLock::initSpinHalfSize(int w, int h)
+{
+	Lockspin_half_w = w;
+	Lockspin_half_h = h;
+}
+
+void HudGaugeLock::initTriHeight(float h)
+{
+	Lock_triangle_height = h;
+}
+
+void HudGaugeLock::initTriBase(float length)
+{
+	Lock_triangle_base = length;
+}
+
+void HudGaugeLock::initTargetBoxSize(int w, int h)
+{
+	Lock_target_box_width = w;
+	Lock_target_box_height = h;
+}
+
+void HudGaugeLock::initLoopLockedAnim(bool loop)
+{
+	loop_locked_anim = loop;
+}
+
+void HudGaugeLock::initBitmaps(char *lock_gauge_fname, char *lock_anim_fname)
+{
+	hud_anim_init(&Lock_gauge, 0, 0, lock_gauge_fname);
+	hud_anim_load(&Lock_gauge);
+
+	hud_anim_init(&Lock_anim, 0, 0, lock_anim_fname);
+	hud_anim_load(&Lock_anim);
+}
+
+void HudGaugeLock::initialize()
+{
+	Lock_gauge_draw_stamp = -1;
+	Lock_gauge_draw = 0;
+	Rotate_time_id = 1;
+
+	HudGauge::initialize();
+}
+
 // hud_show_lock_indicator() will display the lock indicator for homing missiles.
 // lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
 // necessary locking calculations are done for this frame, this function will compute 
 // where the indicator should be relative to the player's viewpoint and will render accordingly.
-void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
+void HudGaugeLock::render(float frametime)
 {
 	int			target_objnum, sx, sy;
 	object		*targetp;
 	vertex lock_point;
+
+	if (Player_ai->target_objnum == -1) {
+		return;
+	}
+
+	if (Player->target_is_dying) {
+		return;
+	}
 
 	if (!Players[Player_num].lock_indicator_visible){
 		return;
@@ -515,13 +230,24 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		return;
 	}
 
+	bool in_frame = g3_in_frame() > 0;
+	if(!in_frame)
+		g3_start_frame(0);
+	gr_set_screen_scale(base_w, base_h);
+
 	// Get the target's current position on the screen. If he's not on there,
 	// we're not going to draw the lock indicator even if he's in front 
 	// of our ship, so bail out. 
-	g3_rotate_vertex(&lock_point, lock_point_pos); 
+	g3_rotate_vertex(&lock_point, &lock_world_pos); 
 	g3_project_vertex(&lock_point);
-	if (lock_point.codes & PF_OVERFLOW)
+	if (lock_point.codes & PF_OVERFLOW) {
+		gr_reset_screen_scale();
+
+		if(!in_frame)
+			g3_end_frame();
+
 		return;
+	}
 
 	hud_set_iff_color(targetp);
 //	nprintf(("Alan","lockx: %d, locky: %d TargetX: %d, TargetY: %d\n", Players[Player_num].lock_indicator_x, Players[Player_num].lock_indicator_y, Player->current_target_sx, Player->current_target_sy));
@@ -529,15 +255,15 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 	// We have the coordinates of the lock indicator relative to the target in our "virtual frame" 
 	// so, we calculate where it should be drawn based on the player's viewpoint.
 	if (Player_ai->current_target_is_locked) {
-		sx = fl2i(lock_point.sx); 
-		sy = fl2i(lock_point.sy);
+		sx = fl2i(lock_point.screen.xyw.x); 
+		sy = fl2i(lock_point.screen.xyw.y);
 		gr_unsize_screen_pos(&sx, &sy);
 
 		// show the rotating triangles if target is locked
-		hud_draw_lock_triangles(sx, sy, frametime);
+		renderLockTriangles(sx, sy, frametime);
 	} else {
-		sx = fl2i(lock_point.sx) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
-		sy = fl2i(lock_point.sy) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
+		sx = fl2i(lock_point.screen.xyw.x) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
+		sy = fl2i(lock_point.screen.xyw.y) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
 		gr_unsize_screen_pos(&sx, &sy);
 	}
 
@@ -550,14 +276,18 @@ void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 		hud_draw_diamond(sx, sy, Lock_target_box_width[gr_screen.res], Lock_target_box_height[gr_screen.res]);
 	}
 	*/
-	Lock_gauge.sx = sx - Lock_gauge_half_w[Hud_reticle_style][gr_screen.res];
-	Lock_gauge.sy = sy - Lock_gauge_half_h[gr_screen.res];
+	Lock_gauge.sx = sx - Lock_gauge_half_w;
+	Lock_gauge.sy = sy - Lock_gauge_half_h;
 	if(Player_ai->current_target_is_locked){
-		Lock_gauge.time_elapsed = 0.0f;			
-		hud_anim_render(&Lock_gauge, 0.0f, 1);		
+		Lock_gauge.time_elapsed = 0.0f;	
+		hud_anim_render(&Lock_gauge, 0.0f, 1);
 	} else {
 		hud_anim_render(&Lock_gauge, frametime, 1);
 	}
+
+	gr_reset_screen_scale();
+	if(!in_frame)
+		g3_end_frame();
 }
 
 // Reset data used for player lock indicator
@@ -567,12 +297,19 @@ void hud_lock_reset(float lock_time_scale)
 	ship_weapon	*swp;
 
 	swp = &Player_ship->weapons;
+    
+	if ((swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
+		Assert(swp->current_secondary_bank < MAX_SHIP_SECONDARY_BANKS);
+		Assert(swp->secondary_bank_weapons[swp->current_secondary_bank] < MAX_WEAPON_TYPES);
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+		Player->lock_time_to_target = i2fl(wip->min_lock_time*lock_time_scale);
+	} else {
+		Player->lock_time_to_target = 0.0f;
+	}
 
 	Player_ai->current_target_is_locked = 0;
 	Players[Player_num].lock_indicator_visible = 0;
 	Player->target_in_lock_cone = 0;
-	Player->lock_time_to_target = i2fl(wip->min_lock_time*lock_time_scale);
 	Player->current_target_sx = -1;
 	Player->current_target_sy = -1;
 	Player->locking_subsys=NULL;
@@ -584,7 +321,7 @@ void hud_lock_reset(float lock_time_scale)
 	Lock_gauge_draw = 0;
 
 	// reset the lock anim time elapsed
-	Lock_anim.time_elapsed = 0.0f;
+//	Lock_anim.time_elapsed = 0.0f;
 }
 
 // Determine if the locking code has a point to track
@@ -597,7 +334,7 @@ int hud_lock_has_homing_point()
 }
 
 int Nebula_sec_range = 0;
-DCF_BOOL(nebula_sec_range, Nebula_sec_range)
+DCF_BOOL(nebula_sec_range, Nebula_sec_range);
 
 int hud_lock_world_pos_in_range(vec3d *target_world_pos, vec3d *vec_to_target)
 {
@@ -687,7 +424,7 @@ int hud_abort_lock()
 	if ((Player_ship->team == target_team) && (!iff_x_attacks_y(Player_ship->team, target_team)))
 	{
 		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
+		if(!MULTI_DOGFIGHT) {
 			return 1;
 		}
 	}
@@ -724,12 +461,12 @@ int hud_lock_on_subsys_ok()
 }
 
 // Determine if locking point is in the locking cone
-void hud_lock_check_if_target_in_lock_cone(vec3d *lock_world_pos)
+void hud_lock_check_if_target_in_lock_cone()
 {
 	float		dist, dot;
 	vec3d	vec_to_target;
 
-	dist = vm_vec_normalized_dir(&vec_to_target, lock_world_pos, &Player_obj->pos);
+	dist = vm_vec_normalized_dir(&vec_to_target, &lock_world_pos, &Player_obj->pos);
 	dot = vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_target);
 
 	if ( dot > 0.85) {
@@ -737,7 +474,6 @@ void hud_lock_check_if_target_in_lock_cone(vec3d *lock_world_pos)
 	} else {
 		Player->target_in_lock_cone = 0;
 	}
-
 }
 
 // return 1 if current secondary weapon is different than previous secondary weapon
@@ -782,7 +518,6 @@ void hud_do_lock_indicator(float frametime)
 {
 	ship_weapon *swp;
 	weapon_info	*wip;
-	vec3d		lock_world_pos;
 
 	// if i'm a multiplayer observer, bail here
 	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)) ){
@@ -866,7 +601,7 @@ void hud_do_lock_indicator(float frametime)
 		Player->target_in_lock_cone=0;
 	}
 
-	hud_lock_check_if_target_in_lock_cone(&lock_world_pos);
+	hud_lock_check_if_target_in_lock_cone();
 
 	// check if the target is within range of the current secondary weapon.  If it is not,
 	// a lock will not be detected
@@ -897,9 +632,17 @@ void hud_do_lock_indicator(float frametime)
 
 	if (Player_ai->current_target_is_locked) {
 		if ( Missile_track_loop > -1 )	{
-			snd_chg_loop_status(Missile_track_loop, 0);
+			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
-			Missile_lock_loop = snd_play(&Snds[SND_MISSILE_LOCK]);
+
+			if (wip->hud_locked_snd >= 0)
+			{
+				Missile_lock_loop = snd_play(&Snds[wip->hud_locked_snd]);
+			}
+			else
+			{
+				Missile_lock_loop = snd_play(&Snds[ship_get_sound(Player_obj, SND_MISSILE_LOCK)]);
+			}
 		}
 	}
 	else {
@@ -909,14 +652,12 @@ void hud_do_lock_indicator(float frametime)
 			Missile_lock_loop = -1;
 		}
 	}
-
-	hud_show_lock_indicator(frametime, &lock_world_pos);
 }
 
 // hud_draw_lock_triangles() will draw the 4 rotating triangles around a lock indicator
 // (This is done when a lock has been acquired)
 #define ROTATE_DELAY 40
-void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
+void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius)
 {
 	static float ang = 0.0f;
 
@@ -933,34 +674,34 @@ void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 		// draw the orbiting triangles
 
 		//ang = atan2(target_point.y,target_point.x);
-		xpos = center_x + (float)cos(ang)*(radius + Lock_triangle_height[gr_screen.res] + 2);
-		ypos = center_y - (float)sin(ang)*(radius + Lock_triangle_height[gr_screen.res] + 2);
+		xpos = center_x + (float)cos(ang)*(radius + Lock_triangle_height + 2);
+		ypos = center_y - (float)sin(ang)*(radius + Lock_triangle_height + 2);
 			
-		x3 = xpos - Lock_triangle_base[gr_screen.res] * (float)sin(-ang);
-		y3 = ypos + Lock_triangle_base[gr_screen.res] * (float)cos(-ang);
-		x4 = xpos + Lock_triangle_base[gr_screen.res] * (float)sin(-ang);
-		y4 = ypos - Lock_triangle_base[gr_screen.res] * (float)cos(-ang);
+		x3 = xpos - Lock_triangle_base * (float)sin(-ang);
+		y3 = ypos + Lock_triangle_base * (float)cos(-ang);
+		x4 = xpos + Lock_triangle_base * (float)sin(-ang);
+		y4 = ypos - Lock_triangle_base * (float)cos(-ang);
 
-		xpos = xpos - Lock_triangle_base[gr_screen.res] * (float)cos(ang);
-		ypos = ypos + Lock_triangle_base[gr_screen.res] * (float)sin(ang);
+		xpos = xpos - Lock_triangle_base * (float)cos(ang);
+		ypos = ypos + Lock_triangle_base * (float)sin(ang);
 
 		hud_tri(x3, y3, xpos, ypos, x4, y4);
 	} // end for
 }
 
 // draw a frame of the rotating lock triangles animation
-void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
+void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frametime)
 {
 	if ( Lock_anim.first_frame == -1 ) {
-		hud_draw_lock_triangles_old(center_x, center_y, Lock_target_box_width[gr_screen.res]/2);
+		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim
-		Lock_anim.sx = center_x - Lockspin_half_w[Hud_reticle_style][gr_screen.res];
-		Lock_anim.sy = center_y - Lockspin_half_h[Hud_reticle_style][gr_screen.res];
+		Lock_anim.sx = center_x - Lockspin_half_w;
+		Lock_anim.sy = center_y - Lockspin_half_h;
 
 		// if it's still animating
 		if(Lock_anim.time_elapsed < Lock_anim.total_time){
-			if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+			if(loop_locked_anim) {
 				hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
 			} else {
 				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
@@ -978,13 +719,9 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
 			if(Lock_gauge_draw){
-				if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
-					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
-				} else {
-					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
-				}
-			}			
-		}		
+				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			}
+		}
 	}
 }
 
@@ -1124,8 +861,15 @@ void hud_calculate_lock_position(float frametime)
 			accumulated_y_pixels -= int_portion;
 		}
 
-		if ( Missile_track_loop == -1 ) {	
-			Missile_track_loop = snd_play_looping( &Snds[SND_MISSILE_TRACKING], 0.0f , -1, -1);
+		if ( Missile_track_loop == -1 ) {
+			if (wip->hud_tracking_snd >= 0)
+			{
+				Missile_track_loop = snd_play_looping( &Snds[wip->hud_tracking_snd], 0.0f , -1, -1);
+			}
+			else
+			{
+				Missile_track_loop = snd_play_looping( &Snds[ship_get_sound(Player_obj, SND_MISSILE_TRACKING)], 0.0f , -1, -1);
+			}
 		}
 
 		if (!Players[Player_num].lock_time_to_target) {
@@ -1141,7 +885,7 @@ void hud_calculate_lock_position(float frametime)
 	} else {
 
 		if ( Missile_track_loop > -1 )	{
-			snd_chg_loop_status(Missile_track_loop, 0);
+			snd_stop(Missile_track_loop);
 			Missile_track_loop = -1;
 		}
 
@@ -1261,26 +1005,26 @@ void hud_stop_looped_locking_sounds()
 }
 
 // Get a new world pos for the locking point
-void hud_lock_update_lock_pos(object *target_objp, vec3d *lock_world_pos)
+void hud_lock_update_lock_pos(object *target_objp)
 {
 	ship_weapon *swp = &Player_ship->weapons;
 	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
-		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, lock_world_pos);
+		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, &lock_world_pos);
 		return;
 	}
 
 	if ( Player->locking_on_center) {
-		*lock_world_pos = target_objp->pos;
+		lock_world_pos = target_objp->pos;
 	} else {
 		Assert(Player->locking_subsys);
-		get_subsystem_world_pos(target_objp, Player->locking_subsys, lock_world_pos);
+		get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
 	}
 }
 
 // Try and find a new locking point
-void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
+void hud_lock_get_new_lock_pos(object *target_objp)
 {
 	ship			*target_shipp=NULL;
 	int			lock_in_range=0;
@@ -1303,11 +1047,11 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 		// check all the subsystems and the center of the ship
 		
 		// assume best lock pos is the center of the ship
-		*lock_world_pos=target_objp->pos;
+		lock_world_pos = target_objp->pos;
 		Player->locking_on_center=1;
 		Player->locking_subsys=NULL;
 		Player->locking_subsys_parent=-1;
-		lock_in_range = hud_lock_world_pos_in_range(lock_world_pos, &vec_to_lock);
+		lock_in_range = hud_lock_world_pos_in_range(&lock_world_pos, &vec_to_lock);
 		vm_vec_normalize(&vec_to_lock);
 		if ( lock_in_range ) {
 			best_lock_dot=vm_vec_dot(&Player_obj->orient.vec.fvec, &vec_to_lock);
@@ -1332,15 +1076,15 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 					Player->locking_on_center=0;
 					Player->locking_subsys=ss;
 					Player->locking_subsys_parent=Player_ai->target_objnum;
-					*lock_world_pos=subsys_world_pos;
+					lock_world_pos = subsys_world_pos;
 				}
 			}
 			ss = GET_NEXT( ss );
 		}
-	} else if ((target_shipp) && wip->wi_flags & WIF_HOMING_JAVELIN) {
+	} else if ( (target_shipp) && (wip->wi_flags & WIF_HOMING_JAVELIN)) {
 		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
 		if (Player->locking_subsys != NULL) {
-			get_subsystem_world_pos(target_objp, Player->locking_subsys, lock_world_pos);
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
 			Player->locking_on_center=0;
 			Player->locking_subsys_parent=Player_ai->target_objnum;
 		} else {
@@ -1349,7 +1093,7 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 		}
 	} else {
 		// if small ship (or weapon), just go for the center
-		*lock_world_pos = target_objp->pos;
+		lock_world_pos = target_objp->pos;
 		Player->locking_on_center=1;
 		Player->locking_subsys=NULL;
 		Player->locking_subsys_parent=-1;
@@ -1359,7 +1103,6 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 // Decide which point lock should be homing on
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
-	vec3d		lock_world_pos;
 	object		*target_objp;
 	ship_weapon	*swp;
 	weapon_info	*wip;
@@ -1371,18 +1114,18 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	target_objp = &Objects[Player_ai->target_objnum];
 
 	Player->current_target_sx = -1;
-	Player->current_target_sx = -1;
+	Player->current_target_sy = -1;
 
 	swp = &Player_ship->weapons;
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
 	// If subsystem is targeted, we must try to lock on that
 	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
-		hud_lock_update_lock_pos(target_objp, &lock_world_pos);
+		hud_lock_update_lock_pos(target_objp);
 		Player->locking_on_center=0;
 		Player->locking_subsys=Player_ai->targeted_subsys;
 		Player->locking_subsys_parent=Player_ai->target_objnum;
-	} else if ( wip->wi_flags & WIF_HOMING_JAVELIN && target_objp->type == OBJ_SHIP) {
+	} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && (target_objp->type == OBJ_SHIP)) {
 		if (!Player->locking_subsys ||
 			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
 				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
@@ -1398,9 +1141,9 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	} else {
 		// See if we already have a successful locked point
 		if ( hud_lock_has_homing_point() ) {
-			hud_lock_update_lock_pos(target_objp, &lock_world_pos);
+			hud_lock_update_lock_pos(target_objp);
 		} else {
-			hud_lock_get_new_lock_pos(target_objp, &lock_world_pos);
+			hud_lock_get_new_lock_pos(target_objp);
 		}
 	}
 
@@ -1420,7 +1163,8 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	}
 }
 
-void hudlock_page_in()
+void HudGaugeLock::pageIn()
 {
 	bm_page_in_aabitmap( Lock_gauge.first_frame, Lock_gauge.num_frames );
+	bm_page_in_aabitmap( Lock_anim.first_frame, Lock_anim.num_frames );
 }

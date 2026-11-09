@@ -7,117 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Render/3dClipper.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-05 05:53:23 $
- * $Author: taylor $
- *
- * Polygon clipping functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2004/07/26 20:47:50  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/12 16:33:04  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.6  2004/07/05 05:09:21  bobboau
- * FVF code, only the data that is needed is sent off to the card,,
- * OGL can take advantage of this if they want but it won't break
- * anything if they don't. also state block code has been implemented,
- * that's totaly internal to D3D no high level code is involved.
- *
- * Revision 2.5  2003/08/30 14:49:01  phreak
- * fixed some random specular lighting bugs
- *
- * Revision 2.4  2003/08/16 03:52:24  bobboau
- * update for the specmapping code includeing
- * suport for seperate specular levels on lights and
- * optional strings for the stars table
- * code has been made more organised,
- * though there seems to be a bug in the state selecting code
- * resulting in the HUD being rendered incorectly
- * and specmapping failing ocasionaly
- *
- * Revision 2.3  2003/08/12 03:18:34  bobboau
- * Specular 'shine' mapping;
- * useing a phong lighting model I have made specular highlights
- * that are mapped to the model,
- * rendering them is still slow, but they look real purdy
- *
- * also 4 new (untested) comand lines, the XX is a floating point value
- * -spec_exp XX
- * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
- * -spec_point XX
- * -spec_static XX
- * -spec_tube XX
- * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
- * static is the local stars,
- * point is weapons/explosions/warp in/outs,
- * tube is beam weapons,
- * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
- *
- * Revision 2.2  2002/08/06 01:49:08  penguin
- * Renamed ccode members to cc_or and cc_and
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 13    4/10/98 5:20p John
- * Changed RGB in lighting structure to be ubytes.  Removed old
- * not-necessary 24 bpp software stuff.
- * 
- * 12    3/23/98 5:00p John
- * Improved missile trails.  Made smooth alpha under hardware.  Made end
- * taper.  Made trail touch weapon.
- * 
- * 11    3/16/98 4:51p John
- * Added low-level code to clip all polygons against an arbritary plane.
- * Took out all old model_interp_zclip and used this new method instead.  
- * 
- * 10    1/23/98 5:08p John
- * Took L out of vertex structure used B (blue) instead.   Took all small
- * fireballs out of fireball types and used particles instead.  Fixed some
- * debris explosion things.  Restructured fireball code.   Restructured
- * some lighting code.   Made dynamic lighting on by default. Made groups
- * of lasers only cast one light.  Made fireballs not cast light.
- * 
- * 9     9/09/97 3:39p Sandeep
- * warning level 4 bugs
- * 
- * 8     3/10/97 5:20p John
- * Differentiated between Gouraud and Flat shading.  Since we only do flat
- * shading as of now, we don't need to interpolate L in the outer loop.
- * This should save a few percent.
- * 
- * 7     3/10/97 2:25p John
- * Made pofview zbuffer.   Made textest work with new model code.  Took
- * out some unnecessary Asserts in the 3d clipper.
- * 
- * 
- * 6     12/23/96 11:00a John
- * Restructured POF stuff to support LOD in one pof.
- * 
- * 5     11/06/96 2:33p John
- * Added more asserts for checking that non-tiled UV's are between 0 and
- * 1.0.    Put code in the model_init code that checks for polys that have
- * a vertex duplicated and throws them out.
- *
- * $NoKeywords: $
- */
+
 
 #include "render/3dinternal.h"
 #include "graphics/tmapper.h"
@@ -148,6 +38,7 @@ vertex *get_temp_point()
 	return p;
 }
 
+
 void free_temp_point(vertex *p)
 {
 	Assert(p->flags & PF_TEMP_POINT);
@@ -157,7 +48,10 @@ void free_temp_point(vertex *p)
 	p->flags &= ~PF_TEMP_POINT;
 }
 
-//clips an edge against one plane.
+
+/**
+ * @brief Clips an edge against one plane.
+ */
 vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 {
 	float ratio;
@@ -171,9 +65,9 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		vec3d w, ray_direction;
 		float num,den;
 
-		vm_vec_sub(&ray_direction,(vec3d *)&off_pnt->x,(vec3d *)&on_pnt->x);
+		vm_vec_sub(&ray_direction,&off_pnt->world,&on_pnt->world);
 			
-		vm_vec_sub(&w,(vec3d *)&on_pnt->x,&G3_user_clip_point);
+		vm_vec_sub(&w,&on_pnt->world,&G3_user_clip_point);
 	
 		den = -vm_vec_dot(&G3_user_clip_normal,&ray_direction);
 		if ( den == 0.0f ) {	// Ray & plane are parallel, so there is no intersection
@@ -184,10 +78,10 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	
 			ratio = num / den;
 		}
-
-		tmp->x = on_pnt->x + (off_pnt->x-on_pnt->x) * ratio;
-		tmp->y = on_pnt->y + (off_pnt->y-on_pnt->y) * ratio;
-		tmp->z = on_pnt->z + (off_pnt->z-on_pnt->z) * ratio;
+		
+		vm_vec_sub(&tmp->world, &off_pnt->world, &on_pnt->world);
+		vm_vec_scale(&tmp->world, ratio);
+		vm_vec_add2(&tmp->world, &on_pnt->world);
 
 	} else {
 		float a,b,kn,kd;
@@ -196,12 +90,12 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 		//use x or y as appropriate, and negate x/y value as appropriate
 
 		if (plane_flag & (CC_OFF_RIGHT | CC_OFF_LEFT)) {
-			a = on_pnt->x;
-			b = off_pnt->x;
+			a = on_pnt->world.xyz.x;
+			b = off_pnt->world.xyz.x;
 		}
 		else {
-			a = on_pnt->y;
-			b = off_pnt->y;
+			a = on_pnt->world.xyz.y;
+			b = off_pnt->world.xyz.y;
 		}
 
 		if (plane_flag & (CC_OFF_LEFT | CC_OFF_BOT)) {
@@ -209,31 +103,28 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 			b = -b;
 		}
 
-		kn = a - on_pnt->z;						//xs-zs
-		kd = kn - b + off_pnt->z;				//xs-zs-xe+ze
+		kn = a - on_pnt->world.xyz.z;						//xs-zs
+		kd = kn - b + off_pnt->world.xyz.z;				//xs-zs-xe+ze
 
 		ratio = kn / kd;
 
-		tmp->x = on_pnt->x + (off_pnt->x-on_pnt->x) * ratio;
-		tmp->y = on_pnt->y + (off_pnt->y-on_pnt->y) * ratio;
+		tmp->world.xyz.x = on_pnt->world.xyz.x + (off_pnt->world.xyz.x-on_pnt->world.xyz.x) * ratio;
+		tmp->world.xyz.y = on_pnt->world.xyz.y + (off_pnt->world.xyz.y-on_pnt->world.xyz.y) * ratio;
 
 		if (plane_flag & (CC_OFF_TOP|CC_OFF_BOT))	{
-			tmp->z = tmp->y;
+			tmp->world.xyz.z = tmp->world.xyz.y;
 		} else {
-			tmp->z = tmp->x;
+			tmp->world.xyz.z = tmp->world.xyz.x;
 		}
 
 		if (plane_flag & (CC_OFF_LEFT|CC_OFF_BOT))
-			tmp->z = -tmp->z;
+			tmp->world.xyz.z = -tmp->world.xyz.z;
 
 	}
 
 	if (flags & TMAP_FLAG_TEXTURED) {
-		tmp->u = on_pnt->u + (off_pnt->u-on_pnt->u) * ratio;
-		tmp->v = on_pnt->v + (off_pnt->v-on_pnt->v) * ratio;
-
-		tmp->u2 = on_pnt->u2 + (off_pnt->u2-on_pnt->u2) * ratio;
-		tmp->v2 = on_pnt->v2 + (off_pnt->v2-on_pnt->v2) * ratio;
+		tmp->texture_position.u = on_pnt->texture_position.u + (off_pnt->texture_position.u-on_pnt->texture_position.u) * ratio;
+		tmp->texture_position.v = on_pnt->texture_position.v + (off_pnt->texture_position.v-on_pnt->texture_position.v) * ratio;
 	}
 
 	if (flags & TMAP_FLAG_GOURAUD ) {
@@ -299,7 +190,10 @@ vertex *clip_edge(int plane_flag,vertex *on_pnt,vertex *off_pnt, uint flags)
 	return tmp;	
 }
 
-//clips a line to the viewing pyramid.
+
+/**
+ * @brief Clips a line to the viewing pyramid.
+ */
 void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags)
 {
 	int plane_flag;
@@ -322,6 +216,9 @@ void clip_line(vertex **p0,vertex **p1,ubyte codes_or, uint flags)
 
 }
 
+/**
+ * @brief Clips a plane to the viewing pyramid.
+ */
 int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 {
 	int i;
@@ -371,7 +268,9 @@ int clip_plane(int plane_flag,vertex **src,vertex **dest,int *nv,ccodes *cc,uint
 	return (dest-save_dest);
 }
 
-
+/**
+ * @brief Clips a polygon to the viewing pyramid.
+ */
 vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 {
 	int plane_flag;
@@ -392,11 +291,3 @@ vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags)
 
 	return src;		//we swapped after we copied
 }
-
-
-
-
-
-
-
-

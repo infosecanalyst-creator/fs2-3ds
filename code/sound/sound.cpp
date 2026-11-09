@@ -7,441 +7,16 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.34.2.5 $
- * $Date: 2007-05-11 03:14:02 $
- * $Author: taylor $
- *
- * Low-level sound code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.34.2.4  2007/02/11 09:56:25  taylor
- * support for new finding/loading of sound files
- * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
- * remove NO_SOUND
- *
- * Revision 2.34.2.3  2006/10/06 04:58:25  wmcoolmon
- * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
- *
- * Revision 2.34.2.2  2006/09/11 01:00:28  taylor
- * various small compiler warning and strict compiling fixes
- *
- * Revision 2.34.2.1  2006/07/08 18:07:32  taylor
- * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
- *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
- * clean up some of the error messages to not say "DirectSound" is doing this or that, just say "Audio" instead
- *
- * Revision 2.34  2006/04/20 06:32:30  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.33  2006/03/22 21:42:55  taylor
- * address out-of-bounds issues for Sounds[] when unloading
- *
- * Revision 2.32  2006/02/16 05:47:32  taylor
- * I never did really like the old audiostr OpenAL change here, this just seems safer
- * initialize si->data and si->size before loading sound buffer (fixes OGG issue for plats that don't zero-initialize <vector>, this will be handled differently in the new code)
- *
- * Revision 2.31  2006/01/20 07:10:33  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 2.30  2005/10/23 19:08:01  taylor
- * fix crashes and minor slowdowns when sound is disabled (-nosound)
- *
- * Revision 2.29  2005/09/24 02:40:09  Goober5000
- * get rid of a whole bunch of Microsoft warnings
- * --Goober5000
- *
- * Revision 2.28  2005/05/24 03:11:38  taylor
- * an extra bounds check in sound.cpp
- * fix audiostr error when filename is !NULL but 0 in len might hit on SDL debug code
- *
- * Revision 2.27  2005/05/23 04:58:43  phreak
- * fix out of bounds error
- *
- * Revision 2.26  2005/05/15 06:47:57  taylor
- * don't let the ogg callbacks close the file handle on us, let us do it ourselves to keep things straight
- *
- * Revision 2.25  2005/05/14 21:34:17  phreak
- * fixed an out-of-bounds array bug
- *
- * Revision 2.24  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.23  2005/04/18 03:31:27  taylor
- * some extra checks to make sure we don't act on invalid gamesnds (fix for WCS)
- *
- * Revision 2.22  2005/04/15 11:28:41  taylor
- * div-by-zero fix for snd_time_remaining()
- *
- * Revision 2.21  2005/04/05 11:48:23  taylor
- * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
- * better error handling for OpenAL functions
- * Windows can now build properly with OpenAL
- * extra check to make sure we don't try and use too many hardware bases sources
- * fix memory error from OpenAL extension list in certain instances
- *
- * Revision 2.20  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.19  2005/04/01 07:33:08  taylor
- * fix hanging on exit with OpenAL
- * some better error handling on OpenAL init and make it more Windows friendly too
- * basic 3d sound stuff for OpenAL, not working right yet
- *
- * Revision 2.18  2005/03/28 00:40:09  taylor
- * fix to snd_time_remaining() to make sure we are getting the correct index into Sounds[]
- *
- * Revision 2.17  2005/03/24 23:27:25  taylor
- * make sounds.tbl dynamic
- * have snd_time_remaining() be less stupid
- * some OpenAL error fixerage
- * be able to turn off some typically useless debug messages
- *
- * Revision 2.16  2005/03/14 23:31:54  wmcoolmon
- * Hopefully this will fixx0r Num_sounds
- *
- * Revision 2.15  2005/03/14 06:38:31  wmcoolmon
- * Whoops, this isn't needed.
- *
- * Revision 2.14  2005/03/14 06:33:38  wmcoolmon
- * Made sounds dynamically allocated
- *
- * Revision 2.13  2005/03/03 06:05:32  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.12  2005/02/02 10:36:23  taylor
- * merge with Linux/OSX tree - p0202
- *
- * Revision 2.11  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
- *
- * Revision 2.10  2004/12/25 00:23:46  wmcoolmon
- * Ogg support for WIN32
- *
- * Revision 2.9  2004/07/26 20:47:52  Kazan
- * remove MCD complete
- *
- * Revision 2.8  2004/07/12 16:33:06  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.7  2004/06/28 02:13:08  bobboau
- * high level index buffer suport and d3d implementation,
- * OGL people need to get this working on your end as it's broke now
- *
- * Revision 2.6  2004/06/22 23:14:10  wmcoolmon
- * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
- * OGG code has been commented out, so you don't need the SDK yet.
- *
- * Revision 2.5  2004/06/18 04:59:55  wmcoolmon
- * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
- *
- * Revision 2.4  2004/03/05 09:01:59  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/03/02 06:37:24  penguin
- * Use multimedia headers in local dir, not system's (headers are not present in MinGW distribution)
- *  - penguin
- *
- * Revision 2.2  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/07 19:56:00  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 9     9/12/99 8:09p Dave
- * Fixed problem where skip-training button would cause mission messages
- * not to get paged out for the current mission.
- * 
- * 8     8/27/99 6:38p Alanl
- * crush the blasted repeating messages bug
- * 
- * 7     8/22/99 11:06p Alanl
- * don't convert priority in snd_play_3d
- * 
- * 6     8/04/99 9:48p Alanl
- * fix bug with setting 3D properties on a 2D sound buffer
- * 
- * 5     6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 4     5/23/99 8:11p Alanl
- * Added support for EAX
- * 
- * 3     1/29/99 12:47a Dave
- * Put in sounds for beam weapon. A bunch of interface screens (tech
- * database stuff).
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 77    6/13/98 6:02p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 76    5/23/98 9:27p Lawrance
- * Change ACM failure message to use a message box, not a Warning()
- * 
- * 75    5/15/98 3:36p John
- * Fixed bug with new graphics window code and standalone server.  Made
- * hwndApp not be a global anymore.
- * 
- * 74    5/12/98 5:39p Lawrance
- * Increase MAX_SOUNDS to 175.. to account for missions with lots of voice
- * 
- * 73    5/12/98 2:43p Lawrance
- * Make snd_time_remaining() work for arbitrary format
- * 
- * 72    5/11/98 2:02p Andsager
- * doh!
- * 
- * 71    5/11/98 1:56p Andsager
- * increase min_range in snd_play_3d when range_factor is not 1.0
- * 
- * 70    5/10/98 3:49p Sandeep
- * Fix problem with having the audio streaming while trying to close down
- * sound
- * 
- * 69    5/09/98 10:48p Lawrance
- * Default voice volume to 0.7
- * 
- * 68    5/05/98 4:49p Lawrance
- * Put in code to authenticate A3D, improve A3D support
- * 
- * 67    4/25/98 12:01p Lawrance
- * try to init sound for 5 seconds... to overcome conflicts with launch
- * app sounds
- * 
- * 66    4/20/98 12:03a Lawrance
- * Allow prioritizing of CTRL3D buffers
- * 
- * 65    4/19/98 9:30p Lawrance
- * Use Aureal_enabled flag
- * 
- * 64    4/18/98 9:12p Lawrance
- * Added Aureal support.
- * 
- * 63    4/14/98 3:29p John
- * took out mprintf
- * 
- * 62    4/13/98 5:04p Lawrance
- * Write functions to determine how many milliseconds are left in a sound
- * 
- * 61    4/09/98 5:53p Lawrance
- * Make DirectSound init more robust
- * 
- * 60    4/01/98 9:21p John
- * Made NDEBUG, optimized build with no warnings or errors.
- * 
- * 59    3/29/98 12:56a Lawrance
- * preload the warp in and explosions sounds before a mission.
- * 
- * 58    3/25/98 6:10p Lawrance
- * Work on DirectSound3D
- * 
- * 57    3/24/98 4:28p Lawrance
- * Make DirectSound3D support more robust
- * 
- * 56    3/23/98 10:32a Lawrance
- * Add functions for extracting raw sound data
- * 
- * 55    3/21/98 3:34p Lawrance
- * Allow 3d sounds to have their ranges modified dynamically
- * 
- * 54    3/19/98 5:36p Lawrance
- * Add some sound debug functions to see how many sounds are playing, and
- * to start/stop random looping sounds.
- * 
- * 53    3/17/98 5:55p Lawrance
- * Support object-linked sounds for asteroids.
- * 
- * 52    2/20/98 8:32p Lawrance
- * Add radius parm to sound_play_3d()
- * 
- * 51    2/18/98 5:49p Lawrance
- * Even if the ADPCM codec is unavailable, allow game to continue.
- * 
- * 50    2/15/98 4:43p Lawrance
- * work on real-time voice
- * 
- * 49    2/06/98 7:30p John
- * Added code to monitor the number of channels of sound actually playing.
- * 
- * 48    2/05/98 9:21p John
- * Some new Direct3D code.   Added code to monitor a ton of stuff in the
- * game.
- * 
- * 47    1/31/98 5:57p Lawrance
- * remove debug code that was stopping any sounds from playing
- * 
- * 46    1/31/98 5:48p Lawrance
- * Start on real-time voice recording
- * 
- * 45    1/19/98 11:37p Lawrance
- * Fixing Optimization build warnings
- * 
- * 44    1/13/98 5:36p Lawrance
- * Reduce default sound volume to 0.9.
- * 
- * 43    1/11/98 11:14p Lawrance
- * Preload sounds that we expect will get played.
- * 
- * 42    1/10/98 1:14p John
- * Added explanation to debug console commands
- * 
- * 41    1/07/98 11:08a Lawrance
- * pass priority to snd_play_raw()
- * 
- * 40    12/21/97 4:33p John
- * Made debug console functions a class that registers itself
- * automatically, so you don't need to add the function to
- * debugfunctions.cpp.  
- * 
- * 39    12/05/97 5:19p Lawrance
- * re-do sound priorities to make more general and extensible
- * 
- * 38    12/04/97 10:21a Lawrance
- * if a 3D sound has priority, only play if above a minimum volume level
- * 
- * 37    11/20/97 5:36p Dave
- * Hooked in a bunch of main hall changes (including sound). Made it
- * possible to reposition (rewind/ffwd) 
- * sound buffer pointers. Fixed animation direction change framerate
- * problem.
- * 
- * 36    11/20/97 1:06a Lawrance
- * Add Master_voice_volume, make voices play back at correctly scaled
- * volumes
- * 
- * 35    11/12/97 4:40p Dave
- * Put in multiplayer campaign support parsing, loading and saving. Made
- * command-line variables better named. Changed some things on the initial
- * pilot select screen.
- * 
- * 34    10/14/97 11:33p Lawrance
- * get RSX implemented
- * 
- * 33    10/13/97 7:41p Lawrance
- * store duration of sound
- * 
- * 32    10/06/97 4:12p Lawrance
- * fix volume bug with 3d sounds
- * 
- * 31    10/01/97 5:55p Lawrance
- * change call to snd_play_3d() to allow for arbitrary listening position
- * 
- * 30    9/09/97 3:39p Sandeep
- * warning level 4 bugs
- * 
- * 29    9/03/97 5:03p Lawrance
- * add support for -nosound command line parm
- * 
- * 28    7/31/97 11:16a Dan
- * Add some Asserts() to check validity of vectors send to DirectSound3D
- * 
- * 27    7/28/97 11:39a Lawrance
- * allow individual volume scaling on 3D buffers
- * 
- * 26    7/17/97 9:53a Lawrance
- * if a sound is supposed to use DirectSound3D, ensure it does when
- * reloading it
- * 
- * 25    7/17/97 9:32a John
- * made all directX header files name start with a v
- * 
- * 24    7/15/97 11:15a Lawrance
- * limit the max instances of simultaneous sound effects, implement
- * priorities to force critical sounds
- * 
- * 23    7/13/97 5:52p Lawrance
- * allow snd_set_volume() to set volume at any level
- * 
- * 22    6/13/97 4:44p Lawrance
- * added another sound hook in ship selection
- * 
- * 21    6/09/97 11:50p Lawrance
- * integrating DirectSound3D
- * 
- * 20    6/05/97 11:25a Lawrance
- * use sound signatures to ensure correct sound is loaded
- * 
- * 19    6/05/97 1:36a Lawrance
- * using a new interface to play sounds
- * 
- * 18    6/05/97 1:08a Lawrance
- * new sound play interface
- * 
- * 17    6/03/97 9:23a Lawrance
- * fix bug that caused when sound not found
- * 
- * 16    6/02/97 1:45p Lawrance
- * implementing hardware mixing
- * 
- * 15    5/29/97 4:01p Lawrance
- * don't fail sound init if dsound3d fails init
- * 
- * 14    5/29/97 3:32p Lawrance
- * added call to snd_do_frame()
- * 
- * 13    5/29/97 12:04p Lawrance
- * split off acm, direct sound, and direct sound 3d portions to separate
- * files
- * 
- * 12    5/21/97 3:55p Lawrance
- * when reclaiming sound channels, never stop a looping sound
- * 
- * 11    5/19/97 4:32p Lawrance
- * remove misleading nprintf
- * 
- * 10    5/15/97 9:05a Lawrance
- * If no sound channels, take away the lowest volume sound (if that volume
- * is less than requested sound fx volume)
- * 
- * 9     5/12/97 10:32a Lawrance
- * take out nprintf
- * 
- * 8     5/09/97 4:51p Lawrance
- * improve pan sound
- * 
- * 7     5/09/97 4:34p Lawrance
- * improve comments
- * 
- * 6     5/07/97 3:29p Lawrance
- * make volume conversion use a lookup table, fix errors in volume
- * conversion
- * 
- * 5     5/07/97 11:33a Lawrance
- * improve snd_chg_loop_status()
- * 
- * 4     5/06/97 9:36a Lawrance
- * added support for min and max distances for 3d sounds
- * 
- * 3     5/02/97 4:36p Lawrance
- * send correct volume scaling when playing a 3D sound
- * 
- * 2     4/28/97 5:13p John
- * more moving sound/movie code out of osapi.
- * 
- * $NoKeywords: $
- */
+
 
 #include "render/3d.h"
 #include "sound/sound.h"
 #include "sound/audiostr.h"
+#include "gamesnd/eventmusic.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"
+#include "globalincs/vmallocator.h"
+#include "debugconsole/console.h"
 
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -460,16 +35,11 @@
 #endif
 #include <limits.h>
 
-#include <vector>		
-
-unsigned short UserSampleRate, UserSampleBits;
-
 
 #define SND_F_USED			(1<<0)		// Sounds[] element is used
 
 typedef struct sound	{
 	int				sid;			// software id
-	int				hid;			// hardware id, -1 if sound is not in hardware
 	char				filename[MAX_FILENAME_LEN];
 	int				sig;
 	int				flags;
@@ -478,18 +48,50 @@ typedef struct sound	{
 	int				duration;
 } sound;
 
-//sound	Sounds[MAX_SOUNDS];
-std::vector<sound> Sounds;
-int Num_sounds=0;
+SCP_vector<sound> Sounds;
 
 int Sound_enabled = FALSE;				// global flag to turn sound on/off
 int Snd_sram;								// mem (in bytes) used up by storing sounds in system memory
-int Snd_hram;								// mem (in bytes) used up by storing sounds in soundcard memory
 float Master_sound_volume = 1.0f;	// range is 0 -> 1, used for non-music sound fx
 float Master_voice_volume = 0.7f;	// range is 0 -> 1, used for all voice playback
 
+unsigned int SND_ENV_DEFAULT = 0;
+
+struct LoopingSoundInfo {
+	int m_dsHandle;
+	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
+	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
+
+	LoopingSoundInfo(int dsHandle, float defaultVolume, float dynamicVolume):
+		m_dsHandle(dsHandle),
+		m_defaultVolume(defaultVolume),
+		m_dynamicVolume(dynamicVolume)
+	{
+	}
+    
+    LoopingSoundInfo() : m_dsHandle(-1), m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
+    {
+    }
+};
+
+SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
+
+//For the adjust-audio-volume sexp
+float aav_voice_volume = 1.0f;
+float aav_music_volume = 1.0f;
+float aav_effect_volume = 1.0f;
+
+struct aav {
+	float start_volume;
+	float delta;
+	float start_time;
+	int delta_time;
+};
+
+aav aav_data[3];
+
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
-#define	MIN_SOUND_VOLUME				0.10f
+#define	MIN_SOUND_VOLUME				0.05f
 
 static int snd_next_sig	= 1;
 
@@ -513,19 +115,10 @@ int ds_priority(int priority)
 
 void snd_clear()
 {
-//	int i;
-
-	// flag all Sounds[] as free
-	/*
-	for (i=0; i<MAX_SOUNDS; i++ )	{
-		Sounds[i].flags &=  ~SND_F_USED;
-		Sounds[i].sid = -1;
-		Sounds[i].hid = -1;
-	}*/
+	Sounds.clear();
 
 	// reset how much storage sounds are taking up in memory
 	Snd_sram = 0;
-	Snd_hram = 0;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -537,7 +130,7 @@ void snd_clear()
 // returns:     1		=> init success
 //              0		=> init failed
 //
-int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits)
+int snd_init()
 {
 	int rval;
 
@@ -551,46 +144,20 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 
 	snd_clear();
 
-	// Init DirectSound 
 
-	// Connect to DirectSound
-	int num_tries=0;
-	int gave_warning = 0;
-	while(1) {
-		rval = ds_init(use_a3d, use_eax, sample_rate, sample_bits);
+	rval = ds_init();
 
-		// check for a fatal error first, in these cases don't retry to init
-		if ( rval == -2 ) {
-			nprintf(( "Sound", "SOUND ==> Fatal error initializing audio device, turn sound off.\n" ));
-			Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
-			goto Failure;
-		} else if ( rval != 0 ) {
-			nprintf(( "Sound", "SOUND ==> Error initializing audio device, trying again in 1 second.\n" ));
-			Sleep(1000);
-		} else {
-			break;
-		}
-
-		if ( num_tries++ > 5 ) {
-			if ( !gave_warning ) {
-				MessageBox(NULL, XSTR("Audio could not be initialized.  If you are running any applications playing sound in the background, you should stop them before continuing.",971), NULL, MB_OK);
-				gave_warning = 1;
-			} else {
-				goto Failure;
-			}
-		}
-	}
-
-	// Init the Audio Compression Manager
-	if ( ACM_init() == -1 ) {
-		HWND hwnd = (HWND)os_get_window();
-		MessageBox(hwnd, XSTR("Could not properly initialize the Microsoft ADPCM codec.\n\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.",972), NULL, MB_OK);
-//		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
+	if ( rval != 0 ) {
+		nprintf(( "Sound", "SOUND ==> Fatal error initializing audio device, turn sound off.\n" ));
+		Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
+		goto Failure;
 	}
 
 	if ( OGG_init() == -1 ) {
 		mprintf(("Could not initialize the OGG vorbis converter.\n"));
 	}
+
+	snd_aav_init();
 
 	// Init the audio streaming stuff
 	audiostream_init();
@@ -608,7 +175,7 @@ Failure:
 
 void snd_spew_info()
 {
-	int idx;
+	size_t idx;
 	char txt[512] = "";
 	CFILE *out = cfopen("sounds.txt", "wt", CFILE_NORMAL, CF_TYPE_DATA);
 	if(out == NULL){
@@ -618,7 +185,7 @@ void snd_spew_info()
 	cfwrite_string("Sounds loaded :\n", out);
 
 	// spew info for all sounds
-	for(idx=0; idx<Num_sounds; idx++){
+	for (idx = 0; idx < Sounds.size(); idx++) {
 		if(!(Sounds[idx].flags & SND_F_USED)){
 			continue;
 		}
@@ -635,14 +202,15 @@ void snd_spew_info()
 }
 
 int Sound_spew = 0;
-DCF(show_sounds, "")
+DCF(show_sounds, "Toggles display of sound debug info")
 {
-	Sound_spew = !Sound_spew;
-	if(Sound_spew){
-		dc_printf("Sound debug info ON");
-	} else {
-		dc_printf("Sound debug info OFF");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
+		return;
 	}
+
+	Sound_spew = !Sound_spew;
+	dc_printf("Sound debug info is %s", (Sound_spew ? "ON" : "OFF"));
 }
 void snd_spew_debug_info()
 {
@@ -650,31 +218,30 @@ void snd_spew_debug_info()
 	int message_sounds = 0;
 	int interface_sounds = 0;
 	int done = 0;
-	int s_idx;
 
 	if(!Sound_spew){
 		return;
 	}
 
 	// count up game, interface and message sounds
-	for(int idx=0; idx<Num_sounds; idx++){
-		if(!Sounds[idx].flags & SND_F_USED){
+	for (size_t idx = 0; idx < Sounds.size(); idx++) {
+		if(!(Sounds[idx].flags & SND_F_USED)){
 			continue;
 		}
 
 		done = 0;
 
 		// what kind of sound is this
-		for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
-			if(!stricmp(Snds[s_idx].filename, Sounds[idx].filename)){
+		for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs){
+			if(!stricmp(gs->filename, Sounds[idx].filename)){
 				game_sounds++;
 				done = 1;
 			}
 		}
 
 		if(!done){
-			for(s_idx=0; s_idx<Num_game_sounds; s_idx++){
-				if(!stricmp(Snds_iface[s_idx].filename, Sounds[idx].filename)){
+			for(SCP_vector<game_snd>::iterator gs = Snds.begin(); gs != Snds.end(); ++gs){
+				if(!stricmp(gs->filename, Sounds[idx].filename)){
 					interface_sounds++;
 					done = 1;
 				}
@@ -687,11 +254,12 @@ void snd_spew_debug_info()
 	}
 
 	// spew info
+	int line_height = gr_get_font_height() + 1;
 	gr_set_color_fast(&Color_normal);
-	gr_printf(30, 100, "Game sounds : %d\n", game_sounds);
-	gr_printf(30, 110, "Interface sounds : %d\n", interface_sounds);
-	gr_printf(30, 120, "Message sounds : %d\n", message_sounds);
-	gr_printf(30, 130, "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
+	gr_printf_no_resize(30, 100, "Game sounds : %d\n", game_sounds);
+	gr_printf_no_resize(30, 100 + line_height, "Interface sounds : %d\n", interface_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 2), "Message sounds : %d\n", message_sounds);
+	gr_printf_no_resize(30, 100 + (line_height * 3), "Total sounds : %d\n", game_sounds + interface_sounds + message_sounds);
 }
 
 // ---------------------------------------------------------------------------------------
@@ -710,7 +278,7 @@ void snd_spew_debug_info()
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
 int snd_load( game_snd *gs, int allow_hardware_load )
 {
-	int				n, type;
+	int				type;
 	sound_info		*si;
 	sound			*snd;
 	WAVEFORMATEX	*header = NULL;
@@ -719,6 +287,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	char			filename[MAX_FILENAME_LEN];
 	const int		NUM_EXT = 2;
 	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
+	size_t			n;
 
 
 	if ( !ds_initialized )
@@ -727,25 +296,30 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if ( !VALID_FNAME(gs->filename) )
 		return -1;
 
-	for (n = 0; n < Num_sounds; n++) {
+	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
 			break;
 		} else if ( !stricmp( Sounds[n].filename, gs->filename) ) {
-			gs->sig = Sounds[n].sig;
-			return n;
+			// extra check: make sure the sound is actually loaded in a compatible way (2D vs. 3D)
+			//
+			// NOTE: this will allow a duplicate 3D entry if 2D stereo entry exists,
+			//       but will not load a duplicate 2D entry to get stereo if 3D
+			//       version already loaded
+			if ( (Sounds[n].info.n_channels == 1) || !(gs->flags & GAME_SND_USE_DS3D) ) {
+				return (int)n;
+			}
 		}
 	}
 
-	if (n == Num_sounds) {
-		Sounds.resize(n + 1);
-		Num_sounds++;	//Yeah, this would be a good idea
-		snd = &Sounds[n];
-		snd->sid = -1;
-		snd->hid = -1;
-		snd->flags &=  ~SND_F_USED;
-	} else {
-		snd = &Sounds[n];
+	if ( n == Sounds.size() ) {
+		sound new_sound;
+		new_sound.sid = -1;
+		new_sound.flags = 0;
+
+		Sounds.push_back( new_sound );
 	}
+
+	snd = &Sounds[n];
 
 	si = &snd->info;
 
@@ -753,7 +327,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->size = 0;
 
 	// strip the extension from the filename and try to open any extension
-	strcpy( filename, gs->filename );
+	strcpy_s( filename, gs->filename );
 	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
@@ -766,14 +340,15 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
 
 	// ok, we got it, so set the proper filename for logging purposes
-	SAFE_STRCAT(filename, audio_ext[rc], sizeof(filename));
+	strcat_s(filename, audio_ext[rc]);
 
+	nprintf(("Sound", "SOUND => Loading '%s'\n", filename));
 
 	// ds_parse_sound() will do a NULL check on fp for us
 	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
-		nprintf(("Sound", "Could not read sound file %s\n", filename));
+		nprintf(("Sound", "SOUND ==> Could not read sound file!\n"));
  		return -1;
-	}		
+	}
 
 	// Load was a success, should be some sort of WAV or an OGG
 	si->format				= header->wFormatTag;		// 16-bit flag (wFormatTag)
@@ -782,21 +357,17 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
 	si->n_block_align		= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
 	si->bits				= header->wBitsPerSample;	// Read 16-bit bits per sample	
-	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
 
 	type = 0;
 
-	if ( allow_hardware_load ) {
-		if ( gs->preload ) {
-			type |= DS_HARDWARE;
-		}
+	if (gs->flags & GAME_SND_USE_DS3D) {
+		type |= DS_3D;
 	}
 
-	if ( (gs->flags&GAME_SND_USE_DS3D)  ) {
-		type |= DS_USE_DS3D;
-	}
-	
-	rc = ds_load_buffer(&snd->sid, &snd->hid, &snd->uncompressed_size, header, si, type);
+	rc = ds_load_buffer(&snd->sid, &snd->uncompressed_size, header, si, type);
+
+	// NOTE: "si" values can change once loaded in the buffer
+	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
 
 	// free the header if needed
 	if (header != NULL)
@@ -812,8 +383,10 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	if (fp != NULL)
 		cfclose(fp);
 
-	if ( rc == -1 )
+	if ( rc == -1 ) {
+		nprintf(("Sound", "SOUND ==> Failed to load '%s'\n", filename));
 		return -1;
+	}
 
 	strncpy( snd->filename, gs->filename, MAX_FILENAME_LEN );
 	snd->flags = SND_F_USED;
@@ -821,11 +394,11 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	snd->sig = snd_next_sig++;
 	if (snd_next_sig < 0 ) snd_next_sig = 1;
 	gs->id_sig = snd->sig;
-	gs->id = n;
+	gs->id = (int)n;
 
-	nprintf(("Sound", "Loaded %s\n", filename));
+//	nprintf(("Sound", "SOUND ==> Finished loading '%s'\n", filename));
 
-	return n;
+	return (int)n;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -839,32 +412,21 @@ int snd_unload( int n )
 	if (!ds_initialized)
 		return 0;
 
-	if ( (n < 0) || (n >= Num_sounds) )
+	if ( (n < 0) || ((size_t)n >= Sounds.size()) ) {
 		return 0;
+	}
 
-	if ( !(Sounds[n].flags & SND_F_USED) )
-	{
-		if(n==Num_sounds-1)
-		{
-			Num_sounds--;
-			Sounds.pop_back();
-		}
-		return 0;
-	}
-	
-	ds_unload_buffer(Sounds[n].sid, Sounds[n].hid);
-	if ( Sounds[n].sid != -1 ) {
+	ds_unload_buffer(Sounds[n].sid);
+
+	if (Sounds[n].sid != -1) {
 		Snd_sram -= Sounds[n].uncompressed_size;
-	}
-	if ( Sounds[n].hid != -1 ) {
-		Snd_hram -= Sounds[n].uncompressed_size;
 	}
 
 	//If this sound is at the end of the array, we might as well get rid of it
-	if ( n == (Num_sounds-1) ) {
-		Num_sounds--;
+	if ( (size_t)n == Sounds.size()-1 ) {
 		Sounds.pop_back();
 	} else {
+		Sounds[n].sid = -1;
 		Sounds[n].flags &= ~SND_F_USED;
 	}
 
@@ -879,10 +441,8 @@ int snd_unload( int n )
 //
 void snd_unload_all()
 {
-	int i;
-	for (i=Num_sounds-1; i>=0; i-- )
-	{
-		snd_unload(i);
+	while ( !Sounds.empty() ) {
+		snd_unload( Sounds.size()-1 );
 	}
 }
 
@@ -896,8 +456,6 @@ void snd_close(void)
 	snd_stop_all();
 	if (!ds_initialized) return;
 	snd_unload_all();		// free the sound data stored in DirectSound secondary buffers
-	ACM_close();	// Close the Audio Compression Manager (ACM)
-	ds3d_close();	// Close DirectSound3D
 	dscap_close();	// Close DirectSoundCapture
 	ds_close();		// Close DirectSound off
 }
@@ -915,6 +473,10 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 {
 	game_snd gs;
 	int		rval;
+
+	if ( (soundnum < 0) || ((size_t)soundnum >= Sounds.size() ) ) {
+		return -1;
+	}
 
 	gs.id = soundnum;
 	gs.id_sig = Sounds[soundnum].sig;
@@ -957,7 +519,10 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	if (!Sound_enabled)
 		return -1;
 
-	Assert( gs != NULL );
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	MONITOR_INC( NumSoundsStarted, 1 );
 
@@ -973,9 +538,9 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 
 	volume = gs->default_volume * vol_scale;
 	if ( gs->flags&GAME_SND_VOICE ) {
-		volume *= Master_voice_volume;
+		volume *= (Master_voice_volume * aav_voice_volume);
 	} else {
-		volume *= Master_sound_volume;
+		volume *= (Master_sound_volume * aav_effect_volume);
 	}
 	if ( volume > 1.0f )
 		volume = 1.0f;
@@ -989,7 +554,7 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 		return -1;
 
 	if ( volume > MIN_SOUND_VOLUME ) {
-		handle = ds_play( snd->sid, snd->hid, gs->id_sig, ds_priority(priority), ds_convert_volume(volume), fl2i(pan*MAX_PAN), 0, is_voice_msg);
+		handle = ds_play( snd->sid, gs->id_sig, ds_priority(priority), volume, pan, 0, is_voice_msg);
 	}
 
 	return handle;
@@ -1023,15 +588,20 @@ MONITOR( Num3DSoundsLoaded )
 //
 int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius, vec3d *source_vel, int looping, float vol_scale, int priority, vec3d *sound_fvec, float range_factor, int force )
 {
-	int		handle, min_range, max_range;
+	int		handle;
 	vec3d	vector_to_sound;
 	sound		*snd;
-	float		volume, distance, pan, max_volume;
+	float		volume, distance, max_volume;
+	float		min_range, max_range;
+	float		pan;
 
 	if ( !Sound_enabled )
 		return -1;
 
-	Assert(gs != NULL);
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	MONITOR_INC( Num3DSoundsStarted, 1 );
 
@@ -1050,10 +620,14 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	if ( !(snd->flags & SND_F_USED) )
 		return -1;
 
+	if (snd->sid < 0) {
+		return -1;
+	}
+
 	handle = -1;
 
-	min_range = fl2i( (gs->min + radius) * range_factor);
-	max_range = fl2i( (gs->max + radius) * range_factor + 0.5f);
+	min_range = (gs->min + radius) * range_factor;
+	max_range = (gs->max + radius) * range_factor;
 
 	if (!ds_initialized)
 		return -1;
@@ -1062,10 +636,12 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 	// prevent sounds from playing past the max distance.
 	//IMPORTANT THIS IS NOT WORKING RIGHT OMG WTF
 	distance = vm_vec_normalized_dir_quick( &vector_to_sound, source_pos, listen_pos );
-	max_volume = gs->default_volume * vol_scale;
+
 	if ( (distance > max_range) && !force){
 		return -1;
 	}
+
+	max_volume = gs->default_volume * vol_scale;
 
 	if ( distance <= min_range ) {
 		volume = max_volume;
@@ -1084,36 +660,25 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 		} 
 	}
 
-	volume *= Master_sound_volume;
+	volume *= (Master_sound_volume * aav_effect_volume);
 	if ( (volume < MIN_SOUND_VOLUME) && !force) {
 		return -1;
 	}
 
-	int play_using_ds3d = 0;
+	// any stereo sounds will not play in proper 3D, but they should have
+	// been converted to mono already!
+	Assertion( snd->info.n_channels == 1, "Sound should be mono! Sound file: %s", snd->filename );
 
-	if (ds_using_ds3d()) {
-		if ( ds_is_3d_buffer(snd->sid) ) {
-			play_using_ds3d = 1;
-		}
-	}
-
-	if ( play_using_ds3d ) {
-		// play through DirectSound3D
-		handle = ds3d_play( snd->sid, snd->hid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, ds_convert_volume(max_volume*Master_sound_volume), ds_convert_volume(volume), ds_priority(priority));
-	}
-	else {
-		// play sound as a fake 3D sound
-		if ( distance <= 0 ) {
+	if (Cmdline_no_3d_sound) {
+		if (distance <= 0.0f) {
 			pan = 0.0f;
-		}
-		else {
-			pan = vm_vec_dot(&View_matrix.vec.rvec,&vector_to_sound);
-		}
-		if(looping){
-			handle = snd_play_looping( gs, pan, -1, -1, volume/gs->default_volume, priority, force );
 		} else {
-			handle = snd_play( gs, pan, volume/gs->default_volume, priority);
+			pan = vm_vec_dot(&View_matrix.vec.rvec, &vector_to_sound);
 		}
+
+		handle = ds_play(snd->sid, gs->id_sig, ds_priority(priority), volume / gs->default_volume, pan, looping);
+	} else {
+		handle = ds3d_play(snd->sid, gs->id_sig, source_pos, source_vel, min_range, max_range, looping, (max_volume*Master_sound_volume*aav_effect_volume), volume, ds_priority(priority));
 	}
 
 	return handle;
@@ -1122,16 +687,49 @@ int snd_play_3d(game_snd *gs, vec3d *source_pos, vec3d *listen_pos, float radius
 // update the given 3d sound with a new position
 void snd_update_3d_pos(int soundnum, game_snd *gs, vec3d *new_pos, float radius, float range_factor)
 {
-	float vol, pan;
-	
-	// get new volume and pan vals
-	snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
+	if (Cmdline_no_3d_sound) {
+		float vol, pan;
+		
+		// get new volume and pan vals
+		snd_get_3d_vol_and_pan(gs, new_pos, &vol, &pan, radius, range_factor);
 
-	// set volume
-	snd_set_volume(soundnum, vol);
+		// set volume
+		snd_set_volume(soundnum, vol);
 
-	// set pan
-	snd_set_pan(soundnum, pan);
+		// set pan
+		snd_set_pan(soundnum, pan);
+	} else {
+		// MageKing17 - It's a 3D sound effect, we should use the function for setting the position of a 3D sound effect.
+		sound *snd;
+		int channel;
+
+		if (!ds_initialized)
+			return;
+
+		Assertion( gs != NULL, "*gs was NULL in snd_update_3d_pos(); get a coder!\n" );
+
+		if ( gs->id == -1 ) {
+			gs->id = snd_load(gs);
+		}
+
+		if (gs->id == -1)
+			return;
+
+		snd = &Sounds[gs->id];
+		if ( !(snd->flags & SND_F_USED) )
+			return;
+
+		channel = ds_get_channel(soundnum);
+		if (channel == -1) {
+			nprintf(( "Sound", "WARNING: Trying to set position for a non-playing sound.\n" ));
+			return;
+		}
+
+		float min_range = (float) (fl2i( (gs->min) * range_factor));
+		float max_range = (float) (fl2i( (gs->max) * range_factor + 0.5f));
+
+		ds3d_update_buffer(channel, min_range, max_range, new_pos, NULL);
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1165,7 +763,7 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	if (!ds_initialized)
 		return -1;
 
-	Assert(gs != NULL);
+	Assertion( gs != NULL, "*gs was NULL in snd_get_3d_vol_and_pan(); get a coder!\n" );
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
@@ -1205,28 +803,18 @@ int snd_get_3d_vol_and_pan(game_snd *gs, vec3d *pos, float* vol, float *pan, flo
 	return 0;
 }
 
-// ---------------------------------------------------------------------------------------
-// volume 0 to 1.0.  Returns the handle of the sound. -1 if failed.
-// If startloop or stoploop are not -1, then then are used.
-//
-//	NOTE: vol_scale parameter is the multiplicative scaling applied to the default volume
-//       (vol_scale is a default parameter with a default value of 1.0f)
-//
-// input:	gs				=>	game-level sound description
-//				source_pos	=>	global pos of where the sound is
-//				listen_pos	=>	global pos of where listener is
-//				source_vel	=>	velocity of the source playing the sound (used for DirectSound3D only)
-//				looping		=>	flag to indicate the sound should loop (default value 0)
-//				vol_scale	=>	factor to scale the static volume by (applied before attenuation)
-//				priority		=> SND_PRIORITY_MUST_PLAY			(default value)
-//									SND_PRIORITY_SINGLE_INSTANCE
-//									SND_PRIORITY_DOUBLE_INSTANCE
-//									SND_PRIORITY_TRIPLE_INSTANCE
-//
-// returns:		-1		=>		sound could not be played
-//					n		=>		handle for instance of sound
-//
-int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int priority, int force )
+/**
+ * Starts looping a game sound
+ *
+ * @param gs game-level sound description
+ * @param pan -1.0 (full left) to 1.0 (full right)
+ * @param start_loop TODO remove this parameter
+ * @param stop_loop TODO remove this parameter
+ * @param vol_scale factor to scale the static volume by (applied before attenuation)
+ * @param scriptingUpdateVolume if true the looping sound value is updated default is TRUE
+ * @return -1 on error, else the handle for this playing sound
+ */
+int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, float vol_scale, int scriptingUpdateVolume)
 {	
 	float volume;
 	int	handle = -1;
@@ -1235,10 +823,13 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 	if (!Sound_enabled)
 		return -1;
 
-	Assert( gs != NULL );
-
 	if (!ds_initialized)
 		return -1;
+
+	if (gs == NULL) {
+		Int3();
+		return -1;
+	}
 
 	if ( gs->id == -1 ) {
 		gs->id = snd_load(gs);
@@ -1256,24 +847,26 @@ int snd_play_looping( game_snd *gs, float pan, int start_loop, int stop_loop, fl
 		return -1;
 
 	volume = gs->default_volume * vol_scale;
-	volume *= Master_sound_volume;
+	volume *= (Master_sound_volume * aav_effect_volume);
 	if ( volume > 1.0f )
 		volume = 1.0f;
 
-	if ( (volume > MIN_SOUND_VOLUME) || force) {
-		handle = ds_play( snd->sid, snd->hid, gs->id_sig, ds_priority(priority), ds_convert_volume(volume), fl2i(pan*MAX_PAN), 1);
+	if (volume > MIN_SOUND_VOLUME) {
+		handle = ds_play( snd->sid, gs->id_sig, DS_MUST_PLAY, volume, pan, 1);
+
+		if(handle != -1 && scriptingUpdateVolume) {
+			currentlyLoopingSoundInfos.push_back(LoopingSoundInfo(handle, gs->default_volume, vol_scale));
+		}
 	}
 
 	return handle;
 }
 
-// ---------------------------------------------------------------------------------------
-// snd_stop()
-//
-// Stop a sound from playing.
-//
-// parameters:		sig => handle to sound, what is returned from snd_play()
-//
+/**
+ * Stop a sound from playing.
+ *
+ * @param sig handle to sound, what is returned from snd_play()
+ */
 void snd_stop( int sig )
 {
 	int channel;
@@ -1285,17 +878,40 @@ void snd_stop( int sig )
 	if ( channel == -1 )
 		return;
 	
+	SCP_list<LoopingSoundInfo>::iterator iter = currentlyLoopingSoundInfos.begin();
+	while (iter != currentlyLoopingSoundInfos.end())
+	{
+		if(iter->m_dsHandle == sig) {
+			iter = currentlyLoopingSoundInfos.erase(iter);
+		} else {
+			++iter;
+		}
+	}
+
 	ds_stop_channel(channel);
 }
 
-// ---------------------------------------------------------------------------------------
-// snd_set_volume()
-//
-// Set the volume of a currently playing sound
-//
-// parameters:		sig		=> handle to sound, what is returned from snd_play()
-//						volume	=> volume of sound (range: 0.0 -> 1.0)
-//
+/**
+ * Stop all playing sound channels (including looping sounds)
+ *
+ * NOTE: This stops all sounds that are playing from Channels[] sound buffers.
+ * It doesn't stop every secondary sound buffer in existance.
+ */
+void snd_stop_all()
+{
+	if (!ds_initialized)
+		return;
+
+	currentlyLoopingSoundInfos.clear();
+	ds_stop_channel_all();
+}
+
+/**
+ * Set the volume of a currently playing sound
+ *
+ * @param sig		handle to sound, what is returned from snd_play()
+ * @param volume	volume of sound (range: 0.0 -> 1.0)
+ */
 void snd_set_volume( int sig, float volume )
 {
 	int	channel;
@@ -1313,8 +929,23 @@ void snd_set_volume( int sig, float volume )
 		return;
 	}
 
-	new_volume = volume * Master_sound_volume;
-	ds_set_volume( channel, ds_convert_volume(new_volume) );
+	bool isLoopingSound = false;
+
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+		if(iter->m_dsHandle == sig) {
+			iter->m_dynamicVolume = volume;
+
+			isLoopingSound = true;
+			break;
+		}
+	}
+
+	//looping sound volumes are updated in snd_do_frame
+	if(!isLoopingSound) {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume( channel, new_volume );
+	}
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1341,7 +972,7 @@ void snd_set_pan( int sig, float pan )
 		return;
 	}
 
-	ds_set_pan( channel, fl2i(pan*MAX_PAN) );
+	ds_set_pan( channel, pan );
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1430,66 +1061,6 @@ int snd_is_playing( int sig )
 	return 0;
 }
 
-
-// ---------------------------------------------------------------------------------------
-// snd_chg_loop_status()
-//
-// Change whether a currently playing song is looping or not
-//
-// parameters:		sig			=> handle to sound, what is returned from snd_play()
-//						loop			=> whether to start (1) or stop (0) looping
-//
-void snd_chg_loop_status(int sig, int loop)
-{
-	int channel;
-
-	if (!ds_initialized)
-		return;
-
-	if ( sig < 0 )
-		return;
-
-	channel = ds_get_channel(sig);
-	if ( channel == -1 ) {
-		nprintf(( "Sound", "WARNING: Trying to change loop status of a non-playing sound!\n" ));
-		return;
-	}
-
-	ds_chg_loop_status(channel, loop);
-}
-
-// ---------------------------------------------------------------------------------------
-// snd_stop_all()
-//
-// Stop all playing sound channels (including looping sounds)
-//
-// NOTE: This stops all sounds that are playing from Channels[] sound buffers.  It doesn't
-//			stop every secondary sound buffer in existance
-//
-void snd_stop_all()
-{
-	if (!ds_initialized)
-		return;
-
-	ds_stop_channel_all();
-}
-
-// ---------------------------------------------------------------------------------------
-// sound_get_ds()
-//
-// Return the pointer to the DirectSound interface
-//
-//
-uint sound_get_ds()
-{
-#ifdef USE_OPENAL
-	// unused
-	return 0;
-#else
-	return (uint)pDirectSound;
-#endif
-}
-
 // ---------------------------------------------------------------------------------------
 // snd_is_inited()
 //
@@ -1508,7 +1079,25 @@ int snd_get_duration(int snd_id)
 	if ( snd_id < 0 )
 		return 0;
 
-	return Sounds[snd_id].duration;
+	Assertion( !Sounds.empty(), "Sounds vector is empty. Why are we trying to look up an index?\n" );
+	
+	if ( Sounds.empty() )
+		return 0;
+
+	Assertion(Sounds[snd_id].duration > 0, "Sound duration for sound %s is bogus (%d)\n", Sounds[snd_id].filename, Sounds[snd_id].duration);
+
+	if (Sounds[snd_id].duration > 0)
+		return Sounds[snd_id].duration;
+	else
+		return 0;
+}
+
+// return the time in ms for the duration of the sound
+const char *snd_get_filename(int snd_id)
+{
+	Assertion(snd_id >= 0 && snd_id < (int) Sounds.size(), "Invalid sound id %d!", snd_id);
+
+	return Sounds[snd_id].filename;
 }
 
 
@@ -1637,7 +1226,8 @@ void snd_stop_any_sound()
 //				!0	=>	fail
 int snd_get_data(int handle, char *data)
 {
-	Assert(handle >= 0 && handle < Num_sounds);
+	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
+
 	if ( ds_get_data(Sounds[handle].sid, data) ) {
 		return -1;
 	}
@@ -1648,7 +1238,8 @@ int snd_get_data(int handle, char *data)
 // return the size of the sound data associated with the sound handle
 int snd_size(int handle, int *size)
 {
-	Assert(handle >= 0 && handle < Num_sounds);
+	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
+
 	if ( ds_get_size(Sounds[handle].sid, size) ) {
 		return -1;
 	}
@@ -1659,7 +1250,7 @@ int snd_size(int handle, int *size)
 // retrieve the bits per sample and frequency for a given sound
 void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 {
-	Assert(handle >= 0 && handle < Num_sounds);
+	Assert( (handle >= 0) && ((size_t)handle < Sounds.size()) );
 
 	if (bits_per_sample)
 		*bits_per_sample = Sounds[handle].info.bits;
@@ -1671,24 +1262,24 @@ void snd_get_format(int handle, int *bits_per_sample, int *frequency)
 // given a sound sig (handle) return the index in Sounds[] for that sound
 int snd_get_index(int sig)
 {
-	int i, channel, channel_id;
+	int channel, channel_id;
+	size_t i;
 
 	channel = ds_get_channel(sig);
 
-	if (channel < 0)
+	if (channel < 0) {
 		return -1;
+	}
 
 	channel_id = ds_get_sound_id(channel);
 
-	for (i=0; i<Num_sounds; i++) {
-		if ( (Sounds[i].flags & SND_F_USED) && (Sounds[i].sig == channel_id) )
-			break;
+	for (i = 0; i < Sounds.size(); i++) {
+		if ( (Sounds[i].flags & SND_F_USED) && (Sounds[i].sig == channel_id) ) {
+			return (int)i;
+		}
 	}
 
-	if (i == Num_sounds)
-		return -1;
-
-	return i;
+	return -1;
 }
 
 // return the time for the sound to play in milliseconds
@@ -1730,14 +1321,7 @@ int snd_time_remaining(int handle)
 	// for Windows.  We can't leave it as 4 here (the ADPCM rate) because that is the
 	// compressed bps and the math is against the uncompressed bps.
 	if ( bits_per_sample == 4 ) {
-#ifdef USE_OPENAL
 		bits_per_sample = 16;
-#else
-		if ( UserSampleBits >= 16 )
-			bits_per_sample = 16;
-		else
-			bits_per_sample = 8;
-#endif
 	}
 
 	Assert( bits_per_sample >= 8 );
@@ -1758,7 +1342,7 @@ int snd_time_remaining(int handle)
 
 // snd_env_ interface
 
-static unsigned long Sound_env_id;
+static int Sound_env_id;
 static float Sound_env_volume;
 static float Sound_env_damping;
 static float Sound_env_decay;
@@ -1780,12 +1364,12 @@ int sound_env_set(sound_env *se)
 
 // Get the sound environment
 //
-int sound_env_get(sound_env *se)
+int sound_env_get(sound_env *se, int preset)
 {
 	EAX_REVERBPROPERTIES er;
 
-	if (ds_eax_get_all(&er) == 0) {
-		se->id = er.environment;
+	if (ds_eax_get_all(&er, preset) == 0) {
+		se->id = (int)er.environment;
 		se->volume = er.fVolume;
 		se->decay = er.fDecayTime_sec;
 		se->damping = er.fDamping;
@@ -1800,7 +1384,7 @@ int sound_env_get(sound_env *se)
 int sound_env_disable()
 {
 	sound_env se;
-	se.id = SND_ENV_GENERIC;
+	se.id = EAX_ENVIRONMENT_GENERIC;
 	se.volume = 0.0f;
 	se.damping = 0.0f;
 	se.decay = 0.0f;
@@ -1817,8 +1401,21 @@ int sound_env_supported()
 
 // Called once per game frame
 //
+
+void adjust_volume_on_frame(float* volume_now, aav* data);
 void snd_do_frame()
 {
+	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
+	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
+	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
+
+	SCP_list<LoopingSoundInfo>::iterator iter;
+	for (iter = currentlyLoopingSoundInfos.begin(); iter != currentlyLoopingSoundInfos.end(); ++iter) {
+
+		float new_volume = iter->m_defaultVolume * iter->m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
+		ds_set_volume(ds_get_channel(iter->m_dsHandle), new_volume);
+	}
+
 	ds_do_frame();
 }
 
@@ -1858,4 +1455,98 @@ int snd_get_samples_per_measure(char *filename, float num_measures)
 
 	// ok, now return the samples per measure (which is half of bytes_per_measure)
 	return (bytes_per_measure / 2);
+}
+
+void snd_adjust_audio_volume(int type, float percent, int time)
+{
+	Assert( type >= 0 && type < 3 );
+	
+	if ( type >= 0 && type < 3 ) {
+		switch (type) {
+		case AAV_MUSIC:
+			aav_data[type].start_volume = aav_music_volume;
+			if (percent < aav_music_volume)
+				aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_music_volume;
+			break;
+		case AAV_VOICE:
+			aav_data[type].start_volume = aav_voice_volume;
+			if (percent < aav_voice_volume)
+				aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_voice_volume;
+			break;
+		case AAV_EFFECTS:
+			aav_data[type].start_volume = aav_effect_volume;
+			if (percent < aav_effect_volume)
+				aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
+			else
+				aav_data[type].delta = percent - aav_effect_volume;
+			break;
+		default:
+			Int3();
+		}
+
+		aav_data[type].delta_time = time;
+		aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
+	}
+}
+
+void adjust_volume_on_frame(float* volume_now, aav* data)
+{
+	if (Missiontime == 0){
+		return;
+	}
+
+	if (*volume_now == (data->start_volume + data->delta))
+		return;
+	
+	float msMissiontime = (f2fl(Missiontime) * 1000);
+	
+	if ( msMissiontime > ( data->start_time + data->delta_time) ) {
+		*volume_now = data->start_volume + data->delta;
+		return;
+	}
+	
+	float done = 0.0f;
+	//How much change do we need?
+	if (data->delta_time == 0)
+		done = 1.0f;
+	else
+		done =(float) (msMissiontime - data->start_time)/data->delta_time;
+
+	//apply change
+	*volume_now = data->start_volume + (data->delta * done);
+	CLAMP(*volume_now, 0.0f, 1.0f);
+
+	// if setting music volume, trigger volume change in playing tracks
+	// done here in order to avoid setting music volume in every frame regardless if it changed or not
+	if (&aav_music_volume == volume_now) {
+		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
+}
+
+void snd_aav_init()
+{
+	aav_music_volume = 1.0f;
+	aav_voice_volume = 1.0f;
+	aav_effect_volume = 1.0f;
+
+	for (int i = 0; i < 3; i++) {
+		aav_data[i].delta = 0.0f;
+		aav_data[i].start_volume = 1.0f;
+		aav_data[i].delta_time = 0;
+		aav_data[i].start_time = 0.0f;	
+	}
+}
+
+uint nextSignature = 0;
+
+game_snd::game_snd()
+	: name ( "" ), signature( nextSignature++ ), default_volume( 0 ), preload( false ), id( -1 ), id_sig( -1 ), flags( 0 )
+{
+	filename[0] = 0;
+	min = 0;
+	max = 0;
 }

@@ -7,199 +7,6 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-02-11 09:06:13 $
- * $Author: taylor $
- *
- * Routines to detect collisions and do physics, damage, etc for ships and debris
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10  2005/10/09 09:13:29  wmcoolmon
- * Added warpin/warpout speed override values to ships.tbl
- *
- * Revision 2.9  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.8  2005/03/27 12:28:32  Goober5000
- * clarified max hull/shield strength names and added ship guardian thresholds
- * --Goober5000
- *
- * Revision 2.7  2005/03/10 08:00:11  taylor
- * change min/max to MIN/MAX to fix GCC problems
- * add lab stuff to Makefile
- * build unbreakage for everything that's not MSVC++ 6
- * lots of warning fixes
- * fix OpenGL rendering problem with ship insignias
- * no Warnings() in non-debug mode for Linux (like Windows)
- * some campaign savefile fixage to stop reverting everyones data
- *
- * Revision 2.6  2004/07/26 20:47:45  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:59  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:01:57  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/11/11 02:15:42  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.2  2003/04/29 01:03:22  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 12    9/14/99 2:59a Andsager
- * Limit amount of damage done by debris colliding with ship for SUPERCAP
- * 
- * 11    8/31/99 11:43p Andsager
- * No ship:debris damage to ship if debris' parent is ship itself
- * 
- * 10    8/10/99 5:49p Andsager
- * Fix bug - no damage collision against debris.
- * 
- * 9     8/09/99 4:45p Andsager
- * Add HUD "collision " waring when colliding with asteroids and debris.
- * 
- * 8     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 7     6/14/99 3:21p Andsager
- * Allow collisions between ship and its debris.  Fix up collision pairs
- * when large ship is warping out.
- * 
- * 6     1/12/99 10:24a Andsager
- * Fix asteroid-ship collision bug, with negative collision
- * 
- * 5     10/23/98 1:11p Andsager
- * Make ship sparks emit correctly from rotating structures.
- * 
- * 4     10/20/98 1:39p Andsager
- * Make so sparks follow animated ship submodels.  Modify
- * ship_weapon_do_hit_stuff() and ship_apply_local_damage() to add
- * submodel_num.  Add submodel_num to multiplayer hit packet.
- * 
- * 3     10/16/98 1:22p Andsager
- * clean up header files
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 27    4/24/98 5:35p Andsager
- * Fix sparks sometimes drawing not on model.  If ship is sphere in
- * collision, don't draw sparks.  Modify ship_apply_local_damage() to take
- * parameter no_spark.
- * 
- * 26    4/02/98 6:29p Lawrance
- * compile out asteroid references for demo
- * 
- * 25    4/02/98 5:10p Mike
- * Decrease damage yet more (by 3x) when an asteroid collides with a ship
- * during warp out.
- * 
- * 24    4/02/98 4:25p Andsager
- * fix bug calculating max_ship_impulse
- * 
- * 23    3/30/98 10:35a Andsager
- * Attempt to optimize ship:asteroid collisions.  Maybe return if time.
- * 
- * 22    3/25/98 2:37p Andsager
- * Modify maximum damage done by asteroids, depends on ship's max_vel, not
- * vel when warping out.
- * 
- * 21    3/25/98 2:15p Andsager
- * 
- * 20    3/25/98 1:36p Mike
- * Balancing of sm1-06a, Galatea mission.
- * 
- * 19    3/23/98 11:14a Andsager
- * Modified collide_asteroid_ship to calculate next possible collision
- * time based on ship afterburner speed.
- * 
- * 18    3/20/98 12:02a Mike
- * Cap damage done by an asteroid on a huge ship to 1/8 ship strength if a
- * large ship.  If <4000 hull, can do more than 1/8.
- * 
- * 17    3/05/98 3:12p Mike
- * Fix bugs in asteroid collisions.  Throw asteroids at Galataea (needs to
- * be made general).  Add skill level support for asteroid throwing.
- * 
- * 16    3/04/98 11:21p Mike
- * Less rotation on huge ships in death roll.
- * Less damage done to huge ships when hit an asteroid at high speed.
- * 
- * 15    3/02/98 2:58p Mike
- * Make "asteroids" in debug console turn asteroids on/off.
- * 
- * 14    2/19/98 12:46a Lawrance
- * Further work on asteroids.
- * 
- * 13    2/07/98 2:14p Mike
- * Improve asteroid splitting.  Add ship:asteroid collisions.  Timestamp
- * ship:debris collisions.
- * 
- * 12    2/06/98 7:29p John
- * Added code to cull out some future asteroid-ship collisions.
- * 
- * 11    2/05/98 12:51a Mike
- * Early asteroid stuff.
- * 
- * 10    2/04/98 8:57p Lawrance
- * remove unused variable
- * 
- * 9     2/04/98 6:08p Lawrance
- * Add a light collision sound, overlay a shield collide sound if
- * applicable.
- * 
- * 8     1/05/98 9:07p Andsager
- * Changed ship_shipor_debris_hit_info struct to more meaninful names
- * 
- * 7     1/02/98 9:08a Andsager
- * Changed ship:ship and ship:debris collision detection to ignore shields
- * and collide only against hull.  Also, significantly reduced radius of
- * sphere.
- * 
- * 6     12/22/97 9:56p Andsager
- * Implement ship:debris collisions.  Generalize and move
- * ship_ship_or_debris_hit struct from CollideShipShip to ObjCollide.h
- * 
- * 5     11/03/97 11:08p Lawrance
- * play correct collision sounds.
- * 
- * 4     10/27/97 8:35a John
- * code for new player warpout sequence
- * 
- * 3     10/01/97 5:55p Lawrance
- * change call to snd_play_3d() to allow for arbitrary listening position
- * 
- * 2     9/17/97 5:12p John
- * Restructured collision routines.  Probably broke a lot of stuff.
- * 
- * 1     9/17/97 2:14p John
- * Initial revision
- *
- * $NoKeywords: $
- */
 
 
 #include "object/objcollide.h"
@@ -214,23 +21,20 @@
 #include "parse/scripting.h"
 
 
-
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
-/*
-extern int Framecount;
-int Debris_ship_count = 0;
-*/
-
-// Checks debris-ship collisions.  pair->a is debris and pair->b is ship.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks debris-ship collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is ship.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_debris_ship( obj_pair * pair )
 {
 	float dist;
 	object *pdebris = pair->a;
 	object *pship = pair->b;
 
-		// Don't check collisions for warping out player
+	// Don't check collisions for warping out player
 	if ( Player->control_mode != PCM_NORMAL )	{
 		if ( pship == Player_obj )
 			return 0;
@@ -243,17 +47,13 @@ int collide_debris_ship( obj_pair * pair )
 	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags & SF_DYING) )
 		return 0;
 
-/*	Debris_ship_count++;
-	if (Debris_ship_count % 100 == 0)
-		nprintf(("AI", "Done %i debris:ship checks in %i frames = %.2f checks/frame\n", Debris_ship_count, Framecount, (float) Debris_ship_count/Framecount));
-*/
 	dist = vm_vec_dist( &pdebris->pos, &pship->pos );
 	if ( dist < pdebris->radius + pship->radius )	{
 		int hit;
 		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct debris_hit_info;
-		memset( &debris_hit_info, -1, sizeof(collision_info_struct) );
+		init_collision_info_struct(&debris_hit_info);
 
 		if ( pdebris->phys_info.mass > pship->phys_info.mass ) {
 			debris_hit_info.heavy = pdebris;
@@ -296,6 +96,9 @@ int collide_debris_ship( obj_pair * pair )
 				debris_damage = debris_hit_info.impulse/pdebris->phys_info.mass;	// ie, delta velocity of debris
 				debris_damage = (debris_damage > ship_damage) ? debris_damage : ship_damage;
 
+				// modify ship damage by debris damage multiplier
+				ship_damage *= Debris[pdebris->instance].damage_mult;
+
 				// supercaps cap damage at 10-20% max hull ship damage
 				if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
 					float cap_percent_damage = frand_range(0.1f, 0.2f);
@@ -307,7 +110,6 @@ int collide_debris_ship( obj_pair * pair )
 				int quadrant_num, apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
-				// apply_ship_damage = !((pship->signature == pdebris->parent_sig) && ship_is_beginning_warpout_speedup(pship));
 				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
 
 				if ( debris_hit_info.heavy == pship ) {
@@ -366,7 +168,6 @@ int collide_debris_ship( obj_pair * pair )
 		time -= 200.0f;		// allow one frame slow frame at ~5 fps
 
 		if (time > 100) {
-			//nprintf(("AI", "Ship %s debris #%i delay time = %.1f seconds\n", Ships[pship->instance].ship_name, pdebris-Objects, time/1000.0f));
 			pair->next_check_time = timestamp( fl2i(time) );
 		} else {
 			pair->next_check_time = timestamp(0);	// check next time
@@ -376,12 +177,13 @@ int collide_debris_ship( obj_pair * pair )
 	return 0;
 }
 
-// Checks asteroid-ship collisions.  pair->a is asteroid and pair->b is ship.
-// Returns 1 if all future collisions between these can be ignored
+/**
+ * Checks asteroid-ship collisions.  
+ * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is ship.
+ * @return 1 if all future collisions between these can be ignored
+ */
 int collide_asteroid_ship( obj_pair * pair )
 {
-#ifndef FS2_DEMO
-
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -389,7 +191,7 @@ int collide_asteroid_ship( obj_pair * pair )
 	object	*pasteroid = pair->a;
 	object	*pship = pair->b;
 
-		// Don't check collisions for warping out player
+	// Don't check collisions for warping out player
 	if ( Player->control_mode != PCM_NORMAL )	{
 		if ( pship == Player_obj ) return 0;
 	}
@@ -407,7 +209,7 @@ int collide_asteroid_ship( obj_pair * pair )
 		vec3d	hitpos;
 		// create and initialize ship_ship_hit_info struct
 		collision_info_struct asteroid_hit_info;
-		memset( &asteroid_hit_info, -1, sizeof(collision_info_struct) );
+		init_collision_info_struct(&asteroid_hit_info);
 
 		if ( pasteroid->phys_info.mass > pship->phys_info.mass ) {
 			asteroid_hit_info.heavy = pasteroid;
@@ -463,8 +265,6 @@ int collide_asteroid_ship( obj_pair * pair )
 				if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
 					ship_damage /= 3.0f;
 
-				//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
-
 				// calculate asteroid damage and set asteroid damage to greater or asteroid and ship
 				// asteroid damage is needed since we can really whack some small asteroid with afterburner and not do
 				// significant damage to ship but the asteroid goes off faster than afterburner speed.
@@ -483,15 +283,9 @@ int collide_asteroid_ship( obj_pair * pair )
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);
-					//if (asteroid_hit_info.heavy->type == OBJ_SHIP) {
-					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.heavy->instance].ship_name));
-					//}
 				} else {
 					// don't draw sparks (using sphere hitpos)
 					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
-					//if (asteroid_hit_info.light->type == OBJ_SHIP) {
-					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.light->instance].ship_name));
-					//}
 				}
 
 				// maybe print Collision on HUD
@@ -543,7 +337,4 @@ int collide_asteroid_ship( obj_pair * pair )
 		}
 		return 0;
 	}
-#else
-	return 0;	// no asteroids in demo version
-#endif
 }

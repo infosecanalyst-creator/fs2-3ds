@@ -7,14 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Observer/Observer.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 05:53:22 $
- * $Author: taylor $
- *
- * $NoKeywords: $
- */
+
 
 #include "observer/observer.h"
 #include "object/object.h"
@@ -26,8 +19,6 @@
 
 observer Observers[MAX_OBSERVER_OBS];
 
-int Num_observer_obs;
-
 void observer_init()
 {
 	int idx;
@@ -36,8 +27,6 @@ void observer_init()
 		Observers[idx].objnum = -1;
 		Observers[idx].target_objnum = -1;
 	}
-
-	Num_observer_obs = 0;
 }
 
 int observer_create(matrix *orient, vec3d *pos)
@@ -57,7 +46,11 @@ int observer_create(matrix *orient, vec3d *pos)
 	}
 	
 	// attempt to create the object
-	objnum = obj_create(OBJ_OBSERVER,0,idx,orient,pos,1.0f,0);
+	objnum = obj_create(OBJ_OBSERVER,-1,idx,orient,pos,1.0f,0);
+
+	// fail situation
+	if(objnum == -1)
+		return -1;
 
 	// give the observer Descent style physics
 	Objects[objnum].flags |= OF_PHYSICS;
@@ -76,16 +69,12 @@ int observer_create(matrix *orient, vec3d *pos)
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
 	vm_vec_zero(&pi->prev_fvec);
-	memset(&pi->last_rotmat,0,sizeof(matrix));
+	vm_set_identity(&pi->last_rotmat);
 	pi->forward_thrust = 0.0f;
 	pi->speed = 0.0f;
 	pi->fspeed = 0.0f;
 	pi->heading = 0.0f;
 		
-	// fail situation
-	if(objnum == -1)
-		return -1;
-
 	// set up the observer data
 	Observers[idx].flags |= OBS_FLAG_USED;
 	Observers[idx].objnum = objnum;

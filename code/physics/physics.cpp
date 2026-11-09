@@ -7,422 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.16.2.4 $
- * $Date: 2007-12-28 02:10:34 $
- * $Author: Backslash $
- *
- * Physics stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.16.2.3  2007/07/28 22:04:14  Goober5000
- * apply some of Turey's changes to stable branch
- *
- * Revision 2.16.2.2  2007/05/26 15:36:38  Backslash
- * Now that I've figured out how to commit to the 3_6_9 branch, here's a cleanup and update to bring physics as close to HEAD as possible without breaking anything or adding my uberglide changes yet. This fixes:
- * -the reverse-thusters-not-working-at-full-throttle bug
- * -the fishtail-way-too-fast-sideslip at high Damp values problem
- * -the slide accel/decel damp inconsistency
- * Some of these fixes will be particularly noticable to the BtRL people, hopefully all in good ways.
- * Also fixed a bunch of typos and whitespace just to get it consistent with HEAD.
- *
- * Revision 2.16.2.1  2006/08/19 04:38:47  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.16  2006/04/20 06:32:23  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.15  2006/02/25 21:47:07  Goober5000
- * spelling
- *
- * Revision 2.14  2006/02/08 02:10:39  wmcoolmon
- * Maybe fix gliding insta-turn problem
- *
- * Revision 2.13  2006/01/16 11:02:23  wmcoolmon
- * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
- *
- * Revision 2.12  2005/10/11 05:24:34  wmcoolmon
- * Gliding
- *
- * Revision 2.11  2005/04/05 05:53:23  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.10  2005/01/11 21:25:58  Goober5000
- * fixed two small things with physics
- * --Goober500
- *
- * Revision 2.9  2004/07/26 20:47:48  Kazan
- * remove MCD complete
- *
- * Revision 2.8  2004/07/12 16:33:03  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.7  2004/03/05 09:02:10  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.6  2003/11/11 02:15:46  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.5  2003/09/13 06:02:07  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.3  2003/08/06 17:39:49  phreak
- * since the afterburners are routed through the physics engine, i needed to route the boost pod through here too
- *
- * Revision 2.2  2002/10/19 19:29:28  bobboau
- * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     8/13/99 10:49a Andsager
- * Knossos and HUGE ship warp out.  HUGE ship warp in.  Stealth search
- * modes don't collide big ships.
- * 
- * 4     7/03/99 5:50p Dave
- * Make rotated bitmaps draw properly in padlock views.
- * 
- * 3     5/11/99 10:16p Andsager
- * First pass on engine wash effect.  Rotation (control input), damage,
- * shake.  
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 125   8/26/98 4:00p Johnson
- * Removed max velocity assert so the new huge cap ship can warp in
- * safely.
- * 
- * 124   5/18/98 5:01p Comet
- * don't do displacement checks in multiplayer
- * 
- * 123   4/06/98 2:38p Duncan
- * AL: Fix potential negative sqrt due to numerical inaccuracy
- * 
- * 122   3/25/98 1:30p Andsager
- * comment out physics assert
- * 
- * 121   3/23/98 9:48a Andsager
- * comment out printf
- * 
- * 120   3/22/98 4:11p Andsager
- * Remove global FreeSpace_running
- * 
- * 119   3/20/98 5:15p Andsager
- * Revised calculation of rotation, shake, and velocity in response to
- * shockwave since capital ships were seen  to shake.
- * 
- * 118   3/19/98 1:06p Andsager
- * Fix bug checking excessive velocity with accelerated time.
- * 
- * 117   3/17/98 5:43p Andsager
- * Modify physics checks for very slow frame rates.
- * 
- * 116   3/17/98 9:54a Andsager
- * Temporary take out Int3()s in velocity checks
- * 
- * 115   3/17/98 9:51a Allender
- * temporarily commented out Int3 that was causing pain
- * 
- * 114   3/16/98 6:07p Johnson
- * DA:  check that ship velocity does not get too high from collisons
- * 
- * 113   3/16/98 4:39p Adam
- * change Dave's asserts so that displacement checks don't get used when
- * not "in mission"
- * 
- * 112   3/16/98 1:11p Andsager
- * Turn on velocity, displacement limit checks
- * 
- * 111   3/12/98 5:21p Andsager
- * Optimize physics for lasers and dumbfire missiles
- * 
- * 110   3/09/98 2:10p Andsager
- * Put in checks for debris (other) with excessive velocity.
- * 
- * 109   3/09/98 12:59p Mike
- * Put error checking in physics code to detect NANs.
- * 
- * 108   3/09/98 12:13a Andsager
- * Add code to help find jumps in position.
- * 
- * 107   3/03/98 10:39a Andsager
- * Fixed erroneous mprintf for log term in physics_apply_shock
- * 
- * 106   2/11/98 4:52p Mike
- * Better attacking by ships.
- * Fix stupidity in AI classes, which were in backward order!
- * 
- * 105   2/03/98 6:01p Andsager
- * Fix excessive rotvel in debris_create.  Check using physics function
- * check_rotvel_limit.
- * 
- * 104   2/03/98 10:45a Mike
- * Comment out mprintf that could occur very often.
- * 
- * 103   1/29/98 2:38p Andsager
- * Fix bug in physics_apply_shock so that large ships have a smaller
- * effect from shockwaves.
- * 
- * 102   1/23/98 11:31a Andsager
- * Added I_body_inv to phys_init.  Needed for shockwaves hitting ships in
- * descent style physics.
- * 
- * 101   1/23/98 9:02a John
- * Took out Dave's debugging Int3 since they aren't finding what he
- * thought they would and they broke Testcode and pofview.
- * 
- * 100   1/22/98 5:10p Mike
- * Fix bug with player's damp getting stuck off.
- * 
- * 99    1/20/98 3:13p Allender
- * check for Player_obj being valid before doing some other andsager
- * sanity check in physics_sim_vel
- * 
- * 98    1/20/98 10:08a Andsager
- * Remove uninitialized viariable warnings.
- * 
- * 97    1/19/98 3:46p Allender
- * fixed problem where a previous changed caused optimized builds to
- * break.  Don't do a quick out on velcoity_ramp() anymore
- * 
- * 96    1/19/98 12:00p Dave
- * DA:  Revise instantaneous velocity debug check to work with
- * multiplayer.
- * 
- * 95    1/16/98 3:03p Andsager
- * Fix debug info from int3() on player death.
- * 
- * 94    1/16/98 2:54p Andsager
- * Fix debug info.
- * 
- * 93    1/16/98 2:34p Andsager
- * Added debug code to find instantaneous acceleration.
- * 
- * 92    1/16/98 12:14p Andsager
- * Add error checking for the current brief stage
- * 
- * 91    12/29/97 5:10p Allender
- * fixed problems with speed not being reported properly in multiplayer
- * games.  Made read_flying_controls take frametime as a parameter.  More
- * ship/weapon select stuff
- * 
- * 90    12/29/97 12:58p Johnson
- * don't debug rotational velocity when Fred is running
- * 
- * 89    12/08/97 10:29a Andsager
- * Remove shockwave physics parameters from weapon_area_apply_blast and
- * move into physics
- * 
- * 88    12/05/97 3:31p Andsager
- * Added view shake if hit by a weapon or collisoin.
- * 
- * 87    12/03/97 5:47p Andsager
- * Changed reduced damping following collision or weapon to run off time
- * stamp. 
- * 
- * 86    11/24/97 1:54p Dan
- * Mike: Comment out Assert() in physics, debug_rotvel().
- * 
- * 85    11/24/97 8:46a Andsager
- * Added rotational velocity caps and debug info.
- * 
- * 84    11/20/97 4:01p Mike
- * Prevent divide overflow.
- * 
- * 83    11/20/97 12:34a Mike
- * Make ships coast to a stop when their engines have been destroyed.
- * Tricky because code doesn't use damp in forward dimension.
- * 
- * 82    11/19/97 5:57p Mike
- * Hmm, undid all my changes, except for the crucial removal of a blank
- * between "physics_sim" and the open paren.
- * 
- * 81    11/19/97 1:26a Andsager
- * Made shockwaves work again, including shake.
- * 
- * 80    11/17/97 5:15p Andsager
- * 
- * 79    11/13/97 6:01p Andsager
- * Improve comment in physic_collide_whack
- * 
- * 78    11/13/97 5:41p Andsager
- * Decreased the rotational whack after getting hit by lasers and
- * missiles.
- * 
- * 77    10/29/97 5:01p Andsager
- * fixed bug in collision physics (physics_collide_whack)
- * 
- * 76    9/16/97 5:28p Andsager
- * calculate velocity in physics_sim_vel
- * 
- * 75    9/11/97 5:25p Mike
- * Fix ! vs. & precedence bug in physics_sim_vel().
- * 
- * 74    9/09/97 10:14p Andsager
- * 
- * 73    9/04/97 5:09p Andsager
- * implement physics using moment of inertia and mass (from BSPgen).
- * Added to phys_info struct.  Updated ship_info, polymodel structs.
- * Updated weapon ($Mass and $Force) and ship ($Mass -> $Density) tables
- * 
- * 72    9/03/97 5:43p Andsager
- * fixed bug calculating ramp velocity after getting whacked
- * 
- * 71    9/02/97 4:19p Mike
- * Comment out code at end of physics_apply_whack() that made ships nearly
- * stop.
- * 
- * 70    8/29/97 10:13a Allender
- * work on server/client prediction code -- doesn't work too well.  Made
- * all clients simulate their own orientation with the server giving
- * corrections every so often.
- * 
- * 69    8/25/97 2:41p Andsager
- * collision code also changes ramp velocity to take account of collison.
- * some optimization of collision physics.
- * 
- * 68    8/19/97 9:56a John
- * new thruster effect fairly functional
- * 
- * 67    8/18/97 6:26p Andsager
- * preliminary version of collision physics
- * 
- * 66    8/17/97 9:19p Andsager
- * improvement to collision physics
- * 
- * 65    8/13/97 12:16p Andsager
- * intermediate level checkin for use with collision with extended objects
- * 
- * 64    8/05/97 3:13p Andsager
- * improved comments to apply_whack
- * 
- * 63    8/05/97 10:18a Lawrance
- * my_rand() being used temporarily instead of rand()
- * 
- * 62    7/31/97 12:44p Andsager
- * 
- * 61    7/25/97 5:05p John
- * fixed a potential bug in ramp_velocity when delta dist becomes 0, a
- * bunch of sideways 8 thingys appear :-)
- * 
- * 
- * 60    7/25/97 1:04p Andsager
- * Modified physics flag PF_REDUCED_DAMP for damping when object is hit.
- * Flag is now set in physics_apply_whack/shock and turned off in
- * physics_sim_vel.  Weapons should not directly set this flag.
- * 
- * 59    7/25/97 9:07a Andsager
- * modified apply_whack
- * 
- * 58    7/23/97 5:10p Andsager
- * Enhanced shockwave effect with shake based on blast force.  
- * 
- * 57    7/22/97 2:40p Andsager
- * shockwaves now cause proper rotation of ships
- * 
- * 56    7/21/97 4:12p Mike
- * Two ships move as one while docked, including physics whacks.  Spin of
- * objects when killed based on speed.
- * 
- * 55    7/21/97 2:19p John
- * made descent-style physics work for testcode. fixed bug in the
- * velocity_ramp code with t==0.0f
- * 
- * 54    7/17/97 8:02p Lawrance
- * improve comments to physics_apply_whack()
- * 
- * 53    7/16/97 4:42p Mike
- * Make afterburner shake viewer, not ship.
- * Shake for limited time.
- * Add timestamp_until() function to timer library.
- * 
- * 52    7/16/97 11:53a Andsager
- * 
- * 51    7/16/97 11:06a Andsager
- * Allow damping on z to support shockwaves
- * 
- * 50    7/15/97 12:28p Andsager
- * commented out some debug code.
- * 
- * 49    7/15/97 12:25p Andsager
- * More integration with new physics.
- * 
- * 48    7/15/97 12:03p Andsager
- * New physics stuff
- * 
- * 47    7/11/97 11:54a John
- * added rotated 3d bitmaps.
- * 
- * 46    6/25/97 12:22p Mike
- * Diminish bashing into of objects.  Make ships flying waypoints fly in
- * formation.
- * 
- * 45    6/17/97 10:59p Mike
- * Comment out irritating mprintf().
- * 
- * 44    6/11/97 4:27p Mike
- * Balance the whack ships take when they get hit.
- * 
- * 43    4/17/97 10:02a Lawrance
- * allow ship shaking for ABURN_DECAY_TIME after afterburners cut out
- * 
- * 42    4/16/97 10:48p Mike
- * Afterburner shake.
- * Made afterburner engagement a bit in physics flags, removed from ship
- * flags, removed a parameter to physics_read_flying_controls().
- * 
- * 41    4/11/97 3:17p Mike
- * Modify physics_sim() to use non quick version of vm_vec_mag().  Quick
- * version was causing cumulative errors in velocity of homing missiles.
- * 
- * 40    4/10/97 3:20p Mike
- * Change hull damage to be like shields.
- * 
- * 39    4/04/97 11:08a Adam
- * played with banking values
- * 
- * 38    4/04/97 12:19a Mike
- * Make ships bank when they turn.
- * 
- * 37    3/04/97 3:10p Mike
- * Intermediate checkin: Had to resolve some build errors.  Working on two
- * docked ships moving as one.
- * 
- * 36    2/25/97 7:39p Lawrance
- * added afterburner_on flag to physics_read_flying_controls() to account
- * for afterburner effects
- * 
- * 35    2/05/97 6:02p Hoffoss
- * Added heading rotation around universal Y axis to Fred when controlling
- * the camera.
- * 
- * 34    2/05/97 9:15a Mike
- * Partial implementation of new docking system, integrated so I could
- * update on John's new turret code.
- * 
- * 33    1/20/97 7:58p John
- * Fixed some link errors with testcode.
- * 
- * $NoKeywords: $
- */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -435,13 +20,14 @@
 // for the damping issue
 #include "ai/ai_profiles.h"
 #include "mission/missionparse.h"
+#include "ship/ship.h"
+#include "mod_table/mod_table.h"
 
 
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees
 
-#define ROT_DEBUG
 #define ROTVEL_TOL		0.1			// Amount of rotvel is decreased if over cap
 #define ROTVEL_CAP		14.0			// Rotational velocity cap for live objects
 #define DEAD_ROTVEL_CAP	16.3			// Rotational velocity cap for dead objects
@@ -457,9 +43,9 @@
 #define	WEAPON_SHAKE_TIME		500	//	ms (0.5 sec)	viewer shake time after hit by weapon (implemented via afterburner shake)
 #define	SPECIAL_WARP_T_CONST	0.651	// special warp time constant (loose 99 % of excess speed in 3 sec)
 
-#define	PHYS_DEBUG						// check if (vel > 500) or (displacement in one frame > 350)
-
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
+float velocity_ramp (float v_in, float v_goal, float time_const, float t);
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult, float t);
 
 void physics_init( physics_info * pi )
 {
@@ -542,7 +128,7 @@ void apply_physics( float damping, float desired_vel, float initial_vel, float t
 
 float Physics_viewer_bank = 0.0f;
 int Physics_viewer_direction = PHYSICS_VIEWER_FRONT;
-static physics_info * Viewer_physics_info = NULL;
+physics_info * Viewer_physics_info = NULL;
 
 // If you would like Physics_viewer_bank to be tracked (Which is needed
 // for rotating 3d bitmaps) call this and pass it a pointer to the
@@ -596,13 +182,6 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	apply_physics( rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, &new_vel.xyz.y, NULL );
 	apply_physics( rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, &new_vel.xyz.z, NULL );
 
-	/*
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_sim_rot\n"));
-	}
-#endif
-*/
 	Assert(is_valid_vec(&new_vel));
 
 	pi->rotvel = new_vel;
@@ -611,52 +190,13 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	tangles.h = pi->rotvel.xyz.y*sim_time;
 	tangles.b = pi->rotvel.xyz.z*sim_time;
 
-	// If this is the viewer_object, keep track of the
-	// changes in banking so that rotated bitmaps look correct.
-	// This is used by the g3_draw_rotated_bitmap function.
-	if ( pi == Viewer_physics_info )	{
-		switch(Physics_viewer_direction){
-		case PHYSICS_VIEWER_FRONT:
-			Physics_viewer_bank -= tangles.b;
-			break;
-
-		case PHYSICS_VIEWER_UP:
-			Physics_viewer_bank -= tangles.h;
-			break;
-
-		case PHYSICS_VIEWER_REAR:
-			Physics_viewer_bank += tangles.b;
-			break;
-
-		case PHYSICS_VIEWER_LEFT:
-			Physics_viewer_bank += tangles.p;
-			break;
-
-		case PHYSICS_VIEWER_RIGHT:
-			Physics_viewer_bank -= tangles.p;
-			break;
-
-		default:
-			Physics_viewer_bank -= tangles.b;
-			break;
-		}
-
-		if ( Physics_viewer_bank < 0.0f ){
-			Physics_viewer_bank += 2.0f * PI;
-		}
-
-		if ( Physics_viewer_bank > 2.0f * PI ){
-			Physics_viewer_bank -= 2.0f * PI;
-		}
-	}
-
 /*	//	Make ship shake due to afterburner.
 	if (pi->flags & PF_AFTERBURNER_ON || !timestamp_elapsed(pi->afterburner_decay) ) {
 		float	max_speed;
 
 		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
+		tangles.p += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
+		tangles.h += (float) (rand()-RAND_MAX_2) * RAND_MAX_1f * pi->speed/max_speed/64.0f;
 		if ( pi->flags & PF_AFTERBURNER_ON ) {
 			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
 		}
@@ -665,8 +205,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
+		tangles.p += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
+		tangles.h += (float) (myrand()-RAND_MAX_2) * RAND_MAX_1f * shock_amplitude;
 	}
 
 
@@ -755,7 +295,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		if ( The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING ) {
+		if (pi->use_newtonian_damp) {
 			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
 		} else {
 			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
@@ -810,14 +350,6 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	// update world position from local to world coords using orient
 	vec3d world_disp;
 	vm_vec_unrotate (&world_disp, &local_disp, orient);
-#ifdef PHYS_DEBUG
-	// check for  excess velocity or translation
-	// GET DaveA.
-	if ( (Game_mode & GM_IN_MISSION) && (Game_mode & GM_NORMAL) ) {
-		// Assert( (sim_time > 0.5f) || (vm_vec_mag_squared(&pi->vel) < 500*500) );
-		// Assert( (sim_time > 0.5f) || (vm_vec_mag_squared(&world_disp) < 350*350) );
-	}
-#endif
 	vm_vec_add2 (position, &world_disp);
 
 	// update world velocity
@@ -920,18 +452,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	vec3d goal_vel;		// goal velocity in local coords, *not* accounting for ramping of velcity
 	float ramp_time_const;		// time constant for velocity ramping
 
-	float velocity_ramp (float v_in, float v_goal, float time_const, float t);
-
-//	if ( keyd_pressed[KEY_LSHIFT] ) {
-//		keyd_pressed[KEY_LSHIFT] = 0;
-//		Int3();
-//	}
-
 	// apply throttle, unless reverse thrusters are held down
 	if (ci->forward != -1.0f)
 		ci->forward += (ci->forward_cruise_percent / 100.0f);
-
-//	mprintf(("ci->forward == %7.3f\n", ci->forward));
 
 	// give control input to cause rotation in engine wash
 	extern int Wash_on;
@@ -956,14 +479,42 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if (ci->bank > 1.0f ) ci->bank = 1.0f;
 	else if (ci->bank < -1.0f ) ci->bank = -1.0f;
 
-	if ( pi->flags & PF_AFTERBURNER_ON )
-		ci->forward = 1.0f;
+	if ( pi->flags & PF_AFTERBURNER_ON ){
+		//SparK: modifield to accept reverse burners
+		if (!(pi->afterburner_max_reverse_vel > 0.0f)){
+			ci->forward = 1.0f;
+		}
+	}
 
 	if (ci->forward > 1.0f ) ci->forward = 1.0f;
 	else if (ci->forward < -1.0f ) ci->forward = -1.0f;
 
-	pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
-	pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == NULL) || (Player_obj->type != OBJ_SHIP)) {
+		// Default behavior; eyepoint orientation has no effect on controls
+		pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
+		pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
+	} else {
+		// Optional behavior; pitch and yaw are always relative to the eyepoint
+		// orientation (excluding slew)
+		vec3d tmp_vec, new_rotvel;
+		matrix tmp_mat, eyemat, rotvelmat;
+
+		ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+
+		vm_copy_transpose_matrix(&tmp_mat, &Player_obj->orient);
+		vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);
+
+		vm_vec_rotate(&new_rotvel, &pi->max_rotvel, &rotvelmat);
+		vm_vec_unrotate(&tmp_vec, &pi->max_rotvel, &rotvelmat);
+		new_rotvel.xyz.x = tmp_vec.xyz.x;
+
+		new_rotvel.xyz.x = ci->pitch * new_rotvel.xyz.x;
+		new_rotvel.xyz.y = ci->heading * new_rotvel.xyz.y;
+
+		vm_vec_unrotate(&tmp_vec, &new_rotvel, &rotvelmat);
+
+		pi->desired_rotvel = tmp_vec;
+	}
 
 	float	delta_bank;
 
@@ -984,7 +535,10 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
 		goal_vel.xyz.y = ci->vertical*pi->afterburner_max_vel.xyz.y;
-		goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
+		if(ci->forward < 0.0f)
+			goal_vel.xyz.z = ci->forward* pi->afterburner_max_reverse_vel;
+		else
+			goal_vel.xyz.z = ci->forward* pi->afterburner_max_vel.xyz.z;
 	}
 	else if ( pi->flags & PF_BOOSTER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->booster_max_vel.xyz.x;
@@ -997,7 +551,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < -pi->max_rear_vel )
+	if ( goal_vel.xyz.z < -pi->max_rear_vel && !(pi->flags & PF_AFTERBURNER_ON) )
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
@@ -1012,15 +566,12 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast.
 		// Scale according to reduced_damp_time_expansion.
 		float reduced_damp_ramp_time_expansion;
-		if ( pi->flags & PF_REDUCED_DAMP ) {
+		if ( pi->flags & PF_REDUCED_DAMP && !timestamp_elapsed(pi->reduced_damp_decay) ) {
 			float reduced_damp_fraction_time_left = timestamp_until( pi->reduced_damp_decay ) / (float) REDUCED_DAMP_TIME;
 			reduced_damp_ramp_time_expansion = 1.0f + (REDUCED_DAMP_FACTOR-1) * reduced_damp_fraction_time_left;
 		} else {
 			reduced_damp_ramp_time_expansion = 1.0f;
 		}
-
-//	if ( !use_descent && (Player_obj->phys_info.forward_accel_time_const < 0.1) && !(Ships[Player_obj->instance].flags & SF_DYING) && (Player_obj->type != OBJ_OBSERVER) )
-//			Int3();	// Get dave A
 
 		if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
@@ -1037,9 +588,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
-					// This is to have the engines ramp down VERY quickly, since 'decelerating' shouldn't be factored when gliding
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1060,8 +608,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1085,50 +631,101 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->forward_accel_time_const;
 			} else {
 				ramp_time_const = pi->forward_decel_time_const;
-				if ( pi->flags & PF_GLIDING )
-					ramp_time_const = 0.0f;
 			}
 		} else if ( goal_vel.xyz.z < 0.0f ) {
-			ramp_time_const = pi->forward_decel_time_const;
-			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
-			if ( pi->flags & PF_GLIDING )
-				ramp_time_const = 0.0f;
+			if ( pi->flags & PF_AFTERBURNER_ON )
+				ramp_time_const = pi->afterburner_reverse_accel;
+			else
+				ramp_time_const = pi->forward_decel_time_const;
 		} else {
 			ramp_time_const = pi->forward_decel_time_const;
-			// If gliding, then only accelerate -- if goal is 0, object is not accelerating
-			if ( pi->flags & PF_GLIDING )
-				ramp_time_const = 0.0f;
 		}
 
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 		if ( pi->flags & PF_REDUCED_DAMP ) {
 			ramp_time_const *= reduced_damp_ramp_time_expansion;
 		}
-		pi->prev_ramp_vel.xyz.z = velocity_ramp( pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
+		pi->prev_ramp_vel.xyz.z = velocity_ramp(pi->prev_ramp_vel.xyz.z, goal_vel.xyz.z, ramp_time_const, sim_time);
+
+		//Deternine the current dynamic glide cap, and ramp to it
+		//This is outside the normal "glide" block since we want the cap to adjust whether or not the ship is in glide mode
+		float dynamic_glide_cap_goal = 0.0;
+		if (pi->flags & PF_AFTERBURNER_ON) {
+			dynamic_glide_cap_goal = ( goal_vel.xyz.z >= 0.0f ) ? pi->afterburner_max_vel.xyz.z : pi->afterburner_max_reverse_vel;
+		}
+		else {
+			//Use the maximum value in X, Y, and Z (including overclocking)
+			dynamic_glide_cap_goal = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+		}
+		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
 
 
-		// this translates local desired velocities to world velocities
-
-		if ( pi->flags & PF_GLIDING ) {
+		if ( (pi->flags & PF_GLIDING) || (pi->flags & PF_FORCE_GLIDE ) ) {
 			pi->desired_vel = pi->vel;
-			//ok, if anyone has better math that would make the acceleration be more 'natural', please update this
-			float multiplier = 0.15f;
-			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x / (1.0f + pi->slide_accel_time_const) * multiplier);
-			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y / (1.0f + pi->slide_accel_time_const) * multiplier);
-			if ( pi->flags & PF_AFTERBURNER_ON )
-				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->afterburner_forward_accel_time_const) * multiplier);
-			else
-				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->forward_accel_time_const) * multiplier);
 
-			if ( pi->glide_cap > 0.0f ) {	// so if negative, don't bother with speed cap
+			//SUSHI: A (hopefully better) approach to dealing with accelerations in glide mode
+			//Get *actual* current velocities along each axis and use those instead of ramped velocities
+			vec3d local_vel;
+			vm_vec_rotate(&local_vel, &pi->vel, orient);
+
+			//Having pi->glide_cap == 0 means we're using a dynamic glide cap
+			float curGlideCap = 0.0f;
+			if (pi->glide_cap == 0.0f) 
+				curGlideCap = pi->cur_glide_cap;
+			else 
+				curGlideCap = pi->glide_cap;
+
+			//If we're near the (positive) glide cap, decay velocity where we aren't thrusting
+			//This is a hack, but makes the flight feel a lot smoother
+			//Don't do this if we aren't applying any thrust, we have no glide cap, or the accel multiplier is 0 (no thrust while gliding)
+			float cap_decay_threshold = 0.95f;
+			float cap_decay_amount = 0.2f;
+			if (curGlideCap >= 0.0f && vm_vec_mag(&pi->desired_vel) >= cap_decay_threshold * curGlideCap && 
+					vm_vec_mag(&goal_vel) > 0.0f &&
+					pi->glide_accel_mult != 0.0f) 
+			{
+				if (goal_vel.xyz.x == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, -cap_decay_amount * local_vel.xyz.x);
+				if (goal_vel.xyz.y == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, -cap_decay_amount * local_vel.xyz.y);
+				if (goal_vel.xyz.z == 0.0f)
+					vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, -cap_decay_amount * local_vel.xyz.z);
+			}
+
+			//The glide_ramp function uses (basically) the same math as the velocity ramp so that thruster power is consistent
+			//Only ramp if the glide cap is positive
+			float xVal = glide_ramp(local_vel.xyz.x, goal_vel.xyz.x, pi->slide_accel_time_const, pi->glide_accel_mult, sim_time);
+			float yVal = glide_ramp(local_vel.xyz.y, goal_vel.xyz.y, pi->slide_accel_time_const, pi->glide_accel_mult, sim_time);
+			float zVal = 0.0;
+			if (pi->flags & PF_AFTERBURNER_ON) 
+				zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->afterburner_forward_accel_time_const, pi->glide_accel_mult, sim_time);
+			else {
+				if (goal_vel.xyz.z >= 0.0f)
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_accel_time_const, pi->glide_accel_mult, sim_time);
+				else
+					zVal = glide_ramp(local_vel.xyz.z, goal_vel.xyz.z, pi->forward_decel_time_const, pi->glide_accel_mult, sim_time);
+			}
+
+			//Compensate for effect of dampening: normal flight cheats here, so /we make up for it this way so glide acts the same way
+			xVal *= pi->side_slip_time_const / sim_time;
+			yVal *= pi->side_slip_time_const / sim_time;
+			if (pi->use_newtonian_damp) zVal *= pi->side_slip_time_const / sim_time;
+
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.fvec, zVal);
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.rvec, xVal);
+			vm_vec_scale_add2(&pi->desired_vel, &orient->vec.uvec, yVal);
+
+			// Only do the glide cap if we have one and are actively thrusting in some direction.
+			if ( curGlideCap >= 0.0f && (ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
 				float currentmag = vm_vec_mag(&pi->desired_vel);
-				if ( currentmag > pi->glide_cap ) {
-					vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+				if ( currentmag > curGlideCap ) {
+					vm_vec_scale( &pi->desired_vel, curGlideCap / currentmag );
 				}
 			}
 		}
 		else
 		{
+			// this translates local desired velocities to world velocities
 			vm_vec_zero(&pi->desired_vel);
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
 			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
@@ -1197,12 +794,6 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	vm_vec_scale ( &delta_rotvel, (float) ROTVEL_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &delta_rotvel );
 
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_apply_whack\n"));
-	}
-#endif
-
 	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 
 	// instant whack on the velocity
@@ -1221,7 +812,6 @@ void physics_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *o
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
@@ -1259,6 +849,37 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 	decay_factor = (float)exp(- t / ramp_time_const);
 
 	return (v_in + delta_v * (1.0f - decay_factor) );
+}
+
+//Handles thrust values when gliding. Purposefully similar to velocity_ramp in order to yeild a similar "feel" in
+//terms of thruster accels (as much as possible)
+//This is all in the local frame of reference for a single movement axis
+float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult, float t)
+{
+	if (v_goal == 0.0f) {
+		return 0.0f;
+	}
+
+	//This approach to delta_v allows us to ramp accelerations even in glide mode
+	//Get the difference in velocity between current and goal as thrust 
+	//(capped by the goal velocity on one end and 0 on the other)
+	//If accel_mult is < 0, don't ramp (fixed acceleration)
+	float delta_v = 0.0f;
+	if (accel_mult < 0.0f) {
+		if (v_goal > 0.0f) {
+			delta_v = MAX(MIN(v_goal - v_in, v_goal), 0.0f); 
+		}
+		else {
+			delta_v = MIN(MAX(v_goal - v_in, v_goal), 0.0f);
+		}
+	}
+	else {
+		delta_v = v_goal * accel_mult;
+	}
+	
+	//Calculate the (decayed) thrust
+	float decay_factor = (ramp_time_const > 0.0f) ? (1.0f - (float)exp(-t / ramp_time_const)) : 1.0f;
+	return delta_v * decay_factor;
 }
 
 
@@ -1349,22 +970,28 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 
 	// compute delta rotvel, scale according to blast and radius
 	float scale;
-	vec3d delta_rotvel;
-	vm_vec_rotate( &local_torque, &torque, orient );
-	vm_vec_copy_normalize(&delta_rotvel, &local_torque);
+
 	if (radius < MIN_RADIUS) {
 		scale = 1.0f;
 	} else {
 		scale = (MAX_RADIUS - radius)/(MAX_RADIUS-MIN_RADIUS);
 	}
-	vm_vec_scale(&delta_rotvel, (float)(MAX_ROTVEL*(pressure/STD_PRESSURE)*scale));
-	// nprintf(("Physics", "rotvel scale %f\n", (MAX_ROTVEL*(pressure/STD_PRESSURE)*scale)));
-	vm_vec_add2(&pi->rotvel, &delta_rotvel);
 
 	// set shockwave shake amplitude, duration, flag
 	pi->shockwave_shake_amp = (float)(MAX_SHAKE*(pressure/STD_PRESSURE)*scale);
 	pi->shockwave_decay = timestamp( SW_BLAST_DURATION );
 	pi->flags |= PF_IN_SHOCKWAVE;
+
+	// safety dance
+	if (!(IS_VEC_NULL_SQ_SAFE(&torque))) {
+		vec3d delta_rotvel;
+		vm_vec_rotate( &local_torque, &torque, orient );
+		vm_vec_copy_normalize(&delta_rotvel, &local_torque);
+		
+		vm_vec_scale(&delta_rotvel, (float)(MAX_ROTVEL*(pressure/STD_PRESSURE)*scale));
+		// nprintf(("Physics", "rotvel scale %f\n", (MAX_ROTVEL*(pressure/STD_PRESSURE)*scale)));
+		vm_vec_add2(&pi->rotvel, &delta_rotvel);
+	}
 
 	// set reduced translational damping, set flags
 	float velocity_scale = (float)MAX_VEL*scale;
@@ -1377,18 +1004,9 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_apply_shock [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
-
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_apply_shock\n"));
-	}
-#endif
-
-																				// ramped velocity is now affected by collision
 }
 
 // ----------------------------------------------------------------------------
@@ -1405,7 +1023,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 // Warning:  Do not change ROTVEL_COLLIDE_WHACK_CONST.  This will mess up collision physics.
 // If you need to change the rotation, change  COLLISION_ROTATION_FACTOR in collide_ship_ship.
 #define ROTVEL_COLLIDE_WHACK_CONST 1.0
-void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient )
+void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_info *pi, matrix *orient, bool is_landing )
 {
 	vec3d	body_delta_rotvel;
 
@@ -1417,18 +1035,14 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 //	vm_vec_scale( &body_delta_rotvel, (float)	ROTVEL_COLLIDE_WHACK_CONST );
 	vm_vec_add2( &pi->rotvel, &body_delta_rotvel );
 
-#ifdef ROT_DEBUG
-	if (check_rotvel_limit( pi )) {
-		nprintf(("Physics", "rotvel reset in physics_collide_whack\n"));
-	}
-#endif
-
 	update_reduced_damp_timestamp( pi, vm_vec_mag(impulse) );
 
 	// find time for shake from weapon to end
-	int dtime = timestamp_until(pi->afterburner_decay);
-	if (dtime < WEAPON_SHAKE_TIME) {
-		pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+	if (!is_landing) {
+		int dtime = timestamp_until(pi->afterburner_decay);
+		if (dtime < WEAPON_SHAKE_TIME) {
+			pi->afterburner_decay = timestamp( WEAPON_SHAKE_TIME );
+		}
 	}
 
 	pi->flags |= PF_REDUCED_DAMP;
@@ -1438,7 +1052,6 @@ void physics_collide_whack( vec3d *impulse, vec3d *world_delta_rotvel, physics_i
 	if (!(pi->flags & PF_USE_VEL) && (vm_vec_mag_squared(&pi->vel) > MAX_SHIP_SPEED*MAX_SHIP_SPEED)) {
 		// Get DaveA
 		nprintf(("Physics", "speed reset in physics_collide_whack [speed: %f]\n", vm_vec_mag(&pi->vel)));
-//		Int3();
 		vm_vec_normalize(&pi->vel);
 		vm_vec_scale(&pi->vel, (float)RESET_SHIP_SPEED);
 	}
@@ -1525,14 +1138,35 @@ void update_reduced_damp_timestamp( physics_info *pi, float impulse )
 }
 
 //*************************CLASS: avd_movement*************************
-avd_movement::avd_movement()
+avd_movement::avd_movement() : Pc(0.0f), Vc(0.0f), TSi(0), Pi(0.0f), Vi(0.0f), Pf(0.0f), Tf(0.0f), Tai(0.0f), Taf(0.0f), Vf(0.0f), Vm(0.0f), Ai(0.0f), Af(0.0f)
 {
-	clear();
 }
 
 void avd_movement::clear()
 {
-	memset(this, 0, sizeof(avd_movement));
+    // We should really refactor so that a ::clear() method isn't needed.
+    // For now, be sure this syncs with the class declaration 
+    
+    //Current
+	Pc = 0;		//Current position
+	Vc = 0;		//Current velocity
+	
+	//Initial
+	TSi = 0;		//Initial timestamp <-- note TIMESTAMP
+	Pi = 0;		//Initial position
+	Vi = 0;		//Initial velocity
+    
+	//Given
+	Pf = 0;		//Final position
+	Tf = 0;		//Final duration
+	Tai = 0;		//Starting acceleration duration
+	Taf = 0;		//Ending acceleration duration
+	Vf = 0;		//Final velocity
+    
+	//Calculated
+	Vm = 0;		//Middle velocity
+	Ai = 0;		//Starting acceleration
+	Af = 0;		//Ending acceleration
 }
 
 void avd_movement::get(float Time, float *Position, float *Velocity)
@@ -1659,7 +1293,7 @@ void avd_movement::update(float Time)
 				Tc = (Tf-Tai-Taf);
 
 			Pc = Pc + Vm*Tc;
-			Vc = Vc;
+			// Vc = Vc;
 		}
 		
 		if(t >= (Tf-Taf) && Taf > 0.0f)

@@ -7,42 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2007-07-28 00:37:35 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/05/12 17:49:13  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.3  2004/07/26 20:47:36  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:52  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     2/23/99 9:25a Dave
- * Stubbed out a bunch of stuff to get cfile and lcl functions in.
- * 
- * 4     12/01/98 4:46p Dave
- * Put in targa bitmap support (16 bit).
- *  
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <memory.h>
@@ -76,10 +41,10 @@ int Fhash_active = 0;
 //
 
 // hash a string. return an index into the hash table where it should be inserted
-int fhash_get_hash_index(char *str);
+int fhash_get_hash_index(const char *str);
 
 // insert a string into hash table index N, will take care of allocating/chaining everything
-void fhash_insert(char *str, int id, int n);
+void fhash_insert(const char *str, int id, int n);
 
 
 // -----------------------------------------------------------------------------------------------
@@ -138,8 +103,8 @@ void fhash_flush()
 	}
 }
 
-// add a string with the given id# to the has table
-void fhash_add_str(char *str, int id)
+// add a string with the given id# to the hash table
+void fhash_add_str(const char *str, int id)
 {
 	int hash_index;
 
@@ -149,7 +114,7 @@ void fhash_add_str(char *str, int id)
 		return;
 	}
 
-	// determine where the string goes in the has table
+	// determine where the string goes in the hash table
 	Assert(str != NULL);
 	if(str == NULL){
 		return;
@@ -162,7 +127,7 @@ void fhash_add_str(char *str, int id)
 
 // determine if the passed string exists in the table
 // returns : -2 if the string doesn't exit, or >= -1 as the string id # otherwise
-int fhash_string_exists(char *str)
+int fhash_string_exists(const char *str)
 {
 	int hash_index;
 	fhash_node *moveup;
@@ -205,7 +170,7 @@ int fhash_string_exists(char *str)
 //
 
 // hash a string. return an index into the hash table where it should be inserted
-int fhash_get_hash_index(char *str)
+int fhash_get_hash_index(const char *str)
 {
 	int accum = 0;
 	int idx, str_len;
@@ -222,7 +187,7 @@ int fhash_get_hash_index(char *str)
 }
 
 // insert a string into hash table index N, will take care of allocating/chaining everything
-void fhash_insert(char *str, int id, int n)
+void fhash_insert(const char *str, int id, int n)
 {
 	fhash_node *new_node;
 	fhash_node *moveup;

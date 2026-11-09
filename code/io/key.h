@@ -7,75 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Key.h $
- * $Revision: 2.4 $
- * $Date: 2006-01-13 04:46:17 $
- * $Author: wmcoolmon $
- *
- * Include file for keyboard reading routines
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.2  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 26    5/19/98 12:28a Mike
- * Cheat stuff.
- * 
- * 25    5/18/98 11:01p Mike
- * Adding support for cheat system.
- * 
- * 24    5/01/98 4:23p Lawrance
- * Remap the scancode for the UK "\" key
- * 
- * 23    1/07/98 6:41p Lawrance
- * Pass message latency to the keyboard lib.
- * 
- * 22    11/14/97 4:33p Mike
- * Change Debug key to backquote (from F11).
- * Balance a ton of subsystems in ships.tbl.
- * Change "Heavy Laser" to "Disruptor".
- * 
- * 21    10/21/97 7:18p Hoffoss
- * Overhauled the key/joystick control structure and usage throughout the
- * entire FreeSpace code.  The whole system is very different now.
- * 
- * 20    9/13/97 9:30a Lawrance
- * added ability to block certain keys from the keyboard
- * 
- * 19    9/10/97 6:02p Hoffoss
- * Added code to check for key-pressed sexp operator in FreeSpace as part
- * of training mission stuff.
- * 
- * 18    4/15/97 3:47p Allender
- * moved type selection of list box items into actual UI code.  Made it
- * behave more like windows listboxes do
- * 
- * 17    2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _KEY_H
 #define _KEY_H
@@ -124,21 +56,17 @@ int key_check(int key);
 //	Put "key" back in the input buffer.
 void key_outkey(int key);
 
-// used to restrict keys that are read into keyboard buffer
-void key_set_filter(int *filter_array, int num);
-void key_clear_filter();
-
 extern int Cheats_enabled;
 extern int Key_normal_game;
 
 #define KEY_SHIFTED     0x1000
 #define KEY_ALTED       0x2000
 #define KEY_CTRLED      0x4000
-#define KEY_DEBUGGED		0x8000
-#define KEY_DEBUGGED1	0x0800		//	Cheat bit in release version of game.
-#define KEY_MASK			0x00FF
+#define KEY_DEBUGGED    0x8000
+#define KEY_DEBUGGED1   0x0800	// Cheat bit in release version of game.
+#define KEY_MASK        0x00FF
 
-#define KEY_DEBUG_KEY	0x29			//	KEY_LAPOSTRO (shifted = tilde, near upper-left of keyboard)
+#define KEY_DEBUG_KEY   0x29	// KEY_LAPOSTRO (shifted = tilde, near upper-left of keyboard)
 
 #define KEY_0           0x0B
 #define KEY_1           0x02
@@ -182,7 +110,7 @@ extern int Key_normal_game;
 #define KEY_EQUAL       0x0D
 #define KEY_DIVIDE      0x35
 #define KEY_SLASH       0x2B
-#define KEY_SLASH_UK		0x56
+#define KEY_SLASH_UK    0x56
 #define KEY_COMMA       0x33
 #define KEY_PERIOD      0x34
 #define KEY_SEMICOL     0x27
@@ -253,9 +181,9 @@ extern int Key_normal_game;
 #define KEY_LEFT        0xCB
 #define KEY_RIGHT       0xCD
 
-#define KEY_PRINT_SCRN	0xB7
-#define KEY_PAUSE			0x45	//DOS: 0x61
-#define KEY_BREAK			0xc6
+#define KEY_PRINT_SCRN  0xB7
+#define KEY_PAUSE       0x45	//DOS: 0x61
+#define KEY_BREAK       0xc6
 
 /*
 #ifdef __cplusplus

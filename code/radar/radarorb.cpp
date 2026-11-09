@@ -7,118 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.23.2.4 $
- * $Date: 2008-01-19 00:27:10 $
- * $Author: Goober5000 $
- *
- * C module containg functions to display and manage the "orb" radar mode
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.23.2.3  2007/08/17 03:29:51  Goober5000
- * generalize the way radar ranges are handled (inspired by Shade's fix)
- *
- * Revision 1.23.2.2  2007/02/11 09:12:12  taylor
- * little bit of cleanup
- * more fixage for hidden jumpnodes (Mantis #1149)
- *
- * Revision 1.23.2.1  2007/02/10 00:16:57  taylor
- * phreak missed fixing this here when he fixed it in unstable
- *
- * Revision 1.23  2006/04/12 22:23:41  taylor
- * compiler warning fixes to make GCC 4.1 shut the hell up
- *
- * Revision 1.22  2006/01/16 11:02:23  wmcoolmon
- * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
- *
- * Revision 1.21  2006/01/14 19:54:55  wmcoolmon
- * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
- *
- * Revision 1.20  2006/01/14 04:44:29  phreak
- * Tried to make the sphere size more uniform on opposite ends of the orb
- * Modified the radar disruption angle scale a bit.  Went from 200 degree to 20 degree disruption.  Otherwise, it was very confusing to find hidden objects.
- *
- * Revision 1.19  2006/01/14 03:28:29  phreak
- * Make orb radar mode drawing again.
- * Clarify "fudge" variable used for viewing transformations
- *
- * Revision 1.18  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 1.17  2005/10/10 17:21:09  taylor
- * remove NO_NETWORK
- *
- * Revision 1.16  2005/09/17 19:12:37  phreak
- * radar bitmap should render the correct color using -orbradar
- *
- * Revision 1.15  2005/07/25 03:13:25  Goober5000
- * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
- * should now be added to all places where it is needed (except the turret code, which I still
- * have to to review)
- * --Goober5000
- *
- * Revision 1.14  2005/07/22 10:18:40  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 1.13  2005/07/13 03:35:35  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.12  2005/07/07 16:36:58  taylor
- * various compiler warning fixes (some of these from dizzy)
- *
- * Revision 1.11  2005/04/24 12:56:43  taylor
- * really are too many changes here:
- *  - remove all bitmap section support and fix problems with previous attempt
- *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
- *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
- *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
- *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
- *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
- *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
- *    code/render/3ddraw.cpp )
- *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
- *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
- *
- * Revision 1.10  2005/04/05 05:53:23  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 1.9  2005/03/25 06:57:37  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 1.8  2005/03/24 23:29:33  taylor
- * (re)move some uneeded variables to fix compiler warnings
- *
- * Revision 1.7  2005/03/21 23:19:55  phreak
- * Orb correctly displays in 640x480
- *
- * Revision 1.6  2005/03/13 08:33:55  taylor
- * gotta use MIN/MAX and not min/max now
- *
- * Revision 1.5  2005/03/12 06:03:07  phreak
- * Fixed a bug where the orb would incorrectly render under alternate FOVs.
- * Updated the functions that scramble the contacts so the blips show up
- * somewhat near where they should be.
- *
- * Revision 1.4  2005/03/02 21:24:46  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 1.3  2005/02/04 20:06:07  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 1.2  2004/08/23 07:48:09  Goober5000
- * fix0red some warnings
- * --Goober5000
- *
- * Revision 1.1  2004/08/02 22:42:45  phreak
- * orb radar rendering style
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 
 #include "radar/radarorb.h"
@@ -143,81 +32,30 @@
 #include "render/3d.h"
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
-
-extern float radx, rady;
-
-extern float	Radar_bright_range;				// range within which the radar blips are bright
-extern int		Radar_calc_bright_dist_timer;	// timestamp at which we recalc Radar_bright_range
-
-extern int Radar_flicker_timer[NUM_FLICKER_TIMERS];					// timestamp used to flicker blips on and off
-extern int Radar_flicker_on[NUM_FLICKER_TIMERS];						// status of flickering
+#include "radar/radarorb.h"
 
 extern rcol Radar_color_rgb[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
-extern color Radar_colors[MAX_RADAR_COLORS][MAX_RADAR_LEVELS];
 
-extern blip	Blip_bright_list[MAX_BLIP_TYPES];		// linked list of bright blips
-extern blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
-
-extern blip	Blips[MAX_BLIPS];								// blips pool
-extern int	N_blips;											// next blip index to take from pool
-
-extern float Radar_farthest_dist;
-extern int Blip_mutate_id;
-
-extern int Radar_static_playing;			// is static currently playing on the radar?
-extern int Radar_static_next;				// next time to toggle static on radar
-extern int Radar_avail_prev_frame;		// was radar active last frame?
-extern int Radar_death_timer;				// timestamp used to play static on radar
-extern int Radar_static_looping;					// id for looping radar static sound
-
-extern hud_frames Radar_gauge;
+extern int radar_target_id_flags;
 
 extern int Cmdline_nohtl;
-
-static const int NUM_ORB_RING_SLICES = 16;
 
 vec3d orb_ring_yz[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xy[NUM_ORB_RING_SLICES];
 vec3d orb_ring_xz[NUM_ORB_RING_SLICES];
-vec3d vec_extents[]=
-{
-	{ { { 1.0f, 0.0f, 0.0f } } },
-	{ { { 0.0f, 1.0f, 0.0f } } },
-	{ { { 0.0f, 0.0f, 1.0f } } },
-	{ { { -1.0f, 0.0f, 0.0f } } },
-	{ { { 0.0f, -1.0f, 0.0f } } },
-	{ { { 0.0f, 0.0f, -1.0f } } }
-};
-
-color Orb_color_orange;
-color Orb_color_teal;
-color Orb_color_purple;
 
 //special view matrix to get the orb rotating the correct way
 static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } },
                                    { { { 0.0f, -1.0f, 0.0f } } },
                                    { { { 0.0f, 0.0f, -1.0f } } } } } };
 
-static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
+static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -3.0f } } };
 
-// forward declarations
-void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);
-
-void radar_init_orb()
+HudGaugeRadarOrb::HudGaugeRadarOrb():
+HudGaugeRadar(HUD_OBJECT_RADAR_ORB, 255, 255, 255)
 {
-	int i,j;
+	int i;
 	float s,c;
-
-	Radar_gauge.first_frame = bm_load_animation(Current_radar_global->Radar_fname[gr_screen.res], &Radar_gauge.num_frames);
-	if ( Radar_gauge.first_frame < 0 ) {
-		Warning(LOCATION,"Cannot load hud ani: %s\n", Current_radar_global->Radar_fname[gr_screen.res]);
-	}
-
-	for (i=0; i<MAX_RADAR_COLORS; i++ )	{
-		for (j=0; j<MAX_RADAR_LEVELS; j++ )	{
-			gr_init_alphacolor( &Radar_colors[i][j], Radar_color_rgb[i][j].r, Radar_color_rgb[i][j].g, Radar_color_rgb[i][j].b, 255 );
-		}
-	}
 
 	memset(orb_ring_xy, 0, sizeof(orb_ring_xy));
 	memset(orb_ring_xz, 0, sizeof(orb_ring_xz));
@@ -236,312 +74,46 @@ void radar_init_orb()
 
         orb_ring_xz[i].xyz.x = c;
         orb_ring_xz[i].xyz.z = s;
-    }
+	}
 
     gr_init_alphacolor(&Orb_color_orange, 192, 96, 32,  192);
     gr_init_alphacolor(&Orb_color_teal,   48, 160, 96,  192);
     gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, 192);
-
-	Blip_mutate_id	= 1;
-
-	//WMC - Try and get rid of stupid radar list errors.
-	radar_null_nblips_orb();
+	gr_init_alphacolor(&Orb_crosshairs,   255, 255,255, 192);
 }
 
-// determine how the object blip should be drawn
-void radar_stuff_blip_info_orb(object *objp, int is_bright, color **blip_color, int *blip_type)
+void HudGaugeRadarOrb::initCenterOffsets(float x, float y)
 {
-	ship *shipp = NULL;
+	Radar_center_offsets[0] = x;
+	Radar_center_offsets[1] = y;
+}
 
-	switch(objp->type)
-	{
-		case OBJ_SHIP:
-			shipp = &Ships[objp->instance];
-
-			if (shipp->flags & SF_ARRIVING_STAGE_1)
-			{
-				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
-				*blip_type = BLIP_TYPE_WARPING_SHIP;
-			}
-			else if (ship_is_tagged(objp))
-			{
-				*blip_color = &Radar_colors[RCOL_TAGGED][is_bright];
-				*blip_type = BLIP_TYPE_TAGGED_SHIP;
-			}
-			else if (Ship_info[shipp->ship_info_index].flags & (SIF_NAVBUOY|SIF_CARGO))
-			{
-				*blip_color = &Radar_colors[RCOL_NAVBUOY_CARGO][is_bright];
-				*blip_type = BLIP_TYPE_NAVBUOY_CARGO;
-			}
-			else
-			{
-				*blip_color = iff_get_color_by_team(shipp->team, Player_ship->team, is_bright);
-				*blip_type = BLIP_TYPE_NORMAL_SHIP;
-			}
-
-			break;
-
-		case OBJ_WEAPON:
-			if ((Weapons[objp->instance].lssm_stage == 2) || (Weapons[objp->instance].lssm_stage == 4))
-			{
-				*blip_color = &Radar_colors[RCOL_WARPING_SHIP][is_bright];
-				*blip_type = BLIP_TYPE_WARPING_SHIP;
-			}
-			else
-			{
-				*blip_color = &Radar_colors[RCOL_BOMB][is_bright];
-				*blip_type = BLIP_TYPE_BOMB;
-			}
-
-			break;
-
-		case OBJ_JUMP_NODE:
-			*blip_color = &Radar_colors[RCOL_JUMP_NODE][is_bright];
-			*blip_type = BLIP_TYPE_JUMP_NODE;
-
-			break;
-
-		default:
-			Error(LOCATION, "Illegal blip type in radar.");
-			break;
+void HudGaugeRadarOrb::initBitmaps(char *fname)
+{
+	Radar_gauge.first_frame = bm_load_animation(fname, &Radar_gauge.num_frames);
+	if ( Radar_gauge.first_frame < 0 ) {
+		Warning(LOCATION,"Cannot load hud ani: %s\n", fname);
 	}
 }
 
-void radar_plot_object_orb( object *objp )	
+void HudGaugeRadarOrb::plotBlip(blip *b, vec3d *scaled_pos)
 {
-	vec3d	pos, tempv;
-	float		dist, max_radar_dist;
-	//float rscale, zdist;
-	//int		xpos, ypos;
-	vec3d	world_pos = objp->pos;	
-	float		awacs_level;
-
-	// don't process anything here.  Somehow, a jumpnode object caused this function
-	// to get entered on server side.
-	if( Game_mode & GM_STANDALONE_SERVER ){
-		return;
+	*scaled_pos = b->position;
+	
+	if (IS_VEC_NULL_SQ_SAFE(scaled_pos)) {
+		vm_vec_make(scaled_pos, 1.0f, 0.0f, 0.0f);
+	} else {
+		vm_vec_normalize(scaled_pos);
 	}
 
-	// multiplayer clients ingame joining should skip this function
-	if ( MULTIPLAYER_CLIENT && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ){
-		return;
-	}
-
-	// get team-wide awacs level for the object if not ship
-	int ship_is_visible = 0;
-	if (objp->type == OBJ_SHIP) {
-		if (Player_ship != NULL) {
-			if (ship_is_visible_by_team(objp, Player_ship)) {
-				ship_is_visible = 1;
-			}
-		}
-	}
-
-	// only check awacs level if ship is not visible by team
-	awacs_level = 1.5f;
-	if (Player_ship != NULL && !ship_is_visible) {
-		awacs_level = awacs_get_level(objp, Player_ship);
-	}
-
-	// if the awacs level is unviewable - bail
-	if(awacs_level < 0.0f && !See_all){
-		return;
-	}
-
-	// Apply object type filters	
-	switch (objp->type)
-	{
-		case OBJ_SHIP:
-			// Place to cull ships, such as NavBuoys		
-			break;
-		
-		case OBJ_JUMP_NODE:
-		{
-			// don't plot hidden jump nodes
-			if ( objp->jnp->is_hidden() )
-				return;
-
-			// filter jump nodes here if required
-			break;
-		}
-
-		case OBJ_WEAPON:
-		{
-			// if not a bomb, return
-			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
-				return;
-
-			// if we don't attack the bomb, return
-			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
-				return;
-
-			// if a local ssm is in subspace, return
-			if (Weapons[objp->instance].lssm_stage == 3)
-				return;
-
-			break;
-		}
-
-		// if any other kind of object, don't show it on radar
-		default:
-			return;
-	}
-
-
-	// JAS -- new way of getting the rotated point that doesn't require this to be
-	// in a g3_start_frame/end_frame block.
-	vm_vec_sub(&tempv, &world_pos, &Player_obj->pos);
-	vm_vec_rotate(&pos, &tempv, &Player_obj->orient);
-
-	// Apply range filter
-	dist = vm_vec_dist(&world_pos, &Player_obj->pos);
-	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
-	if (dist > max_radar_dist) {
-		return;
-	}
-
-	vm_vec_normalize(&pos);
-
-	float scale = dist / Radar_bright_range;
+	float scale = b->dist / Radar_bright_range;
 	if (scale > 1.25f) scale = 1.25f;
 	if (scale < .75f) scale = .75f;
 
-	vm_vec_scale(&pos, scale);
-
-
-	// determine the range within which the radar blip is bright
-	if (timestamp_elapsed(Radar_calc_bright_dist_timer))
-	{
-		Radar_calc_bright_dist_timer = timestamp(1000);
-		Radar_bright_range = player_farthest_weapon_range();
-		if (Radar_bright_range <= 0)
-			Radar_bright_range = 1500.0f;
-	}
-	
-	blip *b;
-	int blip_bright = 0;
-	int blip_type = 0;
-
-	if (N_blips >= MAX_BLIPS)
-	{
-		// out of blips, don't plot
-		//Gahhh, this is bloody annoying -WMC
-		//Int3();
-		return;
-	}
-
-	b = &Blips[N_blips];
-	b->flags = 0;
-
-	// bright if within range
-	blip_bright = (dist <= Radar_bright_range);
-
-	// flag the blip as a current target if it is
-	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
-	{
-		b->flags |= BLIP_CURRENT_TARGET;
-		blip_bright = 1;
-	}
-
-	radar_stuff_blip_info(objp, blip_bright, &b->blip_color, &blip_type);
-
-	if (blip_bright)
-		list_append(&Blip_bright_list[blip_type], b);
-	else
-		list_append(&Blip_dim_list[blip_type], b);
-
-//	b->x = xpos;
-//	b->y = ypos;
-	b->position = pos;
-
-	// see if blip should be drawn distorted
-	if (objp->type == OBJ_SHIP)
-	{
-		// ships specifically hidden from sensors
-		if (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)
-			b->flags |= BLIP_DRAW_DISTORTED;
-
-		// determine if its AWACS distorted
-		if (awacs_level < 1.0f)
-			b->flags |= BLIP_DRAW_DISTORTED;
-	}				
-
-	// don't distort the sensor blips if the player has primitive sensors and the nebula effect
-	// is not active
-	if (Player_ship->flags2 & SF2_PRIMITIVE_SENSORS)
-	{
-		if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
-			b->flags &= ~BLIP_DRAW_DISTORTED;
-	}
-
-	N_blips++;
+	vm_vec_scale(scaled_pos, scale);
 }
 
-// set N_blips for each color/brightness level to zero
-void radar_null_nblips_orb()
-{
-	int i;
-
-	N_blips=0;
-
-	for (i=0; i<MAX_BLIP_TYPES; i++) {
-		list_init(&Blip_bright_list[i]);
-		list_init(&Blip_dim_list[i]);
-	}
-}
-
-// radar_mission_init() is called at the start of each mission.  
-void radar_mission_init_orb()
-{
-	int i;
-
-	Blip_mutate_id				= 1;
-	Radar_death_timer			= 0;
-	Radar_static_playing		= 0;
-	Radar_static_next			= 0;
-	Radar_avail_prev_frame	= 1;
-	Radar_calc_bright_dist_timer = timestamp(0);
-
-	for ( i=0; i<NUM_FLICKER_TIMERS; i++ ) {
-		Radar_flicker_timer[i]=timestamp(0);
-		Radar_flicker_on[i]=0;
-	}
-}
-
-#define SMALL_BLIP_CHAR (Lcl_special_chars + 5)
-#define LARGE_BLIP_CHAR (Lcl_special_chars + 6)
-
-static int Small_blip_offset_x = 0;
-static int Small_blip_offset_y = 0;
-static int Large_blip_offset_x = 0;
-static int Large_blip_offset_y = 0;
-
-static char Small_blip_string[2];
-static char Large_blip_string[2];
-
-void radar_frame_init_orb()
-{
-	radar_null_nblips();
-	radx = i2fl(Current_radar_global->Radar_radius[gr_screen.res][0])/2.0f;
-	rady = i2fl(Current_radar_global->Radar_radius[gr_screen.res][1])/2.0f;
-
-	int w,h;
-	gr_set_font(FONT1);
-
-	Small_blip_string[0] = ubyte(SMALL_BLIP_CHAR);
-	Small_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Small_blip_string );
-	Small_blip_offset_x = -w/2;
-	Small_blip_offset_y = -h/2;
-
-	Large_blip_string[0] = ubyte(LARGE_BLIP_CHAR);
-	Large_blip_string[1] = 0;
-	gr_get_string_size( &w, &h, Large_blip_string );
-	Large_blip_offset_x = -w/2;
-	Large_blip_offset_y = -h/2;
-}
-
-void radar_orb_draw_contact(vec3d *pnt, int rad)
+void HudGaugeRadarOrb::drawContact(vec3d *pnt, int rad)
 {
 	vertex verts[2];
 	vec3d p;
@@ -558,7 +130,7 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 	float size = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
 	if (size < i2fl(rad))	size = i2fl(rad);
  
-	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+	if (rad == Radar_blip_radius_target)
 	{
 		g3_draw_sphere(&verts[1],size/100.0f);
 	}
@@ -568,10 +140,9 @@ void radar_orb_draw_contact(vec3d *pnt, int rad)
 	}
 
 	g3_draw_line(&verts[0],&verts[1]);
-
 }
 
-void radar_orb_draw_contact_htl(vec3d *pnt, int rad)
+void HudGaugeRadarOrb::drawContactHtl(vec3d *pnt, int rad)
 {
 	vec3d p;
 
@@ -582,8 +153,16 @@ void radar_orb_draw_contact_htl(vec3d *pnt, int rad)
     float size = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
 	if (size < i2fl(rad))	size = i2fl(rad);
  
-	if (rad == Current_radar_global->Radar_blip_radius_target[gr_screen.res])
+	if (rad == Radar_blip_radius_target)
 	{
+		if (radar_target_id_flags & RTIF_PULSATE) {
+			// use mask to make the darn thing work faster
+			size *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+		}
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
 		g3_draw_htl_sphere(pnt,size/100.0f);
 	}
 	else
@@ -592,20 +171,13 @@ void radar_orb_draw_contact_htl(vec3d *pnt, int rad)
 	}
 
 	g3_draw_htl_line(&p,pnt);
-
-}
-
-void radar_draw_circle_orb( int x, int y, int rad )
-{
-	Int3();
-	//This shouldn't be called in orb mode since we need the 3d position of the contact to draw
 }
 
 // radar is damaged, so make blips dance around
-void radar_blip_draw_distorted_orb(blip *b)
+void HudGaugeRadarOrb::blipDrawDistorted(blip *b, vec3d *pos)
 {
 	float scale;
-	float dist=vm_vec_normalize(&b->position);
+	float dist=vm_vec_normalize(pos);
 	vec3d out;
 	float distortion_angle=20;
 	
@@ -619,25 +191,25 @@ void radar_blip_draw_distorted_orb(blip *b)
 		if (dist < 0.75f) dist = 0.75f;
 	}
 
-	vm_vec_random_cone(&out,&b->position,distortion_angle);
+	vm_vec_random_cone(&out,pos,distortion_angle);
 	vm_vec_scale(&out,dist);
 
     if (Cmdline_nohtl)
     {
-	    radar_orb_draw_contact(&out,b->rad);
+	    drawContact(&out,b->rad);
     }
     else
     {
-        radar_orb_draw_contact_htl(&out,b->rad);
+        drawContactHtl(&out,b->rad);
     }
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
-void radar_blip_draw_flicker_orb(blip *b)
+void HudGaugeRadarOrb::blipDrawFlicker(blip *b, vec3d *pos)
 {
 	int flicker_index;
 
-	float dist=vm_vec_normalize(&b->position);
+	float dist=vm_vec_normalize(pos);
 	vec3d out;
 	float distortion_angle=10;
 
@@ -665,24 +237,25 @@ void radar_blip_draw_flicker_orb(blip *b)
 		if (dist < 0.75f) dist = 0.75f;
 	}
 	
-	vm_vec_random_cone(&out,&b->position,distortion_angle);
+	vm_vec_random_cone(&out,pos,distortion_angle);
 	vm_vec_scale(&out,dist);
 
 	if (Cmdline_nohtl)
     {
-	    radar_orb_draw_contact(&out,b->rad);
+	    drawContact(&out,b->rad);
     }
     else
     {
-        radar_orb_draw_contact_htl(&out,b->rad);
+        drawContactHtl(&out,b->rad);
     }
 }
 
 // Draw all the active radar blips
-void draw_radar_blips_orb(int blip_type, int bright, int distort)
+void HudGaugeRadarOrb::drawBlips(int blip_type, int bright, int distort)
 {
 	blip *b = NULL;
 	blip *blip_head = NULL;
+	vec3d pos;
 
 	Assert((blip_type >= 0) && (blip_type < MAX_BLIP_TYPES));
 
@@ -702,147 +275,87 @@ void draw_radar_blips_orb(int blip_type, int bright, int distort)
 	for (b = GET_FIRST(blip_head); b != END_OF_LIST(blip_head); b = GET_NEXT(b))
 	{
 		gr_set_color_fast(b->blip_color);
+		plotBlip(b, &pos);
 
 		// maybe draw cool blip to indicate current target
 		if (b->flags & BLIP_CURRENT_TARGET)
 		{
-			b->rad = Current_radar_global->Radar_blip_radius_target[gr_screen.res];				
+			b->rad = Radar_blip_radius_target;				
+			target_position = pos;
 		}
 		else
 		{
-			b->rad = Current_radar_global->Radar_blip_radius_normal[gr_screen.res];
+			b->rad = Radar_blip_radius_normal;
 		}
 
 		// maybe distort blip
 		if (distort)
 		{
-			radar_blip_draw_distorted(b);
+			blipDrawDistorted(b, &pos);
 		}
 		else if (b->flags & BLIP_DRAW_DISTORTED)
 		{
-			radar_blip_draw_flicker(b);
+			blipDrawFlicker(b, &pos);
 		}
 		else
 		{
             if (Cmdline_nohtl)
             {
-                radar_orb_draw_contact(&b->position,b->rad);
+               drawContact(&pos,b->rad);
             }
+            else if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0)
+			{
+				drawContactImage(&pos, b->rad, b->radar_image_2d, b->radar_color_image_2d, b->radar_projection_size);
+			}
             else
             {
-                radar_orb_draw_contact_htl(&b->position,b->rad);
+                drawContactHtl(&pos,b->rad);
             }
         }
 	}
 }
 
-// Draw the radar blips
-// input:	distorted	=>		0 (default) to draw normal, 1 to draw distorted 
-void radar_draw_blips_sorted_orb(int distort)
+void HudGaugeRadarOrb::drawBlipsSorted(int distort)
 {
 	g3_start_instance_matrix(&vmd_zero_vector, &view_perturb, false);
 
+	vm_vec_zero(&target_position);
 	// draw dim blips first, then bright blips
 	for (int is_bright = 0; is_bright < 2; is_bright++)
 	{
-		draw_radar_blips_orb(BLIP_TYPE_JUMP_NODE, is_bright, distort);
-		draw_radar_blips_orb(BLIP_TYPE_WARPING_SHIP, is_bright, distort);
-		draw_radar_blips_orb(BLIP_TYPE_NAVBUOY_CARGO, is_bright, distort);
-		draw_radar_blips_orb(BLIP_TYPE_NORMAL_SHIP, is_bright, distort);
-		draw_radar_blips_orb(BLIP_TYPE_BOMB, is_bright, distort);
-		draw_radar_blips_orb(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
+		drawBlips(BLIP_TYPE_JUMP_NODE, is_bright, distort);
+		drawBlips(BLIP_TYPE_WARPING_SHIP, is_bright, distort);
+		drawBlips(BLIP_TYPE_NAVBUOY_CARGO, is_bright, distort);
+		drawBlips(BLIP_TYPE_NORMAL_SHIP, is_bright, distort);
+		drawBlips(BLIP_TYPE_BOMB, is_bright, distort);
+		drawBlips(BLIP_TYPE_TAGGED_SHIP, is_bright, distort);
+	}
+
+	if (radar_target_id_flags & RTIF_CROSSHAIRS) {
+		drawCrosshairs(target_position);
 	}
 
 	g3_done_instance(false);
 }
 
-void radar_draw_range_orb()
-{
-	char buf[32];
-
-	// hud_set_bright_color();
-	hud_set_gauge_color(HUD_RADAR, HUD_C_BRIGHT);
-
-	switch ( HUD_config.rp_dist ) {
-
-	case RR_SHORT:
-		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][1], XSTR( "2k", 467));
-		break;
-
-	case RR_LONG:
-		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][1], XSTR( "10k", 468));
-		break;
-
-	case RR_INFINITY:
-		sprintf(buf, NOX("%c"), Lcl_special_chars);
-		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][1], buf);
-		break;
-
-	default:
-		Int3();	// can't happen (get Alan if it does)
-		break;
-	}
-
-	hud_set_default_color();
-}
-
-extern void hud_save_restore_camera_data(int);
-extern float View_zoom;
-
-void radar_orb_setup_view()
-{
-	hud_save_restore_camera_data(1);
-
-	g3_end_frame();
-
-	int w,h;
-	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
-	
-	HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1],w, h);
-	g3_start_frame(1);
-	
-	float old_zoom=View_zoom;
-	View_zoom=.75;
-
-	g3_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix, View_zoom);
-
-	View_zoom=old_zoom;
-}
-
-void radar_orb_setup_view_htl()
-{
-    int w,h;
-	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
-    
-    HUD_set_clip(Current_radar_global->Radar_coords[gr_screen.res][0],
-                 Current_radar_global->Radar_coords[gr_screen.res][1],
-                 w, h);
-
-    gr_set_proj_matrix( .625f * PI_2, float(w)/float(h), 0.001f, 5.0f);
-	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
-
-    gr_zbuffer_set(0);
-}
-
-void radar_orb_done_drawing()
+void HudGaugeRadarOrb::doneDrawing()
 {
 	g3_done_instance(false);
 	g3_end_frame();
 	g3_start_frame(0);
 	hud_save_restore_camera_data(0);
-	HUD_reset_clip();
+	resetClip();
 }
 
-void radar_orb_done_drawing_htl()
+void HudGaugeRadarOrb::doneDrawingHtl()
 {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
-	hud_save_restore_camera_data(0);
-	HUD_reset_clip();
-    gr_zbuffer_set(1);
+	resetClip();
+    gr_zbuffer_set(GR_ZBUFF_FULL);
 }
 
-void radar_orb_draw_outlines()
+void HudGaugeRadarOrb::drawOutlines()
 {
 	int i;
 	vertex center;
@@ -891,13 +404,13 @@ void radar_orb_draw_outlines()
 	g3_done_instance(false);
 }
 
-int radar_orb_calc_alpha(vec3d* pt)
+int HudGaugeRadarOrb::calcAlpha(vec3d* pt)
 {
     Assert(pt);
     Assert(Player_obj);
 
     vec3d new_pt;
-    vec3d fvec = {0.0f, 0.0f, 1.0f};
+    vec3d fvec = { { { 0.0f, 0.0f, 1.0f } } };
 
     vm_vec_unrotate(&new_pt, pt, &Player_obj->orient);
     vm_vec_normalize(&new_pt);
@@ -909,7 +422,7 @@ int radar_orb_calc_alpha(vec3d* pt)
     return alpha;
 }
 
-void radar_orb_draw_outlines_htl()
+void HudGaugeRadarOrb::drawOutlinesHtl()
 {
 	int i, last = NUM_ORB_RING_SLICES - 1;
 
@@ -923,15 +436,15 @@ void radar_orb_draw_outlines_htl()
 
 	for (i = 0; i < NUM_ORB_RING_SLICES; i++)
 	{
-        gr_init_alphacolor(&Orb_color_orange, 192, 96, 32, radar_orb_calc_alpha(&orb_ring_xy[last]));
+        gr_init_alphacolor(&Orb_color_orange, 192, 96, 32, calcAlpha(&orb_ring_xy[last]));
 		gr_set_color_fast(&Orb_color_orange);
 		g3_draw_htl_line(&orb_ring_xy[last],&orb_ring_xy[i]);
 
-        gr_init_alphacolor(&Orb_color_teal, 48, 160, 96, radar_orb_calc_alpha(&orb_ring_xz[last]));
+        gr_init_alphacolor(&Orb_color_teal, 48, 160, 96, calcAlpha(&orb_ring_xz[last]));
         gr_set_color_fast(&Orb_color_teal);
 		g3_draw_htl_line(&orb_ring_xz[last],&orb_ring_xz[i]);
 
-        gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, radar_orb_calc_alpha(&orb_ring_yz[last]));
+        gr_init_alphacolor(&Orb_color_purple, 112, 16, 192, calcAlpha(&orb_ring_yz[last]));
 		gr_set_color_fast(&Orb_color_purple);
 		g3_draw_htl_line(&orb_ring_yz[last],&orb_ring_yz[i]);
 
@@ -944,10 +457,15 @@ void radar_orb_draw_outlines_htl()
     g3_done_instance(true);
 }
 
-void radar_frame_render_orb(float frametime)
+void HudGaugeRadarOrb::render(float frametime)
 {
 	float	sensors_str;
 	int ok_to_blit_radar;
+
+	//WMC - This strikes me as a bit hackish
+	bool g3_yourself = !g3_in_frame();
+	if(g3_yourself)
+		g3_start_frame(1);
 
 	ok_to_blit_radar = 1;
 
@@ -979,19 +497,19 @@ void radar_frame_render_orb(float frametime)
 		ok_to_blit_radar = 0;
 	}
 
-	hud_set_gauge_color(HUD_RADAR);
-	radar_blit_gauge();
-	radar_draw_range();
+	setGaugeColor();
+	blitGauge();
+	drawRange();
 
     if (Cmdline_nohtl)
     {
-        radar_orb_setup_view();
-        radar_orb_draw_outlines();
+        setupView();
+        drawOutlines();
     }
     else
     {
-        radar_orb_setup_view_htl();
-        radar_orb_draw_outlines_htl();
+        setupViewHtl();
+        drawOutlinesHtl();
     }
 	
 
@@ -1007,12 +525,12 @@ void radar_frame_render_orb(float frametime)
 
 	if ( ok_to_blit_radar ) {
 		if ( Radar_static_playing ) {
-			radar_draw_blips_sorted(1);	// passing 1 means to draw distorted
+			drawBlipsSorted(1);	// passing 1 means to draw distorted
 			if ( Radar_static_looping == -1 ) {
 				Radar_static_looping = snd_play_looping(&Snds[SND_STATIC]);
 			}
 		} else {
-			radar_draw_blips_sorted(0);
+			drawBlipsSorted(0);
 			if ( Radar_static_looping != -1 ) {
 				snd_stop(Radar_static_looping);
 				Radar_static_looping = -1;
@@ -1027,24 +545,147 @@ void radar_frame_render_orb(float frametime)
 	
     if (Cmdline_nohtl)
     {
-	    radar_orb_done_drawing();
+	    doneDrawing();
     }
     else
     {
-        radar_orb_done_drawing_htl();
+        doneDrawingHtl();
     }
+
+	if(g3_yourself)
+		g3_end_frame();
 }
 
-void radar_blit_gauge_orb()
+void HudGaugeRadarOrb::blitGauge()
 {
 	SPECMAP = -1;
 	GLOWMAP = -1;
 
-	gr_set_bitmap(Radar_gauge.first_frame+1);
-	gr_aabitmap( Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1] );
-} 
+	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+}
 
-void radar_page_in_orb()
+void HudGaugeRadarOrb::pageIn()
 {
 	bm_page_in_aabitmap( Radar_gauge.first_frame, Radar_gauge.num_frames );
+}
+
+void HudGaugeRadarOrb::drawContactImage(vec3d *pnt, int rad, int idx, int clr_idx, float mult)
+{
+    int tmap_flags = 0;
+    int h, w;
+    float aspect_mp;
+
+    // need to get bitmap info
+    bm_get_info(idx, &w, &h);
+
+    Assert(w > 0);
+
+    // get multiplier
+    if (h == w) {
+        aspect_mp = 1.0f;
+    } else {
+        aspect_mp = (((float) h) / ((float) w));
+    }
+
+    gr_set_bitmap(idx,GR_ALPHABLEND_NONE,GR_BITBLT_MODE_NORMAL,1.0f);
+
+    float sizef = fl_sqrt(vm_vec_dist(&Orb_eye_position, pnt) * 8.0f);
+
+    // might need checks unless the targeted blip is always wanted to be larger
+    float radius = (float) Radar_blip_radius_normal;
+
+    if (sizef < radius)
+        sizef = radius;
+
+    //Make so no evil things happen
+    Assert(mult > 0.0f);
+
+    //modify size according to value from tables
+    sizef *= mult;
+
+	// animate the targeted icon - option 1 of highlighting the targets
+	if ( rad == Radar_blip_radius_target ) {
+		if (radar_target_id_flags & RTIF_PULSATE) {
+			// use mask to make the darn thing work faster
+			sizef *= 1.3f + (sinf(10 * f2fl(Missiontime)) * 0.3f);
+		}
+		if (radar_target_id_flags & RTIF_BLINK) {
+			if (Missiontime & 8192)
+				return;
+		}
+		if (radar_target_id_flags & RTIF_ENLARGE) {
+			sizef *= 1.3f;
+		}
+	}
+
+    tmap_flags = TMAP_FLAG_TEXTURED | TMAP_FLAG_BW_TEXTURE | TMAP_HTL_3D_UNLIT;
+
+	if ( idx >= 0 ) {
+		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, tmap_flags);
+	}
+
+	if ( clr_idx >= 0 ) {
+		g3_draw_polygon(pnt, &vmd_identity_matrix, sizef/35.0f, aspect_mp*sizef/35.0f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	}
+}
+
+void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
+{
+	int i,j,m;
+	vec3d pnt_end, pnt_start;
+
+	gr_set_color_fast(&Orb_crosshairs);
+
+	for(i = 0; i < 2; i++) {
+		m = (i * 2) - 1;
+		pnt_end = pnt_start = pnt;
+		pnt_start.xyz.x += (float) m*0.05f;
+		pnt_end.xyz.x += (float) m*0.15f;
+		g3_draw_htl_line(&pnt_start, &pnt_end);
+	}
+	for(j = 0; j < 2; j++) {
+		m = (j * 2) - 1;
+		pnt_end = pnt_start = pnt;
+		pnt_start.xyz.y += (float) m*0.05f;
+		pnt_end.xyz.y += (float) m*0.15f;
+		g3_draw_htl_line(&pnt_start, &pnt_end);
+	}
+}
+
+extern void hud_save_restore_camera_data(int);
+extern float View_zoom;
+
+void HudGaugeRadarOrb::setupView()
+{
+	hud_save_restore_camera_data(1);
+
+	g3_end_frame();
+
+	int w,h;
+	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
+	
+	setClip(position[0], position[1],w, h);
+	g3_start_frame(1);
+	
+	float old_zoom=View_zoom;
+	View_zoom=.75;
+
+	g3_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix, View_zoom);
+
+	View_zoom=old_zoom;
+}
+
+void HudGaugeRadarOrb::setupViewHtl()
+{
+    int w,h;
+	bm_get_info(Radar_gauge.first_frame,&w, &h, NULL, NULL, NULL);
+    
+    setClip(position[0],
+                 position[1],
+                 w, h);
+
+    gr_set_proj_matrix( .625f * PI_2, float(w)/float(h), 0.001f, 5.0f);
+	gr_set_view_matrix( &Orb_eye_position, &vmd_identity_matrix );
+
+    gr_zbuffer_set(GR_ZBUFF_NONE);
 }

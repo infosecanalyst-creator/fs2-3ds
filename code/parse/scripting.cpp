@@ -13,6 +13,8 @@
 #include "weapon/weapon.h"
 #include "io/key.h"
 #include "controlconfig/controlsconfig.h"
+#include "freespace2/freespace.h"
+#include "weapon/beam.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -36,8 +38,9 @@ flag_def_list Script_conditions[] =
 	{"Ship type",	CHC_SHIPTYPE,		0},
 	{"Weapon class",CHC_WEAPONCLASS,	0},
 	{"KeyPress",	CHC_KEYPRESS,		0},
+	{"Action",		CHC_ACTION,			0},
 	{"Version",		CHC_VERSION,		0},
-	{"Application",	CHC_APPLICATION,	0},
+	{"Application",	CHC_APPLICATION,	0}
 };
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
@@ -48,6 +51,8 @@ flag_def_list Script_actions[] =
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
 	{"On State Start",			CHA_ONSTATESTART,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
+	{"On Action",				CHA_ONACTION,		0},
+	{"On Action Stopped",		CHA_ONACTIONSTOPPED,0},
 	{"On Key Pressed",			CHA_KEYPRESSED,		0},
 	{"On Key Released",			CHA_KEYRELEASED,	0},
 	{"On Mouse Moved",			CHA_MOUSEMOVED,		0},
@@ -65,13 +70,43 @@ flag_def_list Script_actions[] =
 	{"On Warp Out",				CHA_WARPOUT,		0},
 	{"On Death",				CHA_DEATH,			0},
 	{"On Mission End",			CHA_MISSIONEND,		0},
+	{"On Weapon Delete",		CHA_ONWEAPONDELETE,	0},
+	{"On Weapon Equipped",		CHA_ONWPEQUIPPED,	0},
+	{"On Weapon Fired",			CHA_ONWPFIRED,		0},
+	{"On Weapon Selected",		CHA_ONWPSELECTED,	0},
+	{"On Weapon Deselected",	CHA_ONWPDESELECTED,	0},
+	{"On Gameplay Start",		CHA_GAMEPLAYSTART,	0},
+	{"On Turret Fired",			CHA_ONTURRETFIRED,	0},
+	{"On Primary Fire",			CHA_PRIMARYFIRE,	0},
+	{"On Secondary Fire",		CHA_SECONDARYFIRE,	0},
+	{"On Ship Arrive",			CHA_ONSHIPARRIVE,	0},
+	{"On Beam Collision",		CHA_COLLIDEBEAM,	0},
+	{"On Message Received",		CHA_MSGRECEIVED,	0},
+    {"On HUD Message Received", CHA_HUDMSGRECEIVED, 0}
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
+int scripting_state_inited = 0;
 
 //*************************Scripting init and handling*************************
 
-void script_parse_table(char *filename)
+// the prototype for this is in pstypes.h, below the script_hook struct
+void script_hook_init(script_hook *hook)
+{
+	hook->o_language = 0;
+	hook->h_language = 0;
+
+	hook->o_index = -1;
+	hook->h_index = -1;
+}
+
+// ditto
+bool script_hook_valid(script_hook *hook)
+{
+	return hook->h_index >= 0;
+}
+
+void script_parse_table(const char *filename)
 {
 	script_state *st = &Script_system;
 	int rval;
@@ -89,23 +124,23 @@ void script_parse_table(char *filename)
 		//int num = 42;
 		//Script_system.SetHookVar("Version", 'i', &num);
 		if(optional_string("$Global:")) {
-			Script_globalhook = st->ParseChunk("Global");
+			st->ParseChunk(&Script_globalhook, "Global");
 		}
 
 		if(optional_string("$Splash:")) {
-			Script_splashhook = st->ParseChunk("Splash");
+			st->ParseChunk(&Script_splashhook, "Splash");
 		}
 
 		if(optional_string("$GameInit:")) {
-			Script_gameinithook = st->ParseChunk("GameInit");
+			st->ParseChunk(&Script_gameinithook, "GameInit");
 		}
 
 		if(optional_string("$Simulation:")) {
-			Script_simulationhook = st->ParseChunk("Simulation");
+			st->ParseChunk(&Script_simulationhook, "Simulation");
 		}
 
 		if(optional_string("$HUD:")) {
-			Script_hudhook = st->ParseChunk("HUD");
+			st->ParseChunk(&Script_hudhook, "HUD");
 		}
 
 		required_string("#End");
@@ -139,15 +174,22 @@ void script_parse_table(char *filename)
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.
 //script_close is handled by destructors
-void script_init (void)
+void script_init()
 {
 	mprintf(("SCRIPTING: Beginning initialization sequence...\n"));
+
+	// first things first: init all script hooks, since they are PODs now, not classes...
+	script_hook_init(&Script_splashhook);
+	script_hook_init(&Script_simulationhook);
+	script_hook_init(&Script_hudhook);
+	script_hook_init(&Script_globalhook);
+	script_hook_init(&Script_gameinithook);
 
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
@@ -182,13 +224,13 @@ DCF(script, "Evaluates a line of scripting")
 
 //*************************CLASS: ConditionedScript*************************
 extern char Game_current_mission_filename[];
-bool ConditionedHook::AddCondition(script_condition sc)
+bool ConditionedHook::AddCondition(script_condition *sc)
 {
 	for(int i = 0; i < MAX_HOOK_CONDITIONS; i++)
 	{
 		if(Conditions[i].condition_type == CHC_NONE)
 		{
-			Conditions[i] = sc;
+			Conditions[i] = *sc;
 			return true;
 		}
 	}
@@ -196,17 +238,17 @@ bool ConditionedHook::AddCondition(script_condition sc)
 	return false;
 }
 
-bool ConditionedHook::AddAction(script_action sa)
+bool ConditionedHook::AddAction(script_action *sa)
 {
-	if(!sa.hook.IsValid())
+	if(!script_hook_valid(&sa->hook))
 		return false;
 
-	Actions.push_back(sa);
+	Actions.push_back(*sa);
 
 	return true;
 }
 
-bool ConditionedHook::ConditionsValid(int action, object *objp)
+bool ConditionedHook::ConditionsValid(int action, object *objp, int more_data)
 {
 	uint i;
 
@@ -270,11 +312,124 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 					break;
 				}
 			case CHC_WEAPONCLASS:
-				if(objp == NULL || objp->type != OBJ_WEAPON)
-					return false;
-				if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name))
-					return false;
-				break;
+				{
+					if (action == CHA_COLLIDEWEAPON) {
+						if (stricmp(Weapon_info[more_data].name, scp->data.name) != 0)
+							return false;
+					} else if (!(action == CHA_ONWPSELECTED || action == CHA_ONWPDESELECTED || action == CHA_ONWPEQUIPPED || action == CHA_ONWPFIRED || action == CHA_ONTURRETFIRED )) {
+						if(objp == NULL || (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM))
+							return false;
+						else if (( objp->type == OBJ_WEAPON) && (stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
+							return false;
+						else if (( objp->type == OBJ_BEAM) && (stricmp(Weapon_info[Beams[objp->instance].weapon_info_index].name, scp->data.name) != 0 ))
+							return false;
+					} else if(objp == NULL || objp->type != OBJ_SHIP) {
+						return false;
+					} else {
+
+						// Okay, if we're still here, then objp is both valid and a ship
+						ship* shipp = &Ships[objp->instance];
+						bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
+						switch (action) {
+							case CHA_ONWPSELECTED:
+								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								
+								if (!(primary || secondary))
+									return false;
+
+								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
+									return false;
+								
+								break;
+							case CHA_ONWPDESELECTED:
+								primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+								prev_primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].name, scp->data.name) == 0;
+								secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								prev_secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.previous_secondary_bank]].name, scp->data.name) == 0;
+
+								if ((shipp->flags & SF_PRIMARY_LINKED) && prev_primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.previous_primary_bank]].wi_flags3 & WIF3_NOLINK))
+									return true;
+
+								if ( !prev_secondary && ! secondary && !prev_primary && !primary )
+									return false;
+
+								if ( (!prev_secondary && !secondary) && (prev_primary && primary) ) 
+									return false;
+
+								if ( (!prev_secondary && !secondary) && (!prev_primary && primary) ) 
+									return false;
+
+								if ( (!prev_primary && !primary) && (prev_secondary && secondary) )
+									return false;
+
+								if ( (!prev_primary && !primary) && (!prev_secondary && secondary) )
+									return false;
+
+								break;
+							case CHA_ONWPEQUIPPED: {
+								bool equipped = false;
+								for(int j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+									if (!equipped && (shipp->weapons.primary_bank_weapons[j] >= 0) && (shipp->weapons.primary_bank_weapons[j] < MAX_WEAPON_TYPES) ) {
+										if ( !stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[j]].name, scp->data.name) ) {
+											equipped = true;
+											break;
+										}
+									}
+								}
+							
+								if (!equipped) {
+									for(int j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
+										if (!equipped && (shipp->weapons.secondary_bank_weapons[j] >= 0) && (shipp->weapons.secondary_bank_weapons[j] < MAX_WEAPON_TYPES) ) {
+											if ( !stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[j]].name, scp->data.name) ) {
+												equipped = true;
+												break;
+											}
+										}
+									}
+								}
+
+								if (!equipped)
+									return false;
+							
+								break;
+							}
+							case CHA_ONWPFIRED: {
+								if (more_data == 1) {
+									primary = stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name) == 0;
+									secondary = false;
+								} else {
+									primary = false;
+									secondary = stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name) == 0;
+								}
+
+								if ((shipp->flags & SF_PRIMARY_LINKED) && primary && (Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].wi_flags3 & WIF3_NOLINK))
+								 	return false;
+
+								return more_data == 1 ? primary : secondary;
+
+								break;
+							}
+							case CHA_ONTURRETFIRED: {
+								if (! (stricmp(Weapon_info[shipp->last_fired_turret->last_fired_weapon_info_index].name, scp->data.name) == 0))
+									return false;
+								break;
+							}
+							case CHA_PRIMARYFIRE: {
+								if (stricmp(Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]].name, scp->data.name))
+									return false;
+								break;
+							}
+							case CHA_SECONDARYFIRE: {
+								if (stricmp(Weapon_info[shipp->weapons.secondary_bank_weapons[shipp->weapons.current_secondary_bank]].name, scp->data.name))
+									return false;
+								break;
+							}
+
+						}
+					} // case CHC_WEAPONCLASS
+					break;
+				}
 			case CHC_OBJECTTYPE:
 				if(objp == NULL)
 					return false;
@@ -293,16 +448,28 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 						return false;
 					break;
 				}
+			case CHC_ACTION:
+				{
+					if(gameseq_get_depth() < 0)
+						return false;
+
+					int action_index = more_data;
+
+					if (action_index <= 0 || stricmp(scp->data.name, Control_config[action_index].text))
+						return false;
+					break;
+				}
 			case CHC_VERSION:
 				{
+					// Goober5000: I'm going to assume scripting doesn't care about SVN revision
 					char buf[32];
-					sprintf(buf, "%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 					if(stricmp(buf, scp->data.name))
 					{
 						//In case some people are lazy and say "3.7" instead of "3.7.0" or something
 						if(FS_VERSION_BUILD == 0)
 						{
-							sprintf(buf, "%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+							sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 							if(stricmp(buf, scp->data.name))
 								return false;
 						}
@@ -317,7 +484,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 				{
 					if(Fred_running)
 					{
-						if(stricmp("FRED2_Open", scp->data.name) && stricmp("FRED2_Open", scp->data.name) && stricmp("FRED 2", scp->data.name) && stricmp("FRED", scp->data.name))
+						if(stricmp("FRED2_Open", scp->data.name) && stricmp("FRED2Open", scp->data.name) && stricmp("FRED 2", scp->data.name) && stricmp("FRED", scp->data.name))
 							return false;
 					}
 					else
@@ -339,10 +506,8 @@ bool ConditionedHook::Run(script_state *sys, int action, char format, void *data
 	Assert(sys != NULL);
 
 	//Do the actions
-	script_action *sap;
-	for(uint i = 0; i < Actions.size(); i++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		sap = &Actions[i];
 		if(sap->action_type == action)
 			sys->RunBytecode(sap->hook, format, data);
 	}
@@ -356,10 +521,8 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 	//bool b = false;
 
 	//Do the actions
-	script_action *sap;
-	for(uint i = 0; i < Actions.size(); i++)
+	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		sap = &Actions[i];
 		if(sap->action_type == action)
 		{
 			if(sys->IsOverride(sap->hook))
@@ -372,9 +535,6 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
-#ifndef USE_PYTHON
-#pragma message("NOTE: Python is not compiled in")
-#endif
 
 //WMC - defined in parse/lua.h
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
@@ -410,6 +570,7 @@ void script_state::SetHookObjects(int num, ...)
 	{
 		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
 	}
+	va_end(vl);
 }
 
 //This pair of abstraction functions handles
@@ -511,6 +672,8 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			{
 				if(format == 's')
 					ade_set_args(LuaState, fmt, data);
+				else if (format == 'i')
+					ade_set_args(LuaState, fmt, *(int*)data);
 				else
 					ade_set_args(LuaState, fmt, *(ade_odata*)data);
 			}
@@ -597,6 +760,7 @@ void script_state::RemHookVars(unsigned int num, ...)
 				lua_pushnil(LuaState);
 				lua_rawset(LuaState, amt_ldx);
 			}
+			va_end(vl);
 
 			this->CloseHookVarTable();
 		}
@@ -654,7 +818,7 @@ int script_state::LoadBm(char *name)
 
 	if(idx > -1) {
 		id.handle = idx;
-		strcpy(id.fname, name);
+		strcpy_s(id.fname, name);
 		ScriptImages.push_back(id);
 	}
 
@@ -735,17 +899,6 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 			lua_pop(GetLuaSession(), 1);	//err
 			
 		}
-		else if(in_lang == SC_PYTHON)
-		{
-#ifdef USE_PYTHON
-			PyObject *chk = PyBytecodeLib.Get(in_idx);
-			if(chk != NULL)
-			{
-				PyEval_EvalCode(PyBytecodeLib.Get(in_idx), GetPyGlobals(), GetPyLocals());
-				return 1;
-			}
-#endif
-		}
 	}
 
 	return 1;
@@ -758,14 +911,12 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 	return 1;
 }
 
-int script_state::RunCondition(int action, char format, void *data, object *objp)
+int script_state::RunCondition(int action, char format, void *data, object *objp, int more_data)
 {
-	ConditionedHook *chp = NULL;
 	int num = 0;
-	for(uint i= 0; i < ConditionalHooks.size(); i++)
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
-		chp = &ConditionalHooks[i];
-		if(chp->ConditionsValid(action, objp))
+		if(chp->ConditionsValid(action, objp, more_data))
 		{
 			chp->Run(this, action, format, data);
 			num++;
@@ -776,11 +927,9 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 
 bool script_state::IsConditionOverride(int action, object *objp)
 {
-	ConditionedHook *chp = NULL;
 	//bool b = false;
-	for(uint i= 0; i < ConditionalHooks.size(); i++)
+	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
-		chp = &ConditionalHooks[i];
 		if(chp->ConditionsValid(action, objp))
 		{
 			if(chp->IsOverride(this, action))
@@ -803,12 +952,6 @@ void script_state::Clear()
 	//Don't close this yet
 	LuaState = NULL;
 	LuaLibs = NULL;
-#ifdef USE_PYTHON
-	Py_XDECREF(PyGlb);
-	PyGlb = NULL;
-	Py_XDECREF(PyLoc);
-	PyLoc = NULL;
-#endif
 }
 
 script_state::script_state(char *name)
@@ -819,9 +962,6 @@ script_state::script_state(char *name)
 
 	LuaState = NULL;
 	LuaLibs = NULL;
-
-	PyGlb = NULL;
-	PyLoc = NULL;
 }
 
 script_state& script_state::operator=(script_state &in)
@@ -855,34 +995,6 @@ void script_state::SetLuaSession(lua_State *L)
 	}
 }
 
-void script_state::SetPySession(PyObject *loc, PyObject *glb)
-{
-#ifdef USE_PYTHON
-	//set variables
-	if(PyGlb != NULL)
-	{
-		Py_XDECREF(PyGlb);
-		PyGlb = glb;
-	}
-
-	if(PyLoc != NULL)
-	{
-		Py_XDECREF(PyLoc);
-		PyLoc = loc;
-	}
-
-	//Add or remove python note
-	if(PyGlb != NULL || PyLoc != NULL)
-	{
-		Langs |= SC_PYTHON;
-	}
-	else if(Langs & SC_PYTHON)
-	{
-		Langs &= ~SC_PYTHON;
-	}
-#endif
-}
-
 int script_state::OutputMeta(char *filename)
 {
 	FILE *fp = fopen(filename,"w");
@@ -893,10 +1005,25 @@ int script_state::OutputMeta(char *filename)
 		return 0; 
 	}
 
-	fprintf(fp, "<html>\n<head>\n\t<title>Script output: %d.%d.%d (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	fputs("<body>", fp);
-	fprintf(fp,"\t<h1>Script Output - Build %d.%d.%d (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
-	
+	if (FS_VERSION_BUILD == 0 && FS_VERSION_REVIS == 0) //-V547
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, StateName);
+	}
+	else if (FS_VERSION_REVIS == 0)
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, StateName);
+	}
+	else
+	{
+		fprintf(fp, "<html>\n<head>\n\t<title>Script Output - FSO v%i.%i.%i.%i (%s)</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
+		fputs("<body>", fp);
+		fprintf(fp,"\t<h1>Script Output - FSO v%i.%i.%i.%i (%s)</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD, FS_VERSION_REVIS, StateName);
+	}
+		
 	//Scripting languages links
 	fputs("<dl>", fp);
 
@@ -922,9 +1049,6 @@ int script_state::OutputMeta(char *filename)
 
 	//***Scripting langs
 	fputs("<dt><h2>Scripting languages</h2></dt>", fp);
-	if(Langs & SC_PYTHON) {
-		fputs("<dd><a href=\"#Python\">Python</a></dd>", fp);
-	}
 	if(Langs & SC_LUA) {
 		fputs("<dd><a href=\"#Lua\">Lua</a></dd>", fp);
 	}
@@ -939,10 +1063,6 @@ int script_state::OutputMeta(char *filename)
 		OutputLuaMeta(fp);
 		fputs("</dd>", fp);
 	}
-	/*
-	if(Langs & SC_PYTHON) {
-		OutputPyMeta(fp);
-	}*/
 	fputs("</dl></body></html>", fp);
 
 	fclose(fp);
@@ -950,30 +1070,13 @@ int script_state::OutputMeta(char *filename)
 	return 1;
 }
 
-bool script_state::EvalString(char* string, char *format, void *rtn, char *debug_str)
+bool script_state::EvalString(const char *string, const char *format, void *rtn, const char *debug_str)
 {
 	char lastchar = string[strlen(string)-1];
 
 	if(string[0] == '{')
 	{
-#ifdef USE_PYTHON
-		if(lastchar == '}')
-		{
-			*lcp = '\0';
-		}
-		else
-		{
-			return false;
-		}
-
-		//WMC - Whoever comes next to Python...needs to fix this.
-		Py_RunString(string, Py_file_input, PyGlb, PyLoc);
-
-		*lcp = lastchar;
-		return true;
-#else
 		return false;
-#endif
 	}
 
 	if(string[0] == '[' && lastchar != ']')
@@ -981,24 +1084,23 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		return false;
 	}
 
-	char *s = new char[strlen(string) + 8];
+	size_t s_bufSize = strlen(string) + 8;
+	char *s = new char[ s_bufSize ];
 	if(string[0] != '[')
 	{
 		if(rtn != NULL)
 		{
-			strcpy(s, "return ");
-			strcat(s, string);
+			strcpy_s(s, s_bufSize, "return ");
+			strcat_s(s, s_bufSize, string);
 		}
 		else
 		{
-			strcpy(s, string);
-			s[strlen(s)] = '\0';
+			strcpy_s(s, s_bufSize, string);
 		}
-		s[strlen(s)] = '\0';
 	}
 	else
 	{
-		strcpy(s, string+1);
+		strcpy_s(s, s_bufSize, string+1);
 		s[strlen(s)-1] = '\0';
 	}
 
@@ -1138,21 +1240,6 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//WMC - This makes debug go wonky.
 		vm_free(raw_lua);
 	}
-	else if(check_for_string("{"))
-	{
-		//Python string
-
-		//Assume python
-		*out_lang = SC_PYTHON;
-
-		//Get the block
-		char* raw_python = alloc_block("{","}");
-#ifdef USE_PYTHON
-		//Add it to the lib
-		*out_index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
-#endif
-		vm_free(raw_python);
-	}
 	else
 	{
 		char buf[PARSE_BUF_SIZE];
@@ -1160,13 +1247,13 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//Assume lua
 		*out_lang = SC_LUA;
 
-		strcpy(buf, "return ");
+		strcpy_s(buf, "return ");
 
 		//Stuff it
 		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf) - strlen(buf));
 
 		//Add ending
-		strcat(buf, "\n");
+		strcat_s(buf, "\n");
 
 		int len = strlen(buf);
 
@@ -1187,11 +1274,10 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	}
 }
 
-script_hook script_state::ParseChunk(char* debug_str)
+void script_state::ParseChunk(script_hook *dest, char *debug_str)
 {
 	static int total_parse_calls = 0;
 	char debug_buf[128];
-	script_hook rval;
 
 	total_parse_calls++;
 
@@ -1202,18 +1288,17 @@ script_hook script_state::ParseChunk(char* debug_str)
 		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
-	ParseChunkSub(&rval.h_language, &rval.h_index, debug_str);
+	ParseChunkSub(&dest->h_language, &dest->h_index, debug_str);
 
 	if(optional_string("+Override:"))
 	{
-		char *debug_str_over = (char*)vm_malloc(strlen(debug_str) + 10);
-		strcpy(debug_str_over, debug_str);
-		strcat(debug_str_over, " override");
-		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
+		size_t bufSize = strlen(debug_str) + 10;
+		char *debug_str_over = (char*)vm_malloc(bufSize);
+		strcpy_s(debug_str_over, bufSize, debug_str);
+		strcat_s(debug_str_over, bufSize, " override");
+		ParseChunkSub(&dest->o_language, &dest->o_index, debug_str_over);
 		vm_free(debug_str_over);
 	}
-
-	return rval;
 }
 
 int script_parse_condition()
@@ -1240,17 +1325,16 @@ flag_def_list* script_parse_action()
 
 	return NULL;
 }
-bool script_state::ParseCondition(char *filename)
+bool script_state::ParseCondition(const char *filename)
 {
 	ConditionedHook *chp = NULL;
-
-	script_condition sct;
 	int condition;
+
 	for(condition = script_parse_condition(); condition != CHC_NONE; condition = script_parse_condition())
 	{
-		//Clear it
-		sct = script_condition();
+		script_condition sct;
 		sct.condition_type = condition;
+
 		switch(condition)
 		{
 			case CHC_STATE:
@@ -1264,7 +1348,7 @@ bool script_state::ParseCondition(char *filename)
 			case CHC_VERSION:
 			case CHC_APPLICATION:
 			default:
-				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
+				stuff_string(sct.data.name, F_NAME, CONDITION_LENGTH);
 				break;
 		}
 
@@ -1274,7 +1358,7 @@ bool script_state::ParseCondition(char *filename)
 			chp = &ConditionalHooks[ConditionalHooks.size()-1];
 		}
 
-		if(!chp->AddCondition(sct))
+		if(!chp->AddCondition(&sct))
 		{
 			Warning(LOCATION, "Could not add condition to conditional hook in file '%s'; you may have more than %d", filename, MAX_HOOK_CONDITIONS);
 		}
@@ -1285,25 +1369,24 @@ bool script_state::ParseCondition(char *filename)
 		return false;
 	}
 
-	script_action sat;
 	flag_def_list *action;
 	bool actions_added = false;
 	for(action = script_parse_action(); action != NULL; action = script_parse_action())
 	{
-		sat = script_action();
+		script_action sat;
 		sat.action_type = action->def;
 
 		//WMC - build error string
 		char *buf = (char *)vm_malloc(strlen(filename) + strlen(action->name) + 4);
 		sprintf(buf, "%s - %s", filename, action->name);
 
-		sat.hook = ParseChunk(buf);
+		ParseChunk(&sat.hook, buf);
 		
 		//Free error string
 		vm_free(buf);
 
 		//Add the action
-		if(chp->AddAction(sat))
+		if(chp->AddAction(&sat))
 			actions_added = true;
 	}
 
@@ -1317,7 +1400,7 @@ bool script_state::ParseCondition(char *filename)
 	return true;
 }
 
-//*************************CLASS: script_hook*************************
+//*************************CLASS: script_state*************************
 bool script_state::IsOverride(script_hook &hd)
 {
 	if(hd.h_index < 0)
@@ -1327,4 +1410,46 @@ bool script_state::IsOverride(script_hook &hd)
 	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
 
 	return b;
+}
+
+void scripting_state_init()
+{
+	// nothing to do here
+	if (scripting_state_inited)
+		return;
+
+	gr_set_clear_color(0, 0, 0);
+
+	scripting_state_inited = 1;
+}
+
+void scripting_state_close()
+{
+	if (!scripting_state_inited)
+		return;
+
+	game_flush();
+
+	scripting_state_inited = 0;
+}
+
+void scripting_state_do_frame(float frametime)
+{
+	// just incase something is wrong
+	if (!scripting_state_inited)
+		return;
+
+	gr_reset_clip();
+	gr_clear();
+	gr_flip();
+
+	// process keys
+	int k = game_check_key() & ~KEY_DEBUGGED;	
+
+	switch (k)
+	{
+		case KEY_ESC:
+			gameseq_post_event(GS_EVENT_MAIN_MENU);
+			return;
+	}
 }

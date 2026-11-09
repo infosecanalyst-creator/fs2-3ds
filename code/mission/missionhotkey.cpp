@@ -7,211 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.14.2.2 $
- * $Date: 2007-11-09 01:28:36 $
- * $Author: taylor $
- *
- * C module for the Hotkey selection screen
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.14.2.1  2006/11/15 00:33:16  taylor
- * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
- *
- * Revision 2.14  2006/01/26 03:23:30  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.13  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.12  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.11  2005/10/29 22:09:29  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- * Revision 2.10  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.9  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.8  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.6  2004/03/31 05:42:28  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.5  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/04/05 11:09:21  Goober5000
- * fixed some fiddly bits with scrolling and ui stuff
- * --Goober5000
- *
- * Revision 2.3  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.2  2002/12/02 23:24:35  Goober5000
- * fixed misspelling of "category" as "catagory"
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     10/14/99 2:50p Jefff
- * localization fixes
- * 
- * 4     8/17/99 3:00p Jefff
- * updated for fs2
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 54    6/09/98 5:15p Lawrance
- * French/German localization
- * 
- * 53    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 52    5/26/98 11:10a Lawrance
- * Fix bug where window controls get disabled when F1 pressed twice
- * 
- * 51    5/06/98 10:47a Allender
- * allow escape pods to be shown on hotkey screen
- * 
- * 50    5/05/98 1:49a Lawrance
- * Add in missing help overlays
- * 
- * 49    4/25/98 7:40p Allender
- * fixd some small hotkey stuff.  Worked on turret orientation being
- * correct for multiplayer.  new sexpression called end-campaign will will
- * end the main campaign
- * 
- * 48    4/20/98 12:36a Mike
- * Make team vs. team work when player is hostile.  Several targeting
- * problems.
- * 
- * 47    4/13/98 10:52a Jasen
- * Updated coords for new Hotkey config screen.
- * 
- * 46    3/11/98 10:33p Allender
- * made a "hidden" hotkey which is the last hotkey in the set, which means
- * to hide the ship/wing until the mission is entered.
- * 
- * 45    3/11/98 11:20a Hoffoss
- * Changed hotkey screen to only show friendly and hostile  categories
- * (everything non-friendly is hostile).
- * 
- * 44    3/10/98 9:51a Allender
- * minor fixups to hotkey stuff.
- * 
- * 43    3/07/98 8:09p Allender
- * maybe restore hotkeys when setting defaults
- * 
- * 42    2/27/98 4:31p Allender
- * don't show ships on hotkey screen which are hidden to sensors
- * 
- * 41    2/23/98 8:14a John
- * 
- * 40    2/23/98 8:06a John
- * Externalized some strings
- * 
- * 39    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 38    2/10/98 2:06p Hoffoss
- * Eliminated cargo (and NavBouys) from hotkey list.
- * 
- * 37    1/29/98 10:26a Hoffoss
- * Made changes so arrow buttons repeat scrolling when held down.
- * 
- * 36    1/28/98 6:22p Dave
- * Made standalone use ~8 megs less memory. Fixed multiplayer submenu
- * sequencing bug.
- * 
- * 35    1/26/98 4:42p Allender
- * fixed restoration of hotkeys when replaying mission.  Change the
- * meaning of "departed wing" to mean anytime a wing "departs" (with any
- * number of remaining wingmen).
- * 
- * 34    1/19/98 9:37p Allender
- * Great Compiler Warning Purge of Jan, 1998.  Used pragma's in a couple
- * of places since I was unsure of what to do with code.
- * 
- * 33    1/18/98 5:09p Lawrance
- * Added support for TEAM_TRAITOR
- * 
- * 32    1/14/98 5:22p Allender
- * save/restore hotkey selections when replaying the same mission
- * 
- * 31    12/15/97 12:13p Hoffoss
- * Changed code to allow hotkey listing to repeat scroll when mouse held
- * down on buttons.
- * 
- * 30    12/10/97 2:30p Hoffoss
- * Removed dead code that isn't being used anymore.
- * 
- * 29    12/09/97 8:12a Allender
- * changes to hotkey stuff.  Don't allow mission defined hotkeys to
- * override user defined ones once the mission starts
- * 
- * 28    12/03/97 4:16p Hoffoss
- * Changed sound stuff used in interface screens for interface purposes.
- * 
- * 27    12/01/97 3:39p Hoffoss
- * Changed naming of headings.
- * 
- * 26    12/01/97 3:29p Jasen
- * Fixed button coordinates.
- * 
- * 25    12/01/97 2:50p Hoffoss
- * Improved hotkey screen.  F keys are in seperate columns now, and
- * Shift-F key adds that to item.
- * 
- * 24    11/24/97 10:14p Allender
- * fixed a couple of problem with assignments in the hotkey screen.  alpha
- * wing problems, num_ships problems
- * 
- * 23    11/19/97 3:40p Allender
- * don't allow player to get assigned by himself to a hotkey.  Don't allow
- * navbuoys to be assigned either
- * 
- * 22    11/10/97 5:36p Hoffoss
- * Fixed bug in last fix. :)
- *
- * $NoKeywords: $
- */
+
 
 #include "globalincs/pstypes.h"
 #include "mission/missionhotkey.h"
@@ -231,7 +27,7 @@
 #include "graphics/font.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/parselo.h"
 
@@ -464,7 +260,7 @@ static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {
 
 
 static struct {
-	char *label;
+	const char *label;
 	int type;
 	int index;
 	int y;  // Y coordinate of line
@@ -479,6 +275,8 @@ static int Wing_bmp;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 //static UI_BUTTON List_region;
+
+int Hotkey_overlay_id;
 
 //////////////////////
 
@@ -631,7 +429,7 @@ void mission_hotkey_maybe_save_sets()
 		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) ) {
 			Assert( Num_hotkeys_saved < MAX_HOTKEY_TARGET_ITEMS );
 			hkp->setnum = i;
-			strcpy( hkp->name, Ships[hitem->objp->instance].ship_name );
+			strcpy_s( hkp->name, Ships[hitem->objp->instance].ship_name );
 			hkp++;
 			Num_hotkeys_saved++;
 		}
@@ -713,7 +511,7 @@ int get_wing_hotkeys(int n)
 }
 
 // add a line of hotkey smuck to end of list
-int hotkey_line_add(char *text, int type, int index, int y)
+int hotkey_line_add(const char *text, int type, int index, int y)
 {
 	if (Num_lines >= MAX_LINES)
 		return 0;
@@ -768,7 +566,7 @@ int hotkey_line_add_sorted(char *text, int type, int index, int start)
 int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 {
 	ship_obj *so;
-	char *str = NULL;
+	const char *str = NULL;
 	int i, j, s, z, start, team_mask;
 	int font_height = gr_get_font_height();
 
@@ -794,14 +592,6 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	y += 2;
 
 	start = Num_lines;
-
-	// next loop used to loop through max ships, comparing team values.  MWA changed this to iterate
-	// through object list.  Seemed safer since it doesn't rely on the team value getting reset to
-	// a bogus value between missions
-	//for (i=0; i<MAX_SHIPS; i++) {
-	//	if ((Ships[i].team == team) && (Ships[i].wingnum < 0)) {
-	//		hotkey_line_add_sorted(Ships[i].ship_name, HOTKEY_LINE_SHIP, i, start);
-	//	}
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		int shipnum;
@@ -868,7 +658,6 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		}
 	}
 
-	z = HOTKEY_LINE_HEADING;
 	for (i=start; i<Num_lines; i++) {
 		if (Hotkey_lines[i].type == HOTKEY_LINE_SUBSHIP)
 			y += font_height;
@@ -1130,8 +919,8 @@ void mission_hotkey_init()
 	int i;
 	hotkey_buttons *b;
 
-	// pause all beam weapon sounds
-	beam_pause_sounds();
+	// pause all weapon sounds
+	weapon_pause_sounds();
 
 	// pause all game music
 	audiostream_pause_all();
@@ -1167,7 +956,8 @@ void mission_hotkey_init()
 	Buttons[gr_screen.res][SCROLL_DOWN_BUTTON].button.set_hotkey(KEY_PAGEDOWN);
 
 	// ensure help overlay is off
-	help_overlay_set_state(HOTKEY_OVERLAY,0);
+	Hotkey_overlay_id = help_overlay_get_index(HOTKEY_OVERLAY);
+	help_overlay_set_state(Hotkey_overlay_id,gr_screen.res,0);
 
 	// load in relevant bitmaps
 	Background_bitmap = bm_load(Hotkey_background_fname[gr_screen.res]);
@@ -1199,11 +989,8 @@ void mission_hotkey_close()
 	if (Wing_bmp >= 0)
 		bm_release(Wing_bmp);
 
-	// unload the overlay bitmap
-//	help_overlay_unload(HOTKEY_OVERLAY);
-
-	// unpause all beam weapon sounds
-	beam_unpause_sounds();
+	// unpause all weapon sounds
+	weapon_unpause_sounds();
 
 	// unpause all game music
 	audiostream_unpause_all();
@@ -1226,7 +1013,7 @@ void mission_hotkey_do_frame(float frametime)
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
 	color circle_color;
 
-	if ( help_overlay_active(HOTKEY_OVERLAY) ) {
+	if ( help_overlay_active(Hotkey_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1234,14 +1021,14 @@ void mission_hotkey_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(HOTKEY_OVERLAY) ) {
-			help_overlay_set_state(HOTKEY_OVERLAY, 0);
+		if ( help_overlay_active(Hotkey_overlay_id) ) {
+			help_overlay_set_state(Hotkey_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(HOTKEY_OVERLAY) ) {
+	if ( !help_overlay_active(Hotkey_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1355,9 +1142,10 @@ void mission_hotkey_do_frame(float frametime)
 		}
 	}
 
+	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 
 	} else
 		gr_clear();
@@ -1368,9 +1156,9 @@ void mission_hotkey_do_frame(float frametime)
 	// draw the big "F10" in the little box	
 	gr_set_font(FONT2);
 	gr_set_color_fast(&Color_text_normal);
-	strcpy(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
+	strcpy_s(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
 	gr_get_string_size(&w, &h, buf);
-	gr_printf(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], buf);
+	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], buf);
 
 	gr_set_font(FONT1);
 	line = Scroll_offset;
@@ -1384,25 +1172,25 @@ void mission_hotkey_do_frame(float frametime)
 
 				gr_get_string_size(&w, &h, Hotkey_lines[line].label);
 				i = y + h / 2 - 1;
-				gr_line(Hotkey_list_coords[gr_screen.res][0], i, Hotkey_ship_x[gr_screen.res] - 2, i);
-				gr_line(Hotkey_ship_x[gr_screen.res] + w + 1, i, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2], i);
+				gr_line(Hotkey_list_coords[gr_screen.res][0], i, Hotkey_ship_x[gr_screen.res] - 2, i, GR_RESIZE_MENU);
+				gr_line(Hotkey_ship_x[gr_screen.res] + w + 1, i, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2], i, GR_RESIZE_MENU);
 				break;
 
 			case HOTKEY_LINE_WING:
 				gr_set_bitmap(Wing_bmp);
 				bm_get_info(Wing_bmp, NULL, &h, NULL);
 				i = y + font_height / 2 - h / 2 - 1;
-				gr_bitmap(Hotkey_wing_icon_x[gr_screen.res], i);
+				gr_bitmap(Hotkey_wing_icon_x[gr_screen.res], i, GR_RESIZE_MENU);
 
 //				i = y + font_height / 2 - 1;
 //				gr_set_color_fast(&circle_color);
-//				gr_circle(ICON_LIST_X + 4, i, 5);
+//				gr_circle(ICON_LIST_X + 4, i, 5, GR_RESIZE_MENU);
 
 //				gr_set_color_fast(&Color_bright);
-//				gr_line(ICON_LIST_X, i, ICON_LIST_X + 2, i);
-//				gr_line(ICON_LIST_X + 4, i - 4, ICON_LIST_X + 4, i - 2);
-//				gr_line(ICON_LIST_X + 6, i, ICON_LIST_X + 8, i);
-//				gr_line(ICON_LIST_X + 4, i + 2, ICON_LIST_X + 4, i + 4);
+//				gr_line(ICON_LIST_X, i, ICON_LIST_X + 2, i, GR_RESIZE_MENU);
+//				gr_line(ICON_LIST_X + 4, i - 4, ICON_LIST_X + 4, i - 2, GR_RESIZE_MENU);
+//				gr_line(ICON_LIST_X + 6, i, ICON_LIST_X + 8, i, GR_RESIZE_MENU);
+//				gr_line(ICON_LIST_X + 4, i + 2, ICON_LIST_X + 4, i + 4, GR_RESIZE_MENU);
 
 				hotkeys = get_wing_hotkeys(Hotkey_lines[line].index);
 				break;
@@ -1421,10 +1209,7 @@ void mission_hotkey_do_frame(float frametime)
 			List_buttons[line - Scroll_offset].update_dimensions(Hotkey_list_coords[gr_screen.res][0], y, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_list_coords[gr_screen.res][0], font_height);
 			List_buttons[line - Scroll_offset].enable();
 			if (hotkeys & (1 << Cur_hotkey)) {
-				if (line == Selected_line)
-					gr_set_color_fast(&Color_text_active_hi);
-				else
-					gr_set_color_fast(&Color_text_active);
+				gr_set_color_fast(&Color_text_active);
 
 			} else {
 				if (line == Selected_line)
@@ -1444,15 +1229,15 @@ void mission_hotkey_do_frame(float frametime)
 		if (hotkeys) {
 			for (i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
-					gr_printf(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, Scan_code_text[Key_sets[i]]);
+					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, Scan_code_text[Key_sets[i]]);
 				}
 			}
 /*
 			*buf = 0;
 			for (i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
-					strcat(buf, Scan_code_text[Key_sets[i]]);
-					strcat(buf, ", ");
+					strcat_s(buf, Scan_code_text[Key_sets[i]]);
+					strcat_s(buf, ", ");
 				}
 			}
 
@@ -1460,19 +1245,19 @@ void mission_hotkey_do_frame(float frametime)
 			buf[strlen(buf) - 2] = 0;  // lose the ", " on the end
 
 			gr_force_fit_string(buf, 255, GROUP_LIST_W);
-			gr_printf(GROUP_LIST_X, y, buf);*/
+			gr_printf_menu(GROUP_LIST_X, y, buf);*/
 		}
 	
 		// draw ship/wing name
-		strcpy(buf, Hotkey_lines[line].label);
+		strcpy_s(buf, Hotkey_lines[line].label);
 		end_string_at_first_hash_symbol(buf);
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent
 			gr_force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
-			gr_printf(Hotkey_ship_x[gr_screen.res]+20, y, buf);
+			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, buf);
 		} else {
 			gr_force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_ship_x[gr_screen.res]);
-			gr_printf(Hotkey_ship_x[gr_screen.res], y, buf);
+			gr_printf_menu(Hotkey_ship_x[gr_screen.res], y, buf);
 		}
 
 		line++;
@@ -1483,7 +1268,7 @@ void mission_hotkey_do_frame(float frametime)
 		List_buttons[i++].disable();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(HOTKEY_OVERLAY);
+	help_overlay_maybe_blit(Hotkey_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

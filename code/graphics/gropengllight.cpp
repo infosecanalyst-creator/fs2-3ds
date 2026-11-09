@@ -7,188 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.29.2.6 $
- * $Date: 2007-04-13 00:33:18 $
- * $Author: taylor $
- *
- * code to implement lighting in HT&L opengl
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.29.2.5  2007/03/22 20:50:27  taylor
- * some generic code cleanup
- *
- * Revision 1.29.2.4  2007/02/10 00:05:25  taylor
- * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
- *
- * Revision 1.29.2.3  2006/12/26 05:17:28  taylor
- * tweak emission light a little bit
- * various bits of cleanup that I've been meaning to do
- *
- * Revision 1.29.2.2  2006/12/07 18:10:16  taylor
- * restore default ambient light values to retail-like settings (I based the previous values on default D3D, which was rather dumb of me)
- * restore lighting falloff capability from retail and non-HTL modes (only used for asteroids as far as I know)
- * various cleanups and speedups for dealing with lights
- *
- * Revision 1.29.2.1  2006/07/24 07:38:00  taylor
- * minor cleanup/optimization to beam warmup glow rendering function
- * various lighting code cleanups
- *  - try to always make sure beam origin lights occur outside of model
- *  - make Static_lights[] dynamic
- *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
- *  - add ambient color to point lights (helps warp effects)
- *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
- *
- * Revision 1.29  2006/04/12 01:10:35  taylor
- * some cleanup and slight reorg
- *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
- *  - avoid some costly math where possible in the drawing functions
- *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
- *  - minor cleanup to Win32 extension defines
- *  - make opengl_lights[] allocate only when using OGL
- *  - cleanup some costly per-frame lighting stuff
- *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
- *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
- *
- * Revision 1.28  2006/04/05 13:47:01  taylor
- * remove -tga16, it's obsolete now
- * add a temporary -no_emissive_light option to not use emission type light in OGL
- *
- * Revision 1.27  2006/03/15 17:33:05  taylor
- * couple of nitpicks
- *
- * Revision 1.26  2006/02/16 04:55:53  taylor
- * couple more lighting value tweaks
- *
- * Revision 1.25  2006/01/30 06:40:49  taylor
- * better lighting for OpenGL
- * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
- * some basic lighting code cleanup
- *
- * Revision 1.24  2006/01/20 17:15:16  taylor
- * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
- * several other very minor changes as well
- *
- * Revision 1.23  2006/01/19 05:40:19  wmcoolmon
- * Possible overflow check
- *
- * Revision 1.22  2006/01/14 19:25:55  taylor
- * minor OGL lighting fix
- *
- * Revision 1.21  2005/12/06 02:50:41  taylor
- * clean up some init stuff and fix a minor SDL annoyance
- * make debug messages a bit more readable
- * clean up the debug console commands for minimize and anisotropic filter setting
- * make anisotropic filter actually work correctly and have it settable with a reg option
- * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
- *
- * Revision 1.20  2005/10/23 11:45:06  taylor
- * add -ogl_shine to adjust the OGL shininess value so that people can play around and find the best value to use
- *
- * Revision 1.19  2005/09/30 09:47:06  taylor
- * remove -rlm, it's always on now since there was never a complaint and pretty much everyone uses it
- * add -cache_bitmaps and have bitmap caching between levels off by default
- * when -cache_bitmaps is used then use C-BMP for top-right memory listing, and just BMP otherwise
- *
- * Revision 1.18  2005/09/05 09:36:41  taylor
- * merge of OSX tree
- * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
- * fix OGL version check, it would allow a required major version to be higher if the required minor version was lower than current
- *
- * Revision 1.17  2005/05/23 05:56:26  taylor
- * Jens, again:
- *  - compiler warning fixes
- *  - sanity and readability fixes for bmpman
- *
- * Revision 1.16  2005/05/12 17:49:12  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 1.15  2005/04/24 12:56:42  taylor
- * really are too many changes here:
- *  - remove all bitmap section support and fix problems with previous attempt
- *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
- *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
- *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
- *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
- *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
- *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
- *    code/render/3ddraw.cpp )
- *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
- *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
- *
- * Revision 1.14  2005/04/15 11:42:27  taylor
- * fix ambient light
- *
- * Revision 1.13  2005/04/12 02:04:56  phreak
- * gr_set_ambient_light() function for the ambient light sliders in FRED
- *
- * Revision 1.12  2005/04/05 05:53:17  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 1.11  2005/02/05 00:30:49  taylor
- * fix a few things post merge
- *
- * Revision 1.10  2005/02/04 23:29:31  taylor
- * merge with Linux/OSX tree - p0204-3
- *
- * Revision 1.9  2005/01/21 21:12:52  taylor
- * crap
- *
- * Revision 1.8  2005/01/21 08:29:04  taylor
- * add -rlm cmdline option to switch to local viewpoint lighting calculations (OGL only for now)
- *
- * Revision 1.7  2005/01/07 14:00:04  argv
- * Added missing #include.
- *
- * -- _argv[-1]
- *
- * Revision 1.6  2005/01/03 18:45:22  taylor
- * dynamic allocation of num supported OpenGL lights
- * add config option for more realistic light settings
- * don't render spec maps in nebula to address lighting issue
- *
- * Revision 1.5  2005/01/01 11:24:23  taylor
- * good OpenGL spec mapping
- * fix VBO crash with multitexture using same uv coord data
- * little speedup of opengl_tcache_frame()
- * error message to make sure hardware supports the minimum texture size
- * move OpenGL version check out of the extention printout code
- * disable 2d_poof with OpenGL
- *
- * Revision 1.4  2004/10/31 21:45:13  taylor
- * Linux tree merge, single array for VBOs/HTL
- *
- * Revision 1.3  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 1.2  2004/07/12 16:32:48  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 1.1  2004/05/24 07:25:32  taylor
- * filename case change
- *
- * Revision 2.7  2004/05/13 00:17:20  taylor
- * disable COLOR_MATERIAL, for nvidia drivers
- *
- * Revision 2.6  2004/05/12 23:24:35  phreak
- * got rid of the color material call, nebulas should blind the player
- *
- * Revision 2.5  2004/05/11 19:39:29  phreak
- * fixed an array bounds error that was causing debug builds to crash when
- * rendering a ship
- *
- * Revision 2.4  2004/04/26 13:02:27  taylor
- * light setup changes, support cmdline ambient value
- *
- * Revision 2.3  2004/04/13 01:55:41  phreak
- * put in the correct fields for the CVS comments to register
- * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
- *
- *
- * $NoKeywords: $
- */
+
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -266,13 +85,13 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 	GLLight->Position[0] = FSLight->vec.xyz.x;
 	GLLight->Position[1] = FSLight->vec.xyz.y;
 	GLLight->Position[2] = FSLight->vec.xyz.z; // flipped axis for FS2
-	GLLight->Position[3] = 1.0f;	
+	GLLight->Position[3] = 1.0f;
 
 
 	switch (FSLight->type) {
 		case LT_POINT: {
 			// this crap still needs work...
-			GLLight->ConstantAtten = 0.0f;
+			GLLight->ConstantAtten = 1.0f;
 			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
 			GLLight->Specular[0] *= static_point_factor;
@@ -283,15 +102,33 @@ void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 		}
 
 		case LT_TUBE: {
+			GLLight->ConstantAtten = 1.0f;
+			GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
+			GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
+
 			GLLight->Specular[0] *= static_tube_factor;
 			GLLight->Specular[1] *= static_tube_factor;
-			GLLight->Specular[2] *= static_tube_factor;	
+			GLLight->Specular[2] *= static_tube_factor;
 
-			GLLight->SpotDir[0] = FSLight->vec2.xyz.x * 1.5f;
-			GLLight->SpotDir[1] = FSLight->vec2.xyz.y * 1.5f;
-			GLLight->SpotDir[2] = FSLight->vec2.xyz.z * 1.5f;
-			GLLight->SpotCutOff = 90.0f;
+			GLLight->Position[0] = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
+			GLLight->Position[1] = FSLight->vec2.xyz.y;
+			GLLight->Position[2] = FSLight->vec2.xyz.z;
+			GLLight->Position[3] = 1.0f;
 
+			if ( Use_GLSL > 1 ) {
+				// Valathil: When using shaders pass the beam direction (not normalized IMPORTANT for calculation of tube)
+				vec3d a;
+				vm_vec_sub(&a, &FSLight->vec2, &FSLight->vec);
+				GLLight->SpotDir[0] = a.xyz.x; 
+				GLLight->SpotDir[1] = a.xyz.y;
+				GLLight->SpotDir[2] = a.xyz.z;
+				GLLight->SpotCutOff = 90.0f; // Valathil: So shader dectects tube light
+			} else {
+				GLLight->SpotDir[0] = 1.0f; // Valathil: When not using shaders pass a fake spotdir
+				GLLight->SpotDir[1] = 0.0f;
+				GLLight->SpotDir[2] = 0.0f;
+				GLLight->SpotCutOff = 180.0f; // Valathil: Should be a point light not a spot; using tube only for the light sorting
+			}
 			break;
 		}
 
@@ -333,9 +170,9 @@ void opengl_set_light(int light_num, opengl_light *ltp)
 	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, diffuse);
 	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, ltp->Specular);
 	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, ltp->SpotDir);
-	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten);
+	//glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten); Default is 1.0 and we only use 1.0 - Valathil
 	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
-	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten);
+	//glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten); Default is 0.0 and we only use 0.0 - Valathil
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, ltp->SpotExp);
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
 }
@@ -407,7 +244,6 @@ void opengl_change_active_lights(int pos, int d_offset)
 
 	offset = (pos * GL_max_lights) + d_offset;
 
-	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
 	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
@@ -473,7 +309,9 @@ void opengl_change_active_lights(int pos, int d_offset)
 
 	glTranslated(-eyex, -eyey, -eyez);
 	glScalef(1.0f, 1.0f, -1.0f);
-
+	
+	//Valathil: Sort lights by priority
+	opengl_pre_render_init_lights();
 
 	for (i = 0; i < GL_max_lights; i++) {
 		if ( (offset + i) >= Num_active_gl_lights ) {
@@ -486,10 +324,14 @@ void opengl_change_active_lights(int pos, int d_offset)
 			GL_state.Light(i, GL_TRUE);
 		}
 	}
+	opengl_light zero;
+	memset(&zero,0,sizeof(opengl_light));
+	zero.Position[0] = 1.0f;
 
 	// make sure that we turn off any lights that we aren't using right now
 	for ( ; i < GL_max_lights; i++) {
 		GL_state.Light(i, GL_FALSE);
+		opengl_set_light(i, &zero);
 	}
 
 	glPopMatrix();
@@ -542,6 +384,8 @@ void gr_opengl_set_center_alpha(int type)
 	if (!type || Cmdline_nohtl)
 		return;
 
+	if(Num_active_gl_lights == MAX_LIGHTS)
+		return;
 	opengl_light glight;
 
 	vec3d dir;
@@ -563,6 +407,7 @@ void gr_opengl_set_center_alpha(int type)
 		glight.Ambient[1] = 0.0f;
 		glight.Ambient[2] = 0.0f;
 	}
+	glight.type = type;
 
 	glight.Specular[0] = 0.0f;
 	glight.Specular[1] = 0.0f;
@@ -578,9 +423,15 @@ void gr_opengl_set_center_alpha(int type)
 	glight.Position[3] = 0.0f;
 
 	// defaults
+	glight.SpotDir[0] = 0.0f;
+	glight.SpotDir[1] = 0.0f;
+	glight.SpotDir[2] = -1.0f;
+	glight.SpotExp = Cmdline_ogl_spec * 0.5f;
+	glight.SpotCutOff = 180.0f;
 	glight.ConstantAtten = 1.0f;
 	glight.LinearAtten = 0.0f;
 	glight.QuadraticAtten = 0.0f;
+	glight.occupied = false;
 
 	// first light
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
@@ -605,7 +456,7 @@ void gr_opengl_reset_lighting()
 	if (Cmdline_nohtl)
 		return;
 
-	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
+//	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
 	for (i = 0; i < GL_max_lights; i++) {
 		GL_state.Light(i, GL_FALSE);
@@ -671,33 +522,54 @@ void opengl_light_init()
 }
 
 extern int Cmdline_no_emissive;
+bool ambient_state = false;
+bool emission_state = false;
+bool specular_state = false;
 void opengl_default_light_settings(int ambient, int emission, int specular)
 {
 	if (!lighting_is_enabled)
 		return;
 
 	if (ambient) {
-		glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
-		glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
+		if (!ambient_state) {
+			glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
+			glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
+			ambient_state = true;
+		}
 	} else {
-		if (GL_center_alpha) {
-			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
-		} else {
-			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+		if (ambient_state) {
+			if (GL_center_alpha) {
+				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
+			} else {
+				glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+			}
+			ambient_state = false;
 		}
 	}
 
 	if (emission && !Cmdline_no_emissive) {
 		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
-		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
+		if (!emission_state) {
+			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
+			emission_state = true;
+		}
 	} else {
-		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
+		if (emission_state) {
+			glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
+			emission_state = false;
+		}
 	}
 
 	if (specular) {
-		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
+		if (!specular_state) {
+			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
+			specular_state = true;
+		}
 	} else {
-		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
+		if (specular_state) {
+			glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
+			specular_state = false;
+		}
 	}
 }
 

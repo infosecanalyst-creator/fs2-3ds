@@ -7,227 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.15.2.1 $
- * $Date: 2007-02-26 01:47:14 $
- * $Author: Goober5000 $
- *
- * Header file for functions that manipulate vectors and matricies
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/04/12 22:23:41  taylor
- * compiler warning fixes to make GCC 4.1 shut the hell up
- *
- * Revision 2.14  2006/02/25 21:47:00  Goober5000
- * spelling
- *
- * Revision 2.13  2006/01/22 01:31:44  taylor
- * no real need to cast these so just get it right in the first place
- *
- * Revision 2.12  2005/07/13 03:15:50  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.11  2005/07/07 16:36:57  taylor
- * various compiler warning fixes (some of these from dizzy)
- *
- * Revision 2.10  2005/04/15 11:41:27  taylor
- * stupid <expletive-delete> terminal, I <expletive-deleted> <expletive-deleted>!!!
- *
- * Revision 2.9  2005/04/15 11:36:54  taylor
- * new GCC = new warning messages, yippeeee!!
- *
- * Revision 2.8  2005/04/12 05:26:36  taylor
- * many, many compiler warning and header fixes (Jens Granseuer)
- * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
- *
- * Revision 2.7  2005/04/05 05:53:19  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.6  2005/03/19 18:02:34  bobboau
- * added new graphic functions for state blocks
- * also added a class formanageing a new effect
- *
- * Revision 2.5  2005/01/06 00:37:32  Goober5000
- * changed argument from dist to dist_squared
- * --Goober5000
- *
- * Revision 2.4  2005/01/06 00:27:34  Goober5000
- * added vm_vec_dist_squared_to_line
- * --Goober5000
- *
- * Revision 2.3  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2002/12/07 01:37:42  bobboau
- * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
- * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
- * it needs a better renderer, but is in prety good shape for now,
- * I also (think) I squashed a bug in the warpmodel code
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 6     6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 5     4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 4     1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 3     1/12/99 12:53a Dave
- * More work on beam weapons - made collision detection very efficient -
- * collide against all object types properly - made 3 movement types
- * smooth. Put in test code to check for possible non-darkening pixels on
- * object textures.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 43    9/11/98 10:10a Andsager
- * Optimize and rename matrix_decomp to vm_matrix_to_rot_axis_and_angle,
- * rename quatern_rot to vm_quaternion_rotate
- * 
- * 42    3/09/98 3:51p Mike
- * More error checking.
- * 
- * 41    12/17/97 5:44p Andsager
- * Change vm_matrix_interpolate so that it does not overshoot if optional
- * last parameter is 1
- * 
- * 40    9/30/97 8:03p Lawrance
- * add missing semi-colon to function prototype
- * 
- * 39    9/30/97 5:04p Andsager
- * add vm_estimate_next_orientation
- * 
- * 38    9/28/97 2:17p Andsager
- * added vm_project_point_onto_plane
- * 
- * 37    9/25/97 5:57p Andsager
- * improved function description for matrix interpolate
- * 
- * 36    9/09/97 10:15p Andsager
- * added vm_rotate_vec_to_body() and vm_rotate_vec_to_world()
- * 
- * 35    8/20/97 5:33p Andsager
- * added vm_vec_projection_parallel and vm_vec_projection_onto_surface
- * 
- * 34    8/19/97 11:42p Lawrance
- * use atan2_safe() instead of atan2()
- * 
- * 33    8/18/97 4:46p Hoffoss
- * Added global default axis vector constants.
- * 
- * 32    8/03/97 3:54p Lawrance
- * added vm_find_bounding_sphere()
- * 
- * 31    7/30/97 2:20p Dan
- * from allender: fixed vm_is_vec_nan to work properly with address-of
- * operator by adding parens around macro variables
- * 
- * 30    7/29/97 2:48p Hoffoss
- * Added vm_is_vec_nan().
- * 
- * 29    7/28/97 2:21p John
- * changed vecmat functions to not return src.  Started putting in code
- * for inline vector math.    Fixed some bugs with optimizer.
- * 
- * 28    7/28/97 3:25p Andsager
- * 
- * 27    7/28/97 2:41p Mike
- * Replace vm_forward_interpolate().
- * 
- * 26    7/28/97 1:18p Andsager
- * implement vm_fvec_matrix_interpolate(), which interpolates matrices on
- * xy and then z
- * 
- * 25    7/24/97 5:24p Andsager
- * implement forward vector interpolation
- * 
- * 24    7/02/97 4:25p Mike
- * Add matrix_interpolate(), but don't call it.
- * 
- * 23    7/01/97 3:27p Mike
- * Improve skill level support.
- * 
- * 22    6/25/97 12:27p Hoffoss
- * Added some functions I needed for Fred.
- * 
- * 21    5/21/97 8:49a Lawrance
- * added vm_vec_same()
- * 
- * 20    4/15/97 4:00p Mike
- * Intermediate checkin caused by getting other files.  Working on camera
- * slewing system.
- * 
- * 19    3/17/97 1:55p Hoffoss
- * Added function for error checking matrices.
- * 
- * 18    3/06/97 10:56a Mike
- * Write error checking version of vm_vec_normalize().
- * Fix resultant problems.
- * 
- * 17    3/04/97 3:30p John
- * added function to interpolate an angle.
- * 
- * 16    2/25/97 5:12p John
- * Added functions to see if two matrices or vectors are close.
- * 
- * 15    2/03/97 1:30p John
- * Put a clearer comment in for vm_vec_unrotate
- * 
- * 14    2/03/97 1:14p John
- * Added vm_vec_unrotate function
- * 
- * 13    1/27/97 11:57a John
- * added a function to rotate a point around an arbritary line.
- * 
- * 12    11/26/96 12:18p Hoffoss
- * Added the vm_vec_dist_squared() function.
- * 
- * 11    11/16/96 2:38p Mike
- * Waypoint code, under construction and a painful mess.
- * 
- * 10    11/05/96 3:42p Mike
- * Make AI use accuracy parameter, though not yet specified in ships.tbl
- * or *.fsm.
- * 
- * Add vm_vec_rand_vec_quick.
- * 
- * Add frand() which returns a rand in 0.0..1.0.
- * 
- * 9     10/30/96 2:35p Mike
- * Docking behavior.
- * Changed quick versions of vecmat routines to not return 1/mag.  They
- * return mag, just like non-quick versions.
- * 
- * 8     10/24/96 10:17a Hoffoss
- * Moved function 'compute_point_on_plane()' to vecmat.
- * 
- * 7     10/23/96 10:32p Lawrance
- * added function vm_vect_mag_squared()
- *
- * $NoKeywords: $
- *
-*/
+
 
 #ifndef _VECMAT_H
 #define _VECMAT_H
@@ -242,7 +22,15 @@
 //Macros/functions to fill in fields of structures
 
 //macro to check if vector is zero
-#define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
+#define IS_VEC_NULL_SQ_SAFE(v) ( ( (v)->xyz.x > -1e-16 ) && ( (v)->xyz.x < 1e-16 ) && \
+								 ( (v)->xyz.y > -1e-16 ) && ( (v)->xyz.y < 1e-16 ) && \
+								 ( (v)->xyz.z > -1e-16 ) && ( (v)->xyz.z < 1e-16 ) )
+
+#define IS_VEC_NULL(v) ( ( (v)->xyz.x > -1e-36 ) && ( (v)->xyz.x < 1e-36 ) && \
+						 ( (v)->xyz.y > -1e-36 ) && ( (v)->xyz.y < 1e-36 ) && \
+						 ( (v)->xyz.z > -1e-36 ) && ( (v)->xyz.z < 1e-36 ) )
+
+#define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
@@ -578,6 +366,7 @@ matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1);
 
 //extract angles from a matrix
 angles *vm_extract_angles_matrix(angles *a,matrix *m);
+angles *vm_extract_angles_matrix_alternate(angles *a,matrix *m);
 
 //extract heading and pitch from a vector, assuming bank==0
 angles *vm_extract_angles_vector(angles *a,vec3d *v);
@@ -648,7 +437,11 @@ int vm_matrix_cmp( matrix * a, matrix * b );
 // Moves angle 'h' towards 'desired_angle', taking the shortest
 // route possible.   It will move a maximum of 'step_size' radians
 // each call.   All angles in radians.
-void vm_interp_angle( float *h, float desired_angle, float step_size );
+float vm_interp_angle( float *h, float desired_angle, float step_size, bool force_front = false );
+
+// calculate and return the difference (ie. delta) between two angles
+// using same method as with vm_interp_angle().
+float vm_delta_from_interp_angle( float current_angle, float desired_angle );
 
 // check a matrix for zero rows and columns
 int vm_check_matrix_for_zeros(matrix *m);
@@ -720,8 +513,8 @@ int vm_vec_dist_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest, float *d
 // and it doesn't check whether the nearest point is on the line segment.
 void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest, float *dist_squared);
 
-void vm_vert2vec(vertex *vert, vec3d *vec);
-void vm_vec2vert(vec3d *vec, vertex *vert);
+//SUSHI: 2D vector "box" scaling
+void vm_vec_boxscale(vec2d *vec, float scale);
 
 #endif
 

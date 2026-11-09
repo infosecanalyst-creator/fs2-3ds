@@ -7,197 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.23.2.6 $
- * $Date: 2008-01-19 01:23:19 $
- * $Author: Goober5000 $
- *
- * all sorts of cool stuff about ships
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.23.2.5  2006/09/11 01:10:00  taylor
- * compiler warning fixes
- *
- * Revision 2.23.2.4  2006/07/06 21:53:59  taylor
- * rest of the map/glow changes
- *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
- *  - same for glowpoints, back on a per-ship basis
- *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
- *  - fix glowmaps for shockwaves again
- *  - add support for animated specmaps (mainly for TBP and Starfox mods)
- * some minor code cleanup and compiler warning fixes
- *
- * Revision 2.23.2.3  2006/06/26 17:31:49  Goober5000
- * change back to ubyte
- * --Goober5000
- *
- * Revision 2.23.2.2  2006/06/24 04:48:08  Goober5000
- * cosmetics, plus revert an unnecessary if
- *
- * Revision 2.23.2.1  2006/06/20 20:04:42  taylor
- * make sure we only do ship related setup on actual ships
- *
- * Revision 2.23  2006/03/18 10:28:25  taylor
- * fix out-of-bounds problem in awacs checking (full neb missions may have been a bit freaky from this)
- *
- * Revision 2.22  2006/02/19 03:17:01  Goober5000
- * fix stealth
- * --Goober5000
- *
- * Revision 2.21  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.20  2005/10/10 17:21:10  taylor
- * remove NO_NETWORK
- *
- * Revision 2.19  2005/10/09 08:03:21  wmcoolmon
- * New SEXP stuff
- *
- * Revision 2.18  2005/09/27 02:36:56  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.17  2005/09/25 05:13:04  Goober5000
- * hopefully complete species upgrade
- * --Goober5000
- *
- * Revision 2.16  2005/07/25 03:13:24  Goober5000
- * various code cleanups, tweaks, and fixes; most notably the MISSION_FLAG_USE_NEW_AI
- * should now be added to all places where it is needed (except the turret code, which I still
- * have to to review)
- * --Goober5000
- *
- * Revision 2.15  2005/07/22 10:18:35  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.14  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.13  2005/07/13 00:44:21  Goober5000
- * improved species support and removed need for #define
- * --Goober5000
- *
- * Revision 2.12  2005/04/05 05:53:24  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.11  2005/03/02 21:24:47  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.10  2004/07/26 20:47:51  Kazan
- * remove MCD complete
- *
- * Revision 2.9  2004/07/12 16:33:05  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.8  2004/03/05 09:01:52  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.7  2004/01/30 07:39:06  Goober5000
- * whew - I just went through all the code I ever added (or at least, that I could
- * find that I commented with a Goober5000 tag) and added a bunch of Asserts
- * and error-checking
- * --Goober5000
- *
- * Revision 2.6  2003/04/29 01:03:21  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.5  2003/01/18 09:25:40  Goober5000
- * fixed bug I inadvertently introduced by modifying SIF_ flags with sexps rather
- * than SF_ flags
- * --Goober5000
- *
- * Revision 2.4  2003/01/03 21:58:07  Goober5000
- * Fixed some minor bugs, and added a primitive-sensors flag, where if a ship
- * has primitive sensors it can't target anything and objects don't appear
- * on radar if they're outside a certain range.  This range can be modified
- * via the sexp primitive-sensors-set-range.
- * --Goober5000
- *
- * Revision 2.3  2002/12/27 02:57:50  Goober5000
- * removed the existing stealth sexps and replaced them with the following...
- * ship-stealthy
- * ship-unstealthy
- * is-ship-stealthy
- * friendly-stealth-invisible
- * friendly-stealth-visible
- * is-friendly-stealth-visible
- * --Goober5000
- *
- * Revision 2.2  2002/12/23 05:18:52  Goober5000
- * Squashed some Volition bugs! :O Some of the sexps for dealing with more than
- * one ship would return after only dealing with the first ship.
- *
- * Also added the following sexps:
- * is-ship-stealthed
- * ship-force-stealth
- * ship-force-nostealth
- * ship-remove-stealth-forcing
- *
- * They toggle the stealth flag on and off.  If a ship is forced stealthy, it won't even
- * show up for friendly ships.
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/13 21:09:29  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 13    8/25/99 10:50a Dave
- * Added music to the mainhall.tbl
- * 
- * 12    7/19/99 12:02p Andsager
- * Allow AWACS on any ship subsystem. Fix sexp_set_subsystem_strength to
- * only blow up subsystem if its strength is > 0
- * 
- * 11    7/06/99 10:45a Andsager
- * Modify engine wash to work on any ship that is not small.  Add AWACS
- * ask for help.
- * 
- * 10    6/17/99 1:41p Andsager
- * Added comments to team_visibility_update
- * 
- * 9     6/15/99 4:01p Jamesa
- * Don't count navbuoys and cargo containers towards team visibilitiy.
- * 
- * 8     6/02/99 12:52p Andsager
- * Added team-wide ship visibility.  Implemented for player.
- * 
- * 7     5/28/99 3:14p Andsager
- * Modify nebula scan range by species.
- * 
- * 6     5/28/99 9:39a Andsager
- * Modify awacs to take account for huge ships.
- * 
- * 5     5/12/99 2:55p Andsager
- * Implemented level 2 tag as priority in turret object selection
- * 
- * 4     1/25/99 2:49p Anoop
- * Put in more sanity checks when checking for AWACS sources.
- * 
- * 3     1/25/99 5:03a Dave
- * First run of stealth, AWACS and TAG missile support. New mission type
- * :)
- * 
- * 2     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 
- * $NoKeywords: $
- */
+
 
 
 #include "ship/awacs.h"
@@ -364,7 +174,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;
-	int idx, friendly_invisible = 0;
+	int idx, stealth_ship = 0, check_huge_ship = 0, friendly_stealth_invisible = 0;
 	ship *shipp = NULL;
 	ship_info *sip = NULL;
 
@@ -397,18 +207,30 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// Goober5000
 		shipp = &Ships[target->instance];
 		sip = &Ship_info[shipp->ship_info_index];
-		friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+		stealth_ship = (shipp->flags2 & SF2_STEALTH);
+		friendly_stealth_invisible = (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+
+		check_huge_ship = (sip->flags & SIF_HUGE_SHIP);
 	}
 	
-	int stealth_ship = (target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->flags2 & SF2_STEALTH);
 	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
-	int check_huge_ship = (target->type == OBJ_SHIP) && (sip != NULL) && (sip->flags & SIF_HUGE_SHIP);
 
 	// ships on the same team are always viewable
-	// not necessarily now! :) -- Goober5000
-	if ((target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->team == viewer->team) && (!friendly_invisible))
-		return FULLY_TARGETABLE;
+	if ((target->type == OBJ_SHIP) && (shipp->team == viewer->team))
+	{
+		// not necessarily now! -- Goober5000
+		if ( !(stealth_ship && friendly_stealth_invisible) )
+			return FULLY_TARGETABLE;
+	}
 
+	// check for a tagged ship. TAG'd ships are _always_ visible
+	if (target->type == OBJ_SHIP)
+	{
+		Assert( shipp != NULL );
+		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
+			return FULLY_TARGETABLE;
+	}
+	
 	// only check for Awacs if stealth ship or Nebula mission
 	// determine the closest awacs on our team
 	if ((stealth_ship || nebula_enabled) && use_awacs)
@@ -458,14 +280,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		}
 	}
 
-	// check for a tagged ship. TAG'd ships are _always_ visible
-	if (target->type == OBJ_SHIP)
-	{
-		Assert( shipp != NULL );
-		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
-			return FULLY_TARGETABLE;
-	}
-	
 	// if this is a stealth ship
 	if (stealth_ship)
 	{
@@ -476,7 +290,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			if (nebula_enabled)
 				return MARGINALLY_TARGETABLE;
 
-			// otherwise its targetable
+			// otherwise it's targetable
 			return FULLY_TARGETABLE;
 		} 
 		// otherwise its completely hidden
@@ -507,7 +321,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		{
 			if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, scan_nebula_range))
 			{
-				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, MARGINALLY_TARGETABLE * scan_nebula_range))
+				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, 0.5f * scan_nebula_range))
 					return FULLY_TARGETABLE;
 
 				return MARGINALLY_TARGETABLE;
@@ -519,7 +333,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
 			test = vm_vec_mag_quick(&dist_vec);
 
-			if (test < (MARGINALLY_TARGETABLE * scan_nebula_range))
+			if (test < (0.5f * scan_nebula_range))
 				return FULLY_TARGETABLE;
 			else if (test < scan_nebula_range)
 				return MARGINALLY_TARGETABLE;
@@ -528,9 +342,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		// untargetable at longer range
 		return UNTARGETABLE;	
 	}		
-
-	Int3();
-	return FULLY_TARGETABLE;
 }
 
 
@@ -547,7 +358,7 @@ void team_visibility_update()
 	memset(team_count, 0, MAX_IFFS * sizeof(int));
 	memset(Ship_visibility_by_team, 0, MAX_IFFS * MAX_SHIPS * sizeof(ubyte));
 
-	// Go through list of ships and mark those visible for given team
+	// Go through list of ships and mark those visible for their own team
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 	{
 		// make sure its a valid ship
@@ -562,8 +373,12 @@ void team_visibility_update()
 		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
 			continue;
 
-		// check if ship if flagged as invisible
+		// check if ship is flagged as invisible
 		if (shipp->flags & SF_HIDDEN_FROM_SENSORS)
+			continue;
+
+		// check if ship is stealthed and friendly-invisible
+		if ((shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS))
 			continue;
 
 		Ship_visibility_by_team[shipp->team][ship_num] = 1;
@@ -589,8 +404,9 @@ void team_visibility_update()
 		// check against all enemy teams
 		for (int en_team = 0; en_team < MAX_IFFS; en_team++)
 		{
-			if (en_team == cur_team)
-				continue;
+			// NOTE: we no longer skip our own team because we must adjust visibility for friendly-stealth-invisible ships
+			// if (en_team == cur_team)
+			//	continue;
 
 			// set up enemy team
 			en_count = team_count[en_team];
@@ -622,14 +438,12 @@ void team_visibility_update()
 
 
 // Determine is ship is visible by team
-// Goober5000 - now accounts for friendly stealth invisible and primitive sensors
+// Goober5000 - now accounts for primitive sensors
 int ship_is_visible_by_team(object *target, ship *viewer)
 {
 	Assert(target);
 	Assert(viewer);
 	Assert(target->type == OBJ_SHIP);
-
-	ship *target_shipp = &Ships[target->instance];
 
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
@@ -638,16 +452,6 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	// not visible if out of range
 	if ((Hud_max_targeting_range > 0) && (vm_vec_dist_quick(&target->pos, &Objects[viewer->objnum].pos) > Hud_max_targeting_range))
 		return 0;
-
-	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible flag set
-	if (target_shipp->team == viewer->team)
-	{
-		if (target_shipp->flags2 & SF2_STEALTH)
-		{
-			if (target_shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS)
-				return 0;
-		}
-	}
 
 	// now evaluate this the old way
 	int ship_num = target->instance;

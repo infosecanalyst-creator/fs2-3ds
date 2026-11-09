@@ -7,40 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2007-05-11 03:09:21 $
- * $Author: taylor $
- *
- * Program to create an archive file for use with cfile stuff
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/11/13 06:38:04  taylor
- * never did port this stupid thing to PPC
- *
- * Revision 2.3  2005/09/08 00:09:31  taylor
- * fix building/linking of command line tools under Linux/OSX
- * add tools as targets to OSX project file
- *
- * Revision 2.2  2005/01/30 12:50:08  taylor
- * merge with Linux/OSX tree - p0130
- *
- * Revision 2.1  2003/11/16 09:42:37  Goober5000
- * clarified and pruned debug spew messages
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/23/98 6:15p Dave
- *
- * $NoKeywords: $
- */
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -173,7 +140,7 @@ void pack_file( char *filespec, char *filename, int filesize, _fs_time_t time_wr
 	}
 
 	memset( path, 0, sizeof(path) );
-	strcpy( path, filename );
+	strcpy_s( path, filename );
 
 	fswrite_int( (int*)&Total_size, fp_out_hdr );
 	fswrite_int( &filesize, fp_out_hdr );
@@ -219,7 +186,7 @@ void add_directory( char * dirname)
 	char *tmpptr;
 	int i = 0;
 
-	strcpy(path, dirname);
+	strcpy_s(path, dirname);
 
 	fswrite_int( (int*)&Total_size, fp_out_hdr);
 	fswrite_int( &i, fp_out_hdr);
@@ -250,7 +217,7 @@ void pack_directory( char * filespec)
 	while ( (*ts == DIR_SEPARATOR_CHAR) && (ts > filespec) )
 		*ts = '\0';
 
-	strcpy( tmp1, filespec );
+	strcpy_s( tmp1, filespec );
 
 	add_directory(filespec);
 	strcat( tmp1, DIR_SEPARATOR_STR"*.*" );
@@ -262,7 +229,7 @@ void pack_directory( char * filespec)
 	if( find_handle != -1 )	{
 		if ( find.attrib & _A_SUBDIR )	{
 			if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
-				strcpy( tmp, filespec );
+				strcpy_s( tmp, filespec );
 				strcat( tmp, "\\" );
 				strcat( tmp, find.name );
 				pack_directory(tmp);
@@ -274,7 +241,7 @@ void pack_directory( char * filespec)
 		while( !_findnext( find_handle, &find ) )	{
 			if ( find.attrib & _A_SUBDIR )	{
 				if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
-					strcpy( tmp, filespec );
+					strcpy_s( tmp, filespec );
 					strcat( tmp, "\\" );
 					strcat( tmp, find.name );
 					pack_directory(tmp);
@@ -311,7 +278,7 @@ void pack_directory( char * filespec)
 			}
 
 			if (S_ISDIR(buf.st_mode)) {
-				strcpy( tmp, filespec );
+				strcpy_s( tmp, filespec );
 				strcat( tmp, "/" );
 				strcat( tmp, dir->d_name );
 				pack_directory(tmp);
@@ -373,7 +340,7 @@ void print_instructions()
 	exit(0);
 }
 
-// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// we end up #include'ing SDL.h which on Windows and Mac will redefine main() which is something
 // that we don't want since we don't actually link against SDL, this solves the problem...
 #ifdef main
 #undef main
@@ -397,14 +364,14 @@ int main(int argc, char *argv[] )
 #endif
 	}
 
-	strcpy( archive, argv[1] );
+	strcpy_s( archive, argv[1] );
 	p = strchr( archive, '.' );
 	if (p) *p = 0;		// remove extension	
 
-	strcpy( archive_dat, archive );
+	strcpy_s( archive_dat, archive );
 	strcat( archive_dat, ".vp" );
 
-	strcpy( archive_hdr, archive );
+	strcpy_s( archive_hdr, archive );
 	strcat( archive_hdr, ".hdr" );
 
 	fp_out = fopen( archive_dat, "wb" );

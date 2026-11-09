@@ -1,31 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 1.1.2.5 $
- * $Date: 2007-04-11 14:44:32 $
- * $Author: taylor $
- *
- * movie player code
- * 
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.4  2007/03/22 20:23:58  taylor
- * fix stupidness that screwed up RGB values (Mantis #1307)
- *
- * Revision 1.1.2.3  2007/02/10 00:01:53  taylor
- * make sure that our color is getting set properly (should properly fix the red/green tint problem, Mantis #1041)
- * slight optimization for Theora YUV->RGB converter
- *
- * Revision 1.1.2.2  2007/01/07 12:10:18  taylor
- * remove D3D support for Theora movies, make sure that it doesn't try to play them (since it wouldn't work properly anyway)
- * fix triple-buffer problem with page flipping (Mantis #1190)
- *
- * Revision 1.1.2.1  2006/12/25 21:44:11  taylor
- * initial OGG Theora movie support (likely to be rewritten at least in large part)
- *
- *
- *
- * $NoKeywords: $
- *
- */
+
 
 // This player code is based largely on the player example in the libtheora package
 // and so they get a fair bit of credit for this code, even if in ideas/comments only
@@ -37,6 +10,7 @@
 #endif
 
 #include "globalincs/pstypes.h"
+#include "globalincs/def_files.h"
 #include "cfile/cfile.h"
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
@@ -47,7 +21,7 @@
 #include "io/key.h"
 #include "osapi/osapi.h"
 #include "sound/sound.h"
-#include "sound/ds.h"
+#include "sound/openal.h"
 #include "bmpman/bmpman.h"
 #include "cutscene/oggplayer.h"
 #include "io/timer.h"
@@ -69,10 +43,14 @@ static int g_screenX = 0;
 static int g_screenY = 0;
 
 static GLuint GLtex = 0;
+static GLuint ytex = 0;
+static GLuint utex = 0;
+static GLuint vtex = 0;
 static GLint gl_screenYH = 0;
 static GLint gl_screenXW = 0;
 static GLfloat gl_screenU = 0;
 static GLfloat gl_screenV = 0;
+static GLfloat glVertices[4][4] = {{0}};
 
 // video externs from API graphics functions
 extern void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
@@ -101,7 +79,7 @@ static int audiofd_fragsize = 0;
 static longlong videobuf_granulepos = -1;
 static double videobuf_time = 0;
 
-
+static bool use_shaders = true;
 // -----------------------------------------------------------------------------
 //  Utility items
 //
@@ -109,8 +87,8 @@ static double videobuf_time = 0;
 // helper; just grab some more compressed bitstream and sync it for page extraction
 static int OGG_buffer_data(THEORAFILE *movie)
 {
-	char *buffer = ogg_sync_buffer(&movie->osyncstate, 4096);
-	int bytes = cfread(buffer, 1, 4096, movie->cfp);
+	char *buffer = ogg_sync_buffer(&movie->osyncstate, 8192); // Doubled read size to fix choppy audio with high bitrate movies - Valathil
+	int bytes = cfread(buffer, 1, 8192, movie->cfp);
 
 	ogg_sync_wrote(&movie->osyncstate, bytes);
 
@@ -353,6 +331,8 @@ static void OGG_video_init(theora_info *tinfo)
 {
 	float scale_by = 0.0f;
 
+	GLhandleARB shader_id = 0;
+
 	if (video_inited)
 		return;
 
@@ -366,33 +346,137 @@ static void OGG_video_init(theora_info *tinfo)
 		opengl_set_texture_target(GL_TEXTURE_2D);
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
-		glGenTextures(1, &GLtex);
+		if(!Use_GLSL)
+			use_shaders = false;
 
-		Assert( GLtex != 0 );
+		if(use_shaders) {
+			glGenTextures(1, &ytex);
+			glGenTextures(1, &utex);
+			glGenTextures(1, &vtex);
 
-		if ( GLtex == 0 ) {
-			nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
-			video_inited = 1;
-			return;
+			Assert( ytex != 0 );
+			Assert( utex != 0 );
+			Assert( vtex != 0 );
+
+
+			if ( ytex + utex + vtex == 0 ) {
+				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
+				video_inited = 1;
+				return;
+			}
+
+			char *vert = NULL, *frag = NULL;
+			opengl_shader_t new_shader;
+			
+			// choose appropriate files
+			char *vert_name = "video-v.sdr";
+			char *frag_name = "video-f.sdr";
+
+			mprintf(("Compiling video-processing shader ... \n"));
+
+			// read vertex shader
+			CFILE *cf_shader = cfopen(vert_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	
+			if (cf_shader != NULL) {
+				int len = cfilelength(cf_shader);
+				vert = (char*) vm_malloc(len + 1);
+				cfread(vert, len + 1, 1, cf_shader);
+				cfclose(cf_shader);
+			} else {
+				mprintf(("   Loading built-in default shader for: %s\n", vert_name));
+				vert = defaults_get_file(vert_name);
+			}
+
+			if(!vert)
+				use_shaders = false;
+
+			// read fragment shader
+			cf_shader = cfopen(frag_name, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	
+			if (cf_shader != NULL) {
+				int len = cfilelength(cf_shader);
+				frag = (char*) vm_malloc(len + 1);
+				cfread(frag, len + 1, 1, cf_shader);
+				cfclose(cf_shader);
+			} else {
+				mprintf(("   Loading built-in default shader for: %s\n", frag_name));
+				frag = defaults_get_file(frag_name);
+			}
+
+			if(!vert)
+				use_shaders = false;
+			Verify( vert != NULL );
+			Verify( frag != NULL );
+
+			shader_id = opengl_shader_create(vert, frag);
+			vglUseProgramObjectARB(shader_id);
+			if (!shader_id)
+				use_shaders = false;
+		} 
+
+		if(!use_shaders) {
+			glGenTextures(1, &GLtex);
+
+			Assert( GLtex != 0 );
+
+			if ( GLtex == 0 ) {
+				nprintf(("MOVIE", "ERROR: Can't create a GL texture"));
+				video_inited = 1;
+				return;
+			}
 		}
 
 		gr_set_lighting(false, false);
 		GL_state.Texture.DisableAll();
 
-		GL_state.Texture.SetActiveUnit(0);
-		GL_state.Texture.SetTarget(GL_texture_target);
-		GL_state.Texture.Enable(GLtex);
-
+		if(!use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(GLtex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+		}
 		GL_state.SetTextureSource(TEXTURE_SOURCE_DECAL);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+		
+		if(use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(ytex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 2048, 2048, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 
-		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			GL_state.Texture.SetActiveUnit(1);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(utex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+
+			GL_state.Texture.SetActiveUnit(2);
+			GL_state.Texture.SetTarget(GL_texture_target);
+			GL_state.Texture.Enable(vtex);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+			// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
+			glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_LUMINANCE8, 1024, 1024, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		}
 		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
 		float movie_ratio = (float)g_screenWidth / (float)g_screenHeight;
 
@@ -412,18 +496,20 @@ static void OGG_video_init(theora_info *tinfo)
 		}
 
 		// set our color so that we can make sure that it's correct
-		glColor3f(1.0f, 1.0f, 1.0f);
+		GL_state.Color(255, 255, 255, 255);
 	}
 
-	pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
+	if(!use_shaders) {
+		pixelbuf = (ubyte *) vm_malloc_q(g_screenWidth * g_screenHeight * 3);
 
-	if (pixelbuf == NULL) {
-		nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
-		video_inited = 1;
-		return;
+		if (pixelbuf == NULL) {
+			nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
+			video_inited = 1;
+			return;
+		}
+		memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
 	}
-
-	memset( pixelbuf, 0, g_screenWidth * g_screenHeight * 3 );
+	
 
 	if (scale_video) {
 		g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_screenWidth) / 2);
@@ -441,8 +527,48 @@ static void OGG_video_init(theora_info *tinfo)
 
 		gl_screenU = i2fl(g_screenWidth) / i2fl(wp2);
 		gl_screenV = i2fl(g_screenHeight) / i2fl(hp2);
-	}
 
+		if(use_shaders) {
+			gl_screenU = i2fl(tinfo->frame_width-1) / i2fl(2048) ;
+			gl_screenV = i2fl(tinfo->frame_height-1) / i2fl(2048);
+			GL_state.Texture.SetShaderMode(GL_TRUE);
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "ytex"), 0 );
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "utex"), 1 );
+			vglUniform1iARB( vglGetUniformLocationARB(shader_id, "vtex"), 2 );
+		}
+
+		glVertices[0][0] = (GLfloat)g_screenX;
+		glVertices[0][1] = (GLfloat)g_screenY;
+		glVertices[0][2] = 0.0f;
+		glVertices[0][3] = 0.0f;
+
+		glVertices[1][0] = (GLfloat)g_screenX;
+		glVertices[1][1] = (GLfloat)gl_screenYH;
+		glVertices[1][2] = 0.0f;
+		glVertices[1][3] = gl_screenV;
+
+		glVertices[2][0] = (GLfloat)gl_screenXW;
+		glVertices[2][1] = (GLfloat)g_screenY;
+		glVertices[2][2] = gl_screenU;
+		glVertices[2][3] = 0.0f;
+
+		glVertices[3][0] = (GLfloat)gl_screenXW;
+		glVertices[3][1] = (GLfloat)gl_screenYH;
+		glVertices[3][2] = gl_screenU;
+		glVertices[3][3] = gl_screenV;
+
+		GL_state.Array.BindArrayBuffer(0);
+
+		GL_state.Array.EnableClientVertex();
+		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
+	}
+	if(!use_shaders && tinfo->frame_height > 450) {
+		mprintf(("VIDEO: No shader support and hd video is beeing played this can get choppy."));
+	}
 	video_inited = 1;
 }
 
@@ -453,18 +579,32 @@ static void OGG_video_close()
 	}
 
 	if (gr_screen.mode == GR_OPENGL) {
+		GL_state.Array.DisableClientVertex();
+		GL_state.Array.DisableClientTexture();
+
 		if (scale_video) {
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();
 		}
 
 		GL_state.Texture.Disable();
-		GL_state.Texture.Delete(GLtex);
-		glDeleteTextures(1, &GLtex);
-
+		if(use_shaders) {
+			GL_state.Texture.Delete(ytex);
+			GL_state.Texture.Delete(utex);
+			GL_state.Texture.Delete(vtex);
+			glDeleteTextures(1, &ytex);
+			glDeleteTextures(1, &utex);
+			glDeleteTextures(1, &vtex);
+		} else {
+			GL_state.Texture.Delete(GLtex);
+			glDeleteTextures(1, &GLtex);
+		}
 		opengl_set_texture_target();
 
+		ytex = utex = vtex = 0;
 		GLtex = 0;
+		GL_state.Texture.SetShaderMode(GL_FALSE);
+		opengl_shader_set_current( 0 );
 	}
 
 	if (pixelbuf != NULL) {
@@ -480,7 +620,6 @@ static void OGG_video_close()
 	g_screenX = 0;
 	g_screenY = 0;
 
-	GLtex = 0;
 	gl_screenYH = 0;
 	gl_screenXW = 0;
 	gl_screenU = 0;
@@ -555,31 +694,29 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 	}
 }
 
+extern int Mouse_hidden;
 static void OGG_video_draw(theora_state *tstate)
 {
 	yuv_buffer yuv;
 
 	theora_decode_YUVout(tstate, &yuv);
-	convert_YUV_to_RGB(&yuv);
-
+	if(!use_shaders)
+		convert_YUV_to_RGB(&yuv);
 	if (gr_screen.mode == GR_OPENGL) {
-		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
+		if(use_shaders) {
+			GL_state.Texture.SetActiveUnit(0);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.y_stride, yuv.y_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.y);
+			GL_state.Texture.SetActiveUnit(1);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.u);
+			GL_state.Texture.SetActiveUnit(2);
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, yuv.uv_stride, yuv.uv_height, GL_LUMINANCE, GL_UNSIGNED_BYTE, yuv.v);
+		} else {
+			glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGR, GL_UNSIGNED_BYTE, pixelbuf);
+		}
 
-		glBegin(GL_QUADS);
-			glTexCoord2f(0, 0);
-				glVertex2i(g_screenX, g_screenY);
-
-			glTexCoord2f(0, gl_screenV);
-				glVertex2i(g_screenX, gl_screenYH);
-
-			glTexCoord2f(gl_screenU, gl_screenV);
-				glVertex2i(gl_screenXW, gl_screenYH);
-
-			glTexCoord2f(gl_screenU, 0);
-				glVertex2i(gl_screenXW, g_screenY);
-		glEnd();
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
-
+	Mouse_hidden = 1;
 	gr_flip();
 	os_poll();
 
@@ -660,13 +797,13 @@ THEORAFILE *theora_open(char *filename)
 
 	// lower case filename for checking
 	memset( lower_name, 0, sizeof(lower_name) );
-	strncpy( lower_name, filename, strlen(filename) );
+	strncpy( lower_name, filename, sizeof(lower_name)-1 );
 	strlwr(lower_name);
 	
 	char *p = strchr( lower_name, '.' );
 	if ( p ) *p = 0;
 
-	SAFE_STRCAT( lower_name, ".ogg", sizeof(lower_name) );
+	strcat_s( lower_name, ".ogg" );
 
 	// NOTE: Because the .ogg extension is used for both movies and sounds, we have to
 	//       be a bit more specific about our search locations, so we look only in the
@@ -751,12 +888,14 @@ THEORAFILE *theora_open(char *filename)
 		movie->vorbis_p = 0;
 	}
 
+	int ret;
+
 	// we're expecting more header packets.
 	while ( (movie->theora_p < 3) || (movie->vorbis_p && (movie->vorbis_p < 3)) ) {
-		int ret;
 
+		ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket);
 		// look for further theora headers
-		while ( (movie->theora_p < 3) && (ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket)) ){ 
+		while ( (movie->theora_p < 3) && (ret) ){
 			if ( (ret < 0) || theora_decode_header(&movie->tinfo, &movie->tcomment, &movie->opacket) ) {
 				mprintf(("Theora ERROR:  Error parsing Theora stream headers on '%s'!  Corrupt stream?\n", lower_name));
 				goto Error;
@@ -764,10 +903,14 @@ THEORAFILE *theora_open(char *filename)
 
 			if (++movie->theora_p == 3)
 				break;
+
+			ret = ogg_stream_packetout(&movie->t_osstate, &movie->opacket);
 		}
 
+		ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket);
+
 		// look for more vorbis header packets
-		while ( movie->vorbis_p && (movie->vorbis_p < 3) && (ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket)) ) {
+		while ( movie->vorbis_p && (movie->vorbis_p < 3) && (ret) ) {
 			if ( (ret < 0) || vorbis_synthesis_headerin(&movie->vinfo, &movie->vcomment, &movie->opacket) ) {
 				mprintf(("Theora ERROR:  Error parsing Vorbis stream headers on '%s'!  Corrupt stream?\n", lower_name));
 				goto Error;
@@ -775,6 +918,8 @@ THEORAFILE *theora_open(char *filename)
 
 			if (++movie->vorbis_p == 3)
 				break;
+
+			ret = ogg_stream_packetout(&movie->v_osstate, &movie->opacket);
 		}
 
 		// The header pages/packets will arrive before anything else we care about, or the stream is not obeying spec
@@ -864,15 +1009,15 @@ void theora_play(THEORAFILE *movie)
 
 				for (i = 0; (i < ret) && (i < maxsamples); i++) {
 					for (j = 0; j < movie->vinfo.channels; j++) {
-						int val = fl2i(pcm[j][i] * 32767.0f + 0.5f);
+						float val = pcm[j][i] * 32767.0f + 0.5f;
 
-						if (val > 32767)
-							val = 32767;
+						if (val > 32767.0f)
+							val = 32767.0f;
 
-						if (val < -32768)
-							val = -32768;
+						if (val < -32768.0f)
+							val = -32768.0f;
 
-						audiobuf[count++] = val;
+						audiobuf[count++] = (short)val;
 					}
 				}
 

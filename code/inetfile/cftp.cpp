@@ -7,50 +7,7 @@
  *
 */
 
- /*
- * $Logfile: /Freespace2/code/Inetfile/CFtp.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2007-10-15 06:43:13 $
- *  $Author: taylor $
- *
- * FTP Client class (get only)
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/08/20 20:38:08  taylor
- * more unix->SCP_UNIX define fixing
- *
- * Revision 2.3  2004/07/26 20:47:33  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:50  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/08 02:35:09  mharris
- * porting
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     5/04/99 7:34p Dave
- * Fixed slow HTTP get problem.
- * 
- * 2     4/20/99 6:39p Dave
- * Almost done with artillery targeting. Added support for downloading
- * images on the PXO screen.
- * 
- * 1     4/20/99 4:37p Dave
- * 
- * Initial version
- *
- * $NoKeywords: $
- */
+
 
 #include <stdio.h>
 
@@ -122,19 +79,19 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 
 	if(Username)
 	{
-		strcpy(m_szUserName,Username);
+		strcpy_s(m_szUserName,Username);
 	}
 	else
 	{
-		strcpy(m_szUserName,"anonymous");
+		strcpy_s(m_szUserName,"anonymous");
 	}
 	if(Password)
 	{
-		strcpy(m_szPassword,Password);
+		strcpy_s(m_szPassword,Password);
 	}
 	else
 	{
-		strcpy(m_szPassword,"pxouser@pxo.net");
+		strcpy_s(m_szPassword,"pxouser@pxo.net");
 	}
 	m_ListenSock = socket(AF_INET, SOCK_STREAM, 0);
 	if(INVALID_SOCKET == m_ListenSock)
@@ -145,6 +102,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 	}
 	else
 	{
+		memset(&listensockaddr, 0, sizeof(SOCKADDR_IN));
 		listensockaddr.sin_family = AF_INET;		
 		listensockaddr.sin_port = 0;
 		listensockaddr.sin_addr.s_addr = INADDR_ANY;
@@ -203,7 +161,7 @@ CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 			{
 				filestart = pURL+i+1;
 				dirstart = pURL+i+1;
-				strcpy(m_szFilename,filestart);
+				strcpy_s(m_szFilename,filestart);
 			}
 			else
 			{
@@ -249,6 +207,8 @@ CFtpGet::~CFtpGet()
 	if (thread_id)
 		SDL_WaitThread(thread_id, NULL);
 #endif
+    
+	fclose(LOCALFILE);
 
 	if(m_ListenSock != INVALID_SOCKET)
 	{
@@ -461,8 +421,11 @@ int CFtpGet::ConnectControlSocket()
 	//m_ControlSock
 	if(m_Aborting)
 		return 0;
-	se = getservbyname("ftp", NULL);
 
+	memset(&hostaddr, 0, sizeof(SOCKADDR_IN));
+    
+	se = getservbyname("ftp", NULL);
+    
 	if(se == NULL)
 	{
 		hostaddr.sin_port = htons(21);
@@ -535,7 +498,7 @@ uint CFtpGet::ReadFTPServerReply()
 	uint rcode;
 	int iBytesRead;
 	char chunk[2];
-	char szcode[5];
+	char szcode[4];
 	uint igotcrlf = 0;
 	memset(recv_buffer,0,1000);
 	do
@@ -559,7 +522,7 @@ uint CFtpGet::ReadFTPServerReply()
 		}
 		else
 		{	chunk[1] = '\0';
-			strcat(recv_buffer,chunk);
+			strcat_s(recv_buffer,chunk);
 		}
 		
 		Sleep(1);	

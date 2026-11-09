@@ -7,177 +7,26 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.6.2.2 $
- * $Date: 2007-10-15 06:43:19 $
- * $Author: taylor $
- *
- * Header file to support misc. multiplayer support functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6.2.1  2007/04/24 12:07:34  karajorma
- * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
- *
- * Revision 2.6  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.5  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.4  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.3  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/07/07 21:00:08  Kazan
- * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
- *
- * Revision 2.1  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 13    9/15/99 1:45a Dave
- * Don't init joystick on standalone. Fixed campaign mode on standalone.
- * Fixed no-score-report problem in TvT
- * 
- * 12    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 11    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 10    5/04/99 5:20p Dave
- * Fixed up multiplayer join screen and host options screen. Should both
- * be at 100% now.
- * 
- * 9     3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 8     2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 7     2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 6     12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 5     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 4     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 121   9/11/98 5:08p Dave
- * More tweaks to kick notification system.
- * 
- * 120   9/04/98 3:52p Dave
- * Put in validated mission updating and application during stats
- * updating.
- * 
- * 119   8/12/98 4:53p Dave
- * Put in 32 bit checksumming for PXO missions. No validation on the
- * actual tracker yet, though.
- * 
- * 118   7/24/98 11:15a Allender
- * added 32bit checksumming stuff for validated missions
- * 
- * 117   7/10/98 1:13a Allender
- * lots of small multiplayer update changes.  Code in launcher to specify
- * connection speed.  A couple of small fixes regarding empty mission
- * files.  Time out players after 10 second when they don't connect on
- * their reliable socket.
- * 
- * 116   6/30/98 2:17p Dave
- * Revised object update system. Removed updates for all weapons. Put
- * button info back into control info packet.
- * 
- * 115   6/12/98 2:49p Dave
- * Patch 1.02 changes.
- * 
- * 114   6/10/98 2:56p Dave
- * Substantial changes to reduce bandwidth and latency problems.
- * 
- * 113   6/04/98 11:46a Dave
- * Drastically reduce size/rate of client control info update packets. Put
- * in rate limiting for object updating from server.
- * 
- * 112   6/03/98 2:15p Dave
- * Added special code from john to drastically reduce physics info packet
- * fields. (30-50% reduction in bandwidth)
- * 
- * 111   5/21/98 1:52a Dave
- * Remove obsolete command line functions. Reduce shield explosion packets
- * drastically. Tweak PXO screen even more. Fix file xfer system so that
- * we can guarantee file uniqueness.
- * 
- * 110   5/15/98 5:16p Dave
- * Fix a standalone resetting bug.Tweaked PXO interface. Display captaincy
- * status for team vs. team. Put in asserts to check for invalid team vs.
- * team situations.
- * 
- * 109   5/11/98 11:40p Dave
- * Stuff.
- * 
- * 108   5/10/98 7:06p Dave
- * Fix endgame sequencing ESC key. Changed how host options warning popups
- * are done. Fixed pause/message scrollback/options screen problems in mp.
- * Make sure observer HUD doesn't try to lock weapons.
- * 
- * 107   5/07/98 6:31p Dave
- * Fix sticky situations where players are dying/respawning when the game
- * is ended.
- * 
- * 106   5/04/98 10:39p Dave
- * Put in endgame sequencing.  Need to check campaign situations.
- * Realigned ship info on team select screen.
- * 
- * 105   4/30/98 12:57a Dave
- * Put in new mode for ship/weapon selection. Rearranged how game querying
- * is done a bit.
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef MULTI_UTIL_H
 #define MULTI_UTIL_H
 
-#include "network/psnet.h"
+#include "network/psnet2.h"
 
 // prototypes instead of headers :)
 struct net_player;
 struct net_addr;
-struct player;
+class player;
 struct button_info;
 struct join_request;
 struct physics_info;
-struct object;
+class object;
 struct active_game;
-struct ship;
+class ship;
 struct server_item;
-struct ship_info;
-struct p_object;
+class ship_info;
+class p_object;
 
 // two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
 #define MULTI_SIG_SHIP					1
@@ -196,11 +45,11 @@ extern int find_player_id(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );
-extern int multi_find_player_by_callsign(char *callsign);
+extern int multi_find_player_by_callsign(const char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
-extern int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning = false);
-extern int multi_create_player(int player_num, player *pl,char* name, net_addr* addr, int ship_class, short id);
+extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
+extern int multi_create_player(int player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id);
 extern int multi_find_open_netplayer_slot();
 extern int multi_find_open_player_slot();
 extern void delete_player(int player_num, int kicked_reason = -1);
@@ -210,10 +59,10 @@ extern int multi_num_players();
 extern int multi_num_observers();
 extern int multi_num_connections();
 
-extern char* multi_random_death_word();
-extern char* multi_random_chat_start();
+extern const char* multi_random_death_word();
+extern const char* multi_random_chat_start();
 
-extern int multi_ship_class_lookup(char* ship_name);
+extern int multi_ship_class_lookup(const char* ship_name);
 extern ushort netmisc_calc_checksum( void * vptr, int len );
 extern void fill_net_addr(net_addr* addr, ubyte* address, ubyte* net_id, ushort port);
 extern char* get_text_address( char * text, ubyte * address );
@@ -331,10 +180,10 @@ int multi_ignore_controls(int key = -1);
 int multi_kill_limit_reached();
 
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
-void multi_display_chat_msg(char *msg, int player_index, int add_id);
+void multi_display_chat_msg(const char *msg, int player_index, int add_id);
 
 // fill in Current_file_checksum and Current_file_length
-void multi_get_mission_checksum(char *filename);
+void multi_get_mission_checksum(const char *filename);
 
 // Packs/unpacks an object position.
 // Returns number of bytes read or written.
@@ -388,6 +237,9 @@ void send_debrief_event();
 
 // Karajorma - Performs any cleanup needed by missions which don't end with a warpout.
 void multi_handle_sudden_mission_end();
+
+// Send a ping to make sure the mission doesn't timeout during loading.
+void multi_send_anti_timeout_ping();
 
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG

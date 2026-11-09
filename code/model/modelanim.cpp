@@ -4,27 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile:  $
- * $Revision: 1.2.2.3 $
- * $Date: 2007-05-11 03:10:48 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2.2.2  2006/12/07 18:19:23  taylor
- * try and keep angles within PI2 (Bobboau's advice, since he knows more than I do about this stuff :))
- *
- * Revision 1.2.2.1  2006/10/27 21:41:22  taylor
- * updated/fixed modelanim code
- *
- * Revision 1.2  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.1  2006/04/20 05:42:05  Goober5000
- * change animation.cpp to modelanim.cpp, add CVS info, and add the file to the VC6 project
- * --Goober5000
- *
- */
+
 
 
 #include "ship/ship.h"
@@ -37,30 +17,31 @@
 
 extern float flFrametime;
 
-// the "lazy" macro
-#define SUBTYPE_CHECK	((subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL) || (psub->triggers[i].subtype == subtype))
+SCP_vector<triggered_rotation> Triggered_rotations;
 
-
-char *animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] = {
+char *Animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
+{
 	"initial",
-	"docking",
+	"docking-stage-1",
+	"docking-stage-2",
+	"docking-stage-3",
 	"docked",
-	"primary_bank",
-	"secondary_bank",
-	"door",
+	"primary-bank",
+	"secondary-bank",
+	"fighterbay",
 	"afterburner",
-	"turret firing",
-	"scripted"
+	"turret-firing",
+	"scripted",
+	"turret-fired"
 };
 
 int model_anim_match_type(char *p)
 {	
 	int i;
-	char name[NAME_LENGTH+1];
 
 	// standard match
 	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
-		if ( !strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])) )
+		if ( !strnicmp(p, Animation_type_names[i], strlen(Animation_type_names[i])) )
 			return i;
 	}
 
@@ -70,25 +51,46 @@ int model_anim_match_type(char *p)
 		return TRIGGER_TYPE_INITIAL;
 	}
 
+	// Goober5000 - deprecation
+	if ( !strnicmp(p, "docking", 7) || !strnicmp(p, "\"docking\"", 9) ) {
+		mprintf(("The \"docking\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCKING_STAGE_2]));
+		return TRIGGER_TYPE_DOCKING_STAGE_2;
+	} else if ( !strnicmp(p, "primary_bank", 12) || !strnicmp(p, "\"primary_bank\"", 14) ) {
+		mprintf(( "The \"primary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_PRIMARY_BANK]));
+		return TRIGGER_TYPE_PRIMARY_BANK;
+	} else if ( !strnicmp(p, "secondary_bank", 14) || !strnicmp(p, "\"secondary_bank\"", 16) ) {
+		mprintf(("The \"secondary_bank\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_SECONDARY_BANK]));
+		return TRIGGER_TYPE_SECONDARY_BANK;
+	} else if ( !strnicmp(p, "door", 4) || !strnicmp(p, "\"door\"", 6) ) {
+		mprintf(("The \"door\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_DOCK_BAY_DOOR]));
+		return TRIGGER_TYPE_DOCK_BAY_DOOR;
+	} else if ( !strnicmp(p, "turret firing", 13) || !strnicmp(p, "\"turret firing\"", 15) ) {
+		mprintf(("The \"turret firing\" animation type name is deprecated.  Specify \"%s\" instead.\n", Animation_type_names[TRIGGER_TYPE_TURRET_FIRING]));
+		return TRIGGER_TYPE_TURRET_FIRING;
+	}
+
 	// Goober5000 - with quotes
 	for (i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++) {
-		memset( name, 0, sizeof(name) );
+		char quoted_name[NAME_LENGTH + 2];
+		strcpy(quoted_name, "\"");
+		strcat(quoted_name, Animation_type_names[i]);
+		strcat(quoted_name, "\"");
 
-		snprintf(name, NAME_LENGTH, "\"%s\"", animation_type_names[i]);
-
-		if ( !strnicmp(p, name, strlen(name)) ) {
-			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", name);
+		if ( !strnicmp(p, quoted_name, strlen(quoted_name)) ) {
+			mprintf(( "Old usage warning: Please remove quotes from animation type %s.\n", quoted_name));
 			return i;
 		}
 	}
 
-	return -1;
+	return TRIGGER_TYPE_NONE;
 }
 
 
-// this calculates the angle at wich the rotation should start to slow down
-// and basicly fills in a bunch of other crap
-// if anyone wants the calculus behind these numbers I'll provide it
+/**
+ * Calculates the angle at wich the rotation should start to slow down
+ * and fills in a bunch of other crap. If anyone wants the calculus behind 
+ * these numbers I'll provide it.
+ */
 void triggered_rotation::start(queued_animation *q)
 {
 	instance = q->instance;
@@ -107,10 +109,7 @@ void triggered_rotation::start(queued_animation *q)
 		if (direction.a1d[axis])
 			direction.a1d[axis] /= fabs(direction.a1d[axis]);
 
-		if (q->absolute) {
-			end_angle.a1d[axis] = end_angle.a1d[axis]; //- (2.0f * PI2 * (end_angle.a1d[axis] / (2.0f * PI2)));
-			current_ang.a1d[axis] = current_ang.a1d[axis]; //- (2.0f * PI2 * (current_ang.a1d[axis] / (2.0f * PI2)));
-		} else {
+		if (!q->absolute) {
 			end_angle.a1d[axis] = q->angle.a1d[axis] + end_angle.a1d[axis];
 		}
 
@@ -120,7 +119,7 @@ void triggered_rotation::start(queued_animation *q)
 		if (q->accel.a1d[axis] == 0.0f)
 			slow_angle.a1d[axis] = end_angle.a1d[axis];
 		else
-			slow_angle.a1d[axis] = end_angle.a1d[axis] - (((q->vel.a1d[axis] * q->vel.a1d[axis]) / (2.0f * q->accel.a1d[axis])) * direction.a1d[axis]);
+			slow_angle.a1d[axis] = end_angle.a1d[axis] + (((q->vel.a1d[axis] * q->vel.a1d[axis]) / (2.0f * q->accel.a1d[axis])) * direction.a1d[axis]);
 	}
 
 	nprintf(("ModelAnim", "Dir=[%f, %f, %f], End=[%f, %f, %f], Vel=[%f, %f, %f], Accel=[%f, %f, %f], Slow=[%f, %f, %f]\n", direction.a1d[0], direction.a1d[1], direction.a1d[2],
@@ -131,14 +130,59 @@ void triggered_rotation::start(queued_animation *q)
 	end_time = q->end_time;
 }
 
-void triggered_rotation::set_to_end(queued_animation *q)
+void triggered_rotation::apply_trigger_angles(angles *submodel_angles)
+{
+	// Vasudan Admiral - And now actually APPLY the angle data to the subobjects themselves!
+	submodel_angles->p = current_ang.xyz.x;
+	submodel_angles->h = current_ang.xyz.y;
+	submodel_angles->b = current_ang.xyz.z;
+
+	if (submodel_angles->p >= PI2)
+		submodel_angles->p -= PI2;
+	else if (submodel_angles->p < 0.0f)
+		submodel_angles->p += PI2;
+
+	if (submodel_angles->h >= PI2)
+		submodel_angles->h -= PI2;
+	else if (submodel_angles->h < 0.0f)
+		submodel_angles->h += PI2;
+
+	if (submodel_angles->b >= PI2)
+		submodel_angles->b -= PI2;
+	else if (submodel_angles->b < 0.0f)
+		submodel_angles->b += PI2;
+}
+
+void triggered_rotation::set_to_initial(queued_animation *q)
 {
 	for (int axis = 0; axis < 3; axis++)
-		current_ang.a1d[axis] += q->angle.a1d[axis];
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+	}
+}
+
+void triggered_rotation::set_to_final(queued_animation *q)
+{
+	for (int axis = 0; axis < 3; axis++)
+	{
+		current_ang.a1d[axis] = q->angle.a1d[axis];
+		end_angle.a1d[axis] = current_ang.a1d[axis];
+	}
 }
 
 triggered_rotation::triggered_rotation()
 {
+	clear();
+}
+
+void triggered_rotation::clear()
+{
+	for (int i = 0; i < MAX_TRIGGERED_ANIMATIONS; i++)
+	{
+		queued_animation_init(&queue[i]);
+		queued_animation_init(&queue_tmp[i]);
+	}
+
 	current_ang = vmd_zero_vector;
 	current_vel = vmd_zero_vector;
 	rot_accel = vmd_zero_vector;
@@ -150,6 +194,13 @@ triggered_rotation::triggered_rotation()
 	n_queue = 0;
 	instance = -1;
 	has_started = false;
+	start_sound = -1;
+	loop_sound = -1;
+	end_sound = -1;
+	current_snd = -1;
+	current_snd_index = -1;
+	snd_rad = 0.0;
+	obj_num = -1;
 }
 
 triggered_rotation::~triggered_rotation()
@@ -160,9 +211,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 {
 	int i;
 	queued_animation new_queue;
-
 	memcpy( &new_queue, the_queue, sizeof(queued_animation) );
-
 
 	if (dir == -1) {
 		new_queue.start = new_queue.reverse_start;
@@ -173,27 +222,25 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 
 	if (n_queue > 0) {
 		//remove any items on the queue that are the opposite of what we are thinking about doing
-	//	if (direction = -1) {
-			// if we are reverseing an animation see if the forward animation is on the queue already, and remove it
-			for (i = 0; i < n_queue && (i < MAX_TRIGGERED_ANIMATIONS); i++) {
-				if ( (new_queue.type == queue_tmp[i].type) && (new_queue.subtype == queue_tmp[i].subtype) ) {
-					// same type, if they have the same values (direction reversed) then get replace it
-					if (new_queue.instance == queue_tmp[i].instance)
-						break;
-				}
+		// if we are reversing an animation see if the forward animation is on the queue already, and remove it
+		for (i = 0; i < n_queue && (i < MAX_TRIGGERED_ANIMATIONS); i++) {
+			if ( (new_queue.type == queue_tmp[i].type) && (new_queue.subtype == queue_tmp[i].subtype) ) {
+				// same type, if they have the same values (direction reversed) then replace it
+				if (new_queue.instance == queue_tmp[i].instance)
+					break;
 			}
+		}
 
-			if (i != n_queue) {
-				// replace if it's not the last item on the list
-				if ( i != (MAX_TRIGGERED_ANIMATIONS-1) )
-					memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
+		if (i != n_queue) {
+			// replace if it's not the last item on the list
+			if ( i < (MAX_TRIGGERED_ANIMATIONS-1) )
+				memcpy( &queue_tmp[i], &queue_tmp[i+1], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS-(i+1)) );
 
-				// ok these two animations basicly caceled each other out, so he doesn't get on the queue
-				n_queue--;
+			// ok these two animations cancelled each other out, so he doesn't get on the queue
+			n_queue--;
 
-				return;
-			}
-	//	}
+			return;
+		}
 	}
 
 	if (new_queue.start == 0) {
@@ -213,7 +260,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 				(direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
 		{
 			// they're going in opposite directions, one of them is a reversal!
-			// so this means thata there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
+			// so this means that there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal
 			// this animation needs to be started now!
 			new_queue.start_time = timestamp();
 			new_queue.end_time = timestamp( new_queue.end );
@@ -247,8 +294,14 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 			memcpy( queue, queue_tmp, sizeof(queued_animation) * i );
 
 		// if there are any items after, copy them from the original queue
-		if ( n_queue >= (i+1) )
+		if ( (n_queue >= (i+1)) && (i < (MAX_TRIGGERED_ANIMATIONS - 1)) ) {
+			if (n_queue >= MAX_TRIGGERED_ANIMATIONS) {
+				// if the queue is full, we don't want to copy past the end of it
+				memcpy(&queue[i + 1], &queue_tmp[i], sizeof(queued_animation) * (MAX_TRIGGERED_ANIMATIONS - i - 1));
+			} else {
 			memcpy( &queue[i+1], &queue_tmp[i], sizeof(queued_animation) * (n_queue - i) );
+			}
+		}
 
 		// add the new item
 		queue[i] = new_queue;
@@ -259,8 +312,10 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 	n_queue++;
 }
 
-//look at the queue and see if any of the items on it need to be started
-//remove items from the queue that you just executed
+/**
+ * Look at the queue and see if any of the items on it need to be started
+ * remove items from the queue that you just executed
+ */
 void triggered_rotation::process_queue()
 {
 	int i;
@@ -269,7 +324,7 @@ void triggered_rotation::process_queue()
 	if ( !n_queue )
 		return;
 
-	// all items on the queue are in cronological order (or at least they should be)
+	// all items on the queue are in chronological order (or at least they should be)
 	// so execute all items who's starting timestamps are less than the current time
 	for (i = 0; (i < n_queue) && timestamp_elapsed(queue[i].start_time); i++)
 		start( &queue[i] );
@@ -281,11 +336,9 @@ void triggered_rotation::process_queue()
 	// all the triggered animations associated with this object
 	memcpy( queue_tmp, queue, sizeof(queued_animation) * MAX_TRIGGERED_ANIMATIONS );
 
-//	if(n_queue > i){
-		// if there are more items on the queue than we just executed reallocate the queue.
-		// copy all the items after the last one we executed
-		memcpy( queue, &queue_tmp[i], sizeof(queued_animation) * (n_queue-i) );
-//	}
+	// if there are more items on the queue than we just executed reallocate the queue.
+	// copy all the items after the last one we executed
+	memcpy( queue, &queue_tmp[i], sizeof(queued_animation) * (n_queue-i) );
 
 	// then erase the old queue
 	n_queue -= i;
@@ -294,36 +347,36 @@ void triggered_rotation::process_queue()
 	queue[n_queue].end_time = 0;
 }
 
-queued_animation::queued_animation()
+void queued_animation_init(queued_animation *qa)
 {
-	angle = vmd_zero_vector;
-	vel = vmd_zero_vector;
-	accel = vmd_zero_vector;
+	qa->angle = vmd_zero_vector;
+	qa->vel = vmd_zero_vector;
+	qa->accel = vmd_zero_vector;
 
-	start = 0;
-	end = 0;
-	type = TRIGGER_TYPE_NONE;
-	subtype = ANIMATION_SUBTYPE_ALL;
+	qa->start = 0;
+	qa->end = 0;
+	qa->type = TRIGGER_TYPE_NONE;
+	qa->subtype = ANIMATION_SUBTYPE_ALL;
 
-	absolute = false;
-	reverse_start = -1;
-	instance = -1;
-	real_end_time = 0;
+	qa->absolute = false;
+	qa->reverse_start = -1;
+	qa->instance = -1;
+	qa->real_end_time = 0;
 
-	start_sound = -1;
-	loop_sound = -1;
-	end_sound = -1;
-	snd_rad = 0.0f;
+	qa->start_sound = -1;
+	qa->loop_sound = -1;
+	qa->end_sound = -1;
+	qa->snd_rad = 0.0f;
 }
 
-void queued_animation::correct()
+void queued_animation_correct(queued_animation *qa)
 {
 	for (int i = 0; i < 3; i++) {
-		if ( accel.a1d[i] == 0.0f )
+		if ( qa->accel.a1d[i] == 0.0f )
 			continue;
 
-		if ( ((vel.a1d[i] * vel.a1d[i]) / accel.a1d[i]) > fabs(angle.a1d[i]) )
-			vel.a1d[i] = fl_sqrt( fabs(accel.a1d[i] * angle.a1d[i]) );
+		if ( ((qa->vel.a1d[i] * qa->vel.a1d[i]) / qa->accel.a1d[i]) > fabs(qa->angle.a1d[i]) )
+			qa->vel.a1d[i] = fl_sqrt( fabs(qa->accel.a1d[i] * qa->angle.a1d[i]) );
 	}
 }
 
@@ -337,10 +390,10 @@ void queued_animation::correct()
 /*
 ok a triggered animation works like this, at some point a subobject will be triggered to rotate 
 when this happens the following phases of rotation will happen
-1) it will accelerate at a constant rate untill it reaches a 
+1) it will accelerate at a constant rate until it reaches a 
 quasi-arbitrary (there are limitations on what it can be) velocity
-2) it will maintain a constant rotational velocity untill it reaches the angle at wich it 
-needs to start slowing down in order to stop a the right end angle
+2) it will maintain a constant rotational velocity untill it reaches the angle at which it 
+needs to start slowing down in order to stop at the right end angle
 3)it will slow down at the same rate it has sped up earlier, when the rotational velocity
 starts going in the wrong direction it'll be locked at 0 and the angle of the submodel will 
 be locked at the angle it's suposed to end at
@@ -352,10 +405,10 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	Assert( psub != NULL );
 	Assert( ss != NULL );
 	Assert( psub->flags & MSS_FLAG_TRIGGERED );
+	Assert( ss->triggered_rotation_index >= 0 );
 
-	triggered_rotation *trigger = &ss->trigger;
-	submodel_instance_info *sii = &ss->submodel_info_1;
-	int looping = 0;	
+	triggered_rotation *trigger = &Triggered_rotations[ss->triggered_rotation_index];
+	submodel_instance_info *sii = &ss->submodel_info_1;	
 	int not_moving_count = 0;
 
 	if ( psub->model_num < 0 ) {
@@ -371,27 +424,17 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	if ( !trigger->has_started )
 		return;
 
-/*
-	polymodel *pm = model_get(psub->model_num);
-
-	if (pm == NULL)
-		return;
-
-	if ( pm->submodel[psub->subobj_num].movement_type != MOVEMENT_TYPE_TRIGGERED )
-		return;
-*/
-
 	// save last angles
 	sii->prev_angs = sii->angs;
 
 	// process velocity and position
-	// first you accelerate, then you maintain a speed, then you slowdown, then you stay put
+	// first you accelerate, then you maintain a speed, then you slow down, then you stay put
 	for (int i = 0; i < 3; i++) {
 		// are we moving?
 		if ( (trigger->current_vel.a1d[i] != 0.0f) || ((trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) <= (trigger->slow_angle.a1d[i] * trigger->direction.a1d[i])) ) {
 			// yep...
 
-			// our velocity is something other than 0 or we are in the acceleration phase (were velocity starts out at 0)
+			// our velocity is something other than 0 or we are in the acceleration phase (where velocity starts out at 0)
 
 			// while you are not slowing down...
 			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) <= (trigger->slow_angle.a1d[i] * trigger->direction.a1d[i]) ) {
@@ -401,8 +444,6 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 				}
 				// have reached target speed
 				else {
-					looping = 1;
-
 					trigger->current_vel.a1d[i] = trigger->rot_vel.a1d[i];
 				}
 			}
@@ -417,7 +458,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 					// this can happen if we have decelerated too long or if an animation was reversed quickly
 					// the way to tell the difference between these two cases is the acceleration
 
-					// if the curent velocity is in the opposite direction as the accelleration then it was interupted
+					// if the curent velocity is in the opposite direction as the acceleration then it was interupted
 					if ( (trigger->current_vel.a1d[i] / fabs(trigger->current_vel.a1d[i])) != (trigger->rot_accel.a1d[i] / fabs(trigger->rot_accel.a1d[i])) ) {
 						// this is gona be some messy stuff in here to figure out when it should start to slow down again
 						// it'll have to make a new slow angle I guess
@@ -432,7 +473,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 
 						// it might hit exactly 0 every now and then, but it will be before the slow angle so it will be fine
 						// this assumes that the reversed animation is the same exact animation only played in reverse, 
-						// if the speeds or accelerations are diferent then might not work
+						// if the speeds or accelerations are diferent then it might not work
 					} else {
 						// our velocity has gone in the opposite direction because we decelerated too long
 						trigger->current_vel.a1d[i] = 0.0f;
@@ -441,7 +482,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 			}
 
 			// if we've over shot the angle, this shouldn't happen but it might if odd values are given
-			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) > (trigger->end_angle.a1d[i] * trigger->direction.a1d[i]) ) {
+			if ( (trigger->current_ang.a1d[i] * trigger->direction.a1d[i]) >= (trigger->end_angle.a1d[i] * trigger->direction.a1d[i]) ) {
 				trigger->current_ang.a1d[i] = trigger->end_angle.a1d[i];
 				trigger->current_vel.a1d[i] = 0.0f;
 				not_moving_count++;
@@ -461,7 +502,7 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	}
 
 	// objects can be animated along several axes at the same time
-	// I'm prety sure using the magnatude of the vectors is at least pretty close for any code that might be using it
+	// I'm prety sure using the magnitude of the vectors is at least pretty close for any code that might be using it
 	sii->cur_turn_rate = vm_vec_mag(&trigger->current_vel);
 	sii->desired_turn_rate = vm_vec_mag(&trigger->rot_vel);
 	sii->turn_accel = vm_vec_mag(&trigger->rot_accel);
@@ -471,17 +512,17 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	sii->angs.h = trigger->current_ang.xyz.y; //- (2.0f * PI2 * (trigger->current_ang.xyz.y / (2.0f * PI2)));
 	sii->angs.b = trigger->current_ang.xyz.z; //- (2.0f * PI2 * (trigger->current_ang.xyz.z / (2.0f * PI2)));
 
-	if (sii->angs.p > PI2)
+	if (sii->angs.p >= PI2)
 		sii->angs.p -= PI2;
 	else if (sii->angs.p < 0.0f)
 		sii->angs.p += PI2;
 
-	if (sii->angs.h > PI2)
+	if (sii->angs.h >= PI2)
 		sii->angs.h -= PI2;
 	else if (sii->angs.h < 0.0f)
 		sii->angs.h += PI2;
 
-	if (sii->angs.b > PI2)
+	if (sii->angs.b >= PI2)
 		sii->angs.b -= PI2;
 	else if (sii->angs.b < 0.0f)
 		sii->angs.b += PI2;
@@ -491,11 +532,42 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 //*** ship related animation stuff ***//
 //************************************//
 
-bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction)
+// Checks if the given subtype matches a particular animation
+bool subtype_check(model_subsystem *psub, queued_animation *anim, int subtype)
+{
+	Assert( psub != NULL );
+	Assert( anim != NULL );
+
+	if ( (subtype == ANIMATION_SUBTYPE_ALL) || (anim->subtype == ANIMATION_SUBTYPE_ALL) )
+		return true;
+
+	// Fighterbay door animations can have negative subtypes, so handle those
+	// separately here
+	if (anim->type == TRIGGER_TYPE_DOCK_BAY_DOOR) {
+		int anim_subtype = anim->subtype -1; // in the tables, bay door +sub_types are 1-based so change to 0-based
+
+		if (anim_subtype < 0) {
+			if (abs(anim_subtype) != subtype) {
+				return true;
+			}
+		} else {
+			if (anim_subtype == subtype) {
+				return true;
+			}
+		}
+	} else {
+		if ( anim->subtype == subtype )
+			return true;
+	}
+
+	return false;
+}
+
+bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, int direction, bool instant)
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if (pss->max_hits > 0 && pss->current_hits <= 0.0f) //allow subobjects with hitpoints disabled -nuke
 		return false;
 
 	model_subsystem *psub = pss->system_info;
@@ -503,26 +575,42 @@ bool model_anim_start_type(ship_subsys *pss, int animation_type, int subtype, in
 
 	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 		return false;
+	Assert(pss->triggered_rotation_index >= 0);
+	triggered_rotation *trigger = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (int i = 0; i < psub->n_triggers; i++) {
-		if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
-			psub->triggers[i].instance = i;
-			pss->trigger.add_queue(&psub->triggers[i], direction);
+		if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
+			// rotate instantly; don't use the queue
+			if (instant) {
+				trigger->set_to_final(&psub->triggers[i]);
+				trigger->apply_trigger_angles(&pss->submodel_info_1.angs);
 
-			retval = true;
+				retval = true;
+			}
+			// rotate normally
+			else {
+				psub->triggers[i].instance = i;
+				trigger->add_queue(&psub->triggers[i], direction);
+
+				retval = true;
+			}
 		}
 	}
 
 	return retval;
 }
 
-bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction)
+bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int direction, bool instant)
 {
+	// this makes the logic for docking triggers a bit cleaner
+	if (shipp == NULL)
+		return false;
+
 	ship_subsys	*pss;
 	bool retval = false;
 
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		bool rc = model_anim_start_type(pss, animation_type, subtype, direction);
+		bool rc = model_anim_start_type(pss, animation_type, subtype, direction, instant);
 
 		if (rc)
 			retval = rc;
@@ -531,17 +619,17 @@ bool model_anim_start_type(ship *shipp, int animation_type, int subtype, int dir
 	return retval;
 }
 
-//this finds the actual amount of time that motion of an animation type will take to stop, 
-//not for gameplay purposes but for stuff that is involved in coordinating the animation itself
-
-//the time it takes to speed up or slow down is v/a
-//in this time the animation covers an angle = to (v^2)/(2a) (for both directions so v^2/a)
-//so wee need the time it takes for the angle moveing at a constant velosity to cover theda - v^2/a
-//v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
-//so finaly v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
-
-//time = (3*v^2 + 2*a*theda)/(2*a*v)
-
+/**
+ * @brief Finds the actual amount of time that motion of an animation type will take to stop, 
+ * not for gameplay purposes but for stuff that is involved in coordinating the animation itself.
+ *
+ * @details The time it takes to speed up or slow down is v/a in this time the animation covers 
+ * an angle = to (v^2)/(2a) (for both directions so v^2/a) so wee need the time it takes for the 
+ * angle moving at a constant velosity to cover theda - v^2/a
+ * v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
+ * so finally v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
+ * time = (3*v^2 + 2*a*theda)/(2*a*v)
+ */
 int model_anim_instance_get_actual_time(queued_animation *properties)
 {
 	int ret = 0;
@@ -570,8 +658,8 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		// Don't process destroyed objects (but allow subobjects with hitpoints disabled -nuke)
+		if ( pss->max_hits > 0 && pss->current_hits <= 0.0f ) 
 			continue;
 
 		// not a triggered animation, skip it
@@ -579,7 +667,7 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 			continue;
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
@@ -590,7 +678,6 @@ int model_anim_get_actual_time_type(ship *shipp, int animation_type, int subtype
 
 	return ret;
 }
-
 
 int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subtype)
 {
@@ -603,7 +690,7 @@ int model_anim_get_actual_time_type(ship_info *sip, int animation_type, int subt
 		psub = &sip->subsystems[n];
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if ( (psub->triggers[i].type == animation_type) && SUBTYPE_CHECK ) {
+			if ( (psub->triggers[i].type == animation_type) && subtype_check(psub, &psub->triggers[i], subtype) ) {
 				temp_ret = model_anim_instance_get_actual_time(&psub->triggers[i]);
 
 				if (temp_ret > ret)
@@ -647,12 +734,14 @@ void model_anim_fix_reverse_times(ship_info *sip)
 	}
 }
 
-// this needs to always return a valid timestamp, even if it's just the current one
+/**
+ * Needs to always return a valid timestamp, even if it's just the current one
+ */
 int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 {
 	Assert( pss != NULL );
 
-	if (pss->current_hits <= 0.0f)
+	if (pss->max_hits > 0 && pss->current_hits <= 0.0f) //allow subobjects with hitpoints disabled -nuke
 		return timestamp();
 
 	model_subsystem *psub = pss->system_info;
@@ -660,6 +749,8 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 
 	if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 		return timestamp();
+	Assert(pss->triggered_rotation_index >= 0);
+	triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
 
 	for (i = 0; i < psub->n_triggers; i++) {
 		if ( (psub->triggers[i].type == animation_type) &&
@@ -667,45 +758,25 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 		{
 			int ani_time = 0;
 
-			if ( (pss->trigger.current_vel.a1d[0] != 0.0f) || (pss->trigger.current_vel.a1d[1] != 0.0f) || (pss->trigger.current_vel.a1d[2] != 0.0f)) {
+			if ( (tr->current_vel.a1d[0] != 0.0f) || (tr->current_vel.a1d[1] != 0.0f) || (tr->current_vel.a1d[2] != 0.0f)) {
 				// if the subobject is moving then things get really complicated
 				int a_time = 0;
 				int real_time = model_anim_instance_get_actual_time(&psub->triggers[i]);
 				int pad = real_time - psub->triggers[i].end;
 
 				for (int a = 0; a < 3; a++) {
-					float direction = pss->trigger.direction.a1d[a];
+					float end_angle = (tr->current_ang.a1d[a]  + (((tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a]) - (tr->current_vel.a1d[a]*tr->current_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])));
 
-					// if it's in the final slowdown phase then it really isn't _that_ bad
-					if ( (pss->trigger.current_ang.a1d[a] * direction) > (pss->trigger.slow_angle.a1d[a] * direction) ) {
-						a_time = fl2i( ((fl_sqrt(2.0f * pss->trigger.rot_accel.a1d[a] * (pss->trigger.end_angle.a1d[a] - pss->trigger.current_ang.a1d[a]) +
-												pss->trigger.current_vel.a1d[a] * pss->trigger.current_vel.a1d[a]) -pss->trigger.current_vel.a1d[a])
-										/ pss->trigger.rot_accel.a1d[a]) * 1000.0f);
-
+					if (end_angle > tr->slow_angle.a1d[a]) {
+						//T(total) =  (2V(maximum) - V(initial))/a + (S(turnpoint) - S(initial) + (V(initial)^2 - V(maximum)^2)/2a) / V(maximum)
+						a_time = fl2i(((((2*tr->rot_vel.a1d[a]) - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) + tr->slow_angle.a1d[a] - tr->current_ang.a1d[a] + (((tr->current_vel.a1d[a]*tr->current_vel.a1d[a]) - (tr->rot_vel.a1d[a]*tr->rot_vel.a1d[a])) / (2*tr->rot_accel.a1d[a])))*1000.0f);
 						if (ani_time < a_time)
 							ani_time = a_time;
 					} else {
-						//if vi is > v
-						if ( (pss->trigger.current_vel.a1d[a] * direction) > (pss->trigger.rot_vel.a1d[a] * direction) ) {
-							a_time = fl2i( (pss->trigger.current_vel.a1d[a] * (pss->trigger.current_vel.a1d[a] + 2))
-											/ (2.0f * pss->trigger.rot_accel.a1d[a]) * 1000.0f);
-
-							if (ani_time < a_time)
-								ani_time = a_time;
-						}
-						// if vi is <= to v
-						else {
-							a_time = fl2i( ((3.0f * pss->trigger.rot_vel.a1d[a]) / (2.0f * pss->trigger.rot_accel.a1d[a])
-											+ (pss->trigger.current_vel.a1d[a] * pss->trigger.current_vel.a1d[a])
-											/ (4.0f * pss->trigger.rot_accel.a1d[a] * pss->trigger.rot_vel.a1d[a])
-											+ (pss->trigger.end_angle.a1d[a] - pss->trigger.current_ang.a1d[a])
-											/ (pss->trigger.current_vel.a1d[a] * direction)
-											- (pss->trigger.current_vel.a1d[a] / (pss->trigger.rot_accel.a1d[a] * direction)))
-											* 1000.0f);
-
-							if (ani_time < a_time)
-								ani_time = a_time;
-						}
+						//T(total)  = 2 * sqrt((S(final) - S(initial))/a - ( (V(initial)/a)^2 ) / 2 ) - V(initial)/a
+						a_time = fl2i((2 * fl_sqrt(((tr->end_angle.a1d[a] - tr->current_ang.a1d[a])/tr->rot_accel.a1d[a]) - ((tr->current_vel.a1d[a] * tr->current_vel.a1d[a]) / (tr->rot_accel.a1d[a] * tr->rot_accel.a1d[a])) / 2) - (tr->current_vel.a1d[a] / tr->rot_accel.a1d[a]))*1000.0f);
+						if (ani_time < a_time)
+							ani_time = a_time;
 					}
 				}
 
@@ -725,9 +796,14 @@ int model_anim_get_time_type(ship_subsys *pss, int animation_type, int subtype)
 	return timestamp(ret);
 }
 
-// this tells you how long an animation is going to take to complete
-// this is for things that can't happen until animations are done
-// this is for gameplay purposes, this isn't the actual time
+/** 
+ * @brief How long an animation is going to take to complete.
+ * @details For things that can't happen until animations are done this is for gameplay purposes, this isn't the actual time
+ * @param shipp
+ * @param animation_type
+ * @param subtype
+ * @return Should already be a valid timestamp
+ */
 int model_anim_get_time_type(ship *shipp, int animation_type, int subtype)
 {
 	ship_subsys	*pss;
@@ -741,7 +817,6 @@ int model_anim_get_time_type(ship *shipp, int animation_type, int subtype)
 			ret = ani_time;
 	}
 
-	// "ret" should already be a valid timestamp
 	return ret;
 }
 
@@ -761,23 +836,30 @@ void model_anim_set_initial_states(ship *shipp)
 	ship_primary_changed(shipp);
 	ship_secondary_changed(shipp);
 
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+	for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
 		for (i = 0; i < psub->n_triggers; i++) {
-			if (psub->type == SUBSYSTEM_TURRET) {
-				// special case for turrets
-				pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
-				pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
-			} else {
-				if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL)
-					pss->trigger.set_to_end(&psub->triggers[i]);
+			if (psub->triggers[i].type == TRIGGER_TYPE_INITIAL) {
+				if (psub->type == SUBSYSTEM_TURRET) {
+					// special case for turrets
+					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
+					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
+				} else {
+					Assert(pss->triggered_rotation_index >= 0);
+					triggered_rotation *tr = &Triggered_rotations[pss->triggered_rotation_index];
+
+					tr->set_to_initial(&psub->triggers[i]);
+					tr->apply_trigger_angles(&pss->submodel_info_1.angs);
+				}
 			}
 		}
 	}
 }
 
-// this is for handling multiplayer-safe, client-side, animations
+/**
+ * Handles multiplayer-safe, client-side, animations
+ */
 void model_anim_handle_multiplayer(ship *shipp)
 {
 	Assert( shipp != NULL );
@@ -796,13 +878,14 @@ void model_anim_handle_multiplayer(ship *shipp)
 	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
 		psub = pss->system_info;
 
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
+		// Don't process destroyed objects  (but allow subobjects with hitpoints disabled -nuke)
+		if ( pss->max_hits > 0 && pss->current_hits <= 0.0f ) 
 			continue;
 
 		// not a triggered animation, skip it
 		if ( !(psub->flags & MSS_FLAG_TRIGGERED) )
 			continue;
+		Assert(pss->triggered_rotation_index >= 0);
 
 		for (int i = 0; i < psub->n_triggers; i++) {
 			switch (psub->triggers[i].type)
@@ -811,7 +894,7 @@ void model_anim_handle_multiplayer(ship *shipp)
 				case TRIGGER_TYPE_SECONDARY_BANK:
 				case TRIGGER_TYPE_AFTERBURNER:
 				{
-					pss->trigger.process_queue();
+					Triggered_rotations[pss->triggered_rotation_index].process_queue();
 					model_anim_submodel_trigger_rotate(psub, pss );
 
 					break;
@@ -822,4 +905,35 @@ void model_anim_handle_multiplayer(ship *shipp)
 			}
 		}
 	}
+}
+
+// Goober5000 - stack based animation for reversing a sequence of animations
+
+SCP_map<int, animation_stack> Animation_map;
+
+bool model_anim_push_and_start_type(int stack_unique_id, ship *shipp, int animation_type, int subtype, int direction, bool instant)
+{
+	stack_item item;
+	item.shipp = shipp;
+	item.animation_type = animation_type;
+	item.subtype = subtype;
+	item.direction = direction;
+	item.instant = instant;
+
+	Animation_map[stack_unique_id].push_back(item);
+
+	return model_anim_start_type(shipp, animation_type, subtype, direction, instant);
+}
+
+bool model_anim_pop_and_start_type(int stack_unique_id)
+{
+	animation_stack stack = Animation_map[stack_unique_id];
+
+	if (stack.empty())
+		return false;
+
+	stack_item item = stack.back();
+	stack.pop_back();
+
+	return model_anim_start_type(item.shipp, item.animation_type, item.subtype, item.direction * -1, item.instant);
 }

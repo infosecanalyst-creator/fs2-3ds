@@ -7,96 +7,26 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDescort.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
- *
- * Header file for managing and displaying ships that are in an escort
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/06/26 03:19:53  wmcoolmon
- * Displayed escorts now settable up to MAX_COMPLETE_ESCORT_LIST via "$Max Escort Ships:" in hud_gauges.tbl
- * Escort list is now hud_gauges.tbl compatible.
- *
- * Revision 2.1  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 6     7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 5     5/24/99 11:28a Dave
- * Sexpression for adding/removing ships from the hud escort list.
- * 
- * 4     3/04/99 9:22a Andsager
- * Make escort list work with ship-is-visible.  When not visible, dump,
- * when becoming visible, maybe add.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 9     4/30/98 3:32p Lawrance
- * Cull dead/departed ships from escort ship in hud_update_frame()
- * 
- * 8     3/02/98 11:31p Lawrance
- * create functions to access ships on escort list
- * 
- * 7     2/26/98 10:07p Hoffoss
- * Rewrote state saving and restoring to fix bugs and simplify the code.
- * 
- * 6     1/20/98 4:45p Allender
- * made HUD escorts which arrive late show up on list
- * 
- * 5     11/24/97 10:20p Lawrance
- * Add key 'KEY_N' to target next ship on monitoring view
- * 
- * 4     11/18/97 5:58p Lawrance
- * flash escort view info when that ship is taking hits
- * 
- * 3     11/13/97 10:46p Lawrance
- * implemented new escort view, damage view and weapons
- * 
- * 2     8/19/97 11:46p Lawrance
- * adding new hud gauges for shileds, escort view, and weapons
- * 
- * 1     8/19/97 3:13p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FREESPACE_HUDESCORT_VIEW_H__
 #define __FREESPACE_HUDESCORT_VIEW_H__
 
+#include "hud/hud.h"
+
 //Odd def for escort frames
-#define NUM_ESCORT_FRAMES 4
+#define NUM_ESCORT_FRAMES 3
 
 extern int Max_escort_ships;
 
-struct object;
+class object;
 
+void	hud_escort_update_list();
 void	hud_escort_init();
 void	hud_setup_escort_list(int level = 1);
-void	hud_display_escort();
 void	hud_escort_view_toggle();
 void	hud_add_remove_ship_escort(int objnum, int supress_feedback = 0);
-void	hud_escort_clear_all();
+void	hud_escort_clear_all(bool clear_flags = false);
 void	hud_escort_ship_hit(object *objp, int quadrant);
 void	hud_escort_target_next();
 void	hud_escort_cull_list();
@@ -106,5 +36,40 @@ int	hud_escort_num_ships_on_list();
 int	hud_escort_return_objnum(int index);
 void	hud_escort_add_player(short id);
 void	hud_escort_remove_player(short id);
+
+class HudGaugeEscort: public HudGauge
+{
+protected:
+	hud_frames Escort_gauges[NUM_ESCORT_FRAMES];
+
+	int header_text_offsets[2];			// coordinates of the header text
+	char header_text[NAME_LENGTH];		// Header text for the Escort Gauge. Default is "monitoring"
+	int list_start_offsets[2];					// Offset Start of the Ship List
+	int entry_h;						// the height of each entry
+	int entry_stagger_w;				// width of the staircase effect
+	int bottom_bg_offset;
+	int ship_name_offsets[2];					// Offset of the Ship Name column
+	int ship_integrity_offsets[2];			// Offset of the Ship Hull column
+	int ship_status_offsets[2];				// Offset of the Ship Status column
+	int ship_name_max_width;			// max width of ship name entries
+public:
+	HudGaugeEscort();
+	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
+	void initHeaderText(char *text);
+	void initHeaderTextOffsets(int x, int y);
+	void initListStartOffsets(int x, int y);
+	void initEntryHeight(int h);
+	void initEntryStaggerWidth(int w);
+	void initBottomBgOffset(int offset);
+	void initShipNameOffsets(int x, int y);
+	void initShipIntegrityOffsets(int x, int y);
+	void initShipStatusOffsets(int x, int y);
+	void initShipNameMaxWidth(int w);
+	int setGaugeColorEscort(int index, int team);
+	virtual void render(float frametime);
+	void pageIn();
+	void renderIcon(int x, int y, int index);
+	void renderIconDogfight(int x, int y, int index);
+};
 
 #endif /* __FREESPACE_HUDESCORT_VIEW_H__ */

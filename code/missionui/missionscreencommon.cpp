@@ -7,404 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.32.2.4 $
- * $Date: 2007-02-10 00:17:40 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.32.2.3  2006/10/24 13:31:32  taylor
- * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
- *
- * Revision 2.32.2.2  2006/08/19 04:38:46  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.32.2.1  2006/07/17 01:09:03  taylor
- * fix some missile autocentering issues
- *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
- *  - don't try to autocenter loadout icons when rendered 3d
- *
- * Revision 2.32  2006/05/13 07:09:25  taylor
- * minor cleanup and a couple extra error checks
- * get rid of some wasteful math from the gr_set_proj_matrix() calls
- *
- * Revision 2.31  2006/04/20 06:32:14  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.30  2006/02/18 00:42:51  wmcoolmon
- * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
- *
- * Revision 2.29  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.28  2005/11/16 05:46:27  taylor
- * bunch of error checking and code cleanup for the team stuff in ship/weapon select
- *
- * Revision 2.27  2005/10/29 22:09:29  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- * Revision 2.26  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.25  2005/09/27 02:36:57  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.24  2005/09/05 09:38:18  taylor
- * merge of OSX tree
- * a lot of byte swaps were still missing, will hopefully be fully network compatible now
- *
- * Revision 2.23  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.22  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.21  2005/04/11 05:50:36  taylor
- * some limits.h fixes to make GCC happier
- * revert timer asm change since it doesn't even get used with Linux and couldn't have been the slowdown problem
- *
- * Revision 2.20  2005/04/05 05:53:19  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.19  2005/04/03 08:48:30  Goober5000
- * brought weapon loadout banks into agreement with ship info banks
- * improved error reporting on apply-to-all
- * --Goober5000
- *
- * Revision 2.18  2005/03/31 11:11:56  Goober5000
- * changed a bunch of literal constants to their #define'd keywords
- * --Goober5000
- *
- * Revision 2.17  2005/03/25 06:57:36  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.16  2005/03/12 04:44:24  wmcoolmon
- * Fixx0red odd drag problems
- *
- * Revision 2.15  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.14  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.13  2005/02/14 23:56:51  taylor
- * fix mouse click issues in weapon/ship select screen
- * skip real VCR controls for Closeup check rather than using hardcoded values
- *
- * Revision 2.12  2005/02/13 08:42:41  wmcoolmon
- * More explicit calculation handling
- *
- * Revision 2.11  2005/01/31 23:27:54  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.10  2005/01/29 08:09:47  wmcoolmon
- * Various updates; shader, clipping
- *
- * Revision 2.9  2005/01/15 05:53:18  wmcoolmon
- * Current version of the new techroom code -C
- *
- * Revision 2.8  2004/07/26 20:47:40  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/17 18:46:08  taylor
- * various OGL and memory leak fixes
- *
- * Revision 2.6  2004/07/12 16:32:55  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.5  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/11/11 02:15:44  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.3  2003/09/13 06:02:06  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.5  2002/05/16 06:07:38  mharris
- * more ifndef NO_SOUND
- *
- * Revision 1.4  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.3  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 13    10/14/99 2:51p Jefff
- * localiztion fixes
- * 
- * 12    8/05/99 3:40p Jefff
- * hi-res text adjustments
- * 
- * 11    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 10    2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 9     1/30/99 7:33p Neilk
- * Fixed coords problems for mission briefing screens
- * 
- * 8     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 7     1/29/99 4:17p Dave
- * New interface screens.
- * 
- * 6     1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 5     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 4     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 3     10/16/98 9:40a Andsager
- * Remove ".h" files from model.h
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 85    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 84    5/08/98 7:52p Lawrance
- * fix bug where wing slot icons were not getting loaded
- * 
- * 83    5/08/98 10:17a Lawrance
- * don't play briefing slide-in animation if detail level is below high
- * 
- * 82    5/06/98 11:50p Lawrance
- * Clean up help overlay code for loadout screens
- * 
- * 81    5/03/98 1:55a Lawrance
- * Fix some sound problems with loadout screens
- * 
- * 80    4/30/98 6:03p Lawrance
- * Make drag and drop work better.
- * 
- * 79    4/22/98 5:52p Dave
- * Large reworking of endgame sequencing. Updated host options screen for
- * new artwork. Put in checks to end game if host leaves or if team
- * captains leave mid-game. 
- * 
- * 78    4/07/98 7:51p Hoffoss
- * Implemented changed to options screen due to artwork changes.
- * 
- * 77    4/07/98 5:42p Dave
- * Put in support for ui display of voice system status (recording,
- * playing back, etc). Make sure main hall music is stopped before
- * entering a multiplayer game via ingame join.
- * 
- * 76    4/02/98 11:40a Lawrance
- * check for #ifdef DEMO instead of #ifdef DEMO_RELEASE
- * 
- * 75    4/01/98 11:19p Dave
- * Put in auto-loading of xferred pilot pic files. Grey out background
- * behind pinfo popup. Put a chatbox message in when players are kicked.
- * Moved mission title down in briefing. Other ui fixes.
- * 
- * 74    4/01/98 9:21p John
- * Made NDEBUG, optimized build with no warnings or errors.
- * 
- * 73    3/31/98 11:47p Lawrance
- * Fix some bugs related to wingmen selection when doing a quick mission
- * restart.
- * 
- * 72    3/31/98 5:31p Lawrance
- * Fix sound bug that happenned when entering briefing
- * 
- * 71    3/30/98 5:16p Lawrance
- * centralize a check for disabled loadout screens
- * 
- * 70    3/30/98 12:18a Lawrance
- * change some DEMO_RELEASE code to not compile code rather than return
- * early
- * 
- * 69    3/29/98 10:16p Allender
- * scramble missions need to have ship/weapon selection disabled (this
- * code was somehow lost)
- * 
- * 68    3/29/98 1:24p Dave
- * Make chatbox not clear between multiplayer screens. Select player ship
- * as default in mp team select and weapons select screens. Made create
- * game mission list use 2 fixed size columns.
- * 
- * 67    3/29/98 12:55a Lawrance
- * Get demo build working with limited set of data.
- * 
- * 66    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so complex when you try and call it.
- * 
- * 65    3/24/98 4:59p Dave
- * Fixed several ui bugs. Put in pre and post voice stream playback sound
- * fx. Put in error specific popups for clients getting dropped from games
- * through actions other than their own.
- * 
- * 64    3/19/98 5:32p Lawrance
- * Added music to the background of command brief screen.
- * 
- * 63    3/05/98 5:02p Dave
- * More work on team vs. team support for multiplayer. Need to fix bugs in
- * weapon select.
- * 
- * 62    3/03/98 8:55p Dave
- * Finished pre-briefing team vs. team support.
- * 
- * 61    3/03/98 8:12p Lawrance
- * Double timeout before flashing buttons
- * 
- * 60    3/02/98 3:27p Lawrance
- * Don't call muti_ts_init() in single player
- * 
- * 59    3/01/98 3:26p Dave
- * Fixed a few team select bugs. Put in multiplayer intertface sounds.
- * Corrected how ships are disabled/enabled in team select/weapon select
- * screens.
- * 
- * 58    2/27/98 4:55p Sandeep
- * Fixed a signed/unsigned bug in the wss packet type
- * 
- * 57    2/26/98 4:59p Allender
- * groundwork for team vs team briefings.  Moved weaponry pool into the
- * Team_data structure.  Added team field into the p_info structure.
- * Allow for mutliple structures in the briefing code.
- * 
- * 56    2/25/98 10:24a Lawrance
- * Don't ask for confirmation when ESC is pressed.
- * 
- * 55    2/24/98 12:22a Lawrance
- * New coords for revamped briefing graphics
- * 
- * 54    2/22/98 4:17p John
- * More string externalization classification... 190 left to go!
- * 
- * 53    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 52    2/21/98 2:50p Lawrance
- * Tell players that their campaign position will get saved if they return
- * to main hall from loadout screens.
- * 
- * 51    2/19/98 6:26p Dave
- * Fixed a few file xfer bugs. Tweaked mp team select screen. Put in
- * initial support for player data uploading.
- * 
- * 50    2/18/98 3:56p Dave
- * Several bugs fixed for mp team select screen. Put in standalone packet
- * routing for team select.
- * 
- * 49    2/17/98 6:07p Dave
- * Tore out old multiplayer team select screen, installed new one.
- * 
- * 48    2/13/98 3:46p Dave
- * Put in dynamic chatbox sizing. Made multiplayer file lookups use cfile
- * functions.
- * 
- * 47    2/10/98 8:40p Dave
- * Fixed some debriefing bugs.
- * 
- * 46    2/04/98 11:06p Lawrance
- * Fix a couple of bugs with save/restore of player weapon loadout.
- * 
- * 45    2/04/98 4:32p Allender
- * support for multiple briefings and debriefings.  Changes to mission
- * type (now a bitfield).  Bitfield defs for multiplayer modes
- * 
- * 44    1/30/98 10:40a Lawrance
- * remove any binding references to hotkey screen
- * 
- * 43    1/20/98 5:52p Lawrance
- * prompt user before returning to main hall (in single player)
- * 
- * 42    1/17/98 5:51p Dave
- * Bug fixes for bugs generated by multiplayer testing.
- * 
- * 41    1/14/98 11:39a Dave
- * Polished up a bunch of popup support items.
- * 
- * 40    1/13/98 5:35p Lawrance
- * Show popup when trying to go to weapons loadout without any ships
- * selected.
- * 
- * 39    1/10/98 5:48p Lawrance
- * Don't allow Tab to go to ship/weapon loadout screen in training, play
- * negative feedback sounds if user tries to.
- * 
- * 38    1/10/98 12:45a Lawrance
- * Don't restore loadout if mission was modified.
- * 
- * 37    1/09/98 6:06p Dave
- * Put in network sound support for multiplayer ship/weapon select
- * screens. Made clients exit game correctly through warp effect. Fixed
- * main hall menu help overlay bug.
- * 
- * 36    1/09/98 11:04a Lawrance
- * Fix bug that prevented buttons from flashing in the loadout screens.
- * 
- * 35    1/07/98 6:45p Lawrance
- * Play first briefing music if none specified.
- * 
- * 34    1/05/98 4:57p Lawrance
- * reset flash timers when a button is pressed or a key is pressed
- * 
- * 33    12/30/97 5:46p Lawrance
- * Rename rnd() to rand_alt().
- * 
- * 32    12/30/97 4:27p Lawrance
- * Add new rnd() function that doesn't affect rand() sequence.
- * 
- * 31    12/29/97 4:21p Lawrance
- * Flash buttons on briefing/ship select/weapons loadout when enough time
- * has elapsed without activity.
- * 
- * 30    12/28/97 5:52p Lawrance
- * Add support for debriefing success/fail music.
- * 
- * 29    12/24/97 8:54p Lawrance
- * Integrating new popup code
- * 
- * 28    12/24/97 1:19p Lawrance
- * fix some bugs with the multiplayer ship/weapons loadout
- * 
- * 27    12/23/97 11:58a Allender
- * changes to ship/wespon selection for multplayer.  added sounds to some
- * interface screens.  Update and modiied end-of-briefing packets -- yet
- * to be tested.
- *
- * $NoKeywords: $
- *
- */
+
 
 
 #include <limits.h>		// this is need even when not building debug!!
@@ -428,6 +31,7 @@
 #include "ui/uidefs.h"
 #include "anim/animplay.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
 #include "network/multi.h"
@@ -436,9 +40,11 @@
 #include "network/multiteamselect.h"
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
-
-
-
+#include "cutscene/movie.h"
+#include "cutscene/cutscenes.h"
+#include "parse/sexp.h"
+#include "graphics/2d.h"
+#include "graphics/gropenglshader.h"
 
 //////////////////////////////////////////////////////////////////
 // Game Globals
@@ -492,6 +98,8 @@ extern void ss_set_team_pointers(int team);
 extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
+extern int anim_timer_start;
+extern void ss_reset_selected_ship();
 
 //////////////////////////////////////////////////////////////////
 // UI 
@@ -670,11 +278,6 @@ void common_buttons_init(UI_WINDOW *ui_window)
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_SS_REGION].button.disable();
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_REGION].button.disable();
 	}
-
-	#ifdef DEMO // allow for FS2_DEMO
-		Common_buttons[Current_screen-1][gr_screen.res][COMMON_SS_REGION].button.disable();
-		Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_REGION].button.disable();
-	#endif
 }
 
 void set_active_ui(UI_WINDOW *ui_window)
@@ -729,7 +332,48 @@ void common_music_close()
 	if ( Num_music_files <= 0 )
 		return;
 
-	briefing_stop_music();
+	briefing_stop_music(true);
+}
+
+int common_num_cutscenes_valid(int movie_type)
+{
+	int num_valid_cutscenes = 0; 
+
+	for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+		if (movie_type == The_mission.cutscenes[i].type) {
+			if (!eval_sexp( The_mission.cutscenes[i].formula )) {
+				continue; 
+			}
+
+			num_valid_cutscenes++;
+		}
+	}
+
+	return num_valid_cutscenes;
+}
+
+void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
+{
+	bool music_off = false;
+
+	for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
+		if (movie_type == The_mission.cutscenes[i].type) {
+			if (!eval_sexp( The_mission.cutscenes[i].formula )) {
+				continue; 
+			}
+
+			if ( strlen(The_mission.cutscenes[i].filename) ) {
+				common_music_close(); 
+				music_off = true;
+				movie_play( The_mission.cutscenes[i].filename );	//Play the movie!
+				cutscene_mark_viewable( The_mission.cutscenes[i].filename );
+			}
+		}
+	}
+
+	if (music_off && restart_music) {
+		common_music_init(music);
+	}
 }
 
 // function that sets the current palette to the interface palette.  This function
@@ -745,7 +389,7 @@ void common_set_interface_palette(char *filename)
 	if ( (InterfacePaletteBitmap != -1) && !stricmp(filename, buf) )
 		return;  // already set to this palette
 
-	strcpy(buf, filename);
+	strcpy_s(buf, filename);
 
 	// unload the interface bitmap from memory
 	if (InterfacePaletteBitmap != -1) {
@@ -845,35 +489,10 @@ void common_select_init()
 	Background_playing = 0;
 	Background_anim = NULL;
 
-	#ifndef DEMO // not for FS2_DEMO
-
-	/*
-	if ( current_detail_level() >= (NUM_DEFAULT_DETAIL_LEVELS-2) ) {
-
-		anim_play_struct aps;
-
-		// Load in the background transition anim
-		if ( Game_mode & GM_MULTIPLAYER )
-			Background_anim = anim_load("BriefTransMulti", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
-		else  {
-			Background_anim = anim_load("BriefTrans", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
-		}
-
-		Assert( Background_anim != NULL );
-		anim_play_init(&aps, Background_anim, 0, 0);
-		aps.framerate_independent = 1;
-		aps.skip_frames = 0;
-		Background_anim_instance = anim_play(&aps);
-		Background_playing = 1;		// start playing the Background anim
-	}
-	*/
 	Current_screen = Next_screen = ON_BRIEFING_SELECT;
 
 	// load in the icons for the wing slots
 	load_wing_icons(NOX("iconwing01"));
-
-
-	#endif
 
 	Current_screen = Next_screen = ON_BRIEFING_SELECT;
 	
@@ -906,12 +525,14 @@ void common_select_init()
 	// restore loadout from Player_loadout if this is the same mission as the one previously played
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
 		if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
-			wss_restore_loadout();
+			wss_maybe_restore_loadout();
 			ss_synch_interface();
 			wl_synch_interface();
 		}
 	}
 	
+	ss_reset_selected_ship();
+
 	Drop_icon_mflag = 0;
 	Drop_on_wing_mflag = 0;
 
@@ -961,7 +582,7 @@ int common_select_do(float frametime)
 	int	k, new_k;
 
 
-	if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
 		Common_buttons[0][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[1][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
 		Common_buttons[2][gr_screen.res][COMMON_HELP_BUTTON].button.reset_status();
@@ -979,10 +600,10 @@ int common_select_do(float frametime)
 	}
 
 	if ( (k > 0) || (new_k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(BR_OVERLAY) || help_overlay_active(SS_OVERLAY) || help_overlay_active(WL_OVERLAY) ) {
-			help_overlay_set_state(BR_OVERLAY, 0);
-			help_overlay_set_state(SS_OVERLAY, 0);
-			help_overlay_set_state(WL_OVERLAY, 0);
+		if ( help_overlay_active(Briefing_overlay_id) || help_overlay_active(Ship_select_overlay_id) || help_overlay_active(Weapon_select_overlay_id) ) {
+			help_overlay_set_state(Briefing_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Ship_select_overlay_id, gr_screen.res, 0);
+			help_overlay_set_state(Weapon_select_overlay_id, gr_screen.res, 0);
 			Active_ui_window->set_ignore_gadgets(0);
 			k = 0;
 			new_k = 0;
@@ -1074,8 +695,9 @@ int common_select_do(float frametime)
 void common_render(float frametime)
 {
 	if ( !Background_playing ) {
+		GR_MAYBE_CLEAR_RES(Brief_background_bitmap);
 		gr_set_bitmap(Brief_background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	}
 
 	anim_render_all(0, frametime);
@@ -1195,17 +817,13 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( Current_screen != ON_WEAPON_SELECT && !Background_playing ) {
-					if ( !wss_slots_all_empty() ) {
-						Next_screen = ON_WEAPON_SELECT;
-					} else {
-						common_show_no_ship_error();
-					}
+			if ( Current_screen != ON_WEAPON_SELECT && !Background_playing ) {
+				if ( !wss_slots_all_empty() ) {
+					Next_screen = ON_WEAPON_SELECT;
+				} else {
+					common_show_no_ship_error();
 				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+			}
 
 			break;
 
@@ -1216,13 +834,9 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( Current_screen != ON_SHIP_SELECT && !Background_playing ) {
-					Next_screen = ON_SHIP_SELECT;
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+			if ( Current_screen != ON_SHIP_SELECT && !Background_playing ) {
+				Next_screen = ON_SHIP_SELECT;
+			}
 
 			break;
 
@@ -1233,32 +847,28 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( !Background_playing ) {
-					switch ( Current_screen ) {
-						case ON_BRIEFING_SELECT:
-							if ( !wss_slots_all_empty() ) {
-								Next_screen = ON_WEAPON_SELECT;
-							} else {
-								common_show_no_ship_error();
-							}
-							break;
+			if ( !Background_playing ) {
+				switch ( Current_screen ) {
+					case ON_BRIEFING_SELECT:
+						if ( !wss_slots_all_empty() ) {
+							Next_screen = ON_WEAPON_SELECT;
+						} else {
+							common_show_no_ship_error();
+						}
+						break;
 
-						case ON_SHIP_SELECT:
-							Next_screen = ON_BRIEFING_SELECT;
-							break;
+					case ON_SHIP_SELECT:
+						Next_screen = ON_BRIEFING_SELECT;
+						break;
 
-						case ON_WEAPON_SELECT:
-							Next_screen = ON_SHIP_SELECT;
-							break;
-						default:
-							Int3();
-							break;
-					}	// end switch
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+					case ON_WEAPON_SELECT:
+						Next_screen = ON_SHIP_SELECT;
+						break;
+					default:
+						Int3();
+						break;
+				}	// end switch
+			}
 
 			break;
 
@@ -1269,32 +879,28 @@ void common_check_keys(int k)
 				break;
 			}
 
-			#ifndef DEMO // not for FS2_DEMO
-				if ( !Background_playing ) {
-					switch ( Current_screen ) {
-						case ON_BRIEFING_SELECT:
-							Next_screen = ON_SHIP_SELECT;
-							break;
+			if ( !Background_playing ) {
+				switch ( Current_screen ) {
+					case ON_BRIEFING_SELECT:
+						Next_screen = ON_SHIP_SELECT;
+						break;
 
-						case ON_SHIP_SELECT:
-							if ( !wss_slots_all_empty() ) {
-								Next_screen = ON_WEAPON_SELECT;
-							} else {
-								common_show_no_ship_error();
-							}
-							break;
+					case ON_SHIP_SELECT:
+						if ( !wss_slots_all_empty() ) {
+							Next_screen = ON_WEAPON_SELECT;
+						} else {
+							common_show_no_ship_error();
+						}
+						break;
 
-						case ON_WEAPON_SELECT:
-							Next_screen = ON_BRIEFING_SELECT;
-							break;
-						default:
-							Int3();
-							break;
-					}	// end switch
-				}
-			#else
-				gamesnd_play_iface(SND_GENERAL_FAIL);
-			#endif
+					case ON_WEAPON_SELECT:
+						Next_screen = ON_BRIEFING_SELECT;
+						break;
+					default:
+						Int3();
+						break;
+				}	// end switch
+			}
 
 			break;
 
@@ -1442,7 +1048,7 @@ void wss_save_loadout()
 }
 
 // restore ship/weapons loadout from the Player_loadout struct
-void wss_restore_loadout()
+void wss_maybe_restore_loadout()
 {
 	int i,j;
 	wss_unit	*slot;
@@ -1454,25 +1060,102 @@ void wss_restore_loadout()
 		return;
 	}
 
+	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is 
+	// available in this mission.
+	int	last_loadout_ships[MAX_SHIP_CLASSES];
+	int	this_loadout_ships[MAX_SHIP_CLASSES];
+
+	int	last_loadout_weapons[MAX_WEAPON_TYPES];
+	int	this_loadout_weapons[MAX_WEAPON_TYPES];
+
+	// zero all pools
+	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		last_loadout_ships[i] = 0; 
+		this_loadout_ships[i] = 0; 
+	}
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+		last_loadout_weapons[i] = 0; 
+		this_loadout_weapons[i] = 0; 
+	}
+
+	// record the ship classes / weapons used last time
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		slot = &Player_loadout.unit_data[i];
+		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+			++last_loadout_ships[slot->ship_class];
+
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+				if ((slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
+				}
+			}
+		}
+	}
+
+	// record the ships classes / weapons used by the player and wingmen. We don't include the amount in the pools yet
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		if ((Wss_slots[i].ship_class >= 0) && (Wss_slots[i].ship_class < MAX_SHIP_CLASSES)) {
+			++this_loadout_ships[Wss_slots[i].ship_class];
+
+			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < MAX_WEAPON_TYPES)) {
+					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
+				}
+			}
+		}
+	}
+
+	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
+	// than there were last time, we can't restore and must abort.
+	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		if (Ss_pool[i] >= 1) {
+			this_loadout_ships[i] += Ss_pool[i];
+		}
+		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
+			return; 
+		}
+	}
+	
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+		if (Wl_pool[i] >= 1) {
+			this_loadout_weapons[i] += Wl_pool[i];
+		}
+		if ( this_loadout_weapons[i] < last_loadout_weapons[i]) {
+			return; 
+		}
+	}
+
+	// go through the slots and restore the previous runthrough's loadout. Also remove that ship from total of ships in this mission
+	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
+		slot = &Player_loadout.unit_data[i];
+
+		if ((slot->ship_class >= 0) && (slot->ship_class < MAX_SHIP_CLASSES)) {
+			--this_loadout_ships[slot->ship_class];
+			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
+
+		}
+		// restore the ship class for each slot
+		Wss_slots[i].ship_class = slot->ship_class;
+
+		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
+			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < MAX_WEAPON_TYPES)) {
+				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
+				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
+			}
+
+			Wss_slots[i].wep[j]= slot->wep[j];
+			Wss_slots[i].wep_count[j] = slot->wep_count[j];
+		}
+	}	
+
 	// restore the ship pool
 	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Ss_pool[i] = Player_loadout.ship_pool[i]; 
+		Ss_pool[i] = this_loadout_ships[i]; 
 	}
 
 	// restore the weapons pool
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = Player_loadout.weapon_pool[i]; 
-	}
-
-	// restore the ship class / weapons for each slot
-	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
-		slot = &Player_loadout.unit_data[i];
-		Wss_slots[i].ship_class = slot->ship_class;
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			Wss_slots[i].wep[j]= slot->wep[j];
-			Wss_slots[i].wep_count[j] = slot->wep_count[j];
-		}
+		Wl_pool[i] = this_loadout_weapons[i]; 
 	}
 }
 
@@ -1488,11 +1171,17 @@ void wss_direct_restore_loadout()
 		return;
 	}
 
+	// niffiwan: if Starting_wings[] has missing wings, Player_loadout.unit_data
+	// skips the missing wings.  Use a new variable to track the number of valid
+	// wings in Starting_wings[], otherwise mission can crash on restart
+	int valid_wing_index = -1;
+
 	for ( i = 0; i < MAX_WING_BLOCKS; i++ ) {
 
 		if ( Starting_wings[i] < 0 )
 			continue;
 
+		valid_wing_index++;
 		wp = &Wings[Starting_wings[i]];
 
 		// If this wing is still on the arrival list, then update the parse objects
@@ -1500,8 +1189,13 @@ void wss_direct_restore_loadout()
 			p_object *p_objp;
 			j=0;
 			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
-				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
+					// niffiwan: don't overrun the array
+					if (j >= MAX_WING_SLOTS) {
+						Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[i]);
+						break;
+					}
+					slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 					p_objp->ship_class = slot->ship_class;
 					wl_update_parse_object_weapons(p_objp, slot);
 					j++;
@@ -1518,13 +1212,13 @@ void wss_direct_restore_loadout()
 
 			// This wing is already created, so directly update the ships
 			for ( j = 0; j < MAX_WING_SLOTS; j++ ) {
-				slot = &Player_loadout.unit_data[i*MAX_WING_SLOTS+j];
+				if ( wp->ship_index[j] == -1 ) { // if this is an invalid ship, move on
+					continue;
+				}
+
+				slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
 				shipp = &Ships[wp->ship_index[j]];
 				if ( shipp->ship_info_index != slot->ship_class ) {
-
-					if ( wp->ship_index[j] == -1 ) {
-						continue;
-					}
 
 					if ( slot->ship_class == -1 ) {
 						cleanup_ship_index[j] = wp->ship_index[j];
@@ -1808,7 +1502,7 @@ int restore_wss_data(ubyte *block)
 	return offset;
 }
 
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, bool resize)
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
@@ -1835,7 +1529,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	}
 	vm_angles_2_matrix(&object_orient, &rot_angles);
 
-	gr_set_clip(x, y, w, h, resize);
+	gr_set_clip(x, y, w, h, resize_mode);
 	g3_start_frame(1);
 	if(sip != NULL)
 	{
@@ -1863,16 +1557,17 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 			bs = &pm->submodel[0];
 		}
 
-		vec3d weap_closeup;
+		vec3d weap_closeup = Weapon_info->closeup_pos;
 		float y_closeup;
+		float tm_zoom = Weapon_info->closeup_zoom;
 
 		//Find the center of teh submodel
 		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
 		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
 		//weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
-		weap_closeup.xyz.z = -(bs->rad/tanf(zoom/2.0f));
+		weap_closeup.xyz.z = -(bs->rad/tanf(tm_zoom/2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tanf(zoom / 2.0f));
+		y_closeup = -(weap_closeup.xyz.y/tanf(tm_zoom / 2.0f));
 		if(y_closeup < weap_closeup.xyz.z)
 		{
 			weap_closeup.xyz.z = y_closeup;
@@ -1881,8 +1576,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		{
 			weap_closeup.xyz.z = bs->min.xyz.x;
 		}
-//		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
-		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
+		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
 		if (!Cmdline_nohtl) {
 			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
@@ -1903,89 +1597,256 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		light_dir.xyz.y = 2.0f;
 		light_dir.xyz.z = -2.0f;	
 		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		// light_filter_reset();
 		light_rotate_all();
-		// lighting for techroom
 	}
 
+	Glowpoint_override = true;
 	model_clear_instance(model_id);
 	model_render(model_id, &object_orient, &vmd_zero_vector, flags, -1, -1);
+	Glowpoint_override = false;
 
 	if (!Cmdline_nohtl) 
 	{
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
+
 
 	g3_end_frame();
 	gr_reset_clip();
 }
 
-void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, int resize_mode, int effect)
 {
 	//WMC - Can't draw a non-model
-	if(model_id < 0)
+	if (model_id < 0)
 		return;
 
+	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
 
-	// rotate the ship as much as required for this frame
-	*rotation_buffer += PI2 * flFrametime / rev_rate;
-	while (*rotation_buffer > PI2){
-		*rotation_buffer -= PI2;
-	}
+	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
+		// rotate the ship as much as required for this frame
+		if (time >= 3.6f) // Phase 4
+			*rotation_buffer += PI2 * flFrametime / rev_rate;
+		else
+			*rotation_buffer = PI; // No rotation before Phase 4
+		while (*rotation_buffer > PI2){
+			*rotation_buffer -= PI2;
+		}
 
-	view_angles.p = -0.6f;
-	view_angles.b = 0.0f;
-	view_angles.h = 0.0f;
-	vm_angles_2_matrix(&model_orient, &view_angles);
+		view_angles.p = -PI_2;
 
-	rot_angles.p = 0.0f;
-	rot_angles.b = 0.0f;
-	rot_angles.h = *rotation_buffer;
-	vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
-	
-	gr_set_clip(x1, y1, x2, y2, resize);
+		if (time >= 3.0f) { // Phase 3
+			if (time >= 3.6f) { // done tilting
+				view_angles.p = -0.6f; 
+			} else {
+				view_angles.p = (PI_2-0.6f)*(time-3.0f)*1.66667f - PI_2; // Phase 3 Tilt animation
+			}
+		}
 
-	// render the ship
-	g3_start_frame(1);
-	if(closeup_pos != NULL)
-	{
-		g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
-	}
-	else
-	{
+		view_angles.b = 0.0f;
+		view_angles.h = 0.0f;
+		vm_angles_2_matrix(&model_orient, &view_angles);
+		rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = *rotation_buffer;
+		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
+		gr_set_clip(x1, y1, x2, y2, resize_mode);
+		vec3d wire_normal,ship_normal,plane_point;
+
+		// Clip the wireframe below the scanline
+		wire_normal.xyz.x = 0.0f;
+		wire_normal.xyz.y = 1.0f;
+		wire_normal.xyz.z = 0.0f;
+
+		// Clip the ship above the scanline
+		ship_normal.xyz.x = 0.0f;
+		ship_normal.xyz.y = -1.0f;
+		ship_normal.xyz.z = 0.0f;
 		polymodel *pm = model_get(model_id);
-		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
-		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
-	}
 
-	if (!Cmdline_nohtl) {
+		//Make the clipping plane
+		float clip = -pm->rad*0.7f;
+		if (time < 1.5f && time >= 0.5f) // Phase 1 Move down
+			clip = pm->rad*(time-1.0f)*1.4f;
+
+		if (time >= 1.5f)
+			clip = pm->rad*(time-2.0f)*(-1.4f); // Phase 2 Move up
+
+		vm_vec_scale_sub(&plane_point,&vmd_zero_vector,&wire_normal,clip);
+
+		g3_start_frame(1);
+		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) > 0.0f) ) {
+			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+		} else {
+			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		}
+
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-	}
 
-	// lighting for techroom
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;	
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-	// lighting for techroom
+		vec3d start, stop;
+		float size = pm->rad*0.7f;
+		float start_scale = MIN(time,0.5f)*2.5f;
+		float offset = size*0.5f*MIN(MAX(time-3.0f,0.0f),0.6f)*1.66667f;
+		if ( (time < 1.5f) && (time >= 0.5f) )  // Clip the grid if were in phase 1
+			g3_start_user_clip_plane(&plane_point,&wire_normal);
 
-	model_clear_instance(model_id);
-	model_set_detail_level(0);
-	model_render(model_id, &model_orient, &vmd_zero_vector, flags);
+		g3_start_instance_angles(&vmd_zero_vector,&view_angles);
 
-	if (!Cmdline_nohtl) 
-	{
+		if (time < 0.5f) { // Do the expanding scanline in phase 0
+			gr_set_color(0,255,0);
+			start.xyz.x = size*start_scale;
+			start.xyz.y = 0.0f;
+			start.xyz.z = -clip;
+			stop.xyz.x = -size*start_scale;
+			stop.xyz.y = 0.0f;
+			stop.xyz.z = -clip;
+			g3_draw_htl_line(&start,&stop);
+		}
+		g3_done_instance(true);
+
+		gr_zbuffer_set(GR_ZBUFF_NONE); // Turn off Depthbuffer so we don't get gridlines over the ship or a disappearing scanline 
+		Glowpoint_use_depth_buffer = false; // Since we don't have one
+		if (time >= 0.5f) { // Phase 1 onward draw the grid
+			int i;
+			start.xyz.y = -offset;
+			start.xyz.z = size+offset*0.5f;
+			stop.xyz.y = -offset;
+			stop.xyz.z = -size+offset*0.5f;
+			gr_set_color(0,200,0);
+			g3_start_instance_angles(&vmd_zero_vector,&view_angles);
+
+			for (i = -3; i < 4; i++) {
+				start.xyz.x = stop.xyz.x = size*0.333f*i;
+				g3_draw_htl_line(&start,&stop);
+			}
+
+			start.xyz.x = size;
+			stop.xyz.x = -size;
+
+			for (i = -3; i < 4; i++) {
+				start.xyz.z = stop.xyz.z = size*0.333f*i+offset*0.5f;
+				g3_draw_htl_line(&start,&stop);
+			}
+
+			g3_done_instance(true);
+
+			// lighting for techroom
+			light_reset();
+			vec3d light_dir = vmd_zero_vector;
+			light_dir.xyz.y = 1.0f;
+			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+			light_rotate_all();
+			// lighting for techroom
+
+			// render the ships
+			model_clear_instance(model_id);
+			model_set_detail_level(0);
+			model_set_outline_color(80,49,160);
+			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2);
+			opengl_shader_set_animated_timer(-clip);
+
+			if ( (time < 2.5f) && (time >= 0.5f) ) { // Phase 1 and 2 render the wireframe
+				if (time >= 1.5f) // Just clip the wireframe after Phase 1
+					g3_start_user_clip_plane(&plane_point,&wire_normal);
+				
+				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_ANIMATED_SHADER);
+				g3_stop_user_clip_plane();
+			}
+
+			if (time >= 1.5f) { // Render the ship in Phase 2 onwards
+				g3_start_user_clip_plane(&plane_point,&ship_normal);
+				model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
+				g3_stop_user_clip_plane();
+			}
+
+			if (time < 2.5f) { // Render the scanline in Phase 1 and 2
+				gr_set_color(0,255,0);
+				start.xyz.x = size*1.25f;
+				start.xyz.y = 0.0f;
+				start.xyz.z = -clip;
+				stop.xyz.x = -size*1.25f;
+				stop.xyz.y = 0.0f;
+				stop.xyz.z = -clip;
+				g3_start_instance_angles(&vmd_zero_vector,&view_angles);
+				g3_draw_htl_line(&start,&stop);
+				g3_done_instance(true);
+			}
+		}
+
+		gr_zbuffer_set(GR_ZBUFF_FULL); // Turn off depthbuffer again
+
+		batch_render_all();
+		Glowpoint_use_depth_buffer = true; // Back to normal
+
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
-	}
+		g3_end_frame();
+		gr_reset_clip();
 
-	g3_end_frame();
-	gr_reset_clip();
+	} else {
+		// rotate the ship as much as required for this frame
+		*rotation_buffer += PI2 * flFrametime / rev_rate;
+		while (*rotation_buffer > PI2){
+			*rotation_buffer -= PI2;
+		}
+
+		view_angles.p = -0.6f;
+		view_angles.b = 0.0f;
+		view_angles.h = 0.0f;
+		vm_angles_2_matrix(&model_orient, &view_angles);
+
+		rot_angles.p = 0.0f;
+		rot_angles.b = 0.0f;
+		rot_angles.h = *rotation_buffer;
+		vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
+
+		gr_set_clip(x1, y1, x2, y2, resize_mode);
+		g3_start_frame(1);
+
+		// render the wodel
+		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) > 0.0f) ) {
+			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
+		} else {
+			polymodel *pm = model_get(model_id);
+			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		}
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		// lighting for techroom
+		light_reset();
+		vec3d light_dir = vmd_zero_vector;
+		light_dir.xyz.y = 1.0f;
+		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+		light_rotate_all();
+		// lighting for techroom
+
+		model_clear_instance(model_id);
+		model_set_detail_level(0);
+		gr_set_color(0,128,0);
+
+		if (effect == 1) { // FS1 effect
+			opengl_shader_set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1);
+			opengl_shader_set_animated_timer(MIN(time*0.5f,2.0f));
+			model_render(model_id, &model_orient, &vmd_zero_vector, flags | MR_ANIMATED_SHADER);
+		} else {
+			model_render(model_id, &model_orient, &vmd_zero_vector, flags);
+		}
+
+		batch_render_all();
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+		g3_end_frame();
+		gr_reset_clip();
+	}
 }
 
 // NEWSTUFF END

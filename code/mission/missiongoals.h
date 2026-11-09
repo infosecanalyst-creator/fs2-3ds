@@ -7,127 +7,12 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionGoals.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
- *
- *  Header file for Mission support.  Included detection of primary
- *  and secondary goals.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/08/11 05:06:28  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 8     9/06/99 9:46p Jefff
- * skip mission support
- * 
- * 7     8/28/99 4:54p Dave
- * Fixed directives display for multiplayer clients for wings with
- * multiple waves. Fixed hud threat indicator rendering color.
- * 
- * 6     7/29/99 3:06p Andsager
- * Increase max number of events to 150
- * 
- * 5     7/29/99 2:58p Jefff
- * Ingame objective screen icon key now uses normal objective icons and
- * text is drawn in code.
- * 
- * 4     2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 51    5/21/98 2:47a Lawrance
- * Fix some problems with event music
- * 
- * 50    4/15/98 9:05a Allender
- * fix skpping of training mission with branchs
- * 
- * 49    4/03/98 2:47p Allender
- * made directives act different when multiple waves of a wing take a long
- * time to reappear
- * 
- * 48    3/31/98 12:23a Allender
- * changed macro names of campaign types to be more descriptive.  Added
- * "team" to objectives dialog for team v. team missions.  Added two
- * distinct multiplayer campaign types
- * 
- * 47    2/27/98 4:37p Hoffoss
- * Combined Objectives screen into Mission Log screen.
- * 
- * 46    2/26/98 10:07p Hoffoss
- * Rewrote state saving and restoring to fix bugs and simplify the code.
- * 
- * 45    2/22/98 4:30p John
- * More string externalization classification
- * 
- * 44    2/20/98 8:33p Lawrance
- * Added mission_goals_incomplete()
- * 
- * 43    1/30/98 4:24p Hoffoss
- * Added a 3 second delay for directives before they get displayed.
- * 
- * 42    1/28/98 6:21p Dave
- * Made the standalone use ~8 megs less memory. Fixed multiplayer submenu
- * endgame problem.
- * 
- * 41    1/27/98 11:00a Lawrance
- * Fix bug with showing number of resolved goals in the objective status
- * popup.
- * 
- * 40    1/15/98 5:23p Lawrance
- * Add HUD gauge to indicate completed objectives.
- * 
- * 39    1/12/98 5:17p Allender
- * fixed primary fired problem and ship warp out problem.  Made new
- * mission goal info packet to deal with goals more accurately. 
- * 
- * 38    12/29/97 12:16p Johnson
- * Upped event max.
- * 
- * 37    12/22/97 6:07p Hoffoss
- * Made directives flash when completed, fixed but with is-destroyed
- * operator.
- * 
- * 36    12/19/97 12:43p Hoffoss
- * Changed code to allow counts in directives.
- * 
- * 35    12/01/97 12:26a Lawrance
- * Add flag  MGF_NO_MUSIC to mission_goal struct, to avoid playing music
- * for certain goals
- * 
- * 34    11/02/97 10:09p Lawrance
- * add source control header
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MISSIONGOAL_H
 #define _MISSIONGOAL_H
 
+#include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 
 struct ai_goal;
@@ -158,7 +43,7 @@ struct ai_info;
 #define	PRIMARY_GOALS_INCOMPLETE	0
 #define	PRIMARY_GOALS_FAILED			-1
 
-extern char *Goal_type_text(int n);
+extern const char *Goal_type_text(int n);
 
 // structures for primary and secondary goals
 
@@ -196,13 +81,29 @@ extern int	Num_goals;									// number of goals for this mission
 
 #define MEF_CURRENT					(1 << 0)		// is event current or past current yet?
 #define MEF_DIRECTIVE_SPECIAL		(1 << 1)		// used to mark a directive as true even though not fully satisfied
-#define MEF_DIRECTIVE_TEMP_TRUE	(1 << 2)		// this directive is temporarily true.
+#define MEF_DIRECTIVE_TEMP_TRUE		(1 << 2)		// this directive is temporarily true.
+#define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
+
+#define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
+
+#define MLF_SEXP_TRUE				(1 << 0)
+#define MLF_SEXP_FALSE				(1 << 1)
+//#define MLF_SEXP_KNOWN_TRUE			(1 << 2)
+#define MLF_SEXP_KNOWN_FALSE		(1 << 3)		
+#define MLF_FIRST_REPEAT_ONLY		(1 << 4)
+#define MLF_LAST_REPEAT_ONLY		(1 << 5)
+#define MLF_FIRST_TRIGGER_ONLY		(1 << 6)
+#define MLF_LAST_TRIGGER_ONLY		(1 << 7)	
+#define MLF_STATE_CHANGE			(1 << 8)	
+
+#define MLF_ALL_REPETITION_FLAGS (MLF_FIRST_REPEAT_ONLY | MLF_LAST_REPEAT_ONLY | MLF_FIRST_TRIGGER_ONLY | MLF_LAST_TRIGGER_ONLY) 
 
 typedef struct mission_event {
 	char	name[NAME_LENGTH];	// used for storing status of events in player file
 	int	formula;					// index into sexpression array for this formula
 	int	result;					// result of most recent evaluation of event
-	int	repeat_count;			// number of times to repeat this goal
+	int	repeat_count;			// number of times to test this goal
+	int trigger_count;			// number of times to allow this goal to trigger
 	int	interval;				// interval (in seconds) at which an evaulation is repeated once true.
 	int	timestamp;				// set at 'interval' seconds when we start to eval.
 	int	score;					// score for this event
@@ -211,15 +112,26 @@ typedef struct mission_event {
 	char	*objective_text;
 	char	*objective_key_text;
 	int	count;					// object count for directive display
-	int	satisfied_time;
+	int	satisfied_time;			// this is used to temporarily mark the directive as satisfied when the event isn't (e.g. for a destroyed wave when there are more waves later)
 	int	born_on_date;			// timestamp at which event was born
 	int	team;						// for multiplayer games
+
+	// event log stuff
+	int mission_log_flags;		// flags that are used to determing which events are written to the log
+	SCP_vector<SCP_string> event_log_buffer;
+	SCP_vector<SCP_string> event_log_variable_buffer;
+	SCP_vector<SCP_string> event_log_argument_buffer;
+	SCP_vector<SCP_string> backup_log_buffer;
+	int	previous_result;		// result of previous evaluation of event
+
 } mission_event;
 
 extern int Num_mission_events;
 extern mission_event Mission_events[MAX_MISSION_EVENTS];
 extern int Mission_goal_timestamp;
 extern int Event_index;  // used by sexp code to tell what event it came from
+extern bool Log_event;
+extern bool Snapshot_all_events;
 
 // prototypes
 void	mission_init_goals( void );

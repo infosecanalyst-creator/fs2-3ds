@@ -7,580 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.11 $
- * $Date: 2007-10-15 06:43:18 $
- * $Author: taylor $
- *
- * C file that holds functions for the building and processing of multiplayer packets
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.57.2.10  2007/09/29 13:58:45  karajorma
- * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
- *
- * Revision 2.57.2.9  2007/09/02 18:52:51  Goober5000
- * fix for #1455 plus a bit of cleanup
- *
- * Revision 2.57.2.8  2007/04/24 12:07:33  karajorma
- * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
- *
- * Revision 2.57.2.7  2007/02/20 04:19:22  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.57.2.6  2006/12/01 18:53:55  karajorma
- * Fix for Stream weapons not appearing for clients when fired by AI ships in multiplayer. Actual work mostly done by Juke not me
- *
- * Revision 2.57.2.5  2006/11/21 23:06:57  karajorma
- * Fix ammo and weapon SEXP changes not being passed on to the clients
- *
- * Revision 2.57.2.4  2006/11/12 17:52:21  karajorma
- * Doh!
- *
- * Revision 2.57.2.3  2006/08/25 21:15:31  karajorma
- * Fix TvT problem with scores appearing incorrectly.
- * Fix a CVS issue
- *
- * Revision 2.57  2006/06/02 09:10:01  karajorma
- * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
- *
- * Revision 2.56  2006/02/03 22:25:18  taylor
- * I don't like this being considered a fix without retail compatibility testing, but it should at the very least compile...
- *
- * Revision 2.55  2006/02/01 23:43:34  phreak
- * Allow weapons to home in on countermeasures as well.  The multiplayer code was only allowing bombs to be homed in on.
- *
- * Revision 2.54  2006/01/26 03:23:30  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.53  2005/12/29 08:08:39  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.52  2005/12/22 04:35:04  taylor
- * more big-endian fixes
- * fix the totally retarded check I made for multi fighter beams (they really don't work right yet anyway) since it broke normal beams for clients
- *
- * Revision 2.51  2005/12/04 19:07:49  wmcoolmon
- * Final commit of codebase
- *
- * Revision 2.50  2005/11/16 05:46:27  taylor
- * bunch of error checking and code cleanup for the team stuff in ship/weapon select
- *
- * Revision 2.49  2005/11/08 01:04:00  wmcoolmon
- * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
- *
- * Revision 2.48  2005/10/30 06:44:57  wmcoolmon
- * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
- *
- * Revision 2.47  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- * Revision 2.46  2005/10/14 07:22:24  Goober5000
- * removed an unneeded parameter and renamed some stuff
- * --Goober5000
- *
- * Revision 2.45  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.44  2005/09/27 02:36:58  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.43  2005/09/25 22:23:39  Kazan
- * correct an error
- *
- * Revision 2.42  2005/09/05 09:38:19  taylor
- * merge of OSX tree
- * a lot of byte swaps were still missing, will hopefully be fully network compatible now
- *
- * Revision 2.41  2005/07/31 01:32:21  taylor
- * few data type fixes, was only a problem for big-endian systems as little-endian doesn't really care about this
- *
- * Revision 2.40  2005/07/24 18:35:43  taylor
- * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
- *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
- *
- * Revision 2.39  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.38  2005/07/13 00:44:23  Goober5000
- * improved species support and removed need for #define
- * --Goober5000
- *
- * Revision 2.37  2005/07/07 16:36:58  taylor
- * various compiler warning fixes (some of these from dizzy)
- *
- * Revision 2.36  2005/06/29 18:54:02  taylor
- * should fix perpetually damaged subsystems on ships for multi clients
- *
- * Revision 2.35  2005/06/21 00:15:06  taylor
- * unbreak network compatibility with 3.6.5 and earlier builds
- * fix crashing with turret weapons
- *
- * Revision 2.34  2005/05/08 20:38:32  wmcoolmon
- * Dynamically allocated medals
- *
- * Revision 2.33  2005/04/19 06:26:56  taylor
- * small compiler warning fixes, more 'always true' stuff
- *
- * Revision 2.32  2005/04/12 05:26:37  taylor
- * many, many compiler warning and header fixes (Jens Granseuer)
- * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
- *
- * Revision 2.31  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.30  2005/04/03 08:48:31  Goober5000
- * brought weapon loadout banks into agreement with ship info banks
- * improved error reporting on apply-to-all
- * --Goober5000
- *
- * Revision 2.29  2005/03/27 12:28:34  Goober5000
- * clarified max hull/shield strength names and added ship guardian thresholds
- * --Goober5000
- *
- * Revision 2.28  2005/03/25 06:57:36  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.27  2005/03/02 21:18:20  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.26  2005/02/04 20:06:05  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.25  2005/01/11 21:38:50  Goober5000
- * multiple ship docking :)
- * don't tell anyone yet... check the SCP internal
- * --Goober500
- *
- * Revision 2.24  2004/10/03 21:41:11  Kazan
- * Autopilot convergence collision fix for ai_fly_to_ship() and ai_waypoints() -- mathematically expensive, only usable by autopilot
- *
- * Revision 2.23  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.22  2004/07/15 00:16:46  wmcoolmon
- * I though I fixed this...
- *
- * Revision 2.21  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.20  2004/07/12 03:34:55  wmcoolmon
- * More in-game stuff, mostly for restricted games
- *
- * Revision 2.19  2004/07/12 03:19:16  Kazan
- * removed a couple pointless useless messages from the debug console
- *
- * Revision 2.18  2004/05/10 10:51:52  Goober5000
- * made primary and secondary banks quite a bit more friendly... added error-checking
- * and reorganized a bunch of code
- * --Goober5000
- *
- * Revision 2.17  2004/03/31 05:42:27  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.16  2004/03/17 04:07:30  bobboau
- * new fighter beam code
- * fixed old after burner trails
- * had to bump a few limits, working on some dynamic solutions
- * a few fixed to background POF rendering
- * fixing asorted bugs
- *
- * Revision 2.15  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.14  2004/02/04 08:41:03  Goober5000
- * made code more uniform and simplified some things,
- * specifically shield percentage and quadrant stuff
- * --Goober5000
- *
- * Revision 2.13  2003/11/13 03:59:54  Kazan
- * PXO_SID changed from unsigned to signed
- *
- * Revision 2.12  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.11  2003/11/06 20:22:13  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 2.10  2003/10/04 22:42:22  Kazan
- * fs2netd now TCP
- *
- * Revision 2.9  2003/09/24 19:35:59  Kazan
- * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
- *
- * Revision 2.8  2003/04/29 01:03:24  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.7  2003/02/16 18:55:35  phreak
- * fixed typecasting warnings
- *
- * Revision 2.6  2003/01/19 07:02:16  Goober5000
- * fixed a bunch of bugs - "no-subspace-drive" should now work properly for
- * all ships, and all ships who have their departure anchor set to a capital ship
- * should exit to that ship when told to depart
- * --Goober5000
- *
- * Revision 2.5  2002/12/24 07:42:29  Goober5000
- * added change-ai-class and is-ai-class, and I think I may also have nailed the
- * is-iff bug; did some other bug hunting as well
- * --Goober5000
- *
- * Revision 2.4  2002/12/17 02:18:40  Goober5000
- * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned commit
- * --Goober5000
- *
- * Revision 2.3  2002/12/09 08:26:24  Goober5000
- * fixed misspelling
- *
- * Revision 2.2  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 23:01:24  mharris
- * porting
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 83    9/14/99 2:21p Dave
- * Fixed observer mode joining and ingame stuff.
- * 
- * 82    9/14/99 3:26a Dave
- * Fixed laser fogging problem in nebula (D3D)> Fixed multiplayer
- * respawn-too-early problem. Made a few crash points safe.
- * 
- * 81    9/13/99 4:52p Dave
- * RESPAWN FIX
- * 
- * 80    9/08/99 10:01p Dave
- * Make sure game won't run in a drive's root directory. Make sure
- * standalone routes suqad war messages properly to the host.
- * 
- * 79    8/28/99 4:54p Dave
- * Fixed directives display for multiplayer clients for wings with
- * multiple waves. Fixed hud threat indicator rendering color.
- * 
- * 78    8/27/99 12:32a Dave
- * Allow the user to specify a local port through the launcher.
- * 
- * 77    8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 76    8/25/99 4:38p Dave
- * Updated PXO stuff. Make squad war report stuff much more nicely.
- * 
- * 75    8/24/99 1:50a Dave
- * Fixed client-side afterburner stuttering. Added checkbox for no version
- * checking on PXO join. Made button info passing more friendly between
- * client and server.
- * 
- * 74    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 73    8/22/99 1:55p Dave
- * Cleaned up host/team-captain leaving code.
- * 
- * 72    8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 71    8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 70    8/17/99 1:12p Dave
- * Send TvT update when a client has finished joining so he stays nice and
- * synched.
- * 
- * 69    8/16/99 4:05p Dave
- * Big honking checkin.
- * 
- * 68    8/11/99 5:54p Dave
- * Fixed collision problem. Fixed standalone ghost problem.
- * 
- * 67    8/06/99 9:46p Dave
- * Hopefully final changes for the demo.
- * 
- * 66    8/05/99 2:06a Dave
- * Whee.
- * 
- * 65    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 64    7/29/99 5:41p Jefff
- * Sound hooks for cmeasure success
- * 
- * 63    7/28/99 5:34p Dave
- * Nailed the missing stats bug to the wall. Problem was optimized build
- * and using GET_DATA() with array elements. BLECH.
- * 
- * 62    7/26/99 5:50p Dave
- * Revised ingame join. Better? We'll see....
- * 
- * 61    7/24/99 1:54p Dave
- * Hud text flash gauge. Reworked dead popup to use 4 buttons in red-alert
- * missions.
- * 
- * 60    7/22/99 7:17p Dave
- * Fixed excessive whacks in multiplayer.
- * 
- * 59    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 58    7/03/99 5:50p Dave
- * Make rotated bitmaps draw properly in padlock views.
- * 
- * 57    7/03/99 4:08p Dave
- * Fixed wss_slots size issues. Fixed potentially nasty bug in low level
- * reliable code.
- * 
- * 56    6/21/99 7:24p Dave
- * netplayer pain packet. Added type E unmoving beams.
- * 
- * 55    6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 54    6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 53    6/16/99 10:20a Dave
- * Added send-message-list sexpression.
- * 
- * 52    6/04/99 3:52p Anoop
- * Removed bogus assert.
- * 
- * 51    6/01/99 8:35p Dave
- * Finished lockarm weapons. Added proper supercap weapons/damage. Added
- * awacs-set-radius sexpression.
- * 
- * 50    5/21/99 5:03p Andsager
- * Add code to display engine wash death.  Modify ship_kill_packet
- * 
- * 49    5/18/99 1:30p Dave
- * Added muzzle flash table stuff.
- * 
- * 48    5/14/99 1:59p Andsager
- * Multiplayer message for subsystem cargo revealed.
- * 
- * 47    5/14/99 12:15p Andsager
- * Add vaporized to kill packet
- * 
- * 46    5/03/99 8:32p Dave
- * New version of multi host options screen.
- * 
- * 45    4/30/99 12:18p Dave
- * Several minor bug fixes.
- * 
- * 44    4/29/99 2:29p Dave
- * Made flak work much better in multiplayer.
- * 
- * 43    4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 42    4/16/99 5:54p Dave
- * Support for on/off style "stream" weapons. Real early support for
- * target-painting lasers.
- * 
- * 41    4/12/99 2:22p Dave
- * More checks for dogfight stats.
- * 
- * 40    4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 39    4/02/99 9:55a Dave
- * Added a few more options in the weapons.tbl for beam weapons. Attempt
- * at putting "pain" packets into multiplayer.
- * 
- * 38    4/01/99 3:41p Anoop
- * Removed bogus Int3().
- * 
- * 37    3/19/99 9:51a Dave
- * Checkin to repair massive source safe crash. Also added support for
- * pof-style nebulae, and some new weapons code.
- * 
- * 38    3/12/99 2:32p Anoop
- * Removed bogus asserts.
- * 
- * 37    3/11/99 11:41a Neilk
- * Don't do multi_io_* operations in single-player
- * 
- * 36    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 35    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 34    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 33    3/04/99 6:09p Dave
- * Added in sexpressions for firing beams and checking for if a ship is
- * tagged.
- * 
- * 32    3/01/99 10:00a Dave
- * Fxied several dogfight related stats bugs.
- * 
- * 31    2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 30    2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 29    2/21/99 6:01p Dave
- * Fixed standalone WSS packets. 
- * 
- * 28    2/21/99 1:48p Dave
- * Some code for monitoring datarate for multiplayer in detail.
- * 
- * 27    2/17/99 2:11p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 26    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 25    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 24    1/29/99 5:07p Dave
- * Fixed multiplayer stuff. Put in multiplayer support for rapid fire
- * missiles.
- * 
- * 23    1/27/99 9:56a Dave
- * Temporary checkin of beam weapons for Dan to make cool sounds.
- * 
- * 22    1/26/99 6:33p Anoop
- * Fixed multiplayer slot switching problem (be sure to remember that
- * hinfo->id is player id# _not_ player index #)
- * 
- * 21    1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 20    1/15/99 4:37p Dave
- * Potential fix for weapon pair problem.
- * 
- * 19    1/14/99 6:06p Dave
- * 100% full squad logo support for single player and multiplayer.
- * 
- * 18    1/14/99 12:48a Dave
- * Todo list bug fixes. Made a pass at putting briefing icons back into
- * FRED. Sort of works :(
- * 
- * 17    1/12/99 5:45p Dave
- * Moved weapon pipeline in multiplayer to almost exclusively client side.
- * Very good results. Bandwidth goes down, playability goes up for crappy
- * connections. Fixed object update problem for ship subsystems.
- * 
- * 16    1/08/99 4:56p Anoop
- * Fixed a problem with wss request packets.
- * 
- * 15    12/18/98 12:24p Markm
- * Fixed a dumb bug where player image_filenames were not being passed
- * properly in new players packet.
- * 
- * 14    12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 13    11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 12    11/20/98 4:08p Dave
- * Fixed flak effect in multiplayer.
- * 
- * 11    11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 10    11/19/98 8:04a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 9     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 8     11/12/98 11:50a Dave
- * Multiplayer clients set flak range to be very long.
- * 
- * 7     11/12/98 12:13a Dave
- * Tidied code up for multiplayer test. Put in network support for flak
- * guns.
- * 
- * 6     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 5     10/20/98 1:39p Andsager
- * Make so sparks follow animated ship submodels.  Modify
- * ship_weapon_do_hit_stuff() and ship_apply_local_damage() to add
- * submodel_num.  Add submodel_num to multiplayer hit packet.
- * 
- * 4     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 506   10/02/98 3:22p Allender
- * fix up the -connect option and fix the -port option
- * 
- * 505   10/02/98 11:45a Dave
- * Fixed stupid chat message bug.
- * 
- * 504   9/29/98 1:33p Dave
- * Remove standalone only conditional compiles for pre 1.04 stuff.
- * 
- * 503   9/28/98 1:54p Dave
- * Make sure French and German don't xfer builtin files they don't have
- * (to themselves)
- * 
- * 502   9/20/98 7:19p Dave
- * Added CHANGE_IFF packet. 
- * 
- * 501   9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 
- * $NoKeywords: $
- */
+
 
 
 #include <limits.h>
@@ -641,7 +68,7 @@
 #include "cmeasure/cmeasure.h"
 #include "parse/sexp.h"
 #include "fs2netd/fs2netd_client.h"
-
+#include "network/multi_sexp.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -884,9 +311,9 @@ void get_join_request(ubyte *data, int *size, join_request *jr)
 
 	GET_DATA(*jr);
 
-	jr->tracker_id = INTEL_INT(jr->tracker_id);
-	jr->player_options.flags = INTEL_INT(jr->player_options.flags);
-	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level);
+	jr->tracker_id = INTEL_INT(jr->tracker_id); //-V570
+	jr->player_options.flags = INTEL_INT(jr->player_options.flags); //-V570
+	jr->player_options.obj_update_level = INTEL_INT(jr->player_options.obj_update_level); //-V570
 
 	*size = offset;
 }
@@ -912,8 +339,8 @@ void get_net_addr(ubyte *data, int *size, net_addr *addr)
 
 	GET_DATA(*addr);
 
-	addr->type = INTEL_INT(addr->type);
-	addr->port = INTEL_SHORT(addr->port);
+	addr->type = INTEL_INT(addr->type); //-V570
+	addr->port = INTEL_SHORT(addr->port); //-V570
 
 	*size = offset;
 }
@@ -1185,10 +612,11 @@ struct fs2_game_chat_packet
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 // send a general game chat packet (if msg_mode == MULTI_MSG_TARGET, need to pass in "to", if == MULTI_MSG_EXPR, need to pass in expr)
-void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player *to, char *expr, int server_msg)
+void send_game_chat_packet(net_player *from, const char *msg, int msg_mode, net_player *to, const char *expr, int server_msg)
 {
 	ubyte data[MAX_PACKET_SIZE],mode;
 	int packet_size,idx;
+	bool undeliverable = true;
 	
 	BUILD_HEADER(GAME_CHAT);
 	
@@ -1255,10 +683,27 @@ void send_game_chat_packet(net_player *from, char *msg, int msg_mode, net_player
 			for(idx=0;idx<MAX_PLAYERS;idx++){
 				if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && (&Net_players[idx] != from) && multi_msg_matches_expr(&Net_players[idx],expr) ){					
 					multi_io_send_reliable(&Net_players[idx], data, packet_size);
+					undeliverable = false; 
 				}
 			}
 			break;
-		}		
+		}	
+
+		// if the message can't be delivered, notify the player
+		if (undeliverable) {
+			switch(mode){
+				case MULTI_MSG_EXPR:
+					// if the message came from the server
+					if (from == Net_player) {
+						multi_display_chat_msg ("Unable to send message, player does not exist", 0, 0);
+					}
+					// otherwise send a message back to the player
+					else {
+						send_game_chat_packet(Net_player, "Unable to send message, player does not exist", MULTI_MSG_TARGET, from, NULL, 1); 
+					}
+					break;
+			}	
+		}
 	}
 	// send to the server, who will take care of routing it
 	else {		
@@ -1598,7 +1043,7 @@ void send_new_player_packet(int new_player_num,net_player *target)
 	ADD_INT(Net_players[new_player_num].flags);
 	ADD_STRING(Net_players[new_player_num].m_player->callsign);
 	ADD_STRING(Net_players[new_player_num].m_player->image_filename);
-	ADD_STRING(Net_players[new_player_num].m_player->squad_filename);
+	ADD_STRING(Net_players[new_player_num].m_player->m_squad_filename);
 	ADD_STRING(Net_players[new_player_num].p_info.pxo_squad_name);
 
 	val = (ubyte)Net_players[new_player_num].p_info.team;
@@ -1670,17 +1115,17 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		}
 
 		// copy in the filename
-		if(strlen(new_player_image) > 0){
-			strcpy(Net_players[new_player_num].m_player->image_filename, new_player_image);
+		if(new_player_image[0] != '\0'){
+			strcpy_s(Net_players[new_player_num].m_player->image_filename, new_player_image);
 		} else {
-			strcpy(Net_players[new_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[new_player_num].m_player->image_filename, "");
 		}
 		// copy his pilot squad filename
 		Net_players[new_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[new_player_num].m_player, new_player_squad);				
+		player_set_squad_bitmap(Net_players[new_player_num].m_player, new_player_squad, true);
 
 		// copy in his pxo squad name
-		strcpy(Net_players[new_player_num].p_info.pxo_squad_name, new_player_pxo_squad);
+		strcpy_s(Net_players[new_player_num].p_info.pxo_squad_name, new_player_pxo_squad);
 
 		// since we just created the player, set the last_heard_time here.
 		Net_players[new_player_num].last_heard_time = timer_get_fixed_seconds();
@@ -1693,7 +1138,7 @@ void process_new_player_packet(ubyte* data, header* hinfo)
 		multi_ping_reset(&Net_players[new_player_num].s_info.ping);		
 
 		// add a chat message
-		if(Net_players[new_player_num].m_player->callsign != NULL){
+		if(*Net_players[new_player_num].m_player->callsign){
 			sprintf(notify_string,XSTR("<%s has joined>",717),Net_players[new_player_num].m_player->callsign);
 			multi_display_chat_msg(notify_string,0,0);
 		}
@@ -1791,7 +1236,7 @@ void send_accept_player_data( net_player *npp, int is_ingame )
 		ADD_STRING(Net_players[i].m_player->image_filename);
 
 		// add his squad filename
-		ADD_STRING(Net_players[i].m_player->squad_filename);
+		ADD_STRING(Net_players[i].m_player->m_squad_filename);
 
 		// add his PXO squad name
 		ADD_STRING(Net_players[i].p_info.pxo_squad_name);
@@ -1881,14 +1326,14 @@ void process_accept_player_data( ubyte *data, header *hinfo )
 		}
 
 		// copy his image filename
-		strcpy(Net_players[player_num].m_player->image_filename, image_name);
+		strcpy_s(Net_players[player_num].m_player->image_filename, image_name);
 		
 		// copy his pilot squad filename
 		Net_players[player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[player_num].m_player, squad_name);
+		player_set_squad_bitmap(Net_players[player_num].m_player, squad_name, true);
 
 		// copy his pxo squad name
-		strcpy(Net_players[player_num].p_info.pxo_squad_name, pxo_squad_name);
+		strcpy_s(Net_players[player_num].p_info.pxo_squad_name, pxo_squad_name);
 
 		// set his player id#
 		Net_players[player_num].player_id = player_id;
@@ -2054,6 +1499,11 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add the current skill level setting on the host
+	// sanity check - reset skill level to default before sending if out of range
+	if (Game_skill_level < 0 || Game_skill_level >= NUM_SKILL_LEVELS) {
+		Warning(LOCATION, "Trying to send packet containing invalid skill level %i! Valid range 0 to %i. Resetting to default.", Game_skill_level, NUM_SKILL_LEVELS);
+		Game_skill_level = game_get_default_skill_level();  
+	}
 	ADD_INT(Game_skill_level);
 
 	// add this guys player num 
@@ -2064,11 +1514,6 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 
 	// add netgame type flags
 	ADD_INT(Netgame.type_flags);
-	
-//#ifndef NDEBUG
-	// char buffer[100];
-	// nprintf(("Network", "About to send accept packet to %s on port %d\n", get_text_address(buffer, addr->addr), addr->port ));
-//#endif
 
 	// actually send the packet	
 	psnet_send(&Net_players[new_player_num].p_info.addr, data, packet_size);
@@ -2086,7 +1531,7 @@ void send_accept_packet(int new_player_num, int code, int ingame_join_team)
 	}
 
 	// add a chat message
-	if(Net_players[new_player_num].m_player->callsign != NULL){
+	if(*Net_players[new_player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has joined>",717), Net_players[new_player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string, 0, 0);
 	}	
@@ -2150,6 +1595,10 @@ void process_accept_packet(ubyte* data, header* hinfo)
 
 	// get the skill level setting
 	GET_INT(Game_skill_level);
+	if (Game_skill_level < 0 || Game_skill_level >= NUM_SKILL_LEVELS) {
+		Warning(LOCATION, "Received packet containing invalid skill level %i! Valid range 0 to %i.  Resetting to default.", Game_skill_level, NUM_SKILL_LEVELS);
+		Game_skill_level = game_get_default_skill_level();  
+	}
 
 	// get my netplayer number
 	GET_INT(my_player_num);
@@ -2615,7 +2064,7 @@ void send_netgame_update_packet(net_player *pl)
 // process information about the netgame sent from the server/host
 void process_netgame_update_packet( ubyte *data, header *hinfo )
 {
-	int offset,old_flags;	
+	int offset;	
 	int ng_state;
 		
 	Assert(!(Game_mode & GM_STANDALONE_SERVER));
@@ -2633,7 +2082,6 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 	GET_UINT(Netgame.respawn);		
 	
 	// be sure not to blast the quitting flag because of the "one frame extra" problem
-	old_flags = Netgame.flags;	
 	GET_INT(Netgame.flags);	
 	GET_INT(Netgame.type_flags);
 	GET_INT(Netgame.version_info);
@@ -2655,7 +2103,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_handle_state_special();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		} 
 		// if coming from the debriefing state
@@ -2668,7 +2116,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			multi_flush_mission_stuff();
 						
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING;
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);
 		}
 	} 
@@ -2680,7 +2128,7 @@ void process_netgame_update_packet( ubyte *data, header *hinfo )
 			// do any special processing for forced state transitions
 			multi_handle_state_special();
 
-			strncpy( Game_current_mission_filename, Netgame.mission_name, MAX_FILENAME_LEN );					
+			strcpy_s( Game_current_mission_filename, Netgame.mission_name );
 			gameseq_post_event(GS_EVENT_START_BRIEFING);			
 		}
 	} 		
@@ -3048,7 +2496,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	if ( pm && !vaporized ) {
 		debris_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 		multi_set_network_signature( (ushort)(debris_signature + pm->num_debris_objects), MULTI_SIG_DEBRIS );
-		Ships[objp->instance].arrival_distance = debris_signature;
+		Ships[objp->instance].debris_net_sig = debris_signature;
 	}
 
 	BUILD_HEADER(SHIP_KILL);
@@ -3171,7 +2619,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 			Net_players[pnum].m_player->killer_objtype = killer_objtype;
 			Net_players[pnum].m_player->killer_species = killer_species;
 			Net_players[pnum].m_player->killer_weapon_index = killer_weapon_index;
-			strcpy( Net_players[pnum].m_player->killer_parent_name, killer_name );
+			strcpy_s( Net_players[pnum].m_player->killer_parent_name, killer_name );
 		}
 	}	   
 
@@ -3179,7 +2627,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	multi_respawn_check(sobjp);
 
 	// store the debris signature in the arrival distance which will never get used for player ships
-	Ships[sobjp->instance].arrival_distance = debris_sig;
+	Ships[sobjp->instance].debris_net_sig = debris_sig;
 
 	// set this bit so that we don't accidentally start switching targets when we die
 	if(sobjp == Player_obj){
@@ -3335,7 +2783,7 @@ void send_ship_depart_packet( object *objp, int method )
 
 	BUILD_HEADER(SHIP_DEPART);
 	ADD_USHORT( signature );
-	ADD_SHORT( (short) method); 
+	ADD_INT( method ); 
 	
 	multi_io_send_to_all_reliable(data, packet_size);
 }
@@ -3346,11 +2794,11 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 	int offset;
 	object *objp;
 	ushort signature;
-	short s_method; 
+	int s_method; 
 
 	offset = HEADER_LENGTH;
 	GET_USHORT( signature );
-	GET_SHORT(s_method); 
+	GET_INT(s_method); 
 	PACKET_SET_SIZE();
 
 	// find the object which is departing
@@ -3367,7 +2815,7 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 				ship_actually_depart(objp->instance, s_method); 
 			}
 			else {
-				nprintf(("network", "Can not proces ship depart packed. Object with net signature %d is not a ship!\n", signature ));	
+				nprintf(("network", "Can not process ship depart packed. Object with net signature %d is not a ship!\n", signature ));	
 				return;
 			}
 			break;
@@ -3521,8 +2969,6 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	ADD_USHORT( starting_sig );
 	
 	// add a couple of bits for swarm missiles and dual fire secondary weapons
-	sinfo = 0;
-
 	sinfo = current_bank;
 
 	if ( allow_swarm ){
@@ -3568,6 +3014,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting
 	}
 
 	net_player_num = multi_find_player_by_object( objp );
+    
+	if ( net_player_num < 0 ) {
+		// Pass to higher level code to handle
+		return;
+	}
 
 	// getting here means a player fired.  Send the current packet to all players except the player
 	// who fired.  If nothing got fired, then don't send to the other players -- we will just send
@@ -3885,8 +3336,10 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
+
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}		
@@ -3902,7 +3355,7 @@ void send_mission_log_packet( int num )
 	int sindex;
 	log_entry *entry;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_MASTER );
 
 	// get the data from the log
 	entry = &log_entries[num];
@@ -3930,7 +3383,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 	char pname[NAME_LENGTH], sname[NAME_LENGTH];
 	fix timestamp;
 
-	Assert ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) );
+	Assert ( MULTIPLAYER_CLIENT );
 
 	offset = HEADER_LENGTH;
 	GET_DATA(type);
@@ -3946,7 +3399,7 @@ void process_mission_log_packet( ubyte *data, header *hinfo )
 }
 
 // send a mission message packet
-void send_mission_message_packet( int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter)
+void send_mission_message_packet( int id, char *who_from, int priority, int timing, int source, int builtin_type, int multi_target, int multi_team_filter, int delay)
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], up, us, utime;
@@ -3967,6 +3420,7 @@ void send_mission_message_packet( int id, char *who_from, int priority, int timi
 	ADD_DATA(us);
 	ADD_INT(builtin_type);
 	ADD_INT(multi_team_filter);
+	ADD_INT(delay);
 
 	if (multi_target == -1){		
 		multi_io_send_to_all_reliable(data, packet_size);
@@ -3978,7 +3432,7 @@ void send_mission_message_packet( int id, char *who_from, int priority, int timi
 // process a mission message packet
 void process_mission_message_packet( ubyte *data, header *hinfo )
 {
-	int offset, id, builtin_type;
+	int offset, id, builtin_type, delay;
 	ubyte priority, source, utiming;
 	char who_from[NAME_LENGTH];
 	int multi_team_filter;
@@ -3993,6 +3447,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	GET_DATA(source);
 	GET_INT(builtin_type);
 	GET_INT(multi_team_filter);
+	GET_INT(delay);
 
 	PACKET_SET_SIZE();
 
@@ -4005,7 +3460,7 @@ void process_mission_message_packet( ubyte *data, header *hinfo )
 	// maybe filter this out
 	if(!message_filter_multi(id)){
 		// send the message as if it came from an sexpression
-		message_queue_message( id, priority, utiming, who_from, source, 0, 0, builtin_type );
+		message_queue_message( id, priority, utiming, who_from, source, 0, delay, builtin_type );
 	}
 }
 
@@ -4223,8 +3678,8 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 			// STANDALONE_ONLY			
 			GET_DATA(valid_status);
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			mcip.flags = flags;
 			mcip.respawn = respawn;
 			mcip.max_players = max_players;
@@ -4234,8 +3689,8 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 
 			Multi_create_mission_list.push_back( mcip );
 		} else if ( type == CAMPAIGN_LIST_ITEMS ) {
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			mcip.flags = flags;
 			mcip.respawn = 0;
 			mcip.max_players = max_players;
@@ -4345,7 +3800,6 @@ void send_ingame_nak(int state, net_player *p)
 void process_ingame_nak(ubyte *data, header *hinfo)
 {
 	int offset,state,pid;	
-	net_player *pl;
 
 	offset = HEADER_LENGTH;
 	GET_INT(state);	
@@ -4355,7 +3809,6 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	if(pid < 0){
 		return;
 	}
-	pl = &Net_players[pid];
 	
 	switch(state){
 	case ACK_FILE_ACCEPTED :
@@ -4620,7 +4073,9 @@ void process_netplayer_slot_packet(ubyte *data, header *hinfo)
 			// being careful not to muck with the standalone object
 			if(!((player_num == 0) && (Game_mode & GM_STANDALONE_SERVER))){
 				objp = multi_get_network_object(net_sig);
-				Assert(objp != NULL);
+				if (objp == NULL) {
+					Error(LOCATION, "Could not retrieve net object for signature %d!\n", net_sig);
+				}
 				multi_assign_player_ship( player_num, objp, ship_class );
 				Net_players[player_num].p_info.ship_index = ship_index;
 				objp->flags &= ~(OF_COULD_BE_PLAYER);
@@ -4903,7 +4358,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 
 	// if this player is not allowed to do messaging, quit here
 	if( !multi_can_message(&Net_players[player_num]) ){
-		nprintf(("Network","Recieved player order packet from player not allowed to give orders!!\n"));
+		nprintf(("Network","Received player order packet from player not allowed to give orders!!\n"));
 		return;
 	}
 
@@ -5014,7 +4469,7 @@ void process_file_sig_request(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();	
 
 	// set the current mission filename
-	strcpy(Game_current_mission_filename,Netgame.mission_name);
+	strcpy_s(Game_current_mission_filename,Netgame.mission_name);
 
 	// get the checksum
 	multi_get_mission_checksum(Game_current_mission_filename);	
@@ -5081,6 +4536,12 @@ void process_subsystem_destroyed_packet( ubyte *data, header *hinfo )
 
 		// call to get the pointer to the subsystem we should be working on
 		subsysp = ship_get_indexed_subsys( shipp, (int)uindex );
+		if (subsysp == NULL) {
+			nprintf(("Network", "Could not find subsys %d for ship %s to process as being destroyed\n", (int)uindex, shipp->ship_name ));
+			PACKET_SET_SIZE();
+			return;
+		}
+
 		vm_vec_unrotate( &world_hit_pos, &local_hit_pos, &objp->orient );
 		vm_vec_add2( &world_hit_pos, &objp->pos );
 
@@ -5255,8 +4716,8 @@ void process_netplayer_load_packet(ubyte *data, header *hinfo)
 	GET_STRING(str);
 	PACKET_SET_SIZE();
 
-	strcpy(Netgame.mission_name,str);
-	strcpy(Game_current_mission_filename,str);
+	strcpy_s(Netgame.mission_name,str);
+	strcpy_s(Game_current_mission_filename,str);
 	if(!Multi_mission_loaded){
 
 		// MWA 2/3/98 -- ingame join changes!!!
@@ -5349,9 +4810,6 @@ void process_jump_into_mission_packet(ubyte *data, header *hinfo)
 			send_netplayer_update_packet();
 		}		
 	}
-
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
 
 	// recalc all object pairs now	
 	extern void obj_reset_all_collisions();
@@ -5484,7 +4942,7 @@ void process_repair_info_packet(ubyte *data, header *hinfo)
 // sends information updating clients on certain AI information that clients will
 // need to know about to keep HUD information up to date.  objp is the object that we
 // are updating, and what is the type of stuff that we are updating.
-void send_ai_info_update_packet( object *objp, char what )
+void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 {
 	int packet_size;
 	ushort other_signature;
@@ -5503,8 +4961,20 @@ void send_ai_info_update_packet( object *objp, char what )
 	if ( Ships[objp->instance].flags & (SF_DEPARTING | SF_DYING) )
 		return;
 
-	// possibly docked (multi only supports one docked object)
-	object *docked_objp = dock_get_first_docked_object(objp);
+	switch( what ) {
+
+	case AI_UPDATE_DOCK:
+	case AI_UPDATE_UNDOCK:
+		Assert (other_objp != NULL); 
+		if (other_objp == NULL) {
+			return; 
+		}
+		break; 
+
+	default: 
+		Assert (other_objp == NULL); 
+		break;
+	}
 
 	BUILD_HEADER( AI_INFO_UPDATE );
 	ADD_USHORT( objp->net_signature );
@@ -5516,12 +4986,12 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_DOCK:
 		// for docking ships, add the signature of the ship that we are docked with.
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 
 		// Goober5000 - this is sort of weird, but it's the best way to do it
-		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, docked_objp);
-		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(docked_objp, objp);
+		docker_index = (ubyte) dock_find_dockpoint_used_by_object(objp, other_objp);
+		dockee_index = (ubyte) dock_find_dockpoint_used_by_object(other_objp, objp);
 
 		ADD_USHORT( other_signature );
 		ADD_DATA( docker_index );
@@ -5530,8 +5000,8 @@ void send_ai_info_update_packet( object *objp, char what )
 
 	case AI_UPDATE_UNDOCK:
 		// same for undocking ships
-		Assert( docked_objp != NULL );
-		other_signature = docked_objp->net_signature;
+		Assert( other_objp != NULL );
+		other_signature = other_objp->net_signature;
 		ADD_USHORT( other_signature );
 
 		break;
@@ -5548,8 +5018,8 @@ void send_ai_info_update_packet( object *objp, char what )
 		ADD_INT( aigp->ai_submode );
 
 		shipnum = -1;
-		if ( aigp->ship_name != NULL )
-			shipnum = ship_name_lookup( aigp->ship_name );
+		if ( aigp->target_name != NULL )
+			shipnum = ship_name_lookup( aigp->target_name );
 
 		// the ship_name member of the goals structure may or may not contain a real shipname.  If we don't
 		// have a valid shipnum, then don't sweat it since it may not really be a ship.
@@ -5664,7 +5134,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 			// get a pointer to the shipname in question.  Use the ship_name value in the
 			// ship.  We are only using this for HUD display, so I think that using this
 			// method will be fine.
-			aigp->ship_name = Ships[other_objp->instance].ship_name;
+			aigp->target_name = ai_get_goal_target_name(Ships[other_objp->instance].ship_name, &aigp->target_name_index);
 
 			// special case for destroy subsystem -- get the ai_info pointer to our target ship
 			// so that we can properly set up what subsystem this ship is attacking.
@@ -5762,7 +5232,7 @@ void process_mission_sync_packet(ubyte *data, header *hinfo)
 
 			// get the single mission filename
 			GET_STRING(Game_current_mission_filename);
-			strcpy(Netgame.mission_name,Game_current_mission_filename);
+			strcpy_s(Netgame.mission_name,Game_current_mission_filename);
 		}
 	}
 	else if (mode == MULTI_SYNC_POST_BRIEFING) {
@@ -6943,23 +6413,20 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
-#ifdef INF_BUILD
+
 		idx = 0; 
 		while(idx<MAX_SHIP_CLASSES)
 		{
 			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, (short)idx);
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
-#else
-		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-			u_tmp = (ushort)sc->kills[idx];
-			ADD_USHORT(u_tmp);
-		}
-#endif
+
+		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
+		ADD_USHORT( (ushort)Num_medals );
 
 		// medal information
-		for(idx=0;idx<MAX_MEDALS;idx++){
-			i_tmp = sc->medals[idx];
+		for(idx=0;idx<Num_medals;idx++){
+			i_tmp = sc->medal_counts[idx];
 			ADD_INT(i_tmp);
 		}
 
@@ -6984,19 +6451,13 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 
 	case STATS_MISSION:	
 		// mission OKkills	
-#ifdef INF_BUILD
+
 		idx = 0; 
 		while(idx<MAX_SHIP_CLASSES)
 		{
 			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, (short)idx);
 			idx += MAX_SHIPS_PER_PACKET; 
 		}
-#else		
-		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-			u_tmp = (ushort)sc->m_okKills[idx];
-			ADD_USHORT(u_tmp);			
-		}
-#endif
 	
 		ADD_INT(sc->m_score);
 		ADD_INT(sc->m_assists);
@@ -7029,12 +6490,11 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_INT(sc->m_assists);
 		break;
 	
-#ifdef INF_BUILD		
 	case STATS_MISSION_CLASS_KILLS:
 		ADD_SHORT(offset);
 		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
 		{
-			ADD_USHORT((ushort)sc->m_okKills[idx]);			
+			ADD_INT(sc->m_okKills[idx]);			
 		}
 		break;
 		
@@ -7042,10 +6502,9 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_SHORT(offset);
 		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
 		{
-			ADD_USHORT((ushort)sc->kills[idx]);			
+			ADD_INT(sc->kills[idx]);			
 		}
 		break;
-#endif
 	}
 
 	Assert(packet_size < MAX_PACKET_SIZE);
@@ -7074,7 +6533,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	scoring_struct *sc,bogus;
 	short player_id;
 	int offset = HEADER_LENGTH;
-	ushort u_tmp;
+	ushort u_tmp, num_medals;
 	int i_tmp;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
@@ -7095,16 +6554,14 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// get the stats code
 	GET_DATA(val);	
 	switch(val){
-
-#ifdef INF_BUILD
 	short si_offset;
 
 	case STATS_ALLTIME_KILLS:
 		GET_SHORT(si_offset);
 		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
 		{
-			GET_USHORT(u_tmp);
-			sc->kills[idx] = u_tmp;
+			GET_INT(i_tmp);
+			sc->kills[idx] = i_tmp;
 		}
 		break;
 
@@ -7112,27 +6569,20 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		GET_SHORT(si_offset);
 		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
 		{
-			GET_USHORT(u_tmp);
-			sc->m_okKills[idx] = u_tmp;
+			GET_INT(i_tmp);
+			sc->m_okKills[idx] = i_tmp;
 		}
 		break;
-#endif
 
 	case STATS_ALLTIME:
 		ml_string("Received STATS_ALLTIME\n");
 
-#ifndef INF_BUILD
-		// kills - alltime
-		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
-			GET_USHORT(u_tmp);
-			sc->kills[idx] = u_tmp;
-		}
-#endif
-
 		// read in the stats
-		for (idx=0; idx<MAX_MEDALS; idx++) {
+		GET_USHORT( num_medals );
+
+		for (idx=0; (idx < Num_medals) && (idx < num_medals); idx++) {
 			GET_INT(i_tmp);
-			sc->medals[idx] = i_tmp;
+			sc->medal_counts[idx] = i_tmp;
 		}
 
 		GET_INT(sc->score);
@@ -7157,14 +6607,6 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	case STATS_MISSION:
 		ml_string("Received STATS_MISSION\n");
 
-#ifndef INF_BUILD
-		// kills - mission OK			
-		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
-			GET_USHORT(u_tmp);
-			sc->m_okKills[idx] = u_tmp;			
-		}
-#endif
-		
 		GET_INT(sc->m_score);
 		GET_INT(sc->m_assists);
 		GET_INT(sc->m_kill_count);
@@ -7558,7 +7000,7 @@ void send_client_update_packet(net_player *pl)
 	// when not paused, send hull/shield/subsystem updates to all clients (except for ingame joiners)
 	if ( val & UPDATE_HULL_INFO ) {
 		object *objp;
-		ubyte percent, ns, threats;
+		ubyte percent, ns, threats, n_quadrants;
 		ship_info *sip;
 		ship *shipp;
 		ship_subsys *subsysp;
@@ -7581,8 +7023,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
+		n_quadrants = (ubyte)objp->n_quadrants;
+		ADD_DATA( n_quadrants );
+		for (i = 0; i < n_quadrants; i++ ) {
 			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+
 			ADD_DATA( percent );
 		}
 
@@ -7656,7 +7101,8 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		float fl_val;
 		ship_info *sip;
 		ship *shipp;
-		ubyte hull_percent, shield_percent[MAX_SHIELD_SECTIONS], n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		ubyte hull_percent, n_quadrants, n_subsystems, subsystem_percent[MAX_MODEL_SUBSYSTEMS], threats;
+		SCP_vector<ubyte> shield_percent;
 		ubyte ub_tmp;
 		ship_subsys *subsysp;
 		object *objp;
@@ -7666,7 +7112,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 		// percentage value since that should be close enough
 		GET_DATA( hull_percent );
 
-		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ){
+		GET_DATA( n_quadrants );
+		shield_percent.resize(n_quadrants);
+		for (i = 0; i < n_quadrants; i++ ){
 			GET_DATA(ub_tmp);
 			shield_percent[i] = ub_tmp;
 		}
@@ -7700,9 +7148,11 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
-			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+			for ( i = 0; i < n_quadrants; i++ ) {
+				if (i < objp->n_quadrants) {
+					fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
+					objp->shield_quadrant[i] = fl_val;
+				}
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
@@ -7719,7 +7169,9 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 					// add the value just generated (it was zero'ed above) into the array of generic system types
 					subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 					Assert ( subsys_type < SUBSYSTEM_MAX );
-					shipp->subsys_info[subsys_type].current_hits += fl_val;
+					if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+						shipp->subsys_info[subsys_type].aggregate_current_hits += fl_val;
+					}
 					n_subsystems++;
 				}
 			}
@@ -8067,6 +7519,51 @@ void process_change_iff_packet( ubyte *data, header *hinfo)
 	}	
 }
 
+void send_change_iff_color_packet(ushort net_signature, int observer_team, int observed_team, int alternate_iff_color)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	if(Net_player == NULL){
+		return;
+	}
+	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		return;
+	}
+
+	// build the packet and add the data
+	BUILD_HEADER(CHANGE_IFF_COLOR);
+	ADD_USHORT(net_signature);
+	ADD_INT(observer_team);
+	ADD_INT(observed_team);
+	ADD_INT(alternate_iff_color);
+
+	// send to all players	
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_change_iff_color_packet( ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	ushort net_signature;
+	int observer_team, observed_team, alternate_iff_color;	
+	object *objp;
+
+	// get the data
+	GET_USHORT(net_signature);
+	GET_INT(observer_team);
+	GET_INT(observed_team);
+	GET_INT(alternate_iff_color);
+	PACKET_SET_SIZE();
+
+	// lookup the object
+	objp = multi_get_network_object(net_signature);
+	if((objp != NULL) && (objp->type == OBJ_SHIP) && (objp->instance >=0))
+	{
+		Ships[objp->instance].ship_iff_color[observer_team][observed_team] = alternate_iff_color;
+	}	
+}
+
 void send_change_ai_class_packet(ushort net_signature, char *subsystem, int new_ai_class)
 {
 	ubyte data[MAX_PACKET_SIZE];
@@ -8157,8 +7654,6 @@ void send_NEW_primary_fired_packet(ship *shipp, int banks_fired)
 		// ubanks_fired |= (1<<7);
 	// }	
 
-	// determine if its a player ship and don't send to him if we're in "client firing" mode
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && MULTIPLAYER_MASTER){
 	if(MULTIPLAYER_MASTER){
 		np_index = multi_find_player_by_net_signature(objp->net_signature);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
@@ -8280,8 +7775,7 @@ void send_NEW_countermeasure_fired_packet(object *objp, int cmeasure_count, int 
 
 	nprintf(("Network","Sending NEW countermeasure packet!\n"));
 
-	// determine if its a player ship and don't send to him if we're in "client firing" mode
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && MULTIPLAYER_MASTER){
+	// determine if its a player
 	if(MULTIPLAYER_MASTER){
 		np_index = multi_find_player_by_net_signature(objp->net_signature);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
@@ -8320,8 +7814,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 		return;
 	}	
 
-	// if we're in client firing mode, ignore ones for myself
-	// if((Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING) && (Player_obj != NULL) && (Player_obj == objp)){		
+	// if we're in client firing mode, ignore ones for myself	
 	if((Player_obj != NULL) && (Player_obj == objp)){		
 		return;
 	}
@@ -8338,7 +7831,7 @@ void process_NEW_countermeasure_fired_packet(ubyte *data, header *hinfo)
 	ship_launch_countermeasure( objp, rand_val );			
 }
 
-void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, ubyte fighter_beam, int bank_point)
+void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target, int beam_info_index, beam_info *override, int bfi_flags, int bank_point)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;	
@@ -8358,7 +7851,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 		return;
 	}
 
-	if (!fighter_beam) {
+	if (!(bfi_flags & BFIF_IS_FIGHTER_BEAM)) {
 		Assert(target != NULL);
 		if (target == NULL) {
 			return;
@@ -8369,7 +7862,7 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 
 	u_beam_info = (short)beam_info_index;
 
-	if (fighter_beam) {
+	if (bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		Assert( (bank_point >= 0) && (bank_point < UCHAR_MAX) );
 		subsys_index = (char)bank_point;
 	} else {
@@ -8404,7 +7897,8 @@ void send_beam_fired_packet(object *shooter, ship_subsys *turret, object *target
 	ADD_USHORT(target_sig);
 	ADD_SHORT(u_beam_info);
 	ADD_DATA(b_info);  // FIXME: This is still wrong, we shouldn't be sending an entire struct over the wire - taylor
-//	ADD_DATA(fighter_beam);  // this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(bfi_flags);	// this breaks the protocol but is here in case we decided to do that in the future - taylor
+//	ADD_DATA(target_pos);	// ditto - Goober5000
 
 	// send to all clients	
 	multi_io_send_to_all_reliable(data, packet_size);
@@ -8461,9 +7955,8 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.beam_info_override = &b_info;
 	fire_info.accuracy = 1.0f;
-	fire_info.fighter_beam = /*(fighter_beam) ? true :*/ false;
 
-	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance > MAX_SHIPS)){
+	if((fire_info.shooter == NULL) || (fire_info.shooter->type != OBJ_SHIP) || (fire_info.shooter->instance < 0) || (fire_info.shooter->instance >= MAX_SHIPS)){
 		nprintf(("Network", "Couldn't get shooter info for BEAM weapon!\n"));
 		return;
 	}
@@ -8475,17 +7968,17 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 		// make sure the beam is a primary weapon and not attached to a turret or something
 		for (i = 0; i < shipp->weapons.num_primary_banks; i++) {
 			if ( shipp->weapons.primary_bank_weapons[i] == fire_info.beam_info_index ) {
-				fire_info.fighter_beam = true;
+				fire_info.bfi_flags |= BFIF_IS_FIGHTER_BEAM;
 			}
 		}
 	}
 
-	if ( !fire_info.fighter_beam && (fire_info.target == NULL) ) {
+	if ( !(fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) && (fire_info.target == NULL) ) {
 		nprintf(("Network", "Couldn't get target info for BEAM weapon!\n"));
 		return;
 	}
 
-	if (fire_info.fighter_beam) {
+	if (fire_info.bfi_flags & BFIF_IS_FIGHTER_BEAM) {
 		polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 		float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
@@ -8595,7 +8088,7 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 		mission_event_set_directive_special(u_event);
 	}
 	// if we went directive special to non directive special
-	else if((store_flags & MEF_DIRECTIVE_SPECIAL) & !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
+	else if((store_flags & MEF_DIRECTIVE_SPECIAL) && !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
 	}	
 }
@@ -8699,8 +8192,13 @@ void send_variable_update_packet(int variable_index, char *value)
 	ADD_INT(variable_index);
 	ADD_STRING(value);
 
-	// send to all players	
-	multi_io_send_to_all_reliable(data, packet_size);
+	if (MULTIPLAYER_MASTER) { 
+		// send to all players	
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+	else {
+		multi_io_send_reliable(Net_player, data, packet_size);
+	}
 }
 
 void process_variable_update_packet( ubyte *data, header *hinfo)
@@ -8717,8 +8215,13 @@ void process_variable_update_packet( ubyte *data, header *hinfo)
 	// set the sexp_variable
 	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) )
 	{
-		strcpy(Sexp_variables[variable_index].text, value); 
+		strcpy_s(Sexp_variables[variable_index].text, value); 
 	}	
+
+	// send the packet on to all clients. 
+	if (MULTIPLAYER_MASTER) {
+		send_variable_update_packet(variable_index, Sexp_variables[variable_index].text);
+	}
 }
 
 // weapon detonate packet
@@ -8871,8 +8374,9 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
 
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
 	if (weapon_objnum != -1) {
+		wid = Weapons[Objects[weapon_objnum].instance].weapon_info_index;
 		if ( Weapon_info[wid].launch_snd != -1 ) {
 			snd_play_3d( &Snds[Weapon_info[wid].launch_snd], &pos, &View_position );
 		}
@@ -9188,4 +8692,52 @@ void process_self_destruct_packet(ubyte *data, header *hinfo)
 
 	// do eet
 	ship_self_destruct(&Objects[Net_players[np_index].m_player->objnum]);
+}
+
+void send_sexp_packet(ubyte *sexp_packet, int num_ubytes)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+	int i;
+	ushort val; 
+
+	Assert (MULTIPLAYER_MASTER);
+	// must have a bare minimum of OP, COUNT and TERMINATOR
+	if (num_ubytes < 9) {
+		Warning(LOCATION, "Invalid call to send_sexp_packet. Not enough data included!"); 
+		return; 
+	}
+	
+	BUILD_HEADER(SEXP);
+
+	val = (ushort)num_ubytes;
+	ADD_USHORT(val);
+
+	for (i =0; i < num_ubytes; i++) {
+		Assert (packet_size < MAX_PACKET_SIZE); 
+		data[packet_size] = sexp_packet[i]; 
+		packet_size++; 
+	}
+
+	// send to all
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_sexp_packet(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	int i;
+	ushort num_ubytes;
+	ubyte received_packet[MAX_PACKET_SIZE]; 
+
+	// get the number of bytes of data in the packet
+	GET_USHORT(num_ubytes);
+
+	for (i=0; i < num_ubytes; i++) {
+		GET_DATA(received_packet[i]); 
+	}
+
+	PACKET_SET_SIZE();
+
+	sexp_packet_received(received_packet, num_ubytes);
 }

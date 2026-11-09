@@ -7,60 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/UIDRAW.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-07-18 03:45:10 $
- * $Author: taylor $
- *
- * Routines to draw UI sort of stuff.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/07/02 19:45:02  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 4     3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 3     2/03/98 4:21p Hoffoss
- * Made UI controls draw white text when disabled.
- * 
- * 2     6/11/97 1:13p John
- * Started fixing all the text colors in the game.
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"
@@ -70,12 +17,12 @@
 
 void ui_hline(int x1, int x2, int y )
 {
-	gr_line(x1,y,x2,y);
+	gr_line(x1,y,x2,y,GR_RESIZE_MENU);
 }
 
 void ui_vline(int y1, int y2, int x )
 {
-	gr_line(x,y1,x,y2);
+	gr_line(x,y1,x,y2,GR_RESIZE_MENU);
 }
 
 void ui_string_centered( int x, int y, char * s )
@@ -84,9 +31,7 @@ void ui_string_centered( int x, int y, char * s )
 
 	gr_get_string_size( &width, &height, s );
 
-	//baseline = height-grd_curcanv->cv_font->ft_baseline;
-
-	gr_string(x-((width-1)/2), y-((height-1)/2), s );
+	gr_string(x-((width-1)/2), y-((height-1)/2), s, GR_RESIZE_MENU );
 }
 
 
@@ -118,16 +63,14 @@ void ui_draw_frame( int x1, int y1, int x2, int y2 )
 
 void ui_rect( int x1, int y1, int x2, int y2 )
 {
-	gr_rect( x1, y1, x2-x1+1, y2-y1+1 );
+	gr_rect( x1, y1, x2-x1+1, y2-y1+1, GR_RESIZE_MENU_NO_OFFSET );
 }
-
-
 
 void ui_draw_box_out( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, GR_RESIZE_MENU_NO_OFFSET );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CBRIGHT, &CGRAY );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CBRIGHT, &CGRAY );
@@ -138,7 +81,7 @@ void ui_draw_box_in( int x1, int y1, int x2, int y2 )
 {
 
 	gr_set_color_fast( &CWHITE );
-	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1 );
+	gr_rect( x1+2, y1+2, (x2-2)-(x1+2)+1, (y2-2)-(y1+2)+1, GR_RESIZE_MENU_NO_OFFSET );
 
 	ui_draw_shad( x1+0, y1+0, x2-0, y2-0, &CGRAY, &CBRIGHT );
 	ui_draw_shad( x1+1, y1+1, x2-1, y2-1, &CGRAY, &CBRIGHT );

@@ -7,75 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/CHECKBOX.cpp $
- * $Revision: 2.2.2.1 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
- *
- * Code to handle checkboxes.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.2  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 4     12/02/98 5:47p Dave
- * Put in interface xstr code. Converted barracks screen to new format.
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 9     2/03/98 4:21p Hoffoss
- * Made UI controls draw white text when disabled.
- * 
- * 8     1/14/98 6:43p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 7     9/07/97 10:05p Lawrance
- * don't set hotspot_num, done in gadget constructor
- * 
- * 6     6/12/97 12:39p John
- * made ui use freespace colors
- * 
- * 5     6/11/97 1:13p John
- * Started fixing all the text colors in the game.
- * 
- * 4     5/22/97 5:36p Lawrance
- * allowing custom art for scrollbars
- * 
- * 3     12/08/96 1:58a Lawrance
- * changed text color for check-box from black to green
- * 
- * 2     11/29/96 6:08p Lawrance
- * enabled check-boxes to be set to a specific value outside of the
- * create() function
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"
@@ -120,13 +52,13 @@ void UI_CHECKBOX::draw()
 			if ( flag ) {
 				if ( bmap_ids[CBOX_DISABLED_MARKED] != -1 ) {
 					gr_set_bitmap(bmap_ids[CBOX_DISABLED_MARKED]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 			else {
 				if ( bmap_ids[CBOX_DISABLED_CLEAR] != -1 ) {
 					gr_set_bitmap(bmap_ids[CBOX_DISABLED_CLEAR]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 		}
@@ -135,13 +67,13 @@ void UI_CHECKBOX::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[CBOX_UP_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_UP_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[CBOX_UP_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_UP_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -149,13 +81,13 @@ void UI_CHECKBOX::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[CBOX_DOWN_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_DOWN_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[CBOX_DOWN_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[CBOX_DOWN_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -163,7 +95,7 @@ void UI_CHECKBOX::draw()
 
 	} else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (position == 0 )	{
 			ui_draw_box_out( 0, 0, w-1, h-1 );
@@ -188,7 +120,7 @@ void UI_CHECKBOX::draw()
 
 		if (text) {
 			gr_reset_clip();
-			gr_string( x+w+4, y+2, text );
+			gr_string( x+w+4, y+2, text, GR_RESIZE_MENU );
 		}
 	}
 }

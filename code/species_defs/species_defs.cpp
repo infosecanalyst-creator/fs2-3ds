@@ -7,156 +7,6 @@
  *
  */
 
-/*
- * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32.2.6 $
- * $Date: 2007-10-17 20:58:25 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.32.2.5  2007/10/15 06:43:22  taylor
- * FS2NetD v.2  (still a work in progress, but is ~98% complete)
- *
- * Revision 1.32.2.4  2007/09/02 02:07:47  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 1.32.2.3  2007/07/28 04:43:43  Goober5000
- * a couple of tweaks
- *
- * Revision 1.32.2.2  2006/09/11 01:17:07  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 1.32.2.1  2006/08/27 18:12:42  taylor
- * make Species_info[] and Asteroid_info[] dynamic
- *
- * Revision 1.32  2006/02/13 03:11:19  Goober5000
- * nitpick
- *
- * Revision 1.31  2006/02/13 00:20:46  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 1.30  2006/02/06 02:29:17  wmcoolmon
- * WMC-Since we're abusing species_defs.tbl anyways, remove $NumSpecies
- *
- * Revision 1.29  2006/01/26 03:23:30  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 1.28  2006/01/05 05:12:11  taylor
- * allow both +Pri style and original style (+Normal, etc) for species_defs TBMs
- * allow for "<none>" as a bitmap/anim name, to have no effect
- * fix ship/weapon thruster rendering to handle missing primary animation and/or glow graphics
- *
- * Revision 1.27  2005/12/29 08:08:42  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 1.26  2005/12/29 00:01:29  taylor
- * add support for a species_defs modular table with XMT support (*-sdf.tbm)
- *
- * Revision 1.25  2005/11/21 23:57:26  taylor
- * some minor thruster cleanup, if you could actually use the term "clean"
- *
- * Revision 1.24  2005/10/24 12:42:14  taylor
- * init thruster stuff properly so that bmpman doesn't have a fit
- *
- * Revision 1.23  2005/10/24 07:13:05  Goober5000
- * merge Bobboau's thruster code back in; hopefully this covers everything
- * --Goober5000
- *
- * Revision 1.22  2005/09/27 05:25:19  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- * Revision 1.21  2005/09/27 05:01:52  Goober5000
- * betterizing
- * --Goober5000
- *
- * Revision 1.20  2005/09/25 08:25:16  Goober5000
- * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
- * --Goober5000
- *
- * Revision 1.19  2005/09/25 05:13:07  Goober5000
- * hopefully complete species upgrade
- * --Goober5000
- *
- * Revision 1.18  2005/09/24 07:18:15  Goober5000
- * fixage
- * --Goober5000
- *
- * Revision 1.17  2005/09/24 07:07:17  Goober5000
- * another species overhaul
- * --Goober5000
- *
- * Revision 1.16  2005/09/18 02:28:18  Goober5000
- * a small fix
- * --Goober5000
- *
- * Revision 1.15  2005/08/20 18:23:02  Goober5000
- * made AwacsMultiplier more user-friendly
- * --Goober5000
- *
- * Revision 1.14  2005/07/13 02:01:30  Goober5000
- * fixed a bunch of "issues" caused by me with the species stuff
- * --Goober5000
- *
- * Revision 1.13  2005/07/13 00:44:24  Goober5000
- * improved species support and removed need for #define
- * --Goober5000
- *
- * Revision 1.12  2005/01/25 23:32:46  Goober5000
- * species will now load from a default table instead of being initialized via code
- * --Goober5000
- *
- * Revision 1.11  2004/11/22 06:17:57  taylor
- * make sure species_defs.tbl can be found outside of root[0] and in VPs
- *
- * Revision 1.10  2004/07/26 20:47:53  Kazan
- * remove MCD complete
- *
- * Revision 1.9  2004/07/12 16:33:07  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 1.8  2004/03/31 05:42:29  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 1.7  2004/03/05 09:02:13  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 1.6  2004/02/20 04:29:56  bobboau
- * pluged memory leaks,
- * 3D HTL lasers (they work perfictly)
- * and posably fixed Turnsky's shinemap bug
- *
- * Revision 1.5  2003/11/11 02:15:46  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 1.4  2003/11/06 20:22:18  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 1.3  2003/10/16 16:38:17  Kazan
- * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
- *
- * Revision 1.2  2003/10/16 01:55:26  Kazan
- * fixed typo in fallback code array index
- *
- * Revision 1.1  2003/10/15 22:03:27  Kazan
- * Da Species Update :D
- *
- */
-
-
-#include <vector>
 
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
@@ -168,7 +18,7 @@
 #include "localization/localize.h"
 
 
-std::vector<species_info> Species_info;
+SCP_vector<species_info> Species_info;
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -187,6 +37,8 @@ void parse_thrust_anims(species_info *species, bool no_create)
 		generic_bitmap_init(&species->thruster_secondary_glow_info.afterburn, NULL);
 		generic_bitmap_init(&species->thruster_tertiary_glow_info.normal, NULL);
 		generic_bitmap_init(&species->thruster_tertiary_glow_info.afterburn, NULL);
+		generic_bitmap_init(&species->thruster_distortion_info.normal, NULL);
+		generic_bitmap_init(&species->thruster_distortion_info.afterburn, NULL);
 	}
 	else if (!optional_string("$ThrustAnims:"))
 	{
@@ -244,6 +96,14 @@ void parse_thrust_anims(species_info *species, bool no_create)
 	// etc.
 	if (optional_string("+Ter_Afterburn:"))
 		stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
+	
+	// etc.
+	if (optional_string("+Dist_Normal:"))
+		stuff_string(species->thruster_distortion_info.normal.filename, F_NAME, MAX_FILENAME_LEN);
+
+	// etc.
+	if (optional_string("+Dist_Afterburn:"))
+		stuff_string(species->thruster_distortion_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 }
 
 void parse_thrust_glows(species_info *species, bool no_create)
@@ -291,18 +151,14 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
 }
 
-void parse_species_tbl(char *filename)
+void parse_species_tbl(const char *filename)
 {
 	int i, rval;
 	char species_name[NAME_LENGTH];
 
-	// open localization
-	lcl_ext_open();
-
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>"), rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -351,7 +207,7 @@ void parse_species_tbl(char *filename)
 		}
 		else
 		{
-			strcpy(species->species_name, species_name);
+			strcpy_s(species->species_name, species_name);
 		}
 
 		// Goober5000 - IFF
@@ -362,11 +218,11 @@ void parse_species_tbl(char *filename)
 			stuff_string(temp_name, F_NAME, NAME_LENGTH);
 
 			// search for it in iffs
-			for (int i = 0; i < Num_iffs; i++)
+			for (int iLoop = 0; iLoop < Num_iffs; iLoop++)
 			{
-				if (!stricmp(Iff_info[i].iff_name, temp_name))
+				if (!stricmp(Iff_info[iLoop].iff_name, temp_name))
 				{
-					species->default_iff = i;
+					species->default_iff = iLoop;
 					iff_found = true;
 				}
 			}
@@ -441,11 +297,16 @@ void parse_species_tbl(char *filename)
 
 
 		// Shield Hit Animation
-		if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
+        if (optional_string("+Shield_Hit_ani:")) // Shouldn't be required -- LPine
 		{
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
 		}
+        else if (!no_create)
+        {
+            species->shield_anim.filename[0] = '\0';
+            species->shield_anim.first_frame = -1; // Landmine to trip up anyone who does end up using this
+        }
 
 
 		// Thruster Anims
@@ -474,6 +335,11 @@ void parse_species_tbl(char *filename)
 			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
 		}
 
+		// Goober5000 - countermeasure type
+		// (we won't be able to resolve it until after we've parsed the weapons table)
+		if (optional_string("$Countermeasure type:"))
+			stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
+
 		// don't add new entry if this is just a modified one
 		if ( !no_create )
 			Species_info.push_back( new_species );
@@ -482,11 +348,8 @@ void parse_species_tbl(char *filename)
 	required_string("#END");
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 int Species_initted = 0;

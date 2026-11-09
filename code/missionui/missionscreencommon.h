@@ -7,15 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.h $
- * $Revision: 2.13 $
- * $Date: 2006-02-18 00:42:51 $
- * $Author: wmcoolmon $
- *
- * $NoKeywords: $
- *
- */
+
 
 #ifndef _MISSION_SCREEN_COMMON_HEADER_FILE
 #define _MISSION_SCREEN_COMMON_HEADER_FILE
@@ -117,6 +109,9 @@ void common_music_init( int score_index );
 void common_music_do();
 void common_music_close();
 
+int common_num_cutscenes_valid(int movie_type);
+void common_maybe_play_cutscene(int movie_type, bool restart_music = false, int music = 0);
+
 int common_scroll_down_pressed(int *start, int size, int max_show);
 int common_scroll_up_pressed(int *start, int size, int max_show);
 
@@ -130,11 +125,14 @@ int common_scroll_up_pressed(int *start, int size, int max_show);
 
 #define WING_SLOT_FILLED				(1<<0)
 #define WING_SLOT_EMPTY					(1<<1)
-#define WING_SLOT_DISABLED				(1<<2)
 #define WING_SLOT_IS_PLAYER			(1<<3)
 #define WING_SLOT_LOCKED				(1<<4)
+#define WING_SLOT_SHIPS_DISABLED		(1<<5)
+#define WING_SLOT_WEAPONS_DISABLED		(1<<6)
 
-#define WING_SLOT_IGNORE	(WING_SLOT_DISABLED|WING_SLOT_LOCKED)
+#define WING_SLOT_DISABLED			(WING_SLOT_SHIPS_DISABLED|WING_SLOT_WEAPONS_DISABLED)
+#define WING_SLOT_IGNORE_SHIPS		(WING_SLOT_SHIPS_DISABLED|WING_SLOT_LOCKED)
+#define WING_SLOT_IGNORE_WEAPONS	(WING_SLOT_WEAPONS_DISABLED|WING_SLOT_LOCKED)
 
 // different operations used in xx_apply()
 #define WSS_DUMP_TO_LIST		0
@@ -197,16 +195,16 @@ typedef struct loadout_data
 extern loadout_data Player_loadout;
 
 void wss_save_loadout();
-void wss_restore_loadout();
+void wss_maybe_restore_loadout();
 void wss_direct_restore_loadout();
 
 int wss_get_mode(int from_slot, int from_list, int to_slot, int to_list, int wl_ship_slot);
 int store_wss_data(ubyte *block, int max_size, int sound,int player_index);
 int restore_wss_data(ubyte *block);
 
-struct ship_info;
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip=NULL, bool resize=true);
-void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, bool resize=true);
+class ship_info;
+void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip=NULL, int resize_mode=GR_RESIZE_FULL);
+void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, int effect = 2);
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();

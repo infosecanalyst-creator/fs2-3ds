@@ -9,7 +9,6 @@
 #include "object/object.h"
 
 #include <string>
-#include <vector>
 
 #define CAM_STATIONARY_FOV			(1<<0)
 #define CAM_STATIONARY_ORI			(1<<1)
@@ -34,17 +33,9 @@ protected:
 	void (*func_custom_orientation)(camera *cam, matrix *ori);
 
 	avd_movement fov;
-
 	avd_movement pos_x;
 	avd_movement pos_y;
 	avd_movement pos_z;
-
-	//avd_movement ori_p;
-	//avd_movement ori_b;
-	//avd_movement ori_h;
-	//avd_movement ori_progress;
-	//matrix ori_initial;
-	//matrix ori_final;
 	avd_movement ori[9];
 
 	//Cache stuff
@@ -125,17 +116,18 @@ class subtitle
 private:
 	void clone(const subtitle &sub);
 
-	std::vector<std::string> text_lines;
-	float text_pos[2];
+	SCP_vector<SCP_string> text_lines;
+	struct { int x; int y; } text_pos;
 
 	float display_time;
 	float fade_time;
 	color text_color;
+	int text_fontnum;
 
 	//Done with set
 	char imageanim[MAX_FILENAME_LEN];
 	int image_id;
-	int image_pos[2];
+	struct { int x; int y; int w; int h; } image_pos;
 	
 	//Time this has been displayed
 	float time_displayed;
@@ -143,18 +135,22 @@ private:
 	//When to end it
 	float time_displayed_end;
 
+	bool post_shaded;
 public:
-	subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim = NULL, float in_fade_time = 0.0f, color *in_text_color = NULL, bool center_x = false, bool center_y = false, int in_width = 200);
+	subtitle(int in_x_pos, int in_y_pos, const char* in_text = NULL, const char* in_imageanim = NULL,
+			 float in_display_time = 0, float in_fade_time = 0.0f, const color *in_text_color = NULL, int in_text_fontnum = -1,
+			 bool center_x = false, bool center_y = false, int in_width = 0, int in_height = 0, bool post_shaded=false);
 	~subtitle();
 
     subtitle(const subtitle &sub) { clone(sub); }
     const subtitle &operator=(const subtitle &sub);
 
 	void do_frame(float frametime);
+	bool is_post_shaded( ) { return post_shaded; }
 };
 
 //Some global stuff
-extern std::vector<subtitle> Subtitles;
+extern SCP_vector<subtitle> Subtitles;
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Sexp_fov;
 
@@ -172,8 +168,11 @@ camid cam_get_camera(uint index);
 camid cam_get_current();
 uint cam_get_num();
 
-void subtitles_init();
+void get_turret_cam_pos(camera *cam, vec3d *pos);
+void get_turret_cam_orient(camera *cam, matrix *ori);
+
 void subtitles_close();
 void subtitles_do_frame(float frametime);
+void subtitles_do_frame_post_shaded(float frametime);
 
 #endif // _CAMERA_H

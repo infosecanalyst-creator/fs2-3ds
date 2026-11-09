@@ -7,333 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13.2.6 $
- * $Date: 2007-10-15 06:43:16 $
- * $Author: taylor $
- *
- * Header file which contains type definitions for multiplayer, and support for high-level
- * multiplayer functions.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.13.2.5  2006/11/21 23:06:57  karajorma
- * Fix ammo and weapon SEXP changes not being passed on to the clients
- *
- * Revision 2.13.2.4  2006/09/08 06:09:05  taylor
- * lower client/server version back to retail level, there was no reason to bump it in the first place
- *
- * Revision 2.13.2.3  2006/08/25 21:15:31  karajorma
- * Fix TvT problem with scores appearing incorrectly.
- * Fix a CVS issue
- *
- * Revision 2.13  2006/06/02 09:10:01  karajorma
- * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
- *
- * Revision 2.12  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.11  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.10  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.9  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.8  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.7  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.6  2003/11/12 00:31:45  Kazan
- * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
- *
- * Revision 2.5  2003/09/23 02:42:54  Kazan
- * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
- *
- * Revision 2.4  2002/12/24 07:42:29  Goober5000
- * added change-ai-class and is-ai-class, and I think I may also have nailed the
- * is-iff bug; did some other bug hunting as well
- * --Goober5000
- *
- * Revision 2.3  2002/12/17 02:18:40  Goober5000
- * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 47    8/30/99 5:01p Dave
- * Made d3d do less state changing in the nebula. Use new chat server for
- * PXO.
- * 
- * 46    8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 45    8/24/99 10:11a Dave
- * New server version.
- * 
- * 44    8/24/99 1:49a Dave
- * Fixed client-side afterburner stuttering. Added checkbox for no version
- * checking on PXO join. Made button info passing more friendly between
- * client and server.
- * 
- * 43    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 42    8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 41    8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 40    8/04/99 2:24a Dave
- * Fixed escort gauge ordering for dogfight.
- * 
- * 39    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 38    7/26/99 5:50p Dave
- * Revised ingame join. Better? We'll see....
- * 
- * 37    7/22/99 7:17p Dave
- * Fixed excessive whacks in multiplayer.
- * 
- * 36    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 35    7/03/99 5:50p Dave
- * Make rotated bitmaps draw properly in padlock views.
- * 
- * 34    6/07/99 9:51p Dave
- * Consolidated all multiplayer ports into one.
- * 
- * 33    5/17/99 9:32a Dave
- * Bumped up server version.
- * 
- * 32    5/14/99 1:59p Andsager
- * Multiplayer message for subsystem cargo revealed.
- * 
- * 31    4/29/99 3:02p Dave
- * 
- * 30    4/29/99 2:29p Dave
- * Made flak work much better in multiplayer.
- * 
- * 29    4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 28    4/25/99 7:43p Dave
- * Misc small bug fixes. Made sun draw properly.
- * 
- * 27    4/21/99 6:15p Dave
- * Did some serious housecleaning in the beam code. Made it ready to go
- * for anti-fighter "pulse" weapons. Fixed collision pair creation. Added
- * a handy macro for recalculating collision pairs for a given object.
- * 
- * 26    4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 25    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 24    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 23    3/01/99 7:39p Dave
- * Added prioritizing ship respawns. Also fixed respawns in TvT so teams
- * don't mix respawn points.
- * 
- * 22    2/25/99 4:19p Dave
- * Added multiplayer_beta defines. Added cd_check define. Fixed a few
- * release build warnings. Added more data to the squad war request and
- * response packets.
- * 
- * 21    2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 20    2/19/99 11:42a Dave
- * Put in model rendering autocentering.
- * 
- * 19    2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 18    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 17    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 16    2/08/99 5:07p Dave
- * FS2 chat server support. FS2 specific validated missions.
- * 
- * 15    1/29/99 2:08a Dave
- * Fixed beam weapon collisions with players. Reduced size of scoring
- * struct for multiplayer. Disabled PXO.
- * 
- * 14    1/14/99 12:48a Dave
- * Todo list bug fixes. Made a pass at putting briefing icons back into
- * FRED. Sort of works :(
- * 
- * 13    1/12/99 5:45p Dave
- * Moved weapon pipeline in multiplayer to almost exclusively client side.
- * Very good results. Bandwidth goes down, playability goes up for crappy
- * connections. Fixed object update problem for ship subsystems.
- * 
- * 12    1/12/99 4:07a Dave
- * Put in barracks code support for selecting squad logos. Properly
- * distribute squad logos in a multiplayer game.
- * 
- * 11    12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 10    12/03/98 5:22p Dave
- * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
- * checksumming.
- * 
- * 9     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 8     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 7     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 6     11/12/98 12:13a Dave
- * Tidied code up for multiplayer test. Put in network support for flak
- * guns.
- * 
- * 5     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 4     10/19/98 11:15a Dave
- * Changed requirements for stats storing in PXO mode.
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 257   9/20/98 7:19p Dave
- * Added CHANGE_IFF packet. 
- * 
- * 256   9/16/98 6:54p Dave
- * Upped  max sexpression nodes to 1800 (from 1600). Changed FRED to sort
- * the ship list box. Added code so that tracker stats are not stored with
- * only 1 player.
- * 
- * 255   9/15/98 7:24p Dave
- * Minor UI changes. Localized bunch of new text.
- * 
- * 254   9/15/98 4:03p Dave
- * Changed readyroom and multi screens to display "st" icon for all
- * missions with mission disk content (not necessarily just those that
- * come with Silent Threat).
- * 
- * 253   9/11/98 5:08p Dave
- * More tweaks to kick notification system.
- * 
- * 252   9/11/98 2:05p Allender
- * make reinforcements work correctly in multiplayer games.  There still
- * may be a team vs team issue that I haven't thought of yet :-(
- * 
- * 251   9/04/98 3:51p Dave
- * Put in validated mission updating and application during stats
- * updating.
- * 
- * 250   8/31/98 2:06p Dave
- * Make cfile sort the ordering or vp files. Added support/checks for
- * recognizing "mission disk" players.
- * 
- * 249   8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 248   8/12/98 4:53p Dave
- * Put in 32 bit checksumming for PXO missions. No validation on the
- * actual tracker yet, though.
- * 
- * 247   7/24/98 9:27a Dave
- * Tidied up endgame sequencing by removing several old flags and
- * standardizing _all_ endgame stuff with a single function call.
- * 
- * 246   7/10/98 5:04p Dave
- * Fix connection speed bug on standalone server.
- * 
- * 245   7/10/98 11:52a Allender
- * changes to the connection type
- * 
- * 244   7/10/98 1:13a Allender
- * lots of small multiplayer update changes.  Code in launcher to specify
- * connection speed.  A couple of small fixes regarding empty mission
- * files.  Time out players after 10 second when they don't connect on
- * their reliable socket.
- * 
- * 243   7/07/98 2:56p Dave
- * 
- * 242   7/02/98 6:16p Dave
- * Make rear facing prediction much better. Tweak update levels and
- * viewcone values. Make sure observers send targeting info correctly.
- * 
- * 241   6/30/98 2:17p Dave
- * Revised object update system. Removed updates for all weapons. Put
- * button info back into control info packet.
- * 
- * 240   6/22/98 8:36a Allender
- * revamping of homing weapon system.  don't send as object updates
- * anymore
- * 
- * 239   6/17/98 10:56a Dave
- * Put in debug code for detecting potential tracker stats update
- * problems.
- * 
- * 238   6/12/98 2:49p Dave
- * Patch 1.02 changes.
- * 
- * 237   6/10/98 2:56p Dave
- * Substantial changes to reduce bandwidth and latency problems.
- * 
- * 236   6/04/98 10:06p Allender
- * upped packet version
- * 
- * 235   6/04/98 11:46a Dave
- * Drastically reduce size/rate of client control info update packets. Put
- * in rate limiting for object updating from server.
- * 
- *  
- * $NoKeywords: $
- */
+
 
 #ifndef _MULTI_H
 #define _MULTI_H
@@ -345,9 +19,9 @@
 #include "io/keycontrol.h"
 #include "globalincs/globals.h"
 
-struct p_object;
+class p_object;
 struct CFILE;
-struct player;
+class player;
 
 // ----------------------------------------------------------------------------------------
 // Basic defines
@@ -387,11 +61,8 @@ struct player;
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // STANDALONE_ONLY
-#ifdef INF_BUILD
-#define MULTI_FS_SERVER_VERSION							146
-#else 
-#define MULTI_FS_SERVER_VERSION							46
-#endif
+
+#define MULTI_FS_SERVER_VERSION							147
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -425,18 +96,16 @@ struct player;
 #define IPX_PORT_LENGTH						2				// length of the port field for an IPX address
 
 // netgame defines
-#define RESPAWN_ANARCHY						(0xffffffff)// respawn setting for an "anarchy" style game
-#define MP_SINGLE								0				// not playing a campaign - single mission
+#define MP_SINGLE_MISSION					0				// not playing a campaign - single mission
 #define MP_CAMPAIGN							1				// playing a campaign
 
 // respawn defines
-#define RESPAWN_INVUL_TIMESTAMP			5000			// how long a player is invulnerable after he respawns
+#define RESPAWN_INVUL_TIMESTAMP				5000			// how long a player is invulnerable after he respawns
 #define MAX_RESPAWN_POINTS					25				// the max # of respawn points we'll keep track of for any mission
 
 // player information defines
 #define BUTTON_INFO_SAVE_COUNT			30				// how many buttons infos we keep track of for sending critical keypresses to the server
 #define MAX_PINGS								10				// how many pings we keep track of for averaging player pings
-#define OBJECT_UDPATE_DIFF_TOLERANCE	40000			// how big of a difference in sequence numbers (control_info and object_updates) before we reset
 
 // reliable connect wait
 #define MULTI_RELIABLE_CONNECT_WAIT		15
@@ -604,6 +273,8 @@ extern int Om_tracker_flag;
 												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
+#define SEXP						0xF2		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
+#define CHANGE_IFF_COLOR			0xF3		// Wanderer - change iff color
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
@@ -614,15 +285,15 @@ extern int Om_tracker_flag;
 
 // join request denial codes
 #define JOIN_DENY_JR_STATE				0		// join request is rejected because the game is not in the proper state
-#define JOIN_DENY_JR_TRACKER_INVAL	1		// join request is rejected because the game is an MT game and the passed player info is invalid
-#define JOIN_DENY_JR_PASSWD			2		// join request is rejected because the game is password protected and the password sent is incorrect
-#define JOIN_DENY_JR_CLOSED			3		// join request is rejected because the game is closed and is currently ingame
-#define JOIN_DENY_JR_RANK_HIGH		4		// join request is rejected because the game is rank based and the passed rank is too high
+#define JOIN_DENY_JR_TRACKER_INVAL		1		// join request is rejected because the game is an MT game and the passed player info is invalid
+#define JOIN_DENY_JR_PASSWD				2		// join request is rejected because the game is password protected and the password sent is incorrect
+#define JOIN_DENY_JR_CLOSED				3		// join request is rejected because the game is closed and is currently ingame
+#define JOIN_DENY_JR_RANK_HIGH			4		// join request is rejected because the game is rank based and the passed rank is too high
 #define JOIN_DENY_JR_RANK_LOW			5		// join request is rejected because the game is rank based and the passed rank is too low
 #define JOIN_DENY_JR_DUP				6		// join request is denied because there is an exiting netplayer with matching characteristics
 #define JOIN_DENY_JR_FULL				7		// join request is denied because the game is full
 #define JOIN_DENY_JR_TEMP_CLOSED		8		// join request is denied because the _forming_ netgame has been toggled closed
-#define JOIN_DENY_JR_BANNED			9		// join request is denied because the player has been banned for the duration of the game
+#define JOIN_DENY_JR_BANNED				9		// join request is denied because the player has been banned for the duration of the game
 #define JOIN_DENY_JR_NOOBS				10		// join request is denied because observers are not allowed
 #define JOIN_DENY_JR_INGAME_JOIN		11		// join request is denied because someone else is already ingame joining
 #define JOIN_DENY_JR_BAD_VERSION		12		// incompatible version types
@@ -637,7 +308,7 @@ extern int Om_tracker_flag;
 #define REPAIR_INFO_ABORT			0x5		// server to client - client has aborted a rearm/repair
 #define REPAIR_INFO_BROKEN			0x6		// server to client - client is breaking repair -- might be reestablished
 #define REPAIR_INFO_WARP_ADD		0x7		// server to client - add client onto list of people for arriving support ship
-#define REPAIR_INFO_WARP_REMOVE	0x8		// server to client - remove client from list of people for arriving support ship
+#define REPAIR_INFO_WARP_REMOVE		0x8		// server to client - remove client from list of people for arriving support ship
 #define REPAIR_INFO_ONWAY			0x9		// server to client - repair ship on way
 #define REPAIR_INFO_KILLED			0xa		// server to client - repair ship was killed on way to rearm player
 #define REPAIR_INFO_COMPLETE		0xb		// server to client - repair of your ship is complete
@@ -646,7 +317,7 @@ extern int Om_tracker_flag;
 #define DEBRIS_UPDATE_UPDATE			0x1		// update a piece
 #define DEBRIS_UPDATE_REMOVE			0x2		// remove a piece of debris
 #define DEBRIS_UPDATE_NUKE				0x3		// blow up a piece of debris
-#define DEBRIS_UPDATE_CREATE_HULL	0x4		// create a piece of debris
+#define DEBRIS_UPDATE_CREATE_HULL		0x4		// create a piece of debris
 
 // weapon select/ship select update packets
 #define WSS_WEAPON_SELECT			0x1		// ship select stuff
@@ -660,7 +331,7 @@ extern int Om_tracker_flag;
 
 // accept player data codes
 #define APD_NEXT						0			// there is still more player data
-#define APD_END_PACKET				1			// end of this packet
+#define APD_END_PACKET					1			// end of this packet
 #define APD_END_DATA					2			// end of the data
 
 // ingame ship request codes		
@@ -674,25 +345,25 @@ extern int Om_tracker_flag;
 #define AI_UPDATE_UNDOCK			0x2		// server tells clients which ships have undocked
 #define AI_UPDATE_ORDERS			0x3		// server tells clients about new AI order for the ship
 
-// requests to the standalong
+// requests to the standalone
 #define MISSION_LIST_REQUEST		0x1		// ask for list of missions
 #define CAMPAIGN_LIST_REQUEST		0x2		// ask for list of campaigns
 
 // asteroid stuff
 #define ASTEROID_CREATE				0x1		// create an asteroid
 #define ASTEROID_THROW				0x2		// throw an asteroid
-#define ASTEROID_HIT					0x3		// asteroid hit occured
+#define ASTEROID_HIT				0x3		// asteroid hit occured
 
 // commands for squadmate messages
 #define SQUAD_MSG_SHIP				0x1
 #define SQUAD_MSG_WING				0x2
 #define SQUAD_MSG_ALL				0x3
-#define SQUAD_MSG_REINFORCEMENT	0x4
+#define SQUAD_MSG_REINFORCEMENT		0x4
 
 // SW_STD_QUERY codes
 #define SW_STD_START					0x1		// from host to standalone saying "query the tracker"
 #define SW_STD_OK						0x2		// from standalone to host - "everything is cool"
-#define SW_STD_BAD					0x3		// from standalone to host - "everything is bad"
+#define SW_STD_BAD						0x3		// from standalone to host - "everything is bad"
 
 // stats block packet
 #define STATS_MISSION				0			// all stats for the mission (except kills), for one player
@@ -702,7 +373,7 @@ extern int Om_tracker_flag;
 #define STATS_MISSION_CLASS_KILLS	4			// kills for the mission, for one player
 #define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
-#define MAX_SHIPS_PER_PACKET		130			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
+#define MAX_SHIPS_PER_PACKET		64			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
@@ -847,11 +518,6 @@ typedef struct netgame_info {
 	ubyte		debug_flags;						// special debug flags (see NETD_FLAG_* defines)
 } netgame_info;
 
-// netgame debug flags
-// #define NETD_FLAG_CLIENT_FIRING				(1<<0)		// client side firing of primaries and countermeasures
-// #define NETD_FLAG_CLIENT_NODAMAGE			(1<<1)		// client never applies damage himself. he simply waits for blanket updates
-#define NETD_FLAG_OBJ_NEW						(1<<2)		// new style of object updating
-
 // structure for active games -- kind of like Descent, but using the linked list thing, we will
 // be able to support many more games in the list.
 #define AG_FLAG_COOP								(1<<0)			// is a coop game
@@ -900,8 +566,8 @@ typedef struct server_item {
 
 // sent to the server on a join request with various data
 #define JOIN_FLAG_AS_OBSERVER			(1<<0)	// wants to join as an aboserver
-#define JOIN_FLAG_HAS_CD				(1<<1)	// currently has a CD in the drive
 #define JOIN_FLAG_HAXOR					(1<<2)	// if the player has hacked data
+
 typedef struct join_request {
 	char passwd[MAX_PASSWD_LEN+1];				// password for a password protected game
 	char callsign[CALLSIGN_LEN+1];				// player's callsign
@@ -920,7 +586,7 @@ typedef struct join_request {
 // network buffer for sending and receiving packets
 typedef struct network_buffer {
 	int	size;										// size of the buffer
-	ubyte	data[MAX_PACKET_SIZE];				// MAX_PACKET_SIZE from psnet.h
+	ubyte	data[MAX_PACKET_SIZE];				// MAX_PACKET_SIZE from psnet2.h
 } network_buffer;
 // -------------------------------------------------------------------------------------
 
@@ -937,33 +603,33 @@ typedef struct network_buffer {
 #define NETINFO_FLAG_MT_FAILED				(1<<3)      // all attempts to connect have failed
 #define NETINFO_FLAG_MT_STARTUP				(1<<4)      // the initial state (ie, we haven't tried anything yet)
 #define NETINFO_FLAG_GAME_HOST				(1<<5)      // I'm the host
-#define NETINFO_FLAG_INGAME_JOIN				(1<<6)      // means he is still in the process of joining ingame
-#define NETINFO_FLAG_OBSERVER					(1<<7)      // means he's an observer
+#define NETINFO_FLAG_INGAME_JOIN			(1<<6)      // means he is still in the process of joining ingame
+#define NETINFO_FLAG_OBSERVER				(1<<7)      // means he's an observer
 #define NETINFO_FLAG_OBS_PLAYER				(1<<8)      // means he's an observer, but he was formerly a player (should show his stats)
-#define NETINFO_FLAG_LIMBO						(1<<9)      // (client side) means he has to choose whether to be an observer or quit (no more respawns)
+#define NETINFO_FLAG_LIMBO					(1<<9)      // (client side) means he has to choose whether to be an observer or quit (no more respawns)
 #define NETINFO_FLAG_MISSION_OK				(1<<10)     // this client's mission has been verified
 #define NETINFO_FLAG_RESPAWNING				(1<<11)     // so that we wait on a keypress, or other user input before respawning
 #define NETINFO_FLAG_DO_NETWORKING			(1<<12)		// set when we can send/receive data
-#define NETINFO_FLAG_TEAM_LOCKED				(1<<13)		// if this is set, only the host can modify the team settings for this player
+#define NETINFO_FLAG_TEAM_LOCKED			(1<<13)		// if this is set, only the host can modify the team settings for this player
 #define NETINFO_FLAG_TEAM_CAPTAIN			(1<<14)		// this player is the captain of his team
 #define NETINFO_FLAG_KICKED					(1<<15)		// this player was kicked
 #define NETINFO_FLAG_ACCEPT_INGAME			(1<<16)		// accepted ingame
-#define NETINFO_FLAG_ACCEPT_HOST				(1<<17)		// accetped as host
+#define NETINFO_FLAG_ACCEPT_HOST			(1<<17)		// accetped as host
 #define NETINFO_FLAG_ACCEPT_OBSERVER		(1<<18)		// accepted as observer
 #define NETINFO_FLAG_ACCEPT_CLIENT			(1<<19)		// accepted as client
-#define NETINFO_FLAG_WARPING_OUT				(1<<20)		// clients keep track of this for themselves to know if they should be leaving
+#define NETINFO_FLAG_WARPING_OUT			(1<<20)		// clients keep track of this for themselves to know if they should be leaving
 #define NETINFO_FLAG_HAS_CD					(1<<21)		// the player has a CD in the drive
-#define NETINFO_FLAG_RELIABLE_CONNECTED	(1<<22)		// reliable socket is now active
+#define NETINFO_FLAG_RELIABLE_CONNECTED		(1<<22)		// reliable socket is now active
 #define NETINFO_FLAG_MT_GET_FAILED			(1<<23)		// set during MT stats update process indicating we didn't properly get his stats
 #define NETINFO_FLAG_MT_SEND_FAILED			(1<<24)		// set during MT stats update process indicating we didn't properly send his stats
-#define NETINFO_FLAG_MT_DONE					(1<<25)		// set when a player has been processed for stats (fail, succeed, or otherwise)
-#define NETINFO_FLAG_HAXOR						(1<<26)		// the player has some form of hacked client data
+#define NETINFO_FLAG_MT_DONE				(1<<25)		// set when a player has been processed for stats (fail, succeed, or otherwise)
+#define NETINFO_FLAG_HAXOR					(1<<26)		// the player has some form of hacked client data
 
 #define NETPLAYER_IS_OBSERVER(player)		(player->flags & (NETINFO_FLAG_OBSERVER|NETINFO_FLAG_OBS_PLAYER))
 #define NETPLAYER_IS_DEAD(player)			(player->flags & (NETINFO_FLAG_LIMBO|NETINFO_FLAG_RESPAWNING))
 
 // netgame modes
-#define NG_MODE_OPEN								1				// an open game
+#define NG_MODE_OPEN							1				// an open game
 #define NG_MODE_CLOSED							2				// a closed game
 #define NG_MODE_PASSWORD						3				// a password protected game
 #define NG_MODE_RESTRICTED						4				// a restricted game
@@ -974,16 +640,16 @@ typedef struct network_buffer {
 #define NG_FLAG_TEMP_CLOSED					(1<<0)		// a forming netgame is temporarily closed (should not be checked otherwise)
 #define NG_FLAG_SERVER_LOST					(1<<1)		// client has temporarily lost contact with the server
 #define NG_FLAG_INGAME_JOINING				(1<<2)		// someone is ingame joining.
-#define NG_FLAG_INGAME_JOINING_CRITICAL	(1<<3)		// someone is ingame joining and at the critical point where we cannot do certain things.
+#define NG_FLAG_INGAME_JOINING_CRITICAL		(1<<3)		// someone is ingame joining and at the critical point where we cannot do certain things.
 #define NG_FLAG_STORED_MT_STATS				(1<<4)		// stored tracker stats in the debriefing already
-#define NG_FLAG_HACKED_SHIPS_TBL				(1<<5)		// set when the server is playing with a hacked ships.tbl (only needed to notify hosts playing on a standalone)
+#define NG_FLAG_HACKED_SHIPS_TBL			(1<<5)		// set when the server is playing with a hacked ships.tbl (only needed to notify hosts playing on a standalone)
 #define NG_FLAG_HACKED_WEAPONS_TBL			(1<<6)		// set when the server is playing with a hacked weapons.tbl (only needed to notify hosts playing on a standalone)
 
 // netgame type flags
-#define NG_TYPE_COOP								(1<<0)		// cooperative mode
+#define NG_TYPE_COOP							(1<<0)		// cooperative mode
 #define NG_TYPE_TVT								(1<<1)		// team vs. team mode
 #define NG_TYPE_SW								(1<<2)		// squad war
-#define NG_TYPE_TEAM								( NG_TYPE_TVT | NG_TYPE_SW )
+#define NG_TYPE_TEAM							( NG_TYPE_TVT | NG_TYPE_SW )
 #define NG_TYPE_DOGFIGHT						(1<<3)		// plain old dogfight mode
 
 // some quick macros for the above
@@ -998,32 +664,32 @@ typedef struct network_buffer {
 
 // state defines for netgame states
 #define NETGAME_STATE_FORMING					1				// players are joining, host is selecting missions, etc
-#define NETGAME_STATE_BRIEFING				2				// players are reading the mission briefing
+#define NETGAME_STATE_BRIEFING					2				// players are reading the mission briefing
 #define NETGAME_STATE_IN_MISSION				3				// the mission itself is being played
-#define NETGAME_STATE_SERVER_TRANSFER		4				// server status is being transferred from one computer to another
+#define NETGAME_STATE_SERVER_TRANSFER			4				// server status is being transferred from one computer to another
 #define NETGAME_STATE_PAUSED					5				// the netgame is paused
 #define NETGAME_STATE_DEBRIEF					6				// the debriefing screen			
-#define NETGAME_STATE_MISSION_SYNC			7				// client/server data sync screens before and after the briefing stage
+#define NETGAME_STATE_MISSION_SYNC				7				// client/server data sync screens before and after the briefing stage
 #define NETGAME_STATE_ENDGAME					8				// game is moving from gameplay to the debriefing state
-#define NETGAME_STATE_STD_HOST_SETUP		9				// the host is on the setup netgame screen for the standalone server
+#define NETGAME_STATE_STD_HOST_SETUP			9				// the host is on the setup netgame screen for the standalone server
 #define NETGAME_STATE_HOST_SETUP				10				// the host is on the setup netgame screen _non_ standalone
 
 // state defines for netplayer states
 #define NETPLAYER_STATE_JOINING				0				// joining the netgame
 #define NETPLAYER_STATE_JOINED				1				// has joined and opened a reliable socket connection
-#define NETPLAYER_STATE_MISSION_LOADING	2				// in the process of loading the mission
+#define NETPLAYER_STATE_MISSION_LOADING		2				// in the process of loading the mission
 #define NETPLAYER_STATE_MISSION_LOADED		3				// mission loaded
-#define NETPLAYER_STATE_BRIEFING				4				// in the briefing
+#define NETPLAYER_STATE_BRIEFING			4				// in the briefing
 #define NETPLAYER_STATE_SHIP_SELECT			5				// in the ship selection screen
 #define NETPLAYER_STATE_WEAPON_SELECT		6				// in the weapon selection screen
 #define NETPLAYER_STATE_DATA_LOAD			7				// loading specific data (textures, etc)
 #define NETPLAYER_STATE_WAITING				8				// waiting to do something (like enter the mission)
-#define NETPLAYER_STATE_SLOT_ACK				9				// got player ship slot packets
+#define NETPLAYER_STATE_SLOT_ACK			9				// got player ship slot packets
 #define NETPLAYER_STATE_IN_MISSION			10				// in the mission itself
 #define NETPLAYER_STATE_INGAME_SHIPS		11				// player is receiving ingame join ship data
 #define NETPLAYER_STATE_INGAME_WINGS		12				// player is receiving ingame join wing data
 #define NETPLAYER_STATE_INGAME_RPTS			13				// player is receiving ingame join respawn data
-#define NETPLAYER_STATE_INGAME_SHIP_SELECT 14			// player is in the ship select screen for ingame join
+#define NETPLAYER_STATE_INGAME_SHIP_SELECT	14				// player is in the ship select screen for ingame join
 #define NETPLAYER_STATE_DEBRIEF				15				// player is in the debrief state (screen)
 #define NETPLAYER_STATE_MISSION_SYNC		16				// player is in the mission sync screen
 #define NETPLAYER_STATE_STD_HOST_SETUP		17				// the host is on the setup netgame screen for the standalone server
@@ -1032,8 +698,8 @@ typedef struct network_buffer {
 #define NETPLAYER_STATE_SLOTS_ACK			20				// the player has received wss slots data (ingame join only)
 #define NETPLAYER_STATE_POST_DATA_ACK		21				// the player has received the post briefing data block
 #define NETPLAYER_STATE_WSS_ACK				22				// have received weapon slot information
-#define NETPLAYER_STATE_FLAG_ACK				23				// the player has received his flag change information
-#define NETPLAYER_STATE_MT_STATS				24				// the server is in the process of requesting or updating stats from the MT
+#define NETPLAYER_STATE_FLAG_ACK			23				// the player has received his flag change information
+#define NETPLAYER_STATE_MT_STATS			24				// the server is in the process of requesting or updating stats from the MT
 #define NETPLAYER_STATE_MISSION_XFER		25				// the player is in the process of receiving a mission file
 #define NETPLAYER_STATE_INGAME_STUFF		26				// received ingame "stuff"  happens just before ship selection
 #define NETPLAYER_STATE_DEBRIEF_ACCEPT		27				// the player has hit the accept button in the debrief and is good to go

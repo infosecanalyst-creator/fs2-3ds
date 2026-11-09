@@ -1,24 +1,4 @@
-/*
- * $Logfile: /Freespace2/src/cutscene/mve_audio.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
- * $Author: taylor $
- *
- * Handles compressed audio data in MVE files
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2005/03/29 07:50:34  taylor
- * Update to newest movie code with much better video support and audio support from
- *   Pierre Willenbrock.  Movies are enabled always now (no longer a build option)
- *   and but can be skipped with the "--nomovies" or "-n" cmdline options.
- *
- *
- *
- * $NoKeywords: $
- *
- */
 
-#ifdef USE_OPENAL
 
 static int audio_exp_table[256] =
 {
@@ -42,38 +22,35 @@ static int audio_exp_table[256] =
 
 static int getWord(unsigned char **fin)
 {
-    int value = ((*fin)[1] << 8) | (*fin)[0];
-    *fin += 2;
-    return value;
+	int value = ((*fin)[1] << 8) | (*fin)[0];
+	*fin += 2;
+	return value;
 }
 
 static void sendWord(short **fout, int nOffset)
 {
-    *(*fout)++ = nOffset;
+	*(*fout)++ = (short)nOffset;
 }
 
 static void processSwath(short *fout, unsigned char *data, int swath, int *offsets)
 {
-    int i;
-    for (i=0; i<swath; i++)
-    {
-        offsets[i&1] += audio_exp_table[data[i]];
-        sendWord(&fout, offsets[i&1]);
-    }
+	int i;
+	for (i=0; i<swath; i++) {
+		offsets[i&1] += audio_exp_table[data[i]];
+		sendWord(&fout, offsets[i&1]);
+	}
 }
 
-void mveaudio_uncompress(short *buffer, unsigned char *data, int length)
+void mveaudio_uncompress(short *buffer, unsigned char *data)
 {
-    int nCurOffsets[2];
-    int swath;
+	int nCurOffsets[2];
+	int swath;
 
-    data += 4;
-    swath = getWord(&data) / 2;
-    nCurOffsets[0] = getWord(&data);
-    nCurOffsets[1] = getWord(&data);
-    sendWord(&buffer, nCurOffsets[0]);
-    sendWord(&buffer, nCurOffsets[1]);
-    processSwath(buffer, data, swath, nCurOffsets);
+	data += 4;
+	swath = getWord(&data) / 2;
+	nCurOffsets[0] = getWord(&data);
+	nCurOffsets[1] = getWord(&data);
+	sendWord(&buffer, nCurOffsets[0]);
+	sendWord(&buffer, nCurOffsets[1]);
+	processSwath(buffer, data, swath, nCurOffsets);
 }
-
-#endif

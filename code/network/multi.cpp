@@ -7,336 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.35.2.6 $
- * $Date: 2007-10-15 06:43:16 $
- * $Author: taylor $
- *
- * C file that contains high-level multiplayer functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.35.2.5  2006/11/21 23:06:57  karajorma
- * Fix ammo and weapon SEXP changes not being passed on to the clients
- *
- * Revision 2.35.2.4  2006/09/24 22:53:22  taylor
- * more standalone server fixes:
- *  - add some basic bmpman functionality to grstub, since it needs to do something at least
- *  - add missing gr_* function ptrs to grstrub
- *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
- *  - deal with default pilot file properly (also caused a bmpman headache)
- *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
- *
- * Revision 2.35.2.3  2006/08/25 21:15:31  karajorma
- * Fix TvT problem with scores appearing incorrectly.
- * Fix a CVS issue
- *
- * Revision 2.35  2006/06/02 09:10:01  karajorma
- * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
- *
- * Revision 2.34  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.33  2006/03/30 04:18:40  Goober5000
- * those were some bugs just waiting to happen
- *
- * Revision 2.32  2006/03/30 04:15:20  Goober5000
- * hehe, grammar
- * --Goober5000
- *
- * Revision 2.31  2006/02/16 05:39:13  taylor
- * some FS2NetD fixes
- *  - timer/timeout issues
- *  - keep server heartbeats to a minimum in order to save some bandwidth
- *  - clean up some debug message a little
- *
- * Revision 2.30  2006/01/26 03:23:30  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.29  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.28  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.27  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.26  2005/02/04 20:06:04  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.25  2004/11/18 00:05:37  Goober5000
- * #pragma'd a bunch of warnings
- * --Goober5000
- *
- * Revision 2.24  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.23  2004/07/18 04:07:26  Kazan
- * nothing major
- *
- * Revision 2.22  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.21  2004/07/07 23:34:08  Kazan
- * fixed a typo in one of the fs2netd strings
- * played with WMCoolmon's hacked up escort list
- *
- * Revision 2.20  2004/07/07 21:00:08  Kazan
- * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
- *
- * Revision 2.19  2004/07/06 19:59:37  Kazan
- * small multifix
- *
- * Revision 2.18  2004/03/31 05:42:27  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.17  2004/03/09 17:59:01  Kazan
- * Disabled multithreaded TCP_Socket in favor of safer single threaded
- * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
- *
- * Revision 2.16  2004/03/09 00:02:16  Kazan
- * more fs2netd stuff
- *
- * Revision 2.15  2004/03/08 22:02:39  Kazan
- * Lobby GUI screen restored
- *
- * Revision 2.14  2004/03/08 15:06:24  Kazan
- * Did, undo
- *
- * Revision 2.13  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.12  2003/11/13 03:59:54  Kazan
- * PXO_SID changed from unsigned to signed
- *
- * Revision 2.11  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.10  2003/11/06 20:22:13  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 2.9  2003/10/04 22:42:22  Kazan
- * fs2netd now TCP
- *
- * Revision 2.8  2003/09/25 21:12:24  Kazan
- * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
- * Also D3D8 Screenshots work now.
- *
- * Revision 2.7  2003/09/24 19:35:58  Kazan
- * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
- *
- * Revision 2.6  2003/09/23 02:42:54  Kazan
- * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
- *
- * Revision 2.5  2003/09/05 04:25:28  Goober5000
- * well, let's see here...
- *
- * * persistent variables
- * * rotating gun barrels
- * * positive/negative numbers fixed
- * * sexps to trigger whether the player is controlled by AI
- * * sexp for force a subspace jump
- *
- * I think that's it :)
- * --Goober5000
- *
- * Revision 2.4  2002/12/24 07:42:29  Goober5000
- * added change-ai-class and is-ai-class, and I think I may also have nailed the
- * is-iff bug; did some other bug hunting as well
- * --Goober5000
- *
- * Revision 2.3  2002/12/17 02:18:40  Goober5000
- * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/13 21:09:28  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 47    9/15/99 1:45a Dave
- * Don't init joystick on standalone. Fixed campaign mode on standalone.
- * Fixed no-score-report problem in TvT
- * 
- * 46    8/24/99 1:49a Dave
- * Fixed client-side afterburner stuttering. Added checkbox for no version
- * checking on PXO join. Made button info passing more friendly between
- * client and server.
- * 
- * 45    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 44    8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 43    8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 42    8/16/99 4:05p Dave
- * Big honking checkin.
- * 
- * 41    8/06/99 12:34a Dave
- * Be more careful about resetting timestamps.
- * 
- * 40    8/04/99 2:24a Dave
- * Fixed escort gauge ordering for dogfight.
- * 
- * 39    7/26/99 5:50p Dave
- * Revised ingame join. Better? We'll see....
- * 
- * 38    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 37    7/06/99 4:24p Dave
- * Mid-level checkin. Starting on some potentially cool multiplayer
- * smoothness crap.
- * 
- * 36    7/03/99 5:50p Dave
- * Make rotated bitmaps draw properly in padlock views.
- * 
- * 35    6/21/99 7:24p Dave
- * netplayer pain packet. Added type E unmoving beams.
- * 
- * 34    6/07/99 9:51p Dave
- * Consolidated all multiplayer ports into one.
- * 
- * 33    6/04/99 9:52a Dave
- * Fixed some rendering problems.
- * 
- * 32    5/22/99 6:05p Dave
- * Fixed a few localization # problems.
- * 
- * 31    5/22/99 5:35p Dave
- * Debrief and chatbox screens. Fixed small hi-res HUD bug.
- * 
- * 30    5/14/99 1:59p Andsager
- * Multiplayer message for subsystem cargo revealed.
- * 
- * 29    4/29/99 2:29p Dave
- * Made flak work much better in multiplayer.
- * 
- * 28    4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 27    4/25/99 7:43p Dave
- * Misc small bug fixes. Made sun draw properly.
- * 
- * 26    4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 25    4/12/99 10:07p Dave
- * Made network startup more forgiving. Added checkmarks to dogfight
- * screen for players who hit commit.
- * 
- * 24    4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 23    3/19/99 9:51a Dave
- * Checkin to repair massive source safe crash. Also added support for
- * pof-style nebulae, and some new weapons code.
- * 
- * 23    3/11/99 5:53p Dave
- * More network optimization. Spliced in Dell OEM planet bitmap crap.
- * 
- * 22    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 21    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 20    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 19    3/02/99 4:40p Jasons
- * Be more careful when calling server-lost-contact popup (make sure other
- * popups aren't active)
- * 
- * 18    3/01/99 7:39p Dave
- * Added prioritizing ship respawns. Also fixed respawns in TvT so teams
- * don't mix respawn points.
- * 
- * 17    2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 16    2/19/99 2:55p Dave
- * Temporary checking to report the winner of a squad war match.
- * 
- * 15    2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 14    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 13    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 12    1/14/99 12:48a Dave
- * Todo list bug fixes. Made a pass at putting briefing icons back into
- * FRED. Sort of works :(
- * 
- * 11    1/12/99 5:45p Dave
- * Moved weapon pipeline in multiplayer to almost exclusively client side.
- * Very good results. Bandwidth goes down, playability goes up for crappy
- * connections. Fixed object update problem for ship subsystems.
- * 
- * 10    12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 9     12/03/98 5:22p Dave
- * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
- * checksumming.
- * 
- * 8     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 7     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 6     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 5     11/12/98 12:13a Dave
- * Tidied code up for multiplayer test. Put in network support for flak
- * guns.
- *  
- *
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi.h"
@@ -376,6 +47,8 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
+#include "pilotfile/pilotfile.h"
+#include "debugconsole/console.h"
 
 
 
@@ -385,22 +58,11 @@
 //
 
 // timestamp defines
-// #define NETGAME_SEND_TIME								1000					// time between sending netgame update packets
-// #define STATE_SEND_TIME									1000					// time between sending netplayer state packets
-// #define GAMEINFO_SEND_TIME								3000					// time between sending game information packets
-// #define PING_SEND_TIME									2000					// time between player pings
-// #define INGAME_UPDATE_TIME								1000					// time limit between ingame join operations
 #define NETGAME_SEND_TIME								2						// time between sending netgame update packets
 #define STATE_SEND_TIME									2						// time between sending netplayer state packets
 #define GAMEINFO_SEND_TIME								3						// time between sending game information packets
 #define PING_SEND_TIME									2						// time between player pings
 #define BYTES_SENT_TIME									5						// every five seconds
-
-// netplayer stuff
-#define CULL_ZOMBIE_TIME								1000					//	zombies are checked for at this interval (in milliseconds)
-
-// object update stuff
-#define SEND_POS_INTERVAL								30						// min time in milliseconds between sending position updates
 
 // local network buffer stuff
 #define MAX_NET_BUFFER									(1024 * 16)			// define and variable declaration for our local tcp buffer
@@ -412,8 +74,6 @@
 #define MULTI_SERVER_WAIT_TIME						(F1_0 * 60)					// wait 60 seconds to reconnect with the server
 #define MULTI_SERVER_GONE								1
 #define MULTI_SERVER_ALIVE								2
-
-#define DISCONNECT_TIMEOUT								(F1_0 * 10)					// 10 seconds to timeout someone who cannot connnect
 
 // define for when to show "slow network" icon
 #define MULTI_SERVER_SLOW_PING_TIME					700					// when average ping time to server reaches this -- display hud icon
@@ -597,7 +257,7 @@ void multi_level_init()
 	ml_string(NOX("multi_level_init()"));
 
 	// initialize the Net_players array
-	for(idx=0;idx<MAX_PLAYERS;idx++) {
+	for ( idx = 0; idx < MAX_PLAYERS; idx++) {
 		// close all sockets down just for good measure
 		psnet_rel_close_socket(&Net_players[idx].reliable_socket);
 
@@ -609,11 +269,11 @@ void multi_level_init()
 	}
 
 	// initialize the Players array
-	for(idx=0;idx<MAX_PLAYERS;idx++){
-		if(Player == &Players[idx]){
+	for (idx=0;idx<MAX_PLAYERS;idx++) {
+		if (Player == &Players[idx]) {
 			continue;
 		}
-		memset(&Players[idx],0,sizeof(player));
+		Players[idx].reset();
 	}
 
 	multi_vars_init();	
@@ -648,7 +308,7 @@ void multi_level_init()
 	multi_respawn_init();
 
 	// initialize all netgame timestamps
-   multi_reset_timestamps();
+	multi_reset_timestamps();
 
 	// flush psnet sockets
 	psnet_flush();
@@ -1183,6 +843,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_change_iff_packet(data, header_info);
 			break;
 
+		case CHANGE_IFF_COLOR:
+			process_change_iff_color_packet(data, header_info);
+			break;
+
 		case CHANGE_AI_CLASS:
 			process_change_ai_class_packet(data, header_info);
 			break;
@@ -1246,6 +910,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 		case SELF_DESTRUCT:
 			process_self_destruct_packet(data, header_info);
 			break;
+
+		case SEXP:
+			process_sexp_packet(data, header_info);
+			break; 
 
 		default:
 			nprintf(("Network", "Received packet with unknown type %d\n", data[0] ));
@@ -1329,9 +997,8 @@ void multi_process_reliable_details()
 	int sock_status;
 
 	// run reliable sockets
-#ifdef PSNET2
 	psnet_rel_work();
-#endif
+
 	
 	// server operations
 	if ( MULTIPLAYER_MASTER ){
@@ -1439,14 +1106,15 @@ void multi_process_incoming()
 //
 
 int eye_tog = 1;
-DCF(eye_tog, "")
+DCF(eye_tog, "Toggles setting of the local player eyepoint on every frame (Multiplayer)")
 {
-	eye_tog = !eye_tog;
-	if(eye_tog){
-		dc_printf("proper eye stuff on\n");
-	} else {
-		dc_printf("proper eye stuff off\n");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
+		return;
 	}
+
+	eye_tog = !eye_tog;
+	dc_printf("proper eye stuff is %s\n", eye_tog ? "ON" : "OFF");
 }
 
 void multi_do_frame()
@@ -1774,7 +1442,7 @@ void standalone_main_init()
 	}
 	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
 		if (Tcp_failure_code == WSAEADDRINUSE) {
-			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", -1), "Error", MB_OK);
+			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP socket is already in use.  Check for another instance and/or use the \"-port <port_num>\" command line option to select an available port.", 1620), "Error", MB_OK);
 		} else {
 			MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
 		}
@@ -1784,13 +1452,6 @@ void standalone_main_init()
 #endif // ifdef _WIN32
 
 	// set the protocol
-#ifdef MULTIPLAYER_BETA_BUILD
-	Multi_options_g.protocol = NET_TCP;
-	psnet_use_protocol(Multi_options_g.protocol);	
-
-	ADDRESS_LENGTH = IP_ADDRESS_LENGTH;		
-	PORT_LENGTH = IP_PORT_LENGTH;			
-#else
 	psnet_use_protocol(Multi_options_g.protocol);
 	switch (Multi_options_g.protocol) {
 	case NET_IPX:
@@ -1806,7 +1467,6 @@ void standalone_main_init()
 	default:
 		Int3();
 	} // end switch
-#endif
 
 	HEADER_LENGTH = 1;		
 	
@@ -1817,7 +1477,7 @@ void standalone_main_init()
 	Netgame.security = 0;
 	Netgame.server_addr = Psnet_my_addr;
 
-	memset(&The_mission,0,sizeof(The_mission));
+	The_mission.Reset( );
 		
 	// reinitialize all systems	
 	multi_level_init();	
@@ -1833,8 +1493,7 @@ void standalone_main_init()
 	timestamp_reset();
 
 	// setup a blank pilot (this is a standalone usage only!)
-	extern int read_pilot_file(char* callsign, int single = 1, player *p = NULL);
-	read_pilot_file(NULL);
+	Pilot.load_player(NULL);
 
 	// setup the netplayer for the standalone
 	Net_player = &Net_players[0];	
@@ -1842,7 +1501,7 @@ void standalone_main_init()
 	Net_player->flags |= (NETINFO_FLAG_AM_MASTER | NETINFO_FLAG_CONNECTED | NETINFO_FLAG_DO_NETWORKING | NETINFO_FLAG_MISSION_OK);
 	Net_player->state = NETPLAYER_STATE_WAITING;
 	Net_player->m_player = Player;
-	strcpy(Player->callsign, "server");
+	strcpy_s(Player->callsign, "server");
 	Net_player->p_info.addr = Psnet_my_addr;
 	Net_player->s_info.xfer_handle = -1;	
 	Net_player->player_id = multi_get_new_id();	
@@ -1864,14 +1523,6 @@ void standalone_main_init()
 
 	// setup debug flags
 	Netgame.debug_flags = 0;
-	/*
-	if(!Cmdline_server_firing){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_FIRING;
-	}
-	if(!Cmdline_client_dodamage){
-		Netgame.debug_flags |= NETD_FLAG_CLIENT_NODAMAGE;
-	}
-	*/
 
 	// setup the default game name for the standalone
 	std_connect_set_gamename(NULL);
@@ -1914,6 +1565,9 @@ void standalone_main_init()
 
 	// if this is a tracker game then we have some extra tasks to perform
 	if (MULTI_IS_TRACKER_GAME) {
+		// disconnect and prepare for reset if we are already connected
+		fs2netd_disconnect();
+
 		// login (duh!)
 		if ( fs2netd_login() ) {
 			// validate missions
@@ -1980,7 +1634,7 @@ void multi_standalone_reset_all()
 			delete_player( idx );
 		}		
 	}
-		
+
 	// make sure we go to the proper state.	
 	if(gameseq_get_state() == GS_STATE_STANDALONE_MAIN){
 		standalone_main_init();
@@ -2120,19 +1774,18 @@ void multi_reset_timestamps()
 }
 
 // netgame debug flags for debug console stuff
-DCF(netd, "change/list netgame debug flags")
+DCF(netd, "change netgame debug flags (Mulitplayer)")
 {
-	dc_get_arg(ARG_INT);
+	int value;
+	dc_stuff_int(&value);
 	
-	// if we got an integer, and we're the server, change flags
-	if((Dc_arg_type & ARG_INT) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Dc_arg_int <= 7)){
-		Netgame.debug_flags ^= (1<<Dc_arg_int);
+	// if we're the server, change flags
+	if ((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (value <= 7)) {
+		Netgame.debug_flags ^= (1 << value);
 	}
 
 	// display network flags
 	dc_printf("BITS\n");
-	// dc_printf("1 - Client side firing (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_FIRING ? 1 : 0);
-	// dc_printf("2 - Client nodamage (%d)\n", Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE ? 1 : 0);
 }
 
 // display any multiplayer/networking information here
@@ -2140,6 +1793,7 @@ void multi_display_netinfo()
 {
 	int sx = gr_screen.max_w - 200;
 	int sy = 20;
+	int dy = gr_get_font_height() + 1;
 	int idx;
 
 	// not multiplayer
@@ -2161,30 +1815,30 @@ void multi_display_netinfo()
 
 	// server or client
 	if(MULTIPLAYER_MASTER){
-		gr_string(sx, sy, "SERVER"); sy += 10;
+		gr_string(sx, sy, "SERVER", GR_RESIZE_NONE); sy += dy;
 
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 				if(Net_players[idx].sv_last_pl < 0){
-					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0);
-					sy += 10;
+					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0);
+					sy += dy;
 				} else {
-					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl);
-					sy += 10;
+					gr_printf_no_resize(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl);
+					sy += dy;
 				}
 			}
 		}
 	} else {
-		gr_string(sx, sy, "CLIENT"); sy += 10;
+		gr_string(sx, sy, "CLIENT", GR_RESIZE_NONE); sy += dy;
 
 		// display PL
 		if(Net_player != NULL){
 			if(Net_player->cl_last_pl < 0){
-				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0);
-				sy += 10;
+				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0);
+				sy += dy;
 			} else {
-				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl);
-				sy += 10;
+				gr_printf_no_resize(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl);
+				sy += dy;
 			}
 		}
 	}

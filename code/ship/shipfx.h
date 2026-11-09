@@ -7,160 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-02-20 04:19:35 $
- * $Author: Goober5000 $
- *
- * Routines for ship effects (as in special)
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10  2006/03/31 10:20:01  wmcoolmon
- * Prelim. BSG warpin effect stuff
- *
- * Revision 2.9  2005/10/09 09:13:29  wmcoolmon
- * Added warpin/warpout speed override values to ships.tbl
- *
- * Revision 2.8  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.7  2005/04/05 05:53:24  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.6  2005/01/11 21:38:49  Goober5000
- * multiple ship docking :)
- * don't tell anyone yet... check the SCP internal
- * --Goober500
- *
- * Revision 2.5  2004/08/11 05:06:34  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.4  2004/03/05 09:01:52  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/08/06 17:37:08  phreak
- * preliminary work on tertiary weapons. it doesn't really function yet, but i want to get something committed
- *
- * Revision 2.2  2003/07/15 02:51:43  phreak
- * cloaked ships will reduce brightness with distance
- *
- * Revision 2.1  2003/07/04 02:30:54  phreak
- * support for cloaking added.  needs a cloakmap.pcx
- * to cloak the players ship, activate cheats and press tilde + x
- * some more work can be done to smooth out the animation.
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 10    7/02/99 9:55p Dave
- * Player engine wash sound.
- * 
- * 9     5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * 8     5/18/99 1:30p Dave
- * Added muzzle flash table stuff.
- * 
- * 7     5/09/99 6:00p Dave
- * Lots of cool new effects. E3 build tweaks.
- * 
- * 6     3/23/99 2:29p Andsager
- * Fix shockwaves for kamikazi and Fred defined.  Collect together
- * shockwave_create_info struct.
- * 
- * 5     2/26/99 4:14p Dave
- * Put in the ability to have multiple shockwaves for ships.
- * 
- * 4     1/27/99 9:56a Dave
- * Temporary checkin of beam weapons for Dan to make cool sounds.
- * 
- * 3     10/20/98 1:39p Andsager
- * Make so sparks follow animated ship submodels.  Modify
- * ship_weapon_do_hit_stuff() and ship_apply_local_damage() to add
- * submodel_num.  Add submodel_num to multiplayer hit packet.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 19    5/22/98 5:32p Andsager
- * Make big ship explosion sounds play all the way through.  remove
- * cur_snd from ship struct.
- * 
- * 18    5/19/98 8:43p Andsager
- * Modify sound management (of big ship explosions).  Turn on big ship
- * explosions for release build.
- * 
- * 17    5/12/98 10:54p Andsager
- * Add new sound manager for big ship sub-explosion sounds
- * 
- * 16    4/14/98 11:11p John
- * Made ships with < 50% hull left show electrical damage arcs.
- * 
- * 15    4/14/98 5:43p John
- * Made large ship blowup system reinit between levels.
- * 
- * 14    4/14/98 4:56p John
- * Hooked in Andsager's large ship exploding code, but it is temporarily
- * disabled.
- * 
- * 13    4/10/98 12:16p Allender
- * fix ship hit kill and debris packets
- * 
- * 12    4/05/98 2:37p John
- * Made sun on by default.  Fixed some other sun tweaks.
- * 
- * 11    1/02/98 5:04p John
- * Several explosion related changes.  Made fireballs not be used as
- * ani's.  Made ship spark system expell particles.  Took away impact
- * explosion for weapon hitting ship... this needs to get added to weapon
- * info and makes shield hit more obvious.  Only make sparks when hit
- * hull, not shields.
- * 
- * 10    12/17/97 7:53p John
- * Fixed a bug where gunpoint for flashes were in world coordinates,
- * should have been object.
- * 
- * 9     12/17/97 5:11p John
- * Added brightening back into fade table.  Added code for doing the fast
- * dynamic gun flashes and thruster flashes.
- * 
- * 8     12/12/97 3:02p John
- * First Rev of Ship Shadows
- * 
- * 7     9/12/97 4:06p John
- * put in ship warp out effect.
- * put in dynamic lighting for warp in/out
- * 
- * 6     9/09/97 4:52p John
- * Almost done ship warp in code
- * 
- * 5     2/28/97 11:07a John
- * more fx
- * 
- * 4     2/28/97 10:57a John
- * Made so you can blow off any subsystems, not just radars.
- * 
- * 
- * 3     2/10/97 12:38p John
- * made all ships blow up into debris pieces when exploded.
- * 
- * 2     2/07/97 11:49a John
- * Some not-final explosions for turrets.
- * 
- * 1     2/07/97 10:53a John
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _SHIPFX_H
 #define _SHIPFX_H
@@ -168,10 +15,11 @@
 #include "globalincs/pstypes.h"
 #include "graphics/grbatch.h"
 
-struct object;
-struct ship;
-struct ship_info;
-struct ship_subsys;
+class object;
+class ship;
+class ship_info;
+class game_snd;
+class ship_subsys;
 struct shockwave_create_info;
 struct vec3d;
 struct matrix;
@@ -183,7 +31,7 @@ struct matrix;
 void shipfx_emit_spark( int n, int sn );
 
 // Does the special effects to blow a subsystem off a ship
-extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vec3d *exp_center);
+extern void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys, vec3d *exp_center, bool no_explosion = false);
 
 
 // Creates "ndebris" pieces of debris on random verts of the the "submodel" in the 
@@ -257,7 +105,7 @@ void shipfx_flash_do_frame(float frametime);
 void shipfx_large_blowup_level_init();
 
 // Returns 0 if couldn't init
-int shipfx_large_blowup_init(ship *shipp);
+void shipfx_large_blowup_init(ship *shipp);
 
 // Returns 1 when explosion is done
 int shipfx_large_blowup_do_frame(ship *shipp, float frametime);
@@ -325,6 +173,9 @@ public:
 	void clear();
 	bool isValid();
 
+	virtual void pageIn();
+	virtual void pageOut();
+
 	virtual int warpStart();
 	virtual int warpFrame(float frametime);
 	virtual int warpShipClip();
@@ -348,7 +199,6 @@ private:
 	int total_time_start;
 	int total_time_end;
 	//Stage data
-	int stage;
 	int stage_time_start;
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
@@ -360,8 +210,6 @@ private:
 	vec3d	fvec;
 	float	radius;
 
-	//Object info
-	float back_len;
 public:
 	WE_Default(object *n_objp, int n_direction);
 
@@ -374,9 +222,9 @@ public:
     int getWarpOrientation(matrix *output);
 };
 
-//********************-----CLASS: WE_BTRL-----********************//
-#define WE_BTRL_NUM_STAGES				2
-class WE_BTRL : public WarpEffect
+//********************-----CLASS: WE_BSG-----********************//
+#define WE_BSG_NUM_STAGES				2
+class WE_BSG : public WarpEffect
 {
 private:
 	//Total data
@@ -388,23 +236,48 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[WE_BTRL_NUM_STAGES+1];
+	int stage_duration[WE_BSG_NUM_STAGES];
 
 	//anim
 	int anim;
 	int anim_nframes;
 	int anim_fps;
+	int anim_total_time;
+	int shockwave;
+	int shockwave_nframes;
+	int shockwave_fps;
+	int shockwave_total_time;
 
 	geometry_batcher batcher;
-	float	radius_full;
-public:
-	WE_BTRL(object *n_objp, int n_direction);
-	~WE_BTRL();
+	vec3d	autocenter;
+	float	z_offset_max;
+	float	z_offset_min;
+	float	tube_radius;
+	float   shockwave_radius;
 
-	int warpStart();
-	int warpFrame(float frametime);
-	int warpShipClip();
-	int warpShipRender();
+	//*****Per-instance
+	vec3d pos;
+	//Sound
+	float snd_range_factor;
+	int snd_start;
+	game_snd *snd_start_gs;
+	int snd_end;
+	game_snd *snd_end_gs;
+
+public:
+	WE_BSG(object *n_objp, int n_direction);
+	~WE_BSG();
+
+	virtual void pageIn();
+
+	virtual int warpStart();
+	virtual int warpFrame(float frametime);
+	virtual int warpShipClip();
+	virtual int warpShipRender();
+	virtual int warpEnd();
+
+	virtual int getWarpPosition(vec3d *output);
+    virtual int getWarpOrientation(matrix *output);
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//
@@ -431,7 +304,7 @@ private:
 	//sound
 	int snd;
 	float snd_range_factor;
-	struct game_snd *snd_gs;
+	game_snd *snd_gs;
 
 	//sweeper polygon and clip effect
 	vec3d	pos;
@@ -464,6 +337,9 @@ private:
 	int total_time_start;
 	int total_duration;
 	int total_time_end;
+	float accel_exp;
+	float decel_exp;
+	float initial_velocity;
 
 	//sweeper polygon and clip effect
 	vec3d	pos_final;

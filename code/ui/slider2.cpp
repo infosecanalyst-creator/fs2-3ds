@@ -7,59 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ui/SLIDER2.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-01-31 23:27:55 $
- * $Author: taylor $
- *
- * Implements UI_SLIDER2 control
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 9     8/16/99 4:06p Dave
- * Big honking checkin.
- * 
- * 8     8/11/99 12:18p Jefff
- * added option to slider2 class to not force slider reset on
- * set_numberItems
- * 
- * 7     8/10/99 6:54p Dave
- * Mad optimizations. Added paging to the nebula effect.
- * 
- * 6     5/04/99 5:20p Dave
- * Fixed up multiplayer join screen and host options screen. Should both
- * be at 100% now.
- * 
- * 5     5/03/99 11:04p Dave
- * Most of the way done with the multi join screen.
- * 
- * 4     4/29/99 2:15p Neilk
- * fixed slider so there is an extra callback for mouse locks
- * 
- * 3     4/26/99 5:05p Neilk
- * removed some excess debug output
- * 
- * 2     4/16/99 5:22p Neilk
- * First implementation of UI_SLIDER2
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"
@@ -86,7 +34,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 	captureCallback = _captureCallback;	
 
-	Assert(_bitmapSliderControl > 0);
+	Assert(_bitmapSliderControl != NULL);
 
 	last_scrolled = 0;
 
@@ -115,7 +63,7 @@ void UI_SLIDER2::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 void UI_SLIDER2::draw() {
 	Assert((currentPosition >= 0) && (currentPosition <= numberPositions));
-	if (uses_bmaps & !disabled_flag) {
+	if (uses_bmaps && !disabled_flag) {
 		gr_reset_clip();
 		switch (slider_mode) {
 		case S2M_ON_ME:
@@ -129,21 +77,16 @@ void UI_SLIDER2::draw() {
 			gr_set_bitmap(bmap_ids[S2_NORMAL]);  // draw slider level
 			break;
 		}
-		gr_bitmap(x, y+currentPosition);
+		gr_bitmap(x, y+currentPosition, GR_RESIZE_MENU);
 	}
 }
 
 void UI_SLIDER2::process(int focus)
 {
-	int OnMe, keyfocus, mouse_lock_move;	
+	int OnMe, mouse_lock_move;	
 
 	if (disabled_flag) {
 		return;
-	}
-
-	keyfocus = 0;	
-	if (my_wnd->selected_gadget == this){
-		keyfocus = 1;
 	}
 
 	OnMe = is_mouse_on();
@@ -255,22 +198,6 @@ void UI_SLIDER2::process(int focus)
 		slider_mode = S2M_MOVING;
 	}
 }
-
-void UI_SLIDER2::hide()
-{
-	hidden = 1;
-}
-
-void UI_SLIDER2::unhide()
-{
-	hidden = 0;
-}
-
-int UI_SLIDER2::get_hidden()
-{
-	return hidden;
-}
-
 
 // return number of itmes
 int UI_SLIDER2::get_numberItems() {

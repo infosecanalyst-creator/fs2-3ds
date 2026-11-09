@@ -7,240 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.10.2.3 $
- * $Date: 2007-10-15 06:43:17 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10.2.2  2007/10/12 19:10:07  karajorma
- * Partial (?) fix for Mantis 1084. At least it shouldn't Int3() when the server exits any more.
- *
- * Revision 2.10.2.1  2007/04/24 12:07:33  karajorma
- * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
- *
- * Revision 2.10  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.9  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.7  2005/01/31 23:27:55  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.6  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 10    8/22/99 1:55p Dave
- * Cleaned up host/team-captain leaving code.
- * 
- * 9     8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 8     4/08/99 1:05p Dave
- * Fixed some leave game packet problems. Updated builtin mission list for
- * multiplayer.
- * 
- * 7     3/24/99 4:05p Dave
- * Put in support for assigning the player to a specific squadron with a
- * specific logo. Preliminary work for doing pos/orient checksumming in
- * multiplayer to reduce bandwidth.
- * 
- * 6     11/19/98 4:57p Dave
- * Ignore PXO option if IPX is selected.
- * 
- * 5     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 4     11/19/98 8:03a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 36    9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 35    9/15/98 7:24p Dave
- * Minor UI changes. Localized bunch of new text.
- * 
- * 34    9/14/98 3:40p Allender
- * better error checking for invalid number of waves for player wings in a
- * multiplayer game.  Better popup message in FreeSpace side.
- * 
- * 33    9/11/98 5:53p Dave
- * Final revisions to kick system changes.
- * 
- * 32    9/11/98 5:08p Dave
- * More tweaks to kick notification system.
- * 
- * 31    9/11/98 4:14p Dave
- * Fixed file checksumming of < file_size. Put in more verbose kicking and
- * PXO stats store reporting.
- * 
- * 30    8/07/98 10:15a Allender
- * changed the way the endgame sequencing timer works so that timer wrap
- * doesn't hurt.  Also use the obj_set_flags for the COULD_BE_PLAYER flag
- * 
- * 29    7/24/98 9:27a Dave
- * Tidied up endgame sequencing by removing several old flags and
- * standardizing _all_ endgame stuff with a single function call.
- * 
- * 28    7/13/98 5:34p Lawrance
- * index a localized string in multi_endgame.cpp
- * 
- * 27    7/13/98 5:19p Dave
- * 
- * 26    6/30/98 4:53p Allender
- * fixed endgame problems where standalone wasn't properly dropping
- * everyone out of a game.  Be sure that timestamp for endgame processing
- * gets reset
- * 
- * 25    6/13/98 9:32p Mike
- * Kill last character in file which caused "Find in Files" to report the
- * file as "not a text file."
- * 
- * 24    6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 23    6/13/98 3:18p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 22    5/24/98 8:15p Dave
- * Tweaked pxo some more. 
- * 
- * 21    5/21/98 10:09a Dave
- * Enable DNS checking for PXO and both trackers.
- * Fixed problem with leaving the mission from the pause state. Fixed
- * build errors in multimsgs.cpp
- * 
- * 20    5/20/98 9:01p Allender
- * change RELEASE to NDEBUG.  Fix reentryancy problem in process_endgame
- * for multiplayer
- * 
- * 19    5/17/98 11:54p Allender
- * only clear flying controls when in mission
- * 
- * 18    5/17/98 11:34p Allender
- * deal with resetting player controls better
- * 
- * 17    5/17/98 6:32p Dave
- * Make sure clients/servers aren't kicked out of the debriefing when team
- * captains leave a game. Fixed chatbox off-by-one error. Fixed image
- * xfer/pilot info popup stuff.
- * 
- * 16    5/15/98 5:15p Dave
- * Fix a standalone resetting bug.Tweaked PXO interface. Display captaincy
- * status for team vs. team. Put in asserts to check for invalid team vs.
- * team situations.
- * 
- * 15    5/15/98 12:09a Dave
- * New tracker api code. New game tracker code. Finished up first run of
- * the PXO screen. Fixed a few game server list exceptions.
- * 
- * 14    5/14/98 12:40a Dave
- * Still more additions to the PXO screen. Updated tracker code.
- * 
- * 13    5/09/98 7:16p Dave
- * Put in CD checking. Put in standalone host password. Made pilot into
- * popup scrollable.
- * 
- * 12    5/08/98 5:05p Dave
- * Go to the join game screen when quitting multiplayer. Fixed mission
- * text chat bugs. Put mission type symbols on the create game list.
- * Started updating standalone gui controls.
- * 
- * 11    5/07/98 6:26p Dave
- * Fix strange boundary conditions which arise when players die/respawn
- * while the game is being ended. Spiff up the chatbox doskey thing a bit.
- * 
- * 10    5/07/98 3:29p Jim
- * Make sure standalone doesn't display a popup when ending a game.
- * 
- * 9     5/05/98 5:02p Dave
- * Fix end-of-campaign sequencing to work right. Make all individual
- * missions of a campaign replayable.
- * 
- * 8     5/04/98 10:39p Dave
- * Put in endgame sequencing.  Need to check campaign situations.
- * Realigned ship info on team select screen.
- * 
- * 7     5/04/98 1:43p Dave
- * Fixed up a standalone resetting problem. Fixed multiplayer stats
- * collection for clients. Make sure all multiplayer ui screens have the
- * correct palette at all times.
- * 
- * 6     5/03/98 7:04p Dave
- * Make team vs. team work mores smoothly with standalone. Change how host
- * interacts with standalone for picking missions. Put in a time limit for
- * ingame join ship select. Fix ingame join ship select screen for Vasudan
- * ship icons.
- * 
- * 5     4/30/98 5:12p Dave
- * Fixed game polling code for joining clients. Reworked some file xfer
- * stuff.
- * 
- * 4     4/30/98 12:13a Allender
- * reset control info and afterburner when entering the quit game code.
- * Prevents odd things from happening while the popup is up.
- * 
- * 3     4/28/98 5:10p Dave
- * Fixed multi_quit_game() client side sequencing problem. Turn off
- * afterburners when ending multiplayer mission. Begin integration of mt
- * API from Kevin Bentley.
- * 
- * 2     4/23/98 1:28a Dave
- * Seemingly nailed the current_primary_bank and current_secondary_bank -1
- * problem. Made sure non-critical button presses are _never_ sent to the
- * server.
- * 
- * 1     4/22/98 5:50p Dave
- *  
- * 
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi.h"
@@ -659,37 +426,37 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 			sprintf(err_msg,NOX("WSAERROR : %d\n\n"),wsa_error);
 			flags |= PF_TITLE_RED;
 		} else {
-			strcpy(err_msg,"");
+			strcpy_s(err_msg,"");
 		}
 
 		// setup the error message string
 		if(notify_code != MULTI_END_NOTIFY_NONE){
 			switch(notify_code){
 			case MULTI_END_NOTIFY_KICKED :
-				strcat(err_msg,XSTR("You have been kicked",651));
+				strcat_s(err_msg,XSTR("You have been kicked",651));
 				break;
 			case MULTI_END_NOTIFY_SERVER_LEFT:
-				strcat(err_msg,XSTR("The server has left the game",652));
+				strcat_s(err_msg,XSTR("The server has left the game",652));
 				break;
 			case MULTI_END_NOTIFY_FILE_REJECTED:
-				strcat(err_msg,XSTR("Your mission file has been rejected by the server",653));
+				strcat_s(err_msg,XSTR("Your mission file has been rejected by the server",653));
 				break;
 			case MULTI_END_NOTIFY_EARLY_END:
-				strcat(err_msg,XSTR("The game has ended while you were ingame joining",654));
+				strcat_s(err_msg,XSTR("The game has ended while you were ingame joining",654));
 				break;
 			case MULTI_END_NOTIFY_INGAME_TIMEOUT:
-				strcat(err_msg,XSTR("You have waited too long to select a ship",655));
+				strcat_s(err_msg,XSTR("You have waited too long to select a ship",655));
 				break;
 			case MULTI_END_NOTIFY_KICKED_BAD_XFER:
-				strcat(err_msg,XSTR("You were kicked because mission file xfer failed",998));
+				strcat_s(err_msg,XSTR("You were kicked because mission file xfer failed",998));
 				break;
 			case MULTI_END_NOTIFY_KICKED_CANT_XFER:
-				strcat(err_msg,XSTR("You were kicked because you do not have the builtin mission",999));
-				strcat(err_msg, NOX(" "));
-				strcat(err_msg, Game_current_mission_filename);
+				strcat_s(err_msg,XSTR("You were kicked because you do not have the builtin mission",999));
+				strcat_s(err_msg, NOX(" "));
+				strcat_s(err_msg, Game_current_mission_filename);
 				break;
 			case MULTI_END_NOTIFY_KICKED_INGAME_ENDED:
-				strcat(err_msg,XSTR("You were kicked because you were ingame joining a game that has ended",1000));
+				strcat_s(err_msg,XSTR("You were kicked because you were ingame joining a game that has ended",1000));
 				break;
 			default : 
 				Int3();
@@ -697,44 +464,44 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 		} else {	
 			switch(error_code){
 			case MULTI_END_ERROR_CONTACT_LOST :
-				strcat(err_msg,XSTR("Contact with server has been lost",656));
+				strcat_s(err_msg,XSTR("Contact with server has been lost",656));
 				break;
 			case MULTI_END_ERROR_CONNECT_FAIL :
-				strcat(err_msg,XSTR("Failed to connect to server on reliable socket",657));
+				strcat_s(err_msg,XSTR("Failed to connect to server on reliable socket",657));
 				break;
 			case MULTI_END_ERROR_LOAD_FAIL :
-				strcat(err_msg,XSTR("Failed to load mission file properly",658));
+				strcat_s(err_msg,XSTR("Failed to load mission file properly",658));
 				break;						
 			case MULTI_END_ERROR_INGAME_SHIP :
-				strcat(err_msg,XSTR("Unable to create ingame join player ship",659));
+				strcat_s(err_msg,XSTR("Unable to create ingame join player ship",659));
 				break;
 			case MULTI_END_ERROR_INGAME_BOGUS :
-				strcat(err_msg,XSTR("Recevied bogus packet data while ingame joining",660));
+				strcat_s(err_msg,XSTR("Recevied bogus packet data while ingame joining",660));
 				break;
 			case MULTI_END_ERROR_STRANS_FAIL :
-				strcat(err_msg,XSTR("Server transfer failed (obsolete)",661));
+				strcat_s(err_msg,XSTR("Server transfer failed (obsolete)",661));
 				break;
 			case MULTI_END_ERROR_SHIP_ASSIGN:
-				strcat(err_msg,XSTR("Server encountered errors trying to assign players to ships",662));
+				strcat_s(err_msg,XSTR("Server encountered errors trying to assign players to ships",662));
 				break;
 			case MULTI_END_ERROR_HOST_LEFT:
-				strcat(err_msg,XSTR("Host has left the game, aborting...",663));
+				strcat_s(err_msg,XSTR("Host has left the game, aborting...",663));
 				break;			
 			case MULTI_END_ERROR_XFER_FAIL:
-				strcat(err_msg,XSTR("There was an error receiving the mission file!",665));
+				strcat_s(err_msg,XSTR("There was an error receiving the mission file!",665));
 				break;
 			case MULTI_END_ERROR_WAVE_COUNT:
-				strcat(err_msg,XSTR("The player wings Alpha, Beta, Gamma, and Zeta must have only 1 wave.  One of these wings currently has more than 1 wave.", 987));
+				strcat_s(err_msg,XSTR("The player wings Alpha, Beta, Gamma, and Zeta must have only 1 wave.  One of these wings currently has more than 1 wave.", 987));
 				break;
 			// Karajorma - both of these should really be replaced with new strings in strings.tbl but for now this one has much the same meaning
 			case MULTI_END_ERROR_TEAM0_EMPTY:
-				strcat(err_msg,XSTR("All players from team 1 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 1 have left the game", 664));
 				break;
 			case MULTI_END_ERROR_TEAM1_EMPTY:
-				strcat(err_msg,XSTR("All players from team 2 have left the game", 664));
+				strcat_s(err_msg,XSTR("All players from team 2 have left the game", 664));
 				break;
 			case MULTI_END_ERROR_CAPTAIN_LEFT:
-				strcat(err_msg,XSTR("Team captain(s) have left the game, aborting...",664));
+				strcat_s(err_msg,XSTR("Team captain(s) have left the game, aborting...",664));
 				break;
 			default :
 				Int3();
@@ -749,7 +516,7 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 // called when server is waiting for clients to disconnect
 int multi_endgame_server_ok_to_leave()
 {
-	int idx,clients_gone;
+	int idx;
 	
 	// check to see if our client disconnect timestamp has elapsed
 	if ( Multi_endgame_server_wait_stamp > 0.0f ) {
@@ -760,10 +527,8 @@ int multi_endgame_server_ok_to_leave()
 	}
 		
 	// check to see if all clients have disconnected
-	clients_gone = 1;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
 		if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
-			clients_gone = 0;
 			return 0;
 		}
 	}

@@ -7,118 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
- *
- * Header file for managing corkscrew missiles
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.15  2005/10/10 17:21:11  taylor
- * remove NO_NETWORK
- *
- * Revision 2.14  2005/07/22 10:18:37  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.13  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.12  2005/06/07 06:10:51  wmcoolmon
- * This may stop targeting not-targetable ships in EMP
- *
- * Revision 2.11  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.10  2005/03/02 21:24:48  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.9  2005/01/31 23:27:55  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.8  2004/07/26 20:47:56  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/12 16:33:09  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.6  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.5  2003/09/13 06:02:04  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.3  2003/01/17 07:59:09  Goober5000
- * fixed some really strange behavior with strings not being truncated at the
- * # symbol
- * --Goober5000
- *
- * Revision 2.2  2003/01/14 04:01:33  Goober5000
- * fixed minor potential bug
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:11  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/13 21:09:29  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 9     7/24/99 1:54p Dave
- * Hud text flash gauge. Reworked dead popup to use 4 buttons in red-alert
- * missions.
- * 
- * 8     7/02/99 4:31p Dave
- * Much more sophisticated lightning support.
- * 
- * 7     4/23/99 12:01p Johnson
- * Added SIF_HUGE_SHIP
- * 
- * 6     2/08/99 9:34a Dave
- * Put in a little insurance code to make sure EMP effect truly dies when
- * a player dies (to prevent wacky dead cam action).
- * 
- * 5     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 4     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 3     8/28/98 3:29p Dave
- * EMP effect done. AI effects may need some tweaking as required.
- * 
- * 2     8/25/98 1:49p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 1     8/24/98 9:29a Dave
- *
- * $NoKeywords: $
- */
+
 
 #include <stdarg.h>
 
@@ -137,6 +26,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+#include "debugconsole/console.h"
 
 
 
@@ -210,7 +100,7 @@ void emp_level_init()
 }
 
 // apply the EMP effect to all relevant ships
-void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time)
+void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_intensity, float emp_time, bool use_emp_time_for_capship_turrets)
 {	
 	float actual_intensity, actual_time;
 	vec3d dist;
@@ -240,7 +130,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		
 		// if we have a bomb weapon
 		wip_target = &Weapon_info[Weapons[target->instance].weapon_info_index];
-		if(wip_target->wi_flags & WIF_BOMB){
+		if((wip_target->weapon_hitpoints > 0) && !(wip_target->wi_flags2 & WIF2_NO_EMP_KILL)) {
 			// get the distance between the detonation and the target object
 			vm_vec_sub(&dist, &target->pos, pos);
 			dist_mag = vm_vec_mag(&dist);
@@ -249,7 +139,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			if(dist_mag <= (outer_radius * 0.25f)){
 				// memset(&target->phys_info, 0, sizeof(physics_info));
 				Weapons[target->instance].weapon_flags |= WF_DEAD_IN_WATER;
-				mprintf(("EMP killing bomb\n"));
+				mprintf(("EMP killing weapon\n"));
 			}
 		}	
 	}
@@ -276,8 +166,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 		}
 
 		// if the ship is a cruiser or cap ship, only apply the EMP effect to turrets
-		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)){
-			// void ship_subsys_set_disrupted(ship_subsys *ss, int time)
+		if(Ship_info[Ships[target->instance].ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
+			float capship_emp_time = use_emp_time_for_capship_turrets ? emp_time : MAX_TURRET_DISRUPT_TIME;
+			
 			moveup = &Ships[target->instance].subsys_list;
 			if(moveup->next != NULL){
 				moveup = moveup->next;
@@ -305,11 +196,18 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					if(dist_mag >= inner_radius){
 						scale_factor = 1.0f - (dist_mag / outer_radius);
 					} 
-					
-					// disrupt the turret
-					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
 
-					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
+					scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+					if (scale_factor < 0.0f) {
+						moveup = moveup->next;
+						continue;
+					}
+
+					// disrupt the turret
+					ship_subsys_set_disrupted(moveup, (int)(capship_emp_time * scale_factor));
+
+					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->subobj_name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, capship_emp_time * scale_factor));
 				}
 				
 				// next item
@@ -330,10 +228,14 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 			// compute a scale factor for the emp effect
 			scale_factor = 1.0f;
 			if(dist_mag >= inner_radius){
-				scale_factor = 1.0f - (dist_mag / outer_radius);
-				actual_intensity = emp_intensity * scale_factor;
-				actual_time = emp_time * scale_factor;		
+				scale_factor = 1.0f - (dist_mag / outer_radius);	
 			} 
+
+			scale_factor -= Ship_info[Ships[target->instance].ship_info_index].emp_resistance_mod;
+
+			if (scale_factor < 0.0f) {
+				continue;
+			}
 		
 			// calculate actual EMP effect values
 			actual_intensity = emp_intensity * scale_factor;
@@ -359,16 +261,16 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 // start the emp effect for the passed ship (setup lightning arcs, timestamp, etc)
 // NOTE : if this ship is also me, I should call emp_start_local() as well
-void emp_start_ship(object *ship_obj, float intensity, float time)
+void emp_start_ship(object *ship_objp, float intensity, float time)
 {
 	ship *shipp;
 	ai_info *aip;
 	float start_intensity;
 
 	// make sure this is a ship
-	Assert(ship_obj->type == OBJ_SHIP);
-	Assert(ship_obj->instance >= 0);
-	shipp = &Ships[ship_obj->instance];
+	Assert(ship_objp->type == OBJ_SHIP);
+	Assert(ship_objp->instance >= 0);
+	shipp = &Ships[ship_objp->instance];
 
 	// determining pre-existing EMP intensity (if any)
 	start_intensity = shipp->emp_intensity < 0.0f ? 0.0f : shipp->emp_intensity;
@@ -450,13 +352,18 @@ void emp_process_ship(ship *shipp)
 	if(!(Ship_info[shipp->ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))){
 		return;
 	}
+
+	// if he's docked, or ordered to not move, bail now
+	if (object_is_docked(objp) || (aip->mode == AIM_STILL) || (aip->mode == AIM_PLAY_DEAD)){
+		return;
+	}
 	
 	// pick targets randomly and wackily so that the ship flies crazily :)	
 	if(((int)f2fl(Missiontime) + (int)(EMP_INTENSITY_MAX * shipp->emp_intensity)) % mod_val == 0){
 		int ship_lookup = ship_get_random_team_ship(iff_get_attackee_mask(shipp->team));
 
 		// if we got a valid ship object to target
-		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0)){
+		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0) && !(Objects[Ships[ship_lookup].objnum].flags & OF_PROTECTED)){
 			// attack the object
 			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
 		}
@@ -558,7 +465,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, char *str)
+void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode)
 {
 	char tmp[256] = "";
 
@@ -567,7 +474,7 @@ void emp_hud_string(int x, int y, int gauge_id, char *str)
 		return;
 
 	// copy the string
-	strcpy(tmp, str);
+	strcpy_s(tmp, str);
 
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){
@@ -578,19 +485,20 @@ void emp_hud_string(int x, int y, int gauge_id, char *str)
 	}
 
 	// print the string out
-	gr_string(x, y, tmp);
+	gr_string(x, y, tmp, resize_mode);
 }
 
 // emp hud printf
-void emp_hud_printf(int x, int y, int gauge_id, char *format, ...)
+void emp_hud_printf(int x, int y, int gauge_id, const char *format, ...)
 {
-	char tmp[256] = "";
+	char tmp[256];
 	va_list args;	
 	
 	// format the text
 	va_start(args, format);
-	vsprintf(tmp, format, args);
+	vsnprintf(tmp, sizeof(tmp)-1, format, args);
 	va_end(args);
+	tmp[sizeof(tmp)-1] = '\0';
 	
 	// if the emp effect is not active, don't even bother messing with the text
 	if(emp_active_local()){
@@ -636,7 +544,7 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 		case EG_WEAPON_TITLE: case EG_WEAPON_P1: case EG_WEAPON_P2: case EG_WEAPON_P3: case EG_WEAPON_S1: case EG_WEAPON_S2:			
 			int wep_index;
 			wep_index = (int)frand_range(0.0f, (float)(MAX_WEAPON_TYPES - 1));
-			strcpy(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
+			strcpy_s(wt->str, Weapon_info[ wep_index >= MAX_WEAPON_TYPES ? 0 : wep_index ].name);			
 			break;		
 
 		// escort list
@@ -645,32 +553,32 @@ void emp_maybe_reformat_text(char *text, int max_len, int gauge_id)
 			int shipnum;
 			shipnum = ship_get_random_targetable_ship();
 			if(shipnum >= 0){
-				strcpy(wt->str, Ships[shipnum].ship_name);
+				strcpy_s(wt->str, Ships[shipnum].ship_name);
 			}
 			break;
 
 		// directives title
 		case EG_OBJ_TITLE:
-			strcpy(wt->str, "");
+			strcpy_s(wt->str, "");
 			break;
 
 		// directives themselves
 		case EG_OBJ1: case EG_OBJ2: case EG_OBJ3: case EG_OBJ4: case EG_OBJ5:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 
 		// target box info
 		case EG_TBOX_EXTRA1: case EG_TBOX_EXTRA2: case EG_TBOX_EXTRA3: case EG_TBOX_CLASS:
 		case EG_TBOX_DIST: case EG_TBOX_CARGO: case EG_TBOX_HULL: case EG_TBOX_NAME: case EG_TBOX_INTEG:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 
 		// squadmsg menu
 		case EG_SQ1: case EG_SQ2: case EG_SQ3: case EG_SQ4: case EG_SQ5: case EG_SQ6: case EG_SQ7:
 		case EG_SQ8: case EG_SQ9: case EG_SQ10:
-			strcpy(wt->str, text);
+			strcpy_s(wt->str, text);
 			emp_randomize_chars(wt->str);
 			break;
 			
@@ -703,7 +611,7 @@ void emp_randomize_chars(char *str)
 	// shuffle chars around
 	for(idx=0; idx<(int)(strlen(str)-1); idx++){
 		if(frand_range(0.0f, 1.0f) < Emp_intensity){
-			char_index = Emp_random_char[(int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1))];
+			char_index = (int)frand_range(0.0f, (float)(NUM_RANDOM_CHARS - 1));
 			str[idx] = Emp_random_char[char_index];
 		}
 	}
@@ -731,13 +639,12 @@ float emp_current_intensity()
 DCF(zap, "zap a ship with an EMP effect")
 {
 	int shipnum;
+	SCP_string ship_str;
 
-	dc_get_arg(ARG_STRING);
-	if(Dc_arg_type & ARG_STRING){
-		 shipnum = ship_name_lookup(Dc_arg, 1);
+	dc_stuff_string_white(ship_str);
+	shipnum = ship_name_lookup(ship_str.c_str(), 1);
 
-		 if(shipnum >= 0){
-			emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
-		 }
+	if(shipnum >= 0){
+		emp_start_ship(&Objects[Ships[shipnum].objnum], 500.0f, 10.0f);
 	}
 }

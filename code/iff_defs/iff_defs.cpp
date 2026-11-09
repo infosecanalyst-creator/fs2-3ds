@@ -4,61 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9.2.5 $
- * $Date: 2007-10-15 06:43:13 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.9.2.4  2007/09/02 02:07:42  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 1.9.2.3  2007/02/08 07:39:34  Goober5000
- * fix two bugs:
- * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
- * --ships were created with default allowed comm orders regardless of which team they were on
- *
- * Revision 1.9.2.2  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 1.9.2.1  2006/07/08 19:36:04  Goober5000
- * iff defs should allow specification of both flag fields
- * --Goober5000
- *
- * Revision 1.9  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.8  2006/02/13 00:20:45  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 1.7  2006/01/28 04:33:06  Goober5000
- * fix all teams at war IFF behavior
- * --Goober5000
- *
- * Revision 1.6  2006/01/16 11:02:23  wmcoolmon
- * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
- *
- * Revision 1.5  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 1.4  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 1.3  2005/09/30 03:40:40  Goober5000
- * hooray for more work on the iff code
- * --Goober5000
- *
- * Revision 1.2  2005/09/29 04:26:08  Goober5000
- * parse fixage
- * --Goober5000
- *
- * Revision 1.1  2005/09/27 05:25:18  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- */
+
 
 #include "globalincs/def_files.h"
 #include "iff_defs/iff_defs.h"
@@ -66,29 +12,53 @@
 #include "hud/hud.h"
 #include "mission/missionparse.h"
 #include "ship/ship.h"
+#include "io/timer.h"
 
+extern int radar_target_id_flags;
 
 int Num_iffs;
 iff_info Iff_info[MAX_IFFS];
 
 int Iff_traitor;
 
+int radar_iff_color[5][2][4];
+int iff_bright_delta;
+int *iff_color_brightness = &iff_bright_delta;
+
 // global only to file
 color Iff_colors[MAX_IFF_COLORS][2];		// AL 1-2-97: Create two IFF colors, regular and bright
 
+flag_def_list rti_flags[] = {
+	{ "crosshairs",			RTIF_CROSSHAIRS,	0 },
+	{ "blink",				RTIF_BLINK,			0 },
+	{ "pulsate",			RTIF_PULSATE,		0 },
+	{ "enlarge",			RTIF_ENLARGE,		0 }
+};
 
-// borrowed from ship.cpp, ship_iff_init_colors
+int Num_rti_flags = sizeof(rti_flags)/sizeof(flag_def_list);
+
+/**
+ * Borrowed from ship.cpp, ship_iff_init_colors
+ *
+ * @param is_bright Whether set to bright
+ */
 int iff_get_alpha_value(bool is_bright)
 {
-	int iff_bright_delta = 4;
-
 	if (is_bright == false)
 		return (HUD_COLOR_ALPHA_MAX - iff_bright_delta) * 16;
 	else 
 		return HUD_COLOR_ALPHA_MAX * 16;
 }
 
-// init a color and add it to the Iff_colors array
+/**
+ * Init a color and add it to the ::Iff_colors array
+ *
+ * @param r Red
+ * @param g Green
+ * @param b Blue
+ *
+ * @return The new IFF colour slot in ::Iff_colors array
+ */
 int iff_init_color(int r, int g, int b)
 {
 	typedef struct temp_color_t {
@@ -103,11 +73,9 @@ int iff_init_color(int r, int g, int b)
 	static int num_iff_colors = 0;
 	static temp_color_t temp_colors[MAX_IFF_COLORS];
 
-
 	Assert(r >= 0 && r <= 255);
 	Assert(g >= 0 && g <= 255);
 	Assert(b >= 0 && b <= 255);
-
 
 	// make sure we're under the limit
 	if (num_iff_colors >= MAX_IFF_COLORS)
@@ -115,7 +83,6 @@ int iff_init_color(int r, int g, int b)
 		Warning(LOCATION, "Too many iff colors!  Ignoring the rest...\n");
 		return 0;
 	}
-
 
 	// find out if this color is in use
 	for (i = 0; i < num_iff_colors; i++)
@@ -125,7 +92,6 @@ int iff_init_color(int r, int g, int b)
 		if (c->r == r && c->g == g && c->b == b)
 			return i;
 	}
-
 
 	// not in use, so add a new slot
 	idx = num_iff_colors;
@@ -141,12 +107,13 @@ int iff_init_color(int r, int g, int b)
 	gr_init_alphacolor(&Iff_colors[idx][0], r, g, b, iff_get_alpha_value(false));
 	gr_init_alphacolor(&Iff_colors[idx][1], r, g, b, iff_get_alpha_value(true));
 
-
 	// return the new slot
 	return idx;
 }
 
-// parse the table
+/**
+ * Parse the table
+ */
 void iff_init()
 {
 	char traitor_name[NAME_LENGTH];
@@ -158,6 +125,8 @@ void iff_init()
 
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
+	int i, j, k;
+	int string_idx;
 
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
@@ -173,14 +142,6 @@ void iff_init()
 		read_file_text_from_array(defaults_get_file("iff_defs.tbl"));
 
 	reset_parse();	
-	
-
-	// before parsing, set up the predefined colors
-	// NOTE: THESE MUST OCCUR IN THE ORDER DEFINED IN IFF_DEFS.H!!
-	iff_init_color(0xff, 0xff, 0xff);	// IFF_COLOR_SELECTION
-	iff_init_color(0x7f, 0x7f, 0x7f);	// IFF_COLOR_MESSAGE
-	iff_init_color(0xff, 0xff, 0x00);	// IFF_COLOR_TAGGED
-
 
 	// parse the table --------------------------------------------------------
 
@@ -190,12 +151,165 @@ void iff_init()
 	required_string("$Traitor IFF:");
 	stuff_string(traitor_name, F_NAME, NAME_LENGTH);
 
+	int rgb[3];
+
+	// check if alternate colours are wanted to be used for these
+	// Marks various stuff... like asteroids
+	if ((optional_string("$Selection Color:")) || (optional_string("$Selection Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0xff, 0xff, 0xff);
+
+	// Marks the ship currently saying something
+	if ((optional_string("$Message Color:")) || (optional_string("$Message Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0x7f, 0x7f, 0x7f);
+
+	// Marks the tagged ships
+	if ((optional_string("$Tagged Color:")) || (optional_string("$Tagged Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		iff_init_color(rgb[0], rgb[1], rgb[2]);
+	}
+	else
+		iff_init_color(0xff, 0xff, 0x00);
+
+	// init radar blips colour table
+	int a_bright,a_dim;
+	bool alternate_blip_color = false;
+	for (i=0;i<5;i++)
+	{
+		for (j=0;j<2;j++)
+		{
+			for (k=0;k<3;k++)
+			{
+				radar_iff_color[i][j][k] = -1;
+			}
+		}
+	}
+	
+	// if the bright/dim scaling is wanted to be changed
+	if (optional_string("$Dimmed IFF brightness:"))
+	{
+		int dim_iff_brightness;
+		stuff_int(&dim_iff_brightness);
+		Assert(dim_iff_brightness >= 0 && dim_iff_brightness <= HUD_COLOR_ALPHA_MAX);
+		*iff_color_brightness = dim_iff_brightness;
+	}
+	else
+		*iff_color_brightness = 4;
+
+	// alternate = use same method as with ship blips
+	// retail = use 1/2 intensities
+	if (optional_string("$Use Alternate Blip Coloring:") || optional_string("$Use Alternate Blip Colouring:"))
+	{
+		stuff_boolean(&alternate_blip_color);
+	}
+
+	// Parse blip colours, their order is hardcoded.
+	if ((optional_string("$Missile Blip Color:")) || (optional_string("$Missile Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[0][1][i] = rgb[i];
+			radar_iff_color[0][0][i] = rgb[i]/2;
+		}
+	}		
+
+	if ((optional_string("$Navbuoy Blip Color:")) || (optional_string("$Navbuoy Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[1][1][i] = rgb[i];
+			radar_iff_color[1][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Warping Blip Color:")) || (optional_string("$Warping Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[2][1][i] = rgb[i];
+			radar_iff_color[2][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Node Blip Color:")) || (optional_string("$Node Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[3][1][i] = rgb[i];
+			radar_iff_color[3][0][i] = rgb[i]/2;
+		}
+	}
+
+	if ((optional_string("$Tagged Blip Color:")) || (optional_string("$Tagged Blip Colour:")))
+	{
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		for (i=0;i<3;i++)
+		{
+			Assert(rgb[i] >= 0 && rgb[i] <= 255);
+			radar_iff_color[4][1][i] = rgb[i];
+			radar_iff_color[4][0][i] = rgb[i]/2;
+		}
+	}
+
+	if (alternate_blip_color == true)
+	{
+		a_bright = iff_get_alpha_value(true);
+		a_dim = iff_get_alpha_value(false);
+		for (i=0;i<5;i++)
+		{
+			if (radar_iff_color[i][0][0] >= 0)
+			{
+				for (j=0;j<3;j++)
+				{
+					radar_iff_color[i][0][j] = radar_iff_color[i][1][j];
+				}
+
+				radar_iff_color[i][1][3] = a_bright;
+				radar_iff_color[i][0][3] = a_dim;
+			}
+		}
+	}
+	else
+	{
+		for (i=0;i<5;i++)
+		{
+			if (radar_iff_color[i][0][0] >= 0)
+			{
+				radar_iff_color[i][0][3] = 255;
+				radar_iff_color[i][1][3] = 255;
+			}
+		}
+	}
+
+	if (optional_string("$Radar Target ID Flags:")) {
+		parse_string_flag_list((int*)&radar_target_id_flags, rti_flags, Num_rti_flags);
+		if (optional_string("+reset"))
+			radar_target_id_flags = 0;
+	}
+	
 	// begin reading data
 	Num_iffs = 0;
-	while (required_string_either("#End","$IFF Name:"))
+	while (required_string_either("#End", "$IFF Name:"))
 	{
 		iff_info *iff;
-		int rgb[3];
 		int cur_iff;
 		
 		// make sure we're under the limit
@@ -258,24 +372,23 @@ void iff_init()
 		iff->flags = 0;
 		if (optional_string("$Flags:"))
 		{
-			int i;
 			char flag_strings[MAX_IFF_FLAGS][NAME_LENGTH];
 
 			int num_strings = stuff_string_list(flag_strings, MAX_IFF_FLAGS);
-			for (i = 0; i < num_strings; i++)
+			for (string_idx = 0; string_idx < num_strings; string_idx++)
 			{
-				if (!stricmp(NOX("support allowed"), flag_strings[i]))
+				if (!stricmp(NOX("support allowed"), flag_strings[string_idx]))
 					iff->flags |= IFFF_SUPPORT_ALLOWED;
-				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
+				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[string_idx]))
 					iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
-				else if (!stricmp(NOX("orders hidden"), flag_strings[i]))
+				else if (!stricmp(NOX("orders hidden"), flag_strings[string_idx]))
 					iff->flags |= IFFF_ORDERS_HIDDEN;
-				else if (!stricmp(NOX("orders shown"), flag_strings[i]))
+				else if (!stricmp(NOX("orders shown"), flag_strings[string_idx]))
 					iff->flags |= IFFF_ORDERS_SHOWN;
-				else if (!stricmp(NOX("wing name hidden"), flag_strings[i]))
+				else if (!stricmp(NOX("wing name hidden"), flag_strings[string_idx]))
 					iff->flags |= IFFF_WING_NAME_HIDDEN;
 				else
-					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[i]);
+					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[string_idx]);
 			}
 		}
 
@@ -283,7 +396,8 @@ void iff_init()
 		iff->default_parse_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
 			for (i = 0; i < num_strings; i++)
@@ -306,7 +420,8 @@ void iff_init()
 		iff->default_parse_flags2 = 0;
 		if (optional_string("$Default Ship Flags2:"))
 		{
-			int i, j = 0;
+			i = 0;
+			j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS_2);
 			for (i = 0; i < num_strings; i++)
@@ -324,6 +439,9 @@ void iff_init()
 			if (j == MAX_PARSE_OBJECT_FLAGS_2)
 				Warning(LOCATION, "Bogus string in iff default ship flags2: %s\n", flag_strings[i]);
 		}
+
+		// this is cleared between each level but let's just set it here for thoroughness
+		iff->ai_rearm_timestamp = timestamp(-1);
 	}
 	
 	required_string("#End");
@@ -349,7 +467,7 @@ void iff_init()
 		iff->attackee_bitmask_all_teams_at_war = 0;
 
 		// clear the observed colors
-		for (int j = 0; j < MAX_IFFS; j++)
+		for (j = 0; j < MAX_IFFS; j++)
 			iff->observed_color_index[j] = -1;
 
 		// resolve the list names
@@ -408,15 +526,21 @@ void iff_init()
 	}
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation("iff_defs.tbl");
 }
 
-// find the iff name
+/**
+ * Find the iff name
+ *
+ * @param iff_name Pointer to name as a string
+ * @return Index into ::Iff_info array
+ */
 int iff_lookup(char *iff_name)
 {
 	// bogus
 	Assert(iff_name);
+
 	if(iff_name == NULL)
 		return -1;
 
@@ -427,7 +551,12 @@ int iff_lookup(char *iff_name)
 	return -1;
 }
 
-// get the mask, taking All Teams At War into account
+/**
+ * Get the mask, taking All Teams At War into account
+ *
+ * @param attacker_team Team of attacker
+ * @return Bitmask
+ */
 int iff_get_attackee_mask(int attacker_team)
 {
 	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
@@ -444,7 +573,12 @@ int iff_get_attackee_mask(int attacker_team)
 	}
 }
 
-// rather slower, since it has to construct a mask
+/**
+ * Rather slower, since it has to construct a mask
+ *
+ * @param attackee_team Team of attacker
+ * @return Bitmask
+ */
 int iff_get_attacker_mask(int attackee_team)
 {
 	Assert(attackee_team >= 0 && attackee_team < Num_iffs);
@@ -459,31 +593,53 @@ int iff_get_attacker_mask(int attackee_team)
 	return attacker_bitmask;
 }
 
-// similar to above; >0 if true, 0 if false
+/**
+ * Similar to above
+ *
+ * @param team_x Team of attacker
+ * @param team_y Team of attackee
+ *
+ * @return >0 if true, 0 if false
+ */
 int iff_x_attacks_y(int team_x, int team_y)
 {
 	return iff_matches_mask(team_y, iff_get_attackee_mask(team_x));
 }
 
-// generate a mask for a team
+/**
+ * Generate a mask for a team
+ *
+ * @param team Team to generate mask for
+ */
 int iff_get_mask(int team)
 {
 	return (1 << team);
 }
 
-// see if the mask contains the team
+/**
+ * See if the mask contains the team
+ *
+ * @param team Team to test
+ * @param mask Mask
+ *
+ * @return 1 if matches, 0 if does not match
+ */
 int iff_matches_mask(int team, int mask)
 {
 	return (iff_get_mask(team) & mask) ? 1 : 0;
 }
 
-// get the color from the color index
+/**
+ * Get the color from the color index
+ */
 color *iff_get_color(int color_index, int is_bright)
 {
 	return &Iff_colors[color_index][is_bright];
 }
 
-// get the color index, taking objective vs. subjective into account
+/**
+ * Get the color index, taking objective vs. subjective into account
+ */
 color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 {
 	Assert(team >= 0 && team < Num_iffs);
@@ -494,7 +650,6 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	// is this guy being seen by anyone?
 	if (seen_from_team < 0)
 		return &Iff_colors[Iff_info[team].color_index][is_bright];
-
 
 	// Goober5000 - base the following on "sees X as" from iff code
 	// c.f. AL's comment:
@@ -507,6 +662,52 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 
 	// assume an observed color is defined; if not, use normal color
 	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+	if (color_index < 0)
+		color_index = Iff_info[team].color_index;
+
+
+	return &Iff_colors[color_index][is_bright];
+}
+
+/**
+ * Get the color index, taking objective vs. subjective into account
+ * 
+ * this one for the function calls that include some - any - of object
+ */
+color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
+{
+	Assert(team >= 0 && team < Num_iffs);
+	Assert(seen_from_team < Num_iffs);
+	Assert(is_bright == 0 || is_bright == 1);
+
+	int alt_color_index = -1;
+
+	// is this guy being seen by anyone?
+	if (seen_from_team < 0)
+		return &Iff_colors[Iff_info[team].color_index][is_bright];
+
+	int color_index = Iff_info[seen_from_team].observed_color_index[team];
+
+	// switch incase some sort of parent iff color inheritance for example for bombs is wanted...
+	switch(objp->type)
+	{
+		case OBJ_SHIP:
+			if (Ships[objp->instance].ship_iff_color[seen_from_team][team] >= 0)
+			{
+				alt_color_index = Ships[objp->instance].ship_iff_color[seen_from_team][team];
+			}
+			else
+			{
+				alt_color_index = Ship_info[Ships[objp->instance].ship_info_index].ship_iff_info[seen_from_team][team];
+			}
+			break;
+		default:
+			break;
+	}
+
+	// temporary solution.... 
+	if (alt_color_index >= 0)
+		color_index = alt_color_index;
 	if (color_index < 0)
 		color_index = Iff_info[team].color_index;
 

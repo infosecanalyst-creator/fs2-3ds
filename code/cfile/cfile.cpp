@@ -7,355 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.40.2.7 $
- * $Date: 2007-11-21 07:27:45 $
- * $Author: Goober5000 $
- *
- * Utilities for operating on files
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.40.2.6  2007/04/11 18:21:20  taylor
- * cleanup of chcksum stuff (works properly on 64-bit systems now)
- * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
- * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
- *
- * Revision 2.40.2.5  2007/03/22 20:22:44  taylor
- * a little better error handling for cf_exists_full()
- * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
- * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
- * get rid of SPM hack, it's wrong (just commented out for now though)
- * fix a bunch of bugs in cf_find_file_location_ext():
- *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
- *  - load issue with finding incorrect files by mistake
- *  - prevent finding different file types in various paths/roots
- *
- * Revision 2.40.2.4  2007/02/11 09:32:19  taylor
- * forgot to remove .avi and .mpg from CF_TYPE_ROOT
- *
- * Revision 2.40.2.3  2007/02/11 09:25:42  taylor
- * some CFILE cleanup and slight directory order reorg
- * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
- * remove NO_SOUND
- *
- * Revision 2.40.2.2  2006/12/26 05:11:57  taylor
- * add .ogg files to movie locations
- *
- * Revision 2.40.2.1  2006/07/28 02:43:48  taylor
- * don't lowercase the dir for chdir on non-Win32 since it could be, and probably is, case sensitive
- *
- * Revision 2.40  2006/04/20 06:32:00  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.39  2006/04/16 05:28:10  taylor
- * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
- * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
- *
- * Revision 2.38  2006/04/12 00:53:26  taylor
- * DDS now works well on the interface, but I forgot to every commit the CFILE change so that they are actually usable :)
- *
- * Revision 2.37  2006/02/16 05:07:50  taylor
- * minor 64-bit related fixage
- *
- * Revision 2.36  2006/02/13 00:20:45  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 2.35  2006/01/17 02:33:20  wmcoolmon
- * data/scripts directory
- *
- * Revision 2.34  2005/12/28 22:06:47  taylor
- * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
- *
- * Revision 2.33  2005/12/06 03:13:49  taylor
- * fix quite a few CFILE issues:
- *   use #define's for path lengths when possible so it's easier to move between functions
- *   fix huge Cfile_stack[] issue (how the hell did that get through :v: QA?)
- *   add Int3() check on cfopen() so it's easier to know if it get's called before cfile is ready to use
- *   move path separators to pstypes.h
- *   fix possible string overruns when setting up CFILE roots
- *   make sure we don't try to init current directory again thinking it's a CD-ROM
- *   add the list of VP roots to debug log, this will undoubtedly be useful
- * when -nosound is use go ahead and set -nomusic too to both checks are correct
- * add list of cmdline options to debug log
- * fix possible overwrite issues with get_version_string() and remove '(fs2_open)' from string plus change OGL->OpenGL, D3D->Direct3D
- *
- * Revision 2.32  2005/10/17 00:13:28  wmcoolmon
- * Some cfile changes that slipped by
- *
- * Revision 2.31  2005/10/16 23:15:46  wmcoolmon
- * Hardened cfile against array overflows
- *
- * Revision 2.30  2005/04/19 06:22:20  taylor
- * 8 months I've been meaning to put this in the Linux tree, me == moron
- *
- * Revision 2.29  2005/04/05 05:53:14  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.28  2005/03/02 03:13:00  taylor
- * that one should never have slipped passed me (Linux specific)
- *
- * Revision 2.27  2005/01/30 18:32:41  taylor
- * merge with Linux/OSX tree - p0130
- * remove extra brace in cfile.cpp
- *
- * Revision 2.26  2005/01/30 12:50:08  taylor
- * merge with Linux/OSX tree - p0130
- *
- * Revision 2.25  2005/01/09 21:40:07  wmcoolmon
- * Fix for music directory parent
- *
- * Revision 2.24  2004/12/25 00:22:54  wmcoolmon
- * Added .ogg in proper directories
- *
- * Revision 2.23  2004/10/31 21:29:00  taylor
- * EFF animation support
- *
- * Revision 2.22  2004/10/09 18:08:33  taylor
- * almost forgot this for the IBX stuff
- *
- * Revision 2.21  2004/07/26 20:47:25  Kazan
- * remove MCD complete
- *
- * Revision 2.20  2004/07/17 09:03:29  taylor
- * make sure avi and mpg movies get added to file cache
- *
- * Revision 2.19  2004/07/12 16:32:42  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.18  2004/06/22 23:14:09  wmcoolmon
- * Nonworking OGG support for sound (not music) added, disabled load-only-used-weapons code, modification to sound system registry code.
- * OGG code has been commented out, so you don't need the SDK yet.
- *
- * Revision 2.17  2004/05/26 02:29:44  wmcoolmon
- * Scratch that - .tbm is a better extension
- *
- * Revision 2.16  2004/05/26 02:26:14  wmcoolmon
- * Added table chunk extension
- *
- * Revision 2.15  2004/05/06 22:12:14  taylor
- * make sure JPG and DDS files are added to the file cache for maps and effects
- *
- * Revision 2.14  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.13  2004/02/04 09:02:45  Goober5000
- * got rid of unnecessary double semicolons
- * --Goober5000
- *
- * Revision 2.12  2003/08/27 01:36:22  Goober5000
- * fixed a strange thing that Bobboau inexplicably put in
- * --Goober5000
- *
- * Revision 2.11  2003/08/25 04:39:17  Goober5000
- * fixed unreachable code
- * --Goober5000
- *
- * Revision 2.10  2003/08/22 07:35:07  bobboau
- * specular code should be bugless now,
- * cell shadeing has been added activated via the comand line '-cell',
- * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
- *
- * Revision 2.9  2003/08/20 08:12:08  wmcoolmon
- * Made cfile_delete return 0 on failure, 1 on success
- *
- * Revision 2.8  2003/03/18 10:07:00  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.7  2002/11/10 16:29:53  DTP
- * -DTP reworked mod support,
- *
- * Revision 2.6  2002/11/04 08:32:38  DTP
- * Made sure that VP and Plain files don't get added twice to the search order. Side-effect of Mod support.
- *
- * Revision 2.5  2002/10/30 06:31:05  DTP
- * doh!, used upper case in include, don't know how much it matters for *nix systems, but here it is
- *
- * Revision 2.4  2002/10/27 23:59:28  DTP
- * DTP; started basic implementation of mod-support
- * plain files only for now. fs2_open.exe -mod X will look for files in fs2/ X /all-legal-subdirectories. no checking/creating dirs yet. directories must be there.
- *
- * Revision 2.3.2.1  2002/09/24 18:56:41  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.3  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/29 19:04:48  penguin
- * added #ifdef _WIN32 around windows-specific system headers
- *
- * Revision 2.1  2002/07/07 19:55:58  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:21  penguin
- * Warpcore CVS sync
- *
- * Revision 1.7  2002/05/21 15:37:14  mharris
- * Cosmetics - reformat Pathtypes to line up again
- *
- * Revision 1.6  2002/05/17 06:45:53  mharris
- * More porting tweaks.  It links!  but segfaults...
- *
- * Revision 1.5  2002/05/17 02:56:19  mharris
- * first crack at unix compatibity
- *
- * Revision 1.4  2002/05/16 06:03:29  mharris
- * Unix port changes
- *
- * Revision 1.3  2002/05/09 22:58:08  mharris
- * Added ifdef WIN32 around change-drive functions
- *
- * Revision 1.2  2002/05/07 13:23:17  mharris
- * Port tweaks
- *
- * Revision 1.1  2002/05/02 18:03:04  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 20    9/08/99 10:01p Dave
- * Make sure game won't run in a drive's root directory. Make sure
- * standalone routes suqad war messages properly to the host.
- * 
- * 19    9/08/99 12:03a Dave
- * Make squad logos render properly in D3D all the time. Added intel anim
- * directory.
- * 
- * 18    9/06/99 2:35p Dave
- * Rename briefing and debriefing voice direcrory paths properly.
- * 
- * 17    9/03/99 1:31a Dave
- * CD checking by act. Added support to play 2 cutscenes in a row
- * seamlessly. Fixed super low level cfile bug related to files in the
- * root directory of a CD. Added cheat code to set campaign mission # in
- * main hall.
- * 
- * 16    8/31/99 9:46a Dave
- * Support for new cfile cbanims directory.
- * 
- * 15    8/06/99 11:20a Johns
- * Don't call game_cd_changed() in a demo or multiplayer beta build.
- * 
- * 14    6/08/99 2:33p Dave
- * Fixed release build warning. Put in hud config stuff.
- * 
- * 13    5/19/99 4:07p Dave
- * Moved versioning code into a nice isolated common place. Fixed up
- * updating code on the pxo screen. Fixed several stub problems.
- * 
- * 12    4/30/99 12:18p Dave
- * Several minor bug fixes.
- * 
- * 11    4/07/99 5:54p Dave
- * Fixes for encryption in updatelauncher.
- * 
- * 10    3/28/99 5:58p Dave
- * Added early demo code. Make objects move. Nice and framerate
- * independant, but not much else. Don't use yet unless you're me :)
- * 
- * 9     2/22/99 10:31p Andsager
- * Get rid of unneeded includes.
- * 
- * 8     1/12/99 3:15a Dave
- * Barracks screen support for selecting squad logos. We need real artwork
- * :)
- * 
- * 7     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 6     10/29/98 10:41a Dave
- * Change the way cfile initializes exe directory.
- * 
- * 5     10/13/98 9:19a Andsager
- * Add localization support to cfile.  Optional parameter with cfopen that
- * looks for localized files.
- * 
- * 4     10/12/98 9:54a Dave
- * Fixed a few file organization things.
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 110   9/17/98 10:31a Hoffoss
- * Changed code to use location of executable as root rather than relying
- * on the cwd being set correctly.  This is most helpful in the case of
- * Fred launching due to the user double-clicking on an .fsm file in
- * explorer or something (where the cwd is probably the location of the
- * .fsm file).
- * 
- * 109   9/11/98 4:14p Dave
- * Fixed file checksumming of < file_size. Put in more verbose kicking and
- * PXO stats store reporting.
- * 
- * 108   9/09/98 5:53p Dave
- * Put in new tracker packets in API. Change cfile to be able to checksum
- * portions of a file.
- * 
- * 107   9/04/98 3:51p Dave
- * Put in validated mission updating and application during stats
- * updating.
- * 
- * 106   8/31/98 2:06p Dave
- * Make cfile sort the ordering or vp files. Added support/checks for
- * recognizing "mission disk" players.
- * 
- * 105   8/20/98 5:30p Dave
- * Put in handy multiplayer logfile system. Now need to put in useful
- * applications of it all over the code.
- * 
- * 104   8/12/98 4:53p Dave
- * Put in 32 bit checksumming for PXO missions. No validation on the
- * actual tracker yet, though.
- * 
- * 103   6/17/98 9:30a Allender
- * fixed red alert replay stats clearing problem
- * 
- * 102   6/05/98 9:46a Lawrance
- * check for CD change on cfopen()
- * 
- * 101   5/19/98 1:19p Allender
- * new low level reliable socket reading code.  Make all missions/campaign
- * load/save to data missions folder (i.e. we are rid of the player
- * missions folder)
- * 
- * 100   5/13/98 10:22p John
- * Added cfile functions to read/write rle compressed blocks of data.
- * Made palman use it for .clr files.  Made alphacolors calculate on the
- * fly rather than caching to/from disk.
- * 
- * 99    5/11/98 10:59a John
- * Moved the low-level file reading code into cfilearchive.cpp.
- * 
- * 98    5/06/98 5:30p John
- * Removed unused cfilearchiver.  Removed/replaced some unused/little used
- * graphics functions, namely gradient_h and _v and pixel_sp.   Put in new
- * DirectX header files and libs that fixed the Direct3D alpha blending
- * problems.
- * 
- * 97    5/03/98 11:53a John
- * Fixed filename case mangling.
- * 
- * 96    5/03/98 8:33a John
- * Made sure there weren't any more broken function lurking around like
- * the one Allender fixed.  
- * 
- * 95    5/02/98 11:05p Allender
- * fix cfilelength for pack files
- * 
- *
- * $NoKeywords: $
- */
+
 #define _CFILE_INTERNAL 
 
 #include <stdlib.h>
@@ -386,7 +38,6 @@
 #include "osapi/osapi.h"
 
 
-
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 #ifdef SCP_UNIX
 char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -401,10 +52,10 @@ char Cfile_user_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
 cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																			Extensions        					Parent type
 	{ CF_TYPE_INVALID,				NULL,																		NULL,								CF_TYPE_INVALID },
-	// Root must be index 1!!	
+	// Root must be index 1!!
 	{ CF_TYPE_ROOT,					"",																			".mve .ogg",						CF_TYPE_ROOT	},
-	{ CF_TYPE_DATA,					"data",																		".cfg .log .txt",					CF_TYPE_ROOT	},
-	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_DATA,					"data",																		".cfg .txt",						CF_TYPE_ROOT	},
+	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",											".txt .net",						CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,				"data" DIR_SEPARATOR_STR "models",											".pof",								CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,				"data" DIR_SEPARATOR_STR "tables",											".tbl .tbm",						CF_TYPE_DATA	},
@@ -420,22 +71,22 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg",					CF_TYPE_DATA	},
-	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .jpg",	CF_TYPE_DATA	},
+	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf",							CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .dds .sdr",	CF_TYPE_DATA	},
-	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".ani .pcx .tga .dds",				CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
+	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf",								CF_TYPE_DATA	},
-	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .dds",						CF_TYPE_PLAYERS	},
-	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .dds",						CF_TYPE_PLAYERS	},
+	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
+	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css",			CF_TYPE_PLAYERS	},
- 	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr",								CF_TYPE_PLAYERS	},
-	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .ibx .tsb",					CF_TYPE_DATA	}, 	//clr=cached color
-	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .dds .fs2 .txt",				CF_TYPE_DATA	},
+	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr",								CF_TYPE_PLAYERS	},
+	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .bx",					CF_TYPE_DATA	}, 	//clr=cached color
+	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .dds .fs2 .txt",				CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",										".fs2 .fc2 .ntl .ssv",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,				"data" DIR_SEPARATOR_STR "config",											".cfg",								CF_TYPE_DATA	},
 	{ CF_TYPE_DEMOS,				"data" DIR_SEPARATOR_STR "demos",											".fsd",								CF_TYPE_DATA	},
-	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".ani",								CF_TYPE_DATA	},
-	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".ani",								CF_TYPE_DATA	},
+	{ CF_TYPE_CBANIMS,				"data" DIR_SEPARATOR_STR "cbanims",											".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
+	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc",							CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	},
 };
@@ -451,7 +102,7 @@ char Cfile_stack[CFILE_STACK_MAX][CFILE_ROOT_DIRECTORY_LEN];
 Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
 CFILE Cfile_list[MAX_CFILE_BLOCKS];
 
-char *Cfile_cdrom_dir = NULL;
+const char *Cfile_cdrom_dir = NULL;
 
 //
 // Function prototypes for internally-called functions
@@ -474,7 +125,7 @@ void cfile_close()
 }
 
 // determine if the given path is in a root directory (c:\  or  c:\freespace2.exe  or  c:\fred2.exe   etc)
-int cfile_in_root_dir(char *exe_path)
+int cfile_in_root_dir(const char *exe_path)
 {
 	int token_count = 0;
 	char path_copy[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -498,9 +149,14 @@ int cfile_in_root_dir(char *exe_path)
 		token_count++;
 		tok = strtok(NULL, DIR_SEPARATOR_STR);
 	} while(tok != NULL);
-		
-	// root directory if we have <= 1 slash
+	
+#ifdef SCP_UNIX
+	// /freespace works, / does not
+	if(token_count <= 1) {
+#else
+	// C:/freespace works, C:/ does not
 	if(token_count <= 2){
+#endif
 		return 1;
 	}
 
@@ -513,7 +169,7 @@ int cfile_in_root_dir(char *exe_path)
 //	returns:  success ==> 0
 //           error   ==> non-zero
 //
-int cfile_init(char *exe_dir, char *cdrom_dir)
+int cfile_init(const char *exe_dir, const char *cdrom_dir)
 {
 	int i;
 
@@ -660,17 +316,17 @@ int cfile_push_chdir(int type)
 }
 
 
-int cfile_chdir(char *dir)
+int cfile_chdir(const char *dir)
 {
 	int e;
 	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
-	char *Path = NULL;
+	const char *Path = NULL;
 	char NoDir[] = "\\.";
 
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 
 #ifdef _WIN32
-	char *colon_pos = strchr(dir, ':');
+	const char *colon_pos = strchr(dir, ':');
 	if (colon_pos)	{
 		if (!cfile_chdrive( tolower(*(colon_pos - 1)) - 'a' + 1, 1))
 			return 1;
@@ -775,7 +431,7 @@ int cfile_flush_dir(int dir_type)
 //    filename = name of filename or filepath to process
 //    ext = extension to add.  Must start with the period
 //    Returns: new filename or filepath with extension.
-char *cf_add_ext(char *filename, char *ext)
+char *cf_add_ext(const char *filename, const char *ext)
 {
 	int flen, elen;
 	static char path[MAX_PATH_LEN];
@@ -783,17 +439,17 @@ char *cf_add_ext(char *filename, char *ext)
 	flen = strlen(filename);
 	elen = strlen(ext);
 	Assert(flen < MAX_PATH_LEN);
-	strcpy(path, filename);
+	strcpy_s(path, filename);
 	if ((flen < 4) || stricmp(path + flen - elen, ext)) {
 		Assert(flen + elen < MAX_PATH_LEN);
-		strcat(path, ext);
+		strcat_s(path, ext);
 	}
 
 	return path;
 }
 
 // Deletes a file. Returns 0 if an error occurs, 1 on success
-int cf_delete(char *filename, int dir_type)
+int cf_delete(const char *filename, int dir_type)
 {
 #ifdef SCP_3DS
 	n3ds_dircache_invalidate();
@@ -827,7 +483,7 @@ int cf_delete(char *filename, int dir_type)
 
 
 // Same as _access function to read a file's access bits
-int cf_access(char *filename, int dir_type, int mode)
+int cf_access(const char *filename, int dir_type, int mode)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -841,29 +497,23 @@ int cf_access(char *filename, int dir_type, int mode)
 
 // Returns 1 if the file exists, 0 if not.
 // Checks only the file system.
-int cf_exists(char *filename, int dir_type)
+// cf_find_file_location checks the filesystem before VPs
+// If offset is 0, it was found in the filesystem, so offset is boolean false
+// If offset equates to boolean true, it was found in a VP and the logic will negate the function return
+int cf_exists(const char *filename, int dir_type)
 {
-	char longname[MAX_PATH_LEN];
+	int offset = 1;
 
-	Assert(CF_TYPE_SPECIFIED(dir_type));
+	if ( (filename == NULL) || !strlen(filename) )
+		return 0;
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, filename);
-
-	FILE *fp = fopen(longname, "rb");
-	if (fp)
-	{
-		// Goober5000 - these were switched, causing the fclose to be unreachable
-		fclose(fp);
-		return 1;
-	}
-
-	return 0;
+	return (cf_find_file_location(filename, dir_type, 0, NULL, &offset, NULL) && !offset);
 }
 
 // Goober5000
 // Returns !0 if the file exists, 0 if not.
 // Checks both the file system and the VPs.
-int cf_exists_full(char *filename, int dir_type)
+int cf_exists_full(const char *filename, int dir_type)
 {
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
@@ -872,7 +522,7 @@ int cf_exists_full(char *filename, int dir_type)
 }
 
 // same as the above, but with extension check
-int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const char **ext_list)
+int cf_exists_full_ext(const char *filename, int dir_type, const int num_ext, const char **ext_list)
 {
 	if ( (filename == NULL) || !strlen(filename) )
 		return 0;
@@ -884,7 +534,7 @@ int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const ch
 }
 
 #ifdef _WIN32
-void cf_attrib(char *filename, int set, int clear, int dir_type)
+void cf_attrib(const char *filename, int set, int clear, int dir_type)
 {
 	char longname[MAX_PATH_LEN];
 
@@ -903,7 +553,7 @@ void cf_attrib(char *filename, int set, int clear, int dir_type)
 }
 #endif
 
-int cf_rename(char *old_name, char *name, int dir_type)
+int cf_rename(const char *old_name, const char *name, int dir_type)
 {
 #ifdef SCP_3DS
 	n3ds_dircache_invalidate();
@@ -986,7 +636,7 @@ extern int game_cd_changed();
 //					error   ==> NULL
 //
 
-CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize)
+CFILE *cfopen(const char *file_path, const char *mode, int type, int dir_type, bool localize)
 {
 #ifdef SCP_3DS
 	if (mode && (strchr(mode, 'w') || strchr(mode, 'a') || strchr(mode, '+'))) n3ds_dircache_invalidate();
@@ -1025,7 +675,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		if ( strpbrk(file_path,"/\\:")  ) {
 #endif
 			// Full path given?
-			strcpy(longname, file_path );
+			strcpy_s(longname, file_path );
 		} else {
 			// Path type given?
 			Assert( dir_type != CF_TYPE_ANY );
@@ -1064,12 +714,12 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 			}
 			happy_mode[i] = '\0';
 			if(need_b)
-				strcat(happy_mode, "b");
+				strcat_s(happy_mode, "b");
 			//*****END PROCESSING OF MODE*****
 		}
 		else
 		{
-			strcpy(happy_mode, mode);
+			strcpy_s(happy_mode, mode);
 		}
 
 		FILE *fp = fopen(longname, happy_mode);
@@ -1085,12 +735,13 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 
 	int offset, size;
 	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy(copy_file_path, file_path);
+	strcpy_s(copy_file_path, file_path);
 
 
 	if ( cf_find_file_location( copy_file_path, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize ) )	{
 
 		// Fount it, now create a cfile out of it
+		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, longname));
 		
 		if ( type & CFILE_MEMORY_MAPPED ) {
 		
@@ -1143,7 +794,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 // returns:		success	==> address of CFILE structure
 //				error	==> NULL
 //
-CFILE *cfopen_special(char *file_path, char *mode, const int size, const int offset, int dir_type)
+CFILE *cfopen_special(const char *file_path, const char *mode, const int size, const int offset, int dir_type)
 {
 	if ( !cfile_inited) {
 		Int3();
@@ -1173,53 +824,6 @@ CFILE *cfopen_special(char *file_path, char *mode, const int size, const int off
 		// it's a normal file
 		return cf_open_fill_cfblock(fp, dir_type);
 	}
-
-/*	char longname[_MAX_PATH];
-
-	if ( !cfile_inited ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Check that all the parameters make sense
-	Assert( file_path && strlen(file_path) );
-	Assert( mode != NULL );
-
-	if ( (ext_num <= 0) || (!ext_list) ) {
-		Int3();
-		return NULL;
-	}
-
-	// cfopen_ext() only supports reading files, not creating them
-	if ( strchr(mode, 'w') ) {
-		Int3();
-		return NULL;
-	}
-
-	//================================================
-	// Search for file on disk, on cdrom, or in a packfile
-
-	int offset, size;
-	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy(copy_file_path, file_path);
-
-	if ( cf_find_file_location_ext(copy_file_path, ext_num, ext_list, dir_type, sizeof(longname) - 1, longname, &size, &offset, localize) ) {
-		// Fount it, now create a cfile out of it
-		FILE *fp = fopen( longname, "rb" );
-
-		if ( fp ) {
-			if ( offset ) {
-				// Found it in a pack file
-				return cf_open_packed_cfblock(fp, dir_type, offset, size );
-			} else {
-				// Found it in a normal file
-				return cf_open_fill_cfblock(fp, dir_type);
-			} 
-		}
-	}
-
-	return NULL;*/
 }
 
 
@@ -1366,6 +970,7 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->data = NULL;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
+		cfbp->max_read_len = 0;
 		
 		int pos = ftell(fp);
 		if(pos == -1L)
@@ -1403,6 +1008,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 		cfbp->data = NULL;
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
+		cfbp->max_read_len = 0;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
 
@@ -1440,6 +1046,8 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 
 		cfp = &Cfile_list[cfile_block_index];
 		cfp->id = cfile_block_index;
+		cfp->version = 0;
+		cfbp->max_read_len = 0;
 		cfbp->fp = NULL;
 #if defined _WIN32
 		cfbp->hInFile = hFile;
@@ -1501,6 +1109,22 @@ void cf_set_version( CFILE * cfile, int version )
 	Assert(cfile != NULL);
 
 	cfile->version = version;
+}
+
+// cutoff point where cfread() will throw an error when it hits this limit
+// if 'len' is 0 then this check will be disabled
+void cf_set_max_read_len( CFILE * cfile, size_t len )
+{
+	Assert( cfile != NULL );
+	Assert( (cfile->id >= 0) && (cfile->id < MAX_CFILE_BLOCKS) );
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];
+
+	if (len) {
+		cb->max_read_len = cb->raw_position + len;
+	} else {
+		cb->max_read_len = 0;
+	}
 }
 
 // routines to read basic data types from CFILE's.  Put here to
@@ -1651,7 +1275,7 @@ void cfread_string_len(char *buf,int n, CFILE *file)
 {
 	int len;
 	len = cfread_int(file);
-	Assert( len < n );
+	Assertion( (len < n), "len: %i, n: %i", len, n );
 	if (len)
 		cfread(buf, len, 1, file);
 
@@ -1722,7 +1346,7 @@ int cfwrite_char(char b, CFILE *file)
 	return cfwrite( &b, sizeof(b), 1, file);
 }
 
-int cfwrite_string(char *buf, CFILE *file)
+int cfwrite_string(const char *buf, CFILE *file)
 {
 	if ( (!buf) || (buf && !buf[0]) ) {
 		return cfwrite_char(0, file);
@@ -1734,7 +1358,7 @@ int cfwrite_string(char *buf, CFILE *file)
 	return cfwrite_char(0, file);			// write out NULL termination			
 }
 
-int cfwrite_string_len(char *buf, CFILE *file)
+int cfwrite_string_len(const char *buf, CFILE *file)
 {
 	int len = strlen(buf);
 
@@ -1770,7 +1394,7 @@ int cfilelength( CFILE * cfile )
 // returns:   number of full elements actually written
 //            
 //
-int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
+int cfwrite(const void *buf, int elsize, int nelem, CFILE *cfile)
 {
 	if(!cf_is_valid(cfile))
 		return 0;
@@ -1792,18 +1416,22 @@ int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 		return EOF;
 	}
 
-	int result = 0;
+	size_t bytes_written = 0;
+	size_t size = elsize * nelem;
 
-	result = fwrite(buf, elsize, nelem, cb->fp);
+	bytes_written = fwrite(buf, 1, size, cb->fp);
 
 	//WMC - update filesize and position
-	if(result > 0)
-	{
-		cb->size = filelength(fileno(cb->fp));
-		cb->raw_position += result;
+	if (bytes_written > 0) {
+		cb->size += bytes_written;
+		cb->raw_position += bytes_written;
 	}
 
-	return result;	
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
+
+	return ((int)bytes_written / elsize);
 }
 
 
@@ -1839,9 +1467,13 @@ int cfputc(int c, CFILE *cfile)
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size = filelength(fileno(cb->fp));
+		cb->size += 1;
 		cb->raw_position += 1;
 	}
+
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
 
 	return result;	
 }
@@ -1852,7 +1484,7 @@ int cfputc(int c, CFILE *cfile)
 // returns:   success ==> non-negative value
 //				  error   ==> EOF
 //
-int cfputs(char *str, CFILE *cfile)
+int cfputs(const char *str, CFILE *cfile)
 {
 	if(!cf_is_valid(cfile))
 		return EOF;
@@ -1879,9 +1511,13 @@ int cfputs(char *str, CFILE *cfile)
 	//WMC - update filesize and position
 	if(result != EOF)
 	{
-		cb->size = filelength(fileno(cb->fp));
+		cb->size += strlen(str);
 		cb->raw_position += strlen(str);
 	}
+
+#if defined(CHECK_SIZE) && !defined(NDEBUG)
+	Assert( cb->size == filelength(fileno(cb->fp)) );
+#endif
 
 	return result;	
 }
@@ -2066,7 +1702,7 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 }
 
 // get the chksum of a pack file (VP)
-int cf_chksum_pack(char *filename, uint *chk_long, bool full)
+int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 {
 	const int safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
@@ -2103,7 +1739,8 @@ int cf_chksum_pack(char *filename, uint *chk_long, bool full)
 	else {
 		CLAMP(max_size, 0, safe_size);
 
-		Assert( max_size > header_offset );
+		Assertion(max_size > header_offset,
+			"max_size (%d) > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
 		fseek(fp, -(max_size), SEEK_END);
@@ -2134,7 +1771,7 @@ int cf_chksum_pack(char *filename, uint *chk_long, bool full)
 	return 1;
 }
 // get the 2 byte checksum of the passed filename - return 0 if operation failed, 1 if succeeded
-int cf_chksum_short(char *filename, ushort *chksum, int max_size, int cf_type)
+int cf_chksum_short(const char *filename, ushort *chksum, int max_size, int cf_type)
 {
 	int ret_val;
 	CFILE *cfile = NULL;		
@@ -2184,7 +1821,7 @@ int cf_chksum_short(CFILE *file, ushort *chksum, int max_size)
 }
 
 // get the 32 bit CRC checksum of the passed filename - return 0 if operation failed, 1 if succeeded
-int cf_chksum_long(char *filename, uint *chksum, int max_size, int cf_type)
+int cf_chksum_long(const char *filename, uint *chksum, int max_size, int cf_type)
 {
 	int ret_val;
 	CFILE *cfile = NULL;		

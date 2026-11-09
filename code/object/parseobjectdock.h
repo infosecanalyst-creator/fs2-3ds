@@ -4,31 +4,14 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ParseObjectDock.h $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
- *
- * New docking system for parse objects, used only on mission load
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.2  2005/10/31 09:12:16  Goober5000
- * remove unused commented stuff
- * --Goober5000
- *
- * Revision 1.1  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- */
+
 
 #ifndef _PARSE_OBJECT_DOCK_H
 #define _PARSE_OBJECT_DOCK_H
 
 #include "globalincs/globals.h"
 
-struct p_object;
+class p_object;
 
 // info for each docked parse object
 typedef struct p_dock_instance {
@@ -38,8 +21,11 @@ typedef struct p_dock_instance {
 	p_object *docked_objp;				// parse object that is docked to me
 } p_dock_instance;
 
-// struct used when a function must be evaluated for all docked objects
-typedef struct p_dock_function_info {
+// class used when a function must be evaluated for all docked objects
+// (it's a class because it has a constructor)
+class p_dock_function_info
+{
+public:
 
 	// Set this to true when the function should return early.
 	bool early_return_condition;		
@@ -53,12 +39,14 @@ typedef struct p_dock_function_info {
 
 
 	// constructor to initialize everything to 0
+	// (revised for the same reasons as dock_function_info)
 	p_dock_function_info()
+		: early_return_condition(false)
 	{
-		memset(this, 0, sizeof(p_dock_function_info));
+		memset(&parameter_variables, 0, sizeof(parameter_variables));
+		memset(&maintained_variables, 0, sizeof(maintained_variables));
 	}
-
-} p_dock_function_info;
+};
 
 bool object_is_docked(p_object *objp);
 
@@ -66,14 +54,14 @@ bool object_is_docked(p_object *objp);
 bool dock_check_find_direct_docked_object(p_object *objp, p_object *other_objp);
 
 // find the object occupying objp's specified dockpoint
-p_object *dock_find_object_at_dockpoint(p_object *objp, int dockpoint);
+p_object *dock_find_object_at_dockpoint(p_object *objp, char *dockpoint);
 
 // find objp's dockpoint being occupied by other_objp
 char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp);
 
 // Überfunction for evaluating all objects that could possibly be docked to objp.  This will
 // call "function" for each docked object.  The function should store its intermediate and
-// return values in the dock_function_info struct.
+// return values in the p_dock_function_info class.
 void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *));
 
 // docks all docked objects; called only from parse_create_object in missionparse.cpp
@@ -82,7 +70,7 @@ void dock_dock_docked_objects(p_object *objp);
 // add objp1 and objp2 to each others' dock lists; currently only called by mission_parse_set_up_initial_docks
 void dock_dock_objects(p_object *objp1, char *dockpoint1, p_object *objp2, char *dockpoint2);
 
-// free the entire dock list without undocking anything; called only from mission_parse_close in missionparse.cpp
-void dock_free_instances(p_object *objp);
+// free the entire dock list without undocking anything; should only be used on object cleanup
+void dock_free_dock_list(p_object *objp);
 
 #endif	// _PARSE_OBJECT_DOCK_H

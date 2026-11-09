@@ -7,627 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.47.2.6 $
- * $Date: 2007-10-15 06:43:18 $
- * $Author: taylor $
- *
- * C file for all the UI controls of the mulitiplayer screens
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.47.2.5  2007/09/29 13:58:45  karajorma
- * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
- *
- * Revision 2.47.2.4  2006/10/01 19:28:28  taylor
- * make sure Multi_create_bitmap is initialized properly since it might not be otherwise in standalone
- *
- * Revision 2.47.2.3  2006/09/24 22:53:22  taylor
- * more standalone server fixes:
- *  - add some basic bmpman functionality to grstub, since it needs to do something at least
- *  - add missing gr_* function ptrs to grstrub
- *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
- *  - deal with default pilot file properly (also caused a bmpman headache)
- *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
- *
- * Revision 2.47.2.2  2006/09/08 06:07:59  taylor
- * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
- *
- * Revision 2.47.2.1  2006/08/03 17:55:01  karajorma
- * Stop multiplayer campaigns crashing if the campaign lacks a description
- *
- * Revision 2.47  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.46  2006/02/24 07:31:18  taylor
- * clean up some of that FS2OpenPXO crap (can't wait to rip all this out for official PXO :))
- *
- * Revision 2.45  2006/02/16 05:39:13  taylor
- * some FS2NetD fixes
- *  - timer/timeout issues
- *  - keep server heartbeats to a minimum in order to save some bandwidth
- *  - clean up some debug message a little
- *
- * Revision 2.44  2006/02/13 00:20:45  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 2.43  2006/02/03 22:28:10  taylor
- * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
- * some cleanup, extra logging, and very slight speedup with mission and table validation checking
- * fix memory leak from mission and table validation checking
- *
- * Revision 2.42  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.41  2005/07/18 03:45:09  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.40  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.39  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.38  2005/06/21 00:13:47  taylor
- * add some better error checking/handling for when GetServerList messes up
- *
- * Revision 2.37  2005/05/12 17:49:15  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.36  2005/03/08 03:50:23  Goober5000
- * edited for language ;)
- * --Goober5000
- *
- * Revision 2.35  2005/03/02 21:18:20  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.34  2005/02/23 04:55:09  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.33  2005/02/04 20:06:05  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.32  2004/07/26 20:47:43  Kazan
- * remove MCD complete
- *
- * Revision 2.31  2004/07/12 16:32:58  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.30  2004/07/10 03:18:23  Kazan
- * minor bugfixes - oh yeah reenabling a rule for multistats :P
- *
- * Revision 2.29  2004/07/07 21:00:08  Kazan
- * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
- *
- * Revision 2.28  2004/04/30 18:32:51  Kazan
- * Lobby screen only shows when PXO_LOBBY is defined
- *
- * Revision 2.27  2004/04/27 20:43:32  taylor
- * fix create game buttons
- *
- * Revision 2.26  2004/04/24 15:44:22  Kazan
- * Fixed Lobby screen showing up while exiting from non-tracker games
- * Time dialiation up to 1/4
- *
- * Revision 2.25  2004/04/03 06:22:32  Goober5000
- * fixed some stub functions and a bunch of compile warnings
- * --Goober5000
- *
- * Revision 2.24  2004/03/10 20:51:16  Kazan
- * irc
- *
- * Revision 2.23  2004/03/09 17:59:01  Kazan
- * Disabled multithreaded TCP_Socket in favor of safer single threaded
- * FS2NetD doesn't kill the game on connection failure now - just gives warning message and effectively dsiables itself until they try to connect again
- *
- * Revision 2.22  2004/03/09 00:02:16  Kazan
- * more fs2netd stuff
- *
- * Revision 2.21  2004/03/08 22:02:39  Kazan
- * Lobby GUI screen restored
- *
- * Revision 2.20  2004/03/08 15:06:24  Kazan
- * Did, undo
- *
- * Revision 2.19  2004/03/05 21:19:39  Kazan
- * Fixed mission validation (was returning false positives)
- *
- * Revision 2.18  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.17  2004/03/04 05:57:45  Kazan
- * LAN works A1 Supar!
- *
- * Revision 2.16  2004/02/04 09:02:44  Goober5000
- * got rid of unnecessary double semicolons
- * --Goober5000
- *
- * Revision 2.15  2003/11/13 03:59:54  Kazan
- * PXO_SID changed from unsigned to signed
- *
- * Revision 2.14  2003/11/12 00:44:52  Kazan
- * (Kazan) /me slaps forehead... make sure things compile before committing.. sorry guys
- *
- * Revision 2.13  2003/11/12 00:31:45  Kazan
- * A few multi tweaks - fixed a couple warning-killing collisions between goober and me (kazan)
- *
- * Revision 2.12  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.11  2003/11/06 20:22:13  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 2.10  2003/10/13 05:57:49  Kazan
- * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap
- * Added "beam no whack" flag for beams - said beams NEVER whack
- * Some reliability updates in FS2NetD
- *
- * Revision 2.9  2003/10/04 22:42:23  Kazan
- * fs2netd now TCP
- *
- * Revision 2.8  2003/09/25 21:12:24  Kazan
- * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
- * Also D3D8 Screenshots work now.
- *
- * Revision 2.7  2003/09/24 19:35:59  Kazan
- * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
- *
- * Revision 2.6  2003/09/23 02:42:54  Kazan
- * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
- *
- * Revision 2.5  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.4.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.4  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.3  2002/07/29 08:05:20  DTP
- * -almission(autoload mission) commandline arguement handling implemented
- *
- * Revision 2.2  2002/07/28 15:07:43  DTP
- * FIX -stargame commandline arguement will now let you quit, a thing not possible before when using the startgame arguement
- *
- * Revision 2.1  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 94    6/16/00 3:16p Jefff
- * sim of the year dvd version changes, a few german soty localization
- * fixes
- * 
- * 93    10/14/99 2:51p Jefff
- * localization fixes
- * 
- * 92    10/13/99 3:50p Jefff
- * fixed unnumbered XSTRs
- * 
- * 91    9/15/99 1:45a Dave
- * Don't init joystick on standalone. Fixed campaign mode on standalone.
- * Fixed no-score-report problem in TvT
- * 
- * 90    9/14/99 12:51a Jefff
- * small text nudge
- * 
- * 89    9/13/99 4:52p Dave
- * RESPAWN FIX
- * 
- * 88    9/13/99 11:30a Dave
- * Added checkboxes and functionality for disabling PXO banners as well as
- * disabling d3d zbuffer biasing.
- * 
- * 87    9/12/99 10:06p Jefff
- * changed instances of "Squad War" to "SquadWar"
- * 
- * 86    9/03/99 1:32a Dave
- * CD checking by act. Added support to play 2 cutscenes in a row
- * seamlessly. Fixed super low level cfile bug related to files in the
- * root directory of a CD. Added cheat code to set campaign mission # in
- * main hall.
- * 
- * 85    9/01/99 10:49p Dave
- * Added nice SquadWar checkbox to the client join wait screen.
- * 
- * 84    8/30/99 2:49p Jefff
- * 
- * 83    8/26/99 8:49p Jefff
- * Updated medals screen and about everything that ever touches medals in
- * one way or another.  Sheesh.
- * 
- * 82    8/25/99 4:38p Dave
- * Updated PXO stuff. Make squad war report stuff much more nicely.
- * 
- * 81    8/20/99 2:09p Dave
- * PXO banner cycling.
- * 
- * 80    8/20/99 10:06a Jefff
- * removed closed/rstricted buttons from multi start screen
- * 
- * 79    8/18/99 11:30a Jefff
- * 
- * 78    8/18/99 10:38a Jefff
- * 
- * 77    8/16/99 4:06p Dave
- * Big honking checkin.
- * 
- * 76    8/16/99 1:08p Jefff
- * added sounds to a few controls, made input boxes lose focus on ENTER
- * 
- * 75    8/16/99 9:52a Jefff
- * fixed bitmap loading on buttons in multi-sync screen
- * 
- * 74    8/11/99 5:54p Dave
- * Fixed collision problem. Fixed standalone ghost problem.
- * 
- * 73    8/10/99 4:35p Jefff
- * fixed hi-res coords
- * 
- * 72    8/06/99 12:29a Dave
- * Multiple bug fixes.
- * 
- * 71    8/05/99 3:13p Jasenw
- * tweaked some text placement coords.
- * 
- * 70    8/04/99 1:38p Jefff
- * moved some text in multi join wait
- * 
- * 69    8/03/99 12:45p Dave
- * Update checksums.
- * 
- * 68    7/25/99 5:17p Jefff
- * campaign descriptions show up on multicreate screen
- * 
- * 67    7/20/99 1:49p Dave
- * Peter Drake build. Fixed some release build warnings.
- * 
- * 66    7/19/99 2:13p Dave
- * Added some new strings for Heiko.
- * 
- * 65    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 64    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 63    6/30/99 10:49a Jasenw
- * Fixed coords for new launch countdown ani
- * 
- * 62    6/29/99 7:39p Dave
- * Lots of small bug fixes.
- * 
- * 61    6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 60    6/09/99 2:17p Dave
- * Fixed up pleasewait bitmap rendering.
- * 
- * 59    6/05/99 3:42p Dave
- * New multi sync screen.
- * 
- * 58    6/01/99 6:07p Dave
- * New loading/pause/please wait bar.
- * 
- * 57    5/21/99 6:45p Dave
- * Sped up ui loading a bit. Sped up localization disk access stuff. Multi
- * start game screen, multi password, and multi pxo-help screen.
- * 
- * 56    5/06/99 11:10a Dave
- * Fixed coord on multi create screen.
- * 
- * 55    5/04/99 6:38p Dave
- * Finished multi join-wait screen.
- * 
- * 54    5/04/99 5:20p Dave
- * Fixed up multiplayer join screen and host options screen. Should both
- * be at 100% now.
- * 
- * 53    5/03/99 11:04p Dave
- * Most of the way done with the multi join screen.
- * 
- * 52    5/03/99 8:32p Dave
- * New version of multi host options screen.
- * 
- * 51    4/29/99 2:15p Neilk
- * slider2 code got modified; changed parameters for create
- * 
- * 50    4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 49    4/21/99 6:15p Dave
- * Did some serious housecleaning in the beam code. Made it ready to go
- * for anti-fighter "pulse" weapons. Fixed collision pair creation. Added
- * a handy macro for recalculating collision pairs for a given object.
- * 
- * 48    4/16/99 5:27p Neilk
- * added slider support and hir res for multi_create
- * 0
- * 47    4/14/99 6:37p Dave
- * Fixed scroll button bug on host create screen.
- * 
- * 46    4/14/99 5:28p Dave
- * Minor bug fixes.
- * 
- * 45    4/12/99 10:07p Dave
- * Made network startup more forgiving. Added checkmarks to dogfight
- * screen for players who hit commit.
- * 
- * 44    4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 43    4/08/99 1:28p Dave
- * Small bug fixes for refresh button on the multi create screen.
- * 
- * 42    4/08/99 11:55a Neilk
- * Converted Multi_Create to new artwork (just lowres)
- * 
- * 41    4/08/99 2:10a Dave
- * Numerous bug fixes for the beta. Added builtin mission info for the
- * beta.
- * 
- * 40    3/20/99 3:48p Andsager
- * Do mission_loop stuff for PXO
- * 
- * 39    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 38    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 37    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 36    2/25/99 4:19p Dave
- * Added multiplayer_beta defines. Added cd_check define. Fixed a few
- * release build warnings. Added more data to the squad war request and
- * response packets.
- * 
- * 35    2/24/99 3:26p Anoop
- * Make sure the host is the only guy who bashes skill level for TvT.
- * 
- * 34    2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 33    2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 32    2/17/99 2:11p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 31    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 30    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 29    2/08/99 5:07p Dave
- * FS2 chat server support. FS2 specific validated missions.
- * 
- * 28    2/04/99 6:29p Dave
- * First full working rev of FS2 PXO support.  Fixed Glide lighting
- * problems.
- * 
- * 27    1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 26    1/29/99 2:08a Dave
- * Fixed beam weapon collisions with players. Reduced size of scoring
- * struct for multiplayer. Disabled PXO.
- * 
- * 25    1/15/99 2:36p Neilk
- * fixed multi_jw coordinates
- * 
- * 24    1/13/99 7:19p Neilk
- * Converted Mission Brief, Barracks, Synch to high res support
- * 
- * 23    1/12/99 7:17p Neilk
- * 
- * 22    1/12/99 5:45p Dave
- * Moved weapon pipeline in multiplayer to almost exclusively client side.
- * Very good results. Bandwidth goes down, playability goes up for crappy
- * connections. Fixed object update problem for ship subsystems.
- * 
- * 21    1/12/99 4:07a Dave
- * Put in barracks code support for selecting squad logos. Properly
- * distribute squad logos in a multiplayer game.
- * 
- * 20    1/11/99 7:19p Neilk
- * Converted multi_join interface to support multiple resolutions
- * 
- * 19    12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 18    12/17/98 4:50p Andsager
- * Added debrief_assemble_optional_mission_popup_text() for single and
- * multiplayer
- * 
- * 17    12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 16    12/10/98 10:19a Andsager
- * Fix mission loop assert
- * 
- * 15    12/10/98 9:59a Andsager
- * Fix some bugs with mission loops
- * 
- * 14    12/09/98 1:56p Andsager
- * Initial checkin of mission loop
- * 
- * 13    12/03/98 5:22p Dave
- * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
- * checksumming.
- * 
- * 12    11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 11    11/20/98 11:16a Dave
- * Fixed up IPX support a bit. Making sure that switching modes and
- * loading/saving pilot files maintains proper state.
- * 
- * 10    11/19/98 4:57p Dave
- * Ignore PXO option if IPX is selected.
- * 
- * 9     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 8     11/19/98 8:04a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 7     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 6     10/19/98 11:15a Dave
- * Changed requirements for stats storing in PXO mode.
- * 
- * 5     10/16/98 9:40a Andsager
- * Remove ".h" files from model.h
- * 
- * 4     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 333   10/02/98 3:22p Allender
- * fix up the -connect option and fix the -port option
- * 
- * 332   9/17/98 9:26p Dave
- * Externalized new string.
- * 
- * 331   9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 330   9/17/98 9:43a Allender
- * removed an Assert that Dave called bogus.
- * 
- * 329   9/16/98 6:54p Dave
- * Upped  max sexpression nodes to 1800 (from 1600). Changed FRED to sort
- * the ship list box. Added code so that tracker stats are not stored with
- * only 1 player.
- * 
- * 328   9/15/98 7:24p Dave
- * Minor UI changes. Localized bunch of new text.
- * 
- * 327   9/15/98 4:03p Dave
- * Changed readyroom and multi screens to display "st" icon for all
- * missions with mission disk content (not necessarily just those that
- * come with Silent Threat).
- * 
- * 326   9/15/98 11:44a Dave
- * Renamed builtin ships and wepaons appropriately in FRED. Put in scoring
- * scale factors. Fixed standalone filtering of MD missions to non-MD
- * hosts.
- * 
- * 325   9/13/98 9:36p Dave
- * Support for new info icons for multiplayer missions (from-volition,
- * valid, mission disk, etc).
- * 
- * 324   9/11/98 4:14p Dave
- * Fixed file checksumming of < file_size. Put in more verbose kicking and
- * PXO stats store reporting.
- * 
- * 323   9/10/98 1:17p Dave
- * Put in code to flag missions and campaigns as being MD or not in Fred
- * and FreeSpace. Put in multiplayer support for filtering out MD
- * missions. Put in multiplayer popups for warning of non-valid missions.
- * 
- * 322   9/04/98 3:51p Dave
- * Put in validated mission updating and application during stats
- * updating.
- * 
- * 321   8/31/98 2:06p Dave
- * Make cfile sort the ordering or vp files. Added support/checks for
- * recognizing "mission disk" players.
- * 
- * 320   8/21/98 1:15p Dave
- * Put in log system hooks in useful places.
- * 
- * 319   8/20/98 5:31p Dave
- * Put in handy multiplayer logfile system. Now need to put in useful
- * applications of it all over the code.
- * 
- * 318   8/12/98 4:53p Dave
- * Put in 32 bit checksumming for PXO missions. No validation on the
- * actual tracker yet, though.
- * 
- * 317   8/07/98 10:40a Allender
- * new command line flags for starting netgames.  Only starting currently
- * works, and PXO isn't implemented yet
- * 
- * 316   7/24/98 9:27a Dave
- * Tidied up endgame sequencing by removing several old flags and
- * standardizing _all_ endgame stuff with a single function call.
- * 
- * 315   7/14/98 10:04a Allender
- * fixed the countdown code to not be reliant on timer_get_fixed_seconds
- * 
- * 314   7/10/98 5:04p Dave
- * Fix connection speed bug on standalone server.
- * 
- * 313   7/09/98 6:01p Dave
- * Firsts full version of PXO updater. Put in stub for displaying
- * connection status.
- * 
- * 312   7/07/98 2:49p Dave
- * UI bug fixes.
- * 
- * 311   6/30/98 2:17p Dave
- * Revised object update system. Removed updates for all weapons. Put
- * button info back into control info packet.
- * 
- * 310   6/13/98 9:32p Mike
- * Kill last character in file which caused "Find in Files" to report the
- * file as "not a text file." 
- *
- * $NoKeywords: $
- */
+
 
 
 #ifdef _WIN32
@@ -668,9 +48,10 @@
 #include "network/multi_voice.h"
 #include "network/multi_endgame.h"
 #include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "stats/stats.h"
 #include "network/multi_pmsg.h"
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "network/multi_log.h"
 #include "globalincs/alphacolors.h"
 #include "anim/animplay.h"
@@ -683,8 +64,8 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "menuui/mainhallmenu.h"
+#include "debugconsole/console.h"
 
-#include <vector>
 #include <algorithm>
 
 
@@ -710,7 +91,7 @@ int Multi_common_text_max_display[GR_NUM_RESOLUTIONS] = {
 };
 
 #define MULTI_COMMON_TEXT_META_CHAR				'$'
-#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH		100
+#define MULTI_COMMON_TEXT_MAX_LINE_LENGTH		200
 #define MULTI_COMMON_TEXT_MAX_LINES				20
 #define MULTI_COMMON_MAX_TEXT						(MULTI_COMMON_TEXT_MAX_LINES * MULTI_COMMON_TEXT_MAX_LINE_LENGTH)
 
@@ -764,14 +145,14 @@ void multi_common_move_to_bottom()
 	Multi_common_top_text_line = Multi_common_num_text_lines - Multi_common_text_max_display[gr_screen.res];
 }
 
-void multi_common_set_text(char *str,int auto_scroll)
+void multi_common_set_text(const char *str,int auto_scroll)
 {
 	// make sure it fits
 	// store the entire string as well
-	if(strlen(str) > MULTI_COMMON_MAX_TEXT){
+	if(strlen(str) >= MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
-		strcpy(Multi_common_all_text,str);
+		strcpy_s(Multi_common_all_text,str);
 	}
 	
 	// split the whole thing up
@@ -783,14 +164,14 @@ void multi_common_set_text(char *str,int auto_scroll)
 	}
 }
 
-void multi_common_add_text(char *str,int auto_scroll)
+void multi_common_add_text(const char *str,int auto_scroll)
 {
 	// make sure it fits
 	// store the entire string as well
-	if((strlen(str) + strlen(Multi_common_all_text)) > MULTI_COMMON_MAX_TEXT){
+	if((strlen(str) + strlen(Multi_common_all_text)) >= MULTI_COMMON_MAX_TEXT){
 		return ;
 	} else {
-		strcat(Multi_common_all_text,str);
+		strcat_s(Multi_common_all_text,str);
 	}
 	
 	// split the whole thing up
@@ -806,13 +187,15 @@ void multi_common_split_text()
 {
 	int	n_lines, i;
 	int	n_chars[MAX_BRIEF_LINES];
-	char	*p_str[MAX_BRIEF_LINES];
+	const char	*p_str[MAX_BRIEF_LINES];
 
 	n_lines = split_str(Multi_common_all_text, Multi_common_text_coords[gr_screen.res][2], n_chars, p_str, MULTI_COMMON_TEXT_MAX_LINES, MULTI_COMMON_TEXT_META_CHAR);
 	Assert(n_lines != -1);
 
 	for ( i = 0; i < n_lines; i++ ) {
-		Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH);
+		//The E -- This check is unnecessary, and will break when fonts that aren't bank gothic are used
+		//split_str already ensured that everything will fit in the text window for us already.
+		//Assert(n_chars[i] < MULTI_COMMON_TEXT_MAX_LINE_LENGTH); 
 		strncpy(Multi_common_text[i], p_str[i], n_chars[i]);
 		Multi_common_text[i][n_chars[i]] = 0;
 		drop_leading_white_space(Multi_common_text[i]);		
@@ -834,13 +217,13 @@ void multi_common_render_text()
 		if ( line_count >= Multi_common_text_max_display[gr_screen.res] ){
 			break;	
 		}
-		gr_string(Multi_common_text_coords[gr_screen.res][0], Multi_common_text_coords[gr_screen.res][1] + (line_count*fh), Multi_common_text[i]);		
+		gr_string(Multi_common_text_coords[gr_screen.res][0], Multi_common_text_coords[gr_screen.res][1] + (line_count*fh), Multi_common_text[i], GR_RESIZE_MENU);		
 		line_count++;
 	}
 
 	if ( (Multi_common_num_text_lines - Multi_common_top_text_line) > Multi_common_text_max_display[gr_screen.res] ) {
-		gr_set_color_fast(&Color_bright_red);
-		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755));
+		gr_set_color_fast(&Color_more_bright);
+		gr_string(Multi_common_text_coords[gr_screen.res][0], (Multi_common_text_coords[gr_screen.res][1] + Multi_common_text_coords[gr_screen.res][3])-5, XSTR("more",755), GR_RESIZE_MENU);
 	}
 }
 
@@ -870,15 +253,15 @@ int Multi_common_notify_stamp;
 
 void multi_common_notify_init()
 {
-	strcpy(Multi_common_notify_text,"");
+	strcpy_s(Multi_common_notify_text,"");
 	Multi_common_notify_stamp = -1;
 }
 
 // add a notification string, drawing appropriately depending on the state/screen we're in
-void multi_common_add_notify(char *str)
+void multi_common_add_notify(const char *str)
 {
 	if(str){
-		strcpy(Multi_common_notify_text,str);
+		strcpy_s(Multi_common_notify_text,str);
 		Multi_common_notify_stamp = timestamp(MULTI_COMMON_NOTIFY_TIME);
 	}
 }
@@ -911,7 +294,7 @@ void multi_common_notify_do()
 				break;			
 			}
 			if(y != -1){
-				gr_string((gr_screen.max_w_unscaled - w)/2, y, Multi_common_notify_text);
+				gr_string((gr_screen.max_w_unscaled - w)/2, y, Multi_common_notify_text, GR_RESIZE_MENU);
 			}
 		}
 	}
@@ -990,7 +373,7 @@ void multi_common_voice_display_status()
 	case MULTI_VOICE_STATUS_DENIED:
 		if(Multi_common_icons[MICON_VOICE_DENIED] != -1){
 			gr_set_bitmap(Multi_common_icons[MICON_VOICE_DENIED]);
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 		break;
 
@@ -998,7 +381,7 @@ void multi_common_voice_display_status()
 	case MULTI_VOICE_STATUS_RECORDING:
 		if(Multi_common_icons[MICON_VOICE_RECORDING] != -1){
 			gr_set_bitmap(Multi_common_icons[MICON_VOICE_RECORDING]);
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 		break;
 
@@ -1172,7 +555,7 @@ UI_XSTR Multi_join_text[GR_NUM_RESOLUTIONS][MULTI_JOIN_NUM_TEXT] = {
 		{"Create",							1408,	535,	376,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[0][MJ_START_GAME].button},	
 		{"Game",								1302,	541,	385,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[0][MJ_START_GAME].button},
 		{"Cancel",							387,	588,	376,	UI_XSTR_COLOR_PINK, -1, &Multi_join_buttons[0][MJ_CANCEL].button},	
-		{"Help",								928,	479,	436,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[0][MJ_HELP].button},
+		{"Help",								928,	496,	436,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[0][MJ_HELP].button},
 		{"Options",							1036,	479,	460,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[0][MJ_OPTIONS].button},
 		{"Join",								1303,	589,	416,	UI_XSTR_COLOR_PINK, -1, &Multi_join_buttons[0][MJ_ACCEPT].button},
 		{"Status",							1304,	37,	37,	UI_XSTR_COLOR_GREEN,	-1, NULL},
@@ -1187,7 +570,7 @@ UI_XSTR Multi_join_text[GR_NUM_RESOLUTIONS][MULTI_JOIN_NUM_TEXT] = {
 		{"Create",							1408,	868,	602,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[1][MJ_START_GAME].button},
 		{"Game",								1302,	872,	611,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[1][MJ_START_GAME].button},
 		{"Cancel",							387,	941,	602,	UI_XSTR_COLOR_PINK, -1, &Multi_join_buttons[1][MJ_CANCEL].button},
-		{"Help",								928,	782,	699,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[1][MJ_HELP].button},
+		{"Help",								928,	806,	699,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[1][MJ_HELP].button},
 		{"Options",							1036,	782,	736,	UI_XSTR_COLOR_GREEN, -1, &Multi_join_buttons[1][MJ_OPTIONS].button},
 		{"Join",								1303,	937,	668,	UI_XSTR_COLOR_PINK, -1, &Multi_join_buttons[1][MJ_ACCEPT].button},
 		{"Status",							1304,	60,	60,	UI_XSTR_COLOR_GREEN,	-1, NULL},
@@ -1299,6 +682,8 @@ int Mj_cd_coords[GR_NUM_RESOLUTIONS] = {
 // NOTE : these numbers are completely empirical
 #define MJ_PING_GREEN				160
 #define MJ_PING_YELLOW				300
+#define MJ_PING_RED					700
+#define MJ_PING_ONE_SECOND			1000
 
 int Mj_list_area_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
@@ -1347,6 +732,8 @@ int Multi_autojoin_query_stamp;
 // our join request
 join_request Multi_join_request;
 
+int Multi_join_overlay_id;
+
 // LOCAL function definitions
 void multi_join_check_buttons();
 void multi_join_button_pressed(int n);
@@ -1370,13 +757,20 @@ int multi_join_maybe_warn();
 int multi_join_warn_pxo();
 void multi_join_blit_protocol();
 
-DCF(mj_make, "")
+DCF(mj_make, "Makes a multijoin game? (Multiplayer)")
 {
 	active_game ag, *newitem;
 	int idx;
+	int idx_max;
 
-	dc_get_arg(ARG_INT);
-	for(idx=0; idx<Dc_arg_int; idx++){
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: mj_make <num_games>\n");
+		return;
+	}
+
+	dc_stuff_int(&idx_max);
+
+	for(idx = 0; idx < idx_max; idx++){
 		// stuff some fake info
 		memset(&ag, 0, sizeof(active_game));
 		sprintf(ag.name, "Game %d", idx);
@@ -1392,7 +786,7 @@ DCF(mj_make, "")
 		if(newitem != NULL){
 			// newitem->heard_from_timer = timestamp((int)frand_range(500.0f, 10000.0f));
 		}
-	}	
+	}
 }
 
 void multi_join_notify_new_game()
@@ -1461,9 +855,6 @@ void multi_join_game_init()
 
 	game_flush();
 
-	// set the palette
-	// common_set_interface_palette(MULTI_JOIN_PALETTE);
-
 	// destroy any chatbox contents which previously existed (from another game)
 	chatbox_clear();
 
@@ -1492,8 +883,8 @@ void multi_join_game_init()
 	multi_common_set_palette();
 
 	// load the help overlay
-	help_overlay_load(MULTI_JOIN_OVERLAY);
-	help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+	Multi_join_overlay_id = help_overlay_get_index(MULTI_JOIN_OVERLAY);
+	help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 	
 	// try to login to the tracker
 	if (MULTI_IS_TRACKER_GAME) {
@@ -1656,8 +1047,8 @@ void multi_join_game_do_frame()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC :
-		if(help_overlay_active(MULTI_JOIN_OVERLAY)){
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+		if(help_overlay_active(Multi_join_overlay_id)){
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 		} else {		
 			if (MULTI_IS_TRACKER_GAME) {
 				gameseq_post_event(GS_EVENT_PXO);
@@ -1709,7 +1100,7 @@ void multi_join_game_do_frame()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_JOIN_OVERLAY, 0);
+		help_overlay_set_state(Multi_join_overlay_id, gr_screen.res, 0);
 	}
 
 	// do any network related stuff
@@ -1726,7 +1117,7 @@ void multi_join_game_do_frame()
 	GR_MAYBE_CLEAR_RES(Multi_join_bitmap);
 	if(Multi_join_bitmap != -1){		
 		gr_set_bitmap(Multi_join_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_join_window.draw();
 
@@ -1743,7 +1134,7 @@ void multi_join_game_do_frame()
 	multi_join_blit_top_stuff();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(MULTI_JOIN_OVERLAY);
+	help_overlay_maybe_blit(Multi_join_overlay_id, gr_screen.res);
 	
 	// flip the buffer
 	gr_flip();
@@ -1764,9 +1155,6 @@ void multi_join_game_close()
 	if(!bm_unload(Multi_join_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_join_bitmap_fname[gr_screen.res]));
 	}
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_JOIN_OVERLAY);	
 
 	// free up the active game list
 	multi_free_active_games();
@@ -1833,10 +1221,10 @@ void multi_join_button_pressed(int n)
 
 	// help overlay
 	case MJ_HELP:
-		if(!help_overlay_active(MULTI_JOIN_OVERLAY)){
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,1);
+		if(!help_overlay_active(Multi_join_overlay_id)){
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
+			help_overlay_set_state(Multi_join_overlay_id,gr_screen.res,0);
 		}
 		break;
 
@@ -1914,6 +1302,7 @@ void multi_join_display_games()
 	int w,h;
 	int con_type;
 	int y_start = Mj_list_y[gr_screen.res];
+	int line_height = gr_get_font_height() + 1;
 	int count = 0;
 	
 	if(moveup != NULL){
@@ -1929,9 +1318,9 @@ void multi_join_display_games()
 
 			// display the connection speed
 			str[0] = '\0';
-			strcpy(str, Multi_join_speed_labels[con_type]);
+			strcpy_s(str, Multi_join_speed_labels[con_type]);
 			gr_set_color_fast(Multi_join_speed_colors[con_type]);
-			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str);
+			gr_string(Mj_speed_coords[gr_screen.res][MJ_X_COORD], y_start, str, GR_RESIZE_MENU);
 
 			// we'll want to have different colors for highlighted items, etc.
 			if(moveup == Multi_join_selected_item){
@@ -1943,32 +1332,32 @@ void multi_join_display_games()
 			// display the game name, adding appropriate status chars
 			str[0] = '\0';
 			if(moveup->flags & AG_FLAG_STANDALONE){
-				strcat(str,MJ_CHAR_STANDALONE);
+				strcat_s(str,MJ_CHAR_STANDALONE);
 			}
 			if(moveup->flags & AG_FLAG_CAMPAIGN){
-				strcat(str,MJ_CHAR_CAMPAIGN);
+				strcat_s(str,MJ_CHAR_CAMPAIGN);
 			}
 
 			// tack on the actual server name			
-			strcat(str," ");
-			strcat(str,moveup->name);
-			if(strlen(moveup->mission_name) > 0){
-				strcat(str, " / ");
-				strcat(str,moveup->mission_name);
+			strcat_s(str," ");
+			strcat_s(str,moveup->name);
+			if(moveup->mission_name[0] != '\0'){
+				strcat_s(str, " / ");
+				strcat_s(str,moveup->mission_name);
 			} 
 
 			// make sure the string fits in the display area and draw it
 			gr_force_fit_string(str,200,Mj_game_name_coords[gr_screen.res][MJ_W_COORD]);			
-			gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD],y_start,str);
+			gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD],y_start,str,GR_RESIZE_MENU);
 
 			// display the ping time
 			if(moveup->ping.ping_avg > 0){
-				if(moveup->ping.ping_avg > 1000){
+				if(moveup->ping.ping_avg > MJ_PING_ONE_SECOND){
 					gr_set_color_fast(&Color_bright_red);
-					strcpy(str,XSTR("> 1 sec",761));
+					strcpy_s(str,XSTR("> 1 sec",761));
 				} else {
 					// set the appropriate ping time color indicator
-					if(moveup->ping.ping_avg > MJ_PING_YELLOW){
+					if(moveup->ping.ping_avg > MJ_PING_RED){
 						gr_set_color_fast(&Color_bright_red);
 					} else if(moveup->ping.ping_avg > MJ_PING_YELLOW){
 						gr_set_color_fast(&Color_bright_yellow);
@@ -1977,10 +1366,10 @@ void multi_join_display_games()
 					}
 
 					sprintf(str,"%d",moveup->ping.ping_avg);
-					strcat(str,XSTR(" ms",762));  // [[ Milliseconds ]]
+					strcat_s(str,XSTR(" ms",762));  // [[ Milliseconds ]]
 				}
 
-				gr_string(Mj_ping_coords[gr_screen.res][MJ_X_COORD],y_start,str);
+				gr_string(Mj_ping_coords[gr_screen.res][MJ_X_COORD],y_start,str,GR_RESIZE_MENU);
 			}
 
 			// display the number of players (be sure to center it)
@@ -1991,17 +1380,17 @@ void multi_join_display_games()
 			}
 			sprintf(str,"%d",moveup->num_players);			
 			gr_get_string_size(&w,&h,str);
-			gr_string(Mj_players_coords[gr_screen.res][MJ_X_COORD] + (Mj_players_coords[gr_screen.res][MJ_W_COORD] - w)/2,y_start,str);			
+			gr_string(Mj_players_coords[gr_screen.res][MJ_X_COORD] + (Mj_players_coords[gr_screen.res][MJ_W_COORD] - w)/2,y_start,str,GR_RESIZE_MENU);			
 
 			count++;
-			y_start += 10;
+			y_start += line_height;
 			moveup = moveup->next;
 		} while((moveup != Active_game_head) && (count < Mj_max_game_items[gr_screen.res]));
 	}
 	// if there are no items on the list, display this info
 	else {
 		gr_set_color_fast(&Color_bright);
-		gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD] - 30,y_start,XSTR("<No game servers found>",763));
+		gr_string(Mj_game_name_coords[gr_screen.res][MJ_X_COORD] - 30,y_start,XSTR("<No game servers found>",763),GR_RESIZE_MENU);
 	}
 }
 
@@ -2039,7 +1428,7 @@ void multi_join_blit_game_status(active_game *game, int y)
 	}
 	// if we're supposed to draw a bitmap
 	if(draw){
-		gr_bitmap(Mj_game_icon_coords[gr_screen.res][MJ_X_COORD],y-1);
+		gr_bitmap(Mj_game_icon_coords[gr_screen.res][MJ_X_COORD],y-1,GR_RESIZE_MENU);
 	}
 
 	// blit the proper status text
@@ -2048,31 +1437,31 @@ void multi_join_blit_game_status(active_game *game, int y)
 	switch( game->flags & AG_FLAG_STATE_MASK ){
 	case AG_FLAG_FORMING:
 		gr_set_color_fast(&Color_bright_green);
-		strcpy(status_text,XSTR("Forming",764));
+		strcpy_s(status_text,XSTR("Forming",764));
 		break;
 	case AG_FLAG_BRIEFING:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Briefing",765));
+		strcpy_s(status_text,XSTR("Briefing",765));
 		break;
 	case AG_FLAG_DEBRIEF:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Debrief",766));
+		strcpy_s(status_text,XSTR("Debrief",766));
 		break;
 	case AG_FLAG_PAUSE:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Paused",767));
+		strcpy_s(status_text,XSTR("Paused",767));
 		break;
 	case AG_FLAG_IN_MISSION:
 		gr_set_color_fast(&Color_bright_red);
-		strcpy(status_text,XSTR("Playing",768));
+		strcpy_s(status_text,XSTR("Playing",768));
 		break;
 	default:
 		gr_set_color_fast(&Color_bright);
-		strcpy(status_text,XSTR("Unknown",769));
+		strcpy_s(status_text,XSTR("Unknown",769));
 		break;
 	}		
 	gr_get_string_size(&str_w,NULL,status_text);
-	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text);
+	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text,GR_RESIZE_MENU);
 }
 
 void multi_join_load_tcp_addrs()
@@ -2177,14 +1566,11 @@ void multi_join_do_netstuff()
 // evaluate a returned pong.
 void multi_join_eval_pong(net_addr *addr, fix pong_time)
 {	
-	int found;
 	active_game *moveup = Active_game_head;
 
-	found = 0;
 	if(moveup != NULL){
 		do {				
 			if(psnet_same(&moveup->server_addr,addr)){
-				found = 1;
 				multi_ping_eval_pong(&moveup->ping);
 				
 				break;
@@ -2193,16 +1579,6 @@ void multi_join_eval_pong(net_addr *addr, fix pong_time)
 			}
 		} while(moveup != Active_game_head);
 	}	
-
-	// update the game's ping
-	/* 
-	
-	if(found && (moveup->ping_end > moveup->ping_start)){		
-		moveup->ping_time = f2fl(moveup->ping_end - moveup->ping_start);
-		moveup->ping_start = -1;
-		moveup->ping_end = -1;
-
-	 }	*/
 }
 
 // ping all the server on the list
@@ -2228,6 +1604,8 @@ void multi_join_ping_all()
 
 void multi_join_process_select()
 {
+	int line_height = gr_get_font_height() + 1;
+
 	// if we don't have anything selected and there are items on the list - select the first one
 	if((Multi_join_list_selected == -1) && (Active_game_count > 0)){
 		Multi_join_list_selected = 0;
@@ -2247,7 +1625,7 @@ void multi_join_process_select()
 	else if(Multi_join_select_button.pressed() && (Active_game_count > 0)){		 
 		int y,item;		
 		Multi_join_select_button.get_mouse_pos(NULL,&y);
-		item = y / 10;
+		item = y / line_height;
 		if(item + Multi_join_list_start < Active_game_count){		
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 
@@ -2267,7 +1645,7 @@ void multi_join_process_select()
 	if(Multi_join_select_button.double_clicked()){			
 		int y,item;		
 		Multi_join_select_button.get_mouse_pos(NULL,&y);
-		item = y / 10;
+		item = y / line_height;
 		if(item == Multi_join_list_selected){		
 			multi_join_button_pressed(MJ_ACCEPT);
 		}
@@ -2510,7 +1888,7 @@ void multi_join_send_join_request(int as_observer)
 
 	// 5/26/98 -- for team v team games, don't allow ingame joining :-(
 	if ( (Multi_join_selected_item->flags & AG_FLAG_TEAMS) && (Multi_join_selected_item->flags & (AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)) ) {
-		popup(0, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
 		return;
 	}
 
@@ -2522,16 +1900,16 @@ void multi_join_send_join_request(int as_observer)
 			return;
 		}
 
-		nprintf(("Password : %s\n",Multi_join_request.passwd));
+		nprintf(("Network", "Password : %s\n", Multi_join_request.passwd));
 	}	
 		
 	// fill out the join request struct	
-	strcpy(Multi_join_request.callsign,Player->callsign);
-	if(strlen(Player->image_filename) > 0){
-		strcpy(Multi_join_request.image_filename, Player->image_filename);
+	strcpy_s(Multi_join_request.callsign,Player->callsign);
+	if(Player->image_filename[0] != '\0'){
+		strcpy_s(Multi_join_request.image_filename, Player->image_filename);
 	}	
-	if(strlen(Player->squad_filename) > 0){
-		strcpy(Multi_join_request.squad_filename, Player->squad_filename);
+	if(Player->m_squad_filename[0] != '\0'){
+		strcpy_s(Multi_join_request.squad_filename, Player->m_squad_filename);
 	}
 
 	// tracker id (if any)
@@ -2552,7 +1930,7 @@ void multi_join_send_join_request(int as_observer)
 	}
 	
 	// pxo squad info
-	strncpy(Multi_join_request.pxo_squad_name, Multi_tracker_squad_name, LOGIN_LEN);
+	strcpy_s(Multi_join_request.pxo_squad_name, Multi_tracker_squad_name);
 
 	// version of this server
 	Multi_join_request.version = MULTI_FS_SERVER_VERSION;
@@ -2623,7 +2001,7 @@ void multi_join_blit_top_stuff()
 		bm_get_info(Multi_common_icons[MICON_CD], &cd_w, NULL, NULL, NULL, NULL);
 
 		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap((gr_screen.max_w / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res]);
+		gr_bitmap((gr_screen.max_w / 2) - (cd_w / 2), Mj_cd_coords[gr_screen.res], GR_RESIZE_MENU);
 	} 	
 }
 
@@ -2703,11 +2081,11 @@ void multi_join_blit_protocol()
 	switch(Socket_type){
 	case NET_TCP:		
 		// straight TCP		
-		gr_string(5, 2, "TCP");		
+		gr_string(5, 2, "TCP", GR_RESIZE_MENU);		
 		break;
 
 	case NET_IPX:
-		gr_string(5, 2, "IPX");
+		gr_string(5, 2, "IPX", GR_RESIZE_MENU);
 		break;
 	}
 }
@@ -2887,6 +2265,8 @@ netgame_info *Multi_sg_netgame;
 // hold temporary values in this structure when on a standalone server
 netgame_info Multi_sg_netgame_temp;
 
+int Multi_sg_overlay_id;
+
 // forward declarations
 void multi_sg_check_buttons();
 void multi_sg_button_pressed(int n);
@@ -2966,8 +2346,8 @@ void multi_start_game_init()
 	}
 
 	// load the help overlay
-	help_overlay_load(MULTI_START_OVERLAY);
-	help_overlay_set_state(MULTI_START_OVERLAY,0);
+	Multi_sg_overlay_id = help_overlay_get_index(MULTI_START_OVERLAY);
+	help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 
 	// intiialize the rank selection items	
 	multi_sg_select_rank_default();	
@@ -2992,7 +2372,7 @@ void multi_start_game_init()
 	// if starting a netgame, set the name of the game and any other options that are appropriate
 	if ( Cmdline_start_netgame ) {
 		if ( Cmdline_game_name != NULL ) {
-			strcpy( Multi_sg_netgame->name, Cmdline_game_name );
+			strcpy_s( Multi_sg_netgame->name, Cmdline_game_name );
 			Multi_sg_game_name.set_text(Multi_sg_netgame->name);
 		}
 
@@ -3004,7 +2384,7 @@ void multi_start_game_init()
 			Multi_sg_netgame->mode = NG_MODE_RESTRICTED;
 		} else if ( Cmdline_game_password != NULL ) {
 			Multi_sg_netgame->mode = NG_MODE_PASSWORD;
-			strcpy(Multi_sg_netgame->passwd, Cmdline_game_password);
+			strcpy_s(Multi_sg_netgame->passwd, Cmdline_game_password);
 			Multi_sg_game_passwd.set_text(Multi_sg_netgame->passwd);
 		}
 
@@ -3053,8 +2433,8 @@ void multi_start_game_do()
 	// process any keypresses
 	switch(k){
 	case KEY_ESC :		
-		if(help_overlay_active(MULTI_START_OVERLAY)){
-			help_overlay_set_state(MULTI_START_OVERLAY,0);
+		if(help_overlay_active(Multi_sg_overlay_id)){
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 		} else {
 			gamesnd_play_iface(SND_USER_SELECT);
 			multi_quit_game(PROMPT_NONE);
@@ -3070,7 +2450,7 @@ void multi_start_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_START_OVERLAY, 0);
+		help_overlay_set_state(Multi_sg_overlay_id, gr_screen.res, 0);
 	}
 
 	// check to see if the user has selected a different rank
@@ -3088,7 +2468,7 @@ void multi_start_game_do()
 	GR_MAYBE_CLEAR_RES(Multi_sg_bitmap);
 	if(Multi_sg_bitmap != -1){
 		gr_set_bitmap(Multi_sg_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_sg_window.draw();
 	
@@ -3102,7 +2482,7 @@ void multi_start_game_do()
 	multi_sg_draw_radio_buttons();
 
 	// draw the help overlay
-	help_overlay_maybe_blit(MULTI_START_OVERLAY);
+	help_overlay_maybe_blit(Multi_sg_overlay_id, gr_screen.res);
 	
 	// flip the buffer
 	gr_flip();
@@ -3119,9 +2499,6 @@ void multi_start_game_close()
 	if(!bm_unload(Multi_sg_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sg_bitmap_fname[gr_screen.res]));
 	}
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_START_OVERLAY);
 	
 	// destroy the UI_WINDOW
 	Multi_sg_window.destroy();	
@@ -3150,10 +2527,10 @@ void multi_sg_button_pressed(int n)
 
 	// help overlay	
 	case MSG_HELP:
-		if(!help_overlay_active(MULTI_START_OVERLAY)){
-			help_overlay_set_state(MULTI_START_OVERLAY,1);
+		if(!help_overlay_active(Multi_sg_overlay_id)){
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(MULTI_START_OVERLAY,0);
+			help_overlay_set_state(Multi_sg_overlay_id,gr_screen.res,0);
 		}
 		break;
 
@@ -3368,9 +2745,9 @@ void multi_sg_init_gamenet()
 	pilot_format_callsign_personal(Player->callsign,out_name);
 	sprintf(buf, XSTR("%s game",782), out_name);  // [[ %s will be a pilot's name ]]
 	if ( strlen(buf) > MAX_GAMENAME_LEN ){
-		strcpy(buf, XSTR("Temporary name",783));
+		strcpy_s(buf, XSTR("Temporary name",783));
 	}
-	strcpy(Multi_sg_netgame->name, buf);
+	strcpy_s(Multi_sg_netgame->name, buf);
 
 	// set the default qos and duration
 	multi_voice_maybe_update_vars(Netgame.options.voice_qos,Netgame.options.voice_record_time);
@@ -3383,14 +2760,6 @@ void multi_sg_init_gamenet()
 
 		// setup debug flags
 		Netgame.debug_flags = 0;
-		/*
-		if(!Cmdline_server_firing){
-			Netgame.debug_flags |= NETD_FLAG_CLIENT_FIRING;
-		}
-		if(!Cmdline_client_dodamage){
-			Netgame.debug_flags |= NETD_FLAG_CLIENT_NODAMAGE;
-		}
-		*/
 	} else {
 		memcpy(&Netgame.server_addr,&save,sizeof(net_addr));
 		Netgame.server = server_save;
@@ -3484,7 +2853,7 @@ void multi_sg_rank_scroll_down()
 
 void multi_sg_rank_display_stuff()
 {
-	int y,idx,count;
+	int y,line_height,idx,count;
 	char rank_name[40];
 
 	// if he doesn't have either of the rank flags set, then ignore this
@@ -3494,6 +2863,7 @@ void multi_sg_rank_display_stuff()
 		
 	// display the list of ranks
 	y = Msg_rank_list_coords[gr_screen.res][MSG_Y_COORD];
+	line_height = gr_get_font_height() + 1;
 	idx = Multi_sg_rank_start;
 	count = 0;
 	while((count < NUM_RANKS) && (count < Multi_sg_rank_max_display[gr_screen.res]) && (idx < NUM_RANKS)){	
@@ -3506,10 +2876,10 @@ void multi_sg_rank_display_stuff()
 
 		// print the text
 		multi_sg_rank_build_name(Ranks[idx].name,rank_name);
-		gr_string(Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],y,rank_name);
+		gr_string(Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],y,rank_name,GR_RESIZE_MENU);
 
 		// increment stuff
-		y+=10;
+		y+=line_height;
 		idx++;
 		count++;
 	}
@@ -3518,7 +2888,7 @@ void multi_sg_rank_display_stuff()
 	
 	gr_set_color_fast(&Color_bright);
 	multi_sg_rank_build_name(Ranks[Multi_sg_netgame->rank_base].name,rank_name);
-	gr_string(Msg_rank_sel_coords[gr_screen.res][MSG_X_COORD],Msg_rank_sel_coords[gr_screen.res][MSG_Y_COORD],rank_name);
+	gr_string(Msg_rank_sel_coords[gr_screen.res][MSG_X_COORD],Msg_rank_sel_coords[gr_screen.res][MSG_Y_COORD],rank_name,GR_RESIZE_MENU);
 	
 }
 
@@ -3535,7 +2905,7 @@ void multi_sg_rank_process_select()
 	if(Multi_sg_rank_button.pressed()){		 
 		int y,item;		
 		Multi_sg_rank_button.get_mouse_pos(NULL,&y);
-		item = y / 10;
+		item = y / (gr_get_font_height() + 1);
 		
 		if(item + Multi_sg_rank_start < NUM_RANKS){		
 			// evaluate whether this rank is valid for the guy to pick		
@@ -3562,7 +2932,7 @@ void multi_sg_rank_build_name(char *in,char *out)
 	char use[100];
 	char *first;
 
-	strcpy(use,in);
+	strcpy_s(use,in);
 	first = strtok(use," ");
 
 	// just copy the string
@@ -3968,8 +3338,10 @@ int Multi_create_list_start;											// where to start displaying from
 int Multi_create_list_select;											// which item is currently highlighted
 int Multi_create_files_loaded;
 
-std::vector<multi_create_info> Multi_create_mission_list;
-std::vector<multi_create_info> Multi_create_campaign_list;
+SCP_vector<multi_create_info> Multi_create_mission_list;
+SCP_vector<multi_create_info> Multi_create_campaign_list;
+
+int Multi_create_overlay_id;
 
 // LOCAL function definitions
 void multi_create_check_buttons();
@@ -4206,8 +3578,8 @@ void multi_create_game_init()
 	chatbox_create();
 
 	// load the help overlay 
-	help_overlay_load(MULTI_CREATE_OVERLAY);
-	help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+	Multi_create_overlay_id = help_overlay_get_index(MULTI_CREATE_OVERLAY);
+	help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 
 	// initialize the common notification messaging
 	multi_common_notify_init();		
@@ -4253,12 +3625,6 @@ void multi_create_game_init()
 		Multi_create_sw_checkbox.hide();
 		Multi_create_sw_checkbox.disable();
 	}
-	
-#ifdef FS2_DEMO
-	// disable squad war button in demo
-	Multi_create_sw_checkbox.hide();
-	Multi_create_sw_checkbox.disable();
-#endif
 
 	// initialize the mission type filtering mode
 	Multi_create_filter = MISSION_TYPE_MULTI;
@@ -4324,10 +3690,10 @@ void multi_create_game_do()
 			Netgame.options.respawn = 99; //override anything //for debugging, i often forget this.
 			ng->respawn = Netgame.options.respawn;
 
-			Netgame.campaign_mode = MP_SINGLE; //multiplayer single mission. meaning Single mission, not single player
+			Netgame.campaign_mode = MP_SINGLE_MISSION; //multiplayer single mission. meaning Single mission, not single player
 
-			strncpy(Game_current_mission_filename,almissionname,MAX_FILENAME_LEN ); // copying almissionname to Game_current_mission_filename
-			strncpy(Netgame.mission_name,almissionname,MAX_FILENAME_LEN);// copying almission name to netgame.mission_name
+			strcpy_s(Game_current_mission_filename,almissionname); // copying almissionname to Game_current_mission_filename
+			strcpy_s(Netgame.mission_name,almissionname);// copying almission name to netgame.mission_name
 
 			Multi_sync_mode = MULTI_SYNC_PRE_BRIEFING; //DTP must be set before a call to gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC) is done as it is below.
 			gameseq_post_event(GS_EVENT_MULTI_MISSION_SYNC);//DTP STart game
@@ -4344,7 +3710,7 @@ void multi_create_game_do()
 	}
 	
 	int player_index;
-	char *loading_str = XSTR("Loading", 1336);
+	const char *loading_str = XSTR("Loading", 1336);
 	int str_w, str_h;
 
 	// set this if we want to show the pilot info popup
@@ -4365,19 +3731,19 @@ void multi_create_game_do()
 			GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
 			if(Multi_create_bitmap != -1){
 				gr_set_bitmap(Multi_create_bitmap);
-				gr_bitmap(0, 0);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
 			}
 			chatbox_render();
 			if ( loading_bitmap > -1 ){
 				gr_set_bitmap(loading_bitmap);
 			}
-			gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD] );
+			gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD], GR_RESIZE_MENU );
 
 			// draw "Loading" on it
 			gr_set_color_fast(&Color_normal);
 			gr_set_font(FONT2);
 			gr_get_string_size(&str_w, &str_h, loading_str);
-			gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, loading_str, false);
+			gr_string((gr_screen.max_w_unscaled - str_w) / 2, (gr_screen.max_h_unscaled - str_h) / 2, loading_str, GR_RESIZE_MENU);
 			gr_set_font(FONT1);
 
 			gr_flip();
@@ -4423,8 +3789,8 @@ void multi_create_game_do()
 	switch(k){	
 		// same as the cancel button
 		case KEY_ESC: {
-			if ( help_overlay_active(MULTI_CREATE_OVERLAY) ) {
-				help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+			if ( help_overlay_active(Multi_create_overlay_id) ) {
+				help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 			} else {		
 				gamesnd_play_iface(SND_USER_SELECT);		
 				multi_quit_game(PROMPT_HOST);		
@@ -4440,7 +3806,7 @@ void multi_create_game_do()
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
-		help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+		help_overlay_set_state(Multi_create_overlay_id, gr_screen.res, 0);
 	}
 
 	// process any button clicks
@@ -4454,7 +3820,7 @@ void multi_create_game_do()
 	GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
 	if(Multi_create_bitmap != -1){
 		gr_set_bitmap(Multi_create_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	// if we're not in team vs. team mode, don't draw the team buttons
@@ -4476,13 +3842,13 @@ void multi_create_game_do()
 	gr_set_color_fast(&Color_normal);
 
 	// draw Create Game text
-	gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD], Mc_create_game_text[gr_screen.res][MC_Y_COORD], XSTR("Create Game", 1268));
+	gr_string(Mc_create_game_text[gr_screen.res][MC_X_COORD], Mc_create_game_text[gr_screen.res][MC_Y_COORD], XSTR("Create Game", 1268), GR_RESIZE_MENU);
 
 	// draw players text
-	gr_string(Mc_players_text[gr_screen.res][MC_X_COORD], Mc_players_text[gr_screen.res][MC_Y_COORD], XSTR("Players", 1269));
+	gr_string(Mc_players_text[gr_screen.res][MC_X_COORD], Mc_players_text[gr_screen.res][MC_Y_COORD], XSTR("Players", 1269), GR_RESIZE_MENU);
 
 	// draw players text
-	gr_string(Mc_team_text[gr_screen.res][MC_X_COORD], Mc_team_text[gr_screen.res][MC_Y_COORD], XSTR("Team", 1258));
+	gr_string(Mc_team_text[gr_screen.res][MC_X_COORD], Mc_team_text[gr_screen.res][MC_Y_COORD], XSTR("Team", 1258), GR_RESIZE_MENU);
 
 	// process and display the player list	
 	// NOTE : this must be done before the buttons are checked to insure that a player hasn't dropped 
@@ -4527,7 +3893,7 @@ void multi_create_game_do()
 	multi_common_voice_display_status();
 
 	// blit the help overlay if necessary
-	help_overlay_maybe_blit(MULTI_CREATE_OVERLAY);
+	help_overlay_maybe_blit(Multi_create_overlay_id, gr_screen.res);
 
 	// test code
 	if(MULTI_IS_TRACKER_GAME){
@@ -4536,7 +3902,7 @@ void multi_create_game_do()
 		} else {
 			gr_set_color_fast(&Color_normal);
 		}
-		gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0], Multi_create_sw_checkbox_text[gr_screen.res][1], "SquadWar");
+		gr_string(Multi_create_sw_checkbox_text[gr_screen.res][0], Multi_create_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
 	}
 
 	// flip the buffer
@@ -4563,9 +3929,6 @@ void multi_create_game_close()
 	if(!bm_unload(Multi_create_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_create_bitmap_fname[gr_screen.res]));
 	}		
-
-	// unload the help overlay
-	help_overlay_unload(MULTI_CREATE_OVERLAY);
 	
 	// destroy the chatbox
 	// chatbox_close();
@@ -4613,10 +3976,10 @@ void multi_create_button_pressed(int n)
 
 	// help button
 	case MC_HELP :
-		if(!help_overlay_active(MULTI_CREATE_OVERLAY)){
-			help_overlay_set_state(MULTI_CREATE_OVERLAY,1);
+		if(!help_overlay_active(Multi_create_overlay_id)){
+			help_overlay_set_state(Multi_create_overlay_id,gr_screen.res,1);
 		} else {
-			help_overlay_set_state(MULTI_CREATE_OVERLAY,0);
+			help_overlay_set_state(Multi_create_overlay_id,gr_screen.res,0);
 		}
 		break;
 
@@ -4728,7 +4091,7 @@ void multi_create_button_pressed(int n)
 	// switch to individual mission mode and load in a list
 	case MC_MISSION_FILTER:
 		if(Multi_create_list_mode != MULTI_CREATE_SHOW_MISSIONS){
-			Netgame.campaign_mode = MP_SINGLE;
+			Netgame.campaign_mode = MP_SINGLE_MISSION;
 
 			gamesnd_play_iface(SND_USER_SELECT);												
 			
@@ -4877,6 +4240,7 @@ void multi_create_plist_blit_normal()
 	int idx;		
 	char str[CALLSIGN_LEN+5];
 	int y_start = Mc_players_coords[gr_screen.res][MC_Y_COORD];	
+	int line_height = gr_get_font_height() + 1;
 	int total_offset;
 
 	// display all the players	
@@ -4904,20 +4268,20 @@ void multi_create_plist_blit_normal()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));  // [[ Observer ]]
+				strcat_s(str,XSTR("(O)",787));  // [[ Observer ]]
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
-			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str);
+			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
 
-			y_start += 10;			
+			y_start += line_height;			
 		}
 	}		
 }
@@ -4927,6 +4291,7 @@ void multi_create_plist_blit_team()
 	int idx;		
 	char str[CALLSIGN_LEN+1];
 	int y_start = Mc_players_coords[gr_screen.res][MC_Y_COORD];	
+	int line_height = gr_get_font_height() + 1;
 	int total_offset;
 
 	// display all the red players first
@@ -4960,7 +4325,7 @@ void multi_create_plist_blit_team()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);				
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
@@ -4969,29 +4334,29 @@ void multi_create_plist_blit_team()
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 				if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2);
+					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2, GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM0_SELECT][0] + 1;			
 				}
 			} else {
 				if(Multi_common_icons[MICON_TEAM0] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2);
+					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2, GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM0][0] + 1;			
 				}				
 			}						
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));
+				strcat_s(str,XSTR("(O)",787));
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
-			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str);
-			y_start += 10;
+			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
+			y_start += line_height;
 		}
 	}	
 	
@@ -5026,7 +4391,7 @@ void multi_create_plist_blit_team()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
@@ -5035,29 +4400,29 @@ void multi_create_plist_blit_team()
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 				if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2);
+					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2, GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM1_SELECT][0] + 1;
 				}				
 			} else {
 				if(Multi_common_icons[MICON_TEAM1] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2);
+					gr_bitmap(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset, y_start-2, GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM1][0] + 1;
 				}
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,XSTR("(O)",787));
+				strcat_s(str,XSTR("(O)",787));
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mc_players_coords[gr_screen.res][MC_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
-			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str);
-			y_start += 10;
+			gr_string(Mc_players_coords[gr_screen.res][MC_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
+			y_start += line_height;
 		}
 	}			
 }
@@ -5121,17 +4486,6 @@ void multi_create_list_load_missions()
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
 
-		// for multiplayer beta builds, only accept builtin missions
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-		if(game_find_builtin_mission(filename) == NULL){
-			continue;
-		}
-#elif defined(PD_BUILD)
-		if((game_find_builtin_mission(filename) == NULL) && !strstr(filename, "peterdrake")){
-			continue;
-		}
-#endif
-
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
 		}
@@ -5145,8 +4499,8 @@ void multi_create_list_load_missions()
 
 			multi_create_info mcip;
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, mission_name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, mission_name );
 			mcip.flags = flags;
 			mcip.respawn = m_respawn;
 			mcip.max_players = (ubyte)max_players;
@@ -5217,17 +4571,6 @@ void multi_create_list_load_campaigns()
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
 
-		// for multiplayer beta builds, only accept builtin missions
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-		if(game_find_builtin_mission(filename) == NULL){
-			continue;
-		}
-#elif defined(PD_BUILD)
-		if((game_find_builtin_mission(filename) == NULL) && !strstr(filename, "peterdrake")){
-			continue;
-		}
-#endif
-
 		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
 		}
@@ -5237,8 +4580,8 @@ void multi_create_list_load_campaigns()
 		if( flags != CAMPAIGN_TYPE_SINGLE && mission_campaign_get_info(filename,title,&campaign_type,&max_players)) {
 			multi_create_info mcip;
 
-			strcpy(mcip.filename, filename );
-			strcpy(mcip.name, name );
+			strcpy_s(mcip.filename, filename );
+			strcpy_s(mcip.name, name );
 			
 			// setup various flags
 			if ( flags == CAMPAIGN_TYPE_MULTI_COOP ){
@@ -5286,6 +4629,7 @@ void multi_create_list_do()
 {
 	int idx;
 	int start_index,stop_index;
+	int line_height = gr_get_font_height() + 1;
 	char selected_name[255];
 
 	// bail early if there aren't any selectable items
@@ -5297,7 +4641,7 @@ void multi_create_list_do()
 	if(Multi_create_list_select_button.pressed()){		 
 		int y,item;				
 		Multi_create_list_select_button.get_mouse_pos(NULL,&y);
-		item = (y / 10);
+		item = (y / line_height);
 
 		// make sure we are selectedin valid indices
 		if((item < Multi_create_list_max_display[gr_screen.res]) && (item >= 0)){					
@@ -5354,20 +4698,20 @@ void multi_create_list_do()
 		multi_create_list_blit_icons(idx, y_start);		
 		
 		// force fit the mission name string
-		strcpy(selected_name, mcip->name);
+		strcpy_s(selected_name, mcip->name);
 		gr_force_fit_string(selected_name, 255, Mc_column1_w[gr_screen.res]);
-		gr_string(Mc_mission_name_x[gr_screen.res], y_start, selected_name);
+		gr_string(Mc_mission_name_x[gr_screen.res], y_start, selected_name, GR_RESIZE_MENU);
 
 		// draw the max players if in mission mode		
 		sprintf(selected_name, "%d", (int)mcip->max_players);
-		gr_string(Mc_mission_count_x[gr_screen.res], y_start, selected_name);		
+		gr_string(Mc_mission_count_x[gr_screen.res], y_start, selected_name, GR_RESIZE_MENU);		
 
 		// force fit the mission filename string
-		strcpy(selected_name, mcip->filename);
+		strcpy_s(selected_name, mcip->filename);
 		gr_force_fit_string(selected_name, 255, Mc_column3_w[gr_screen.res]);
-		gr_string(Mc_mission_fname_x[gr_screen.res], y_start, selected_name);
+		gr_string(Mc_mission_fname_x[gr_screen.res], y_start, selected_name, GR_RESIZE_MENU);
 
-		y_start += 10;
+		y_start += line_height;
 		count++;
 	}
 }
@@ -5452,7 +4796,7 @@ void multi_create_list_select_item(int n)
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
 				
 				Assert(ng->max_players > 0);
-				strcpy(ng->title,The_mission.name);								
+				strcpy_s(ng->title,The_mission.name);								
 
 				// set the information area text
 				multi_common_set_text(The_mission.mission_desc);
@@ -5486,7 +4830,7 @@ void multi_create_list_select_item(int n)
 				// if we successfully got the # of players
 				else {
 					memset(ng->title,0,NAME_LENGTH+1);
-					strcpy(ng->title,title);
+					strcpy_s(ng->title,title);
 					ng->max_players = max_players;					
 				}
 
@@ -5553,17 +4897,17 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	if(mcip->flags & MISSION_TYPE_MULTI_COOP){
 		if(Multi_common_icons[MICON_COOP] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_COOP]);
-			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD]);
+			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
 		}
 	} else if(mcip->flags & MISSION_TYPE_MULTI_TEAMS){
 		if(Multi_common_icons[MICON_TVT] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_TVT]);
-			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD]);
+			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
 		}
 	} else if(mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT){
 		if(Multi_common_icons[MICON_DOGFIGHT] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_DOGFIGHT]);
-			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD]);
+			gr_bitmap(Mc_icon_type_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_type_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
 		}
 	} 
 
@@ -5571,7 +4915,7 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	if(MULTI_IS_TRACKER_GAME && (mcip->valid_status == MVALID_STATUS_VALID)){
 		if(Multi_common_icons[MICON_VALID] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_VALID]);
-			gr_bitmap(Mc_icon_valid_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_valid_coords[gr_screen.res][MC_Y_COORD]);
+			gr_bitmap(Mc_icon_valid_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_valid_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
 		}
 	}
 
@@ -5581,7 +4925,7 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 		if(Multi_common_icons[MICON_VOLITION] >= 0){
 			gr_set_bitmap(Multi_common_icons[MICON_VOLITION]);
-			gr_bitmap(Mc_icon_volition_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_volition_coords[gr_screen.res][MC_Y_COORD]);
+			gr_bitmap(Mc_icon_volition_coords[gr_screen.res][MC_X_COORD],y_start + Mc_icon_volition_coords[gr_screen.res][MC_Y_COORD],GR_RESIZE_MENU);
 		}
 	}	
 }
@@ -5606,12 +4950,12 @@ void multi_create_accept_hit()
 	case MULTI_CREATE_SHOW_MISSIONS:	
 		if(Multi_create_list_select != -1){
 			// set the netgame mode
-			Netgame.campaign_mode = MP_SINGLE;
+			Netgame.campaign_mode = MP_SINGLE_MISSION;
 
 			// setup various filenames and mission names
 			multi_create_select_to_filename(Multi_create_list_select,selected_name);
-			strncpy( Game_current_mission_filename, selected_name, MAX_FILENAME_LEN );
-			strncpy(Netgame.mission_name,selected_name,MAX_FILENAME_LEN);			
+			strcpy_s( Game_current_mission_filename, selected_name);
+			strcpy_s(Netgame.mission_name,selected_name);
 
 			// NETLOG
 			ml_printf(NOX("Starting single mission %s, with %d players"), Game_current_mission_filename, multi_num_players());
@@ -5647,40 +4991,37 @@ void multi_create_accept_hit()
 		multi_team_send_update();
 	}
 
-    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.mission_time_limit > fl2f(-1.0f)))
-    {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
-                             XSTR("A time limit is being used in a co-op game.\r\n"
-                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
-                                  "  Select \'Yes\' to continue with this time limit.\r\n"
-                                  "  Select \'No\' to continue without this time limit.", -1));
+	// coop game option validation checks
+	if ( (Netgame.type_flags & NG_TYPE_COOP) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+		// check for time limit
+		if (Netgame.options.mission_time_limit != i2f(-1)) {
+			popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
+								XSTR("A time limit is being used in a co-op game.\r\n"
+									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
+									"  Select \'Yes\' to continue with this time limit.\r\n"
+									"  Select \'No\' to continue without this time limit.", -1));
 
-        if (popup_choice == 0)
-        {
-            return;
-        }
-        else if (popup_choice == 2)
-        {
-            Netgame.options.mission_time_limit = fl2f(-1.0f);
-        }
-    }
+			if (popup_choice == 0) {
+				return;
+			} else if (popup_choice == 2) {
+				Netgame.options.mission_time_limit = i2f(-1);
+			}
+		}
 
-    if ((Netgame.type_flags & NG_TYPE_COOP) && (Netgame.options.kill_limit < 9999))
-    {
-        popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, POPUP_NO,
-                             XSTR("A kill limit is being used in a co-op game.\r\n"
-                                  "  Select \'Cancel\' to go back to the mission select screen.\r\n"
-                                  "  Select \'Yes\' to continue with this kill limit.\r\n"
-                                  "  Select \'No\' to continue without this kill limit.", -1));
+		// check kill limit (NOTE: <= 0 is considered no limit)
+		if ( (Netgame.options.kill_limit > 0) && (Netgame.options.kill_limit != 9999) ) {
+			popup_choice = popup(0, 3, POPUP_CANCEL, POPUP_YES, XSTR( " &No", 506 ),
+								XSTR("A kill limit is being used in a co-op game.\r\n"
+									"  Select \'Cancel\' to go back to the mission select screen.\r\n"
+									"  Select \'Yes\' to continue with this kill limit.\r\n"
+									"  Select \'No\' to continue without this kill limit.", -1));
 
-        if (popup_choice == 0)
-        {
-            return;
-        }
-        else if (popup_choice == 2)
-        {
-            Netgame.options.kill_limit = 9999;
-        }
+			if (popup_choice == 0) {
+				return;
+			} else if (popup_choice == 2) {
+				Netgame.options.kill_limit = 9999;
+			}
+		}
     }
 
 	// if not on the standalone, move to the mission sync state which will take care of everything
@@ -5743,7 +5084,7 @@ short multi_create_get_mouse_id()
 	Multi_create_player_select_button.get_mouse_pos(NULL,&y);
 
 	// select things a little differently if we're in team vs. team or non-team vs. team mode			
-	nth = (y / 10);			
+	nth = (y / (gr_get_font_height() + 1));			
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		int player_index = -1;
 
@@ -5944,12 +5285,10 @@ int multi_create_ok_to_commit()
 		if(MULTI_IS_TRACKER_GAME){
 			// don't allow squad war matches to continue
 			if(Netgame.type_flags & NG_TYPE_SW){
-#ifdef RELEASE_REAL
 				// if this is squad war, don't allow it to continue			
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("One or more players has hacked data files. You cannot play a SquadWar match unless all clients have legal data", 1272));
 
 				return 0;
-#endif
 			}
 			// otherwise, warn the players that stats will not saved
 			else {
@@ -6000,15 +5339,8 @@ int multi_create_ok_to_commit()
 	if(!multi_create_verify_cds()){
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 
-#ifdef MULTIPLAYER_BETA_BUILD
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "You need 1 CD for every player!");			
-#else 
-	#ifdef DVD_MESSAGE_HACK
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 DVD for every 4 players!", 794));			
-	#else
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
-	#endif
-#endif
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You need 1 CD for every 4 players!", 794));			
+
 		return 0;
 	}	
 	
@@ -6053,19 +5385,12 @@ int multi_create_verify_cds()
 		}
 	}
 
-	// for the beta, everyone must have a CD
-#ifdef MULTIPLAYER_BETA_BUILD
-	if(multi_cd_count < player_count){
-		return 0;
-	}
-#else
 	// determine if we have enough
 	float ratio = (float)player_count / (float)multi_cd_count;
 	// greater than a 4 to 1 ratio
 	if(ratio > 4.0f){
 		return 0;
 	} 
-#endif
 
 	// we meet the conditions
 	return 1;
@@ -6665,7 +5990,7 @@ void multi_host_options_do()
 	GR_MAYBE_CLEAR_RES(Multi_ho_bitmap);
 	if(Multi_ho_bitmap != -1){
 		gr_set_bitmap(Multi_ho_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_ho_window.draw();
 	
@@ -6864,7 +6189,7 @@ void multi_ho_accept_hit()
 
 	// set the netgame respawn count
 	// maybe warn the user that respawns will not be used for a campaign mission
-	if(Netgame.campaign_mode == MP_SINGLE){
+	if(Netgame.campaign_mode == MP_SINGLE_MISSION){
 		Multi_ho_respawns.get_text(resp_str);
 		uint temp_respawn = (uint)atoi(resp_str);
 		// if he currently has no mission selected, let the user set any # of respawns
@@ -6930,7 +6255,7 @@ void multi_ho_accept_hit()
 	// store these values locally
 	memcpy(&Player->m_local_options,&Net_player->p_info.options,sizeof(multi_local_options));
 	memcpy(&Player->m_server_options,&Netgame.options,sizeof(multi_server_options));
-	write_pilot_file(Player);	
+	Pilot.save_player(Player);
 
 	// apply any changes in settings (notify everyone of voice qos changes, etc)
 	multi_ho_apply_options();
@@ -7004,9 +6329,9 @@ void multi_ho_get_options()
 	Multi_ho_obs.set_text(resp_str);
 
 	// set the respawn count
-	if(Netgame.campaign_mode == MP_SINGLE){
+	if(Netgame.campaign_mode == MP_SINGLE_MISSION){
 		memset(resp_str,0,10);
-		sprintf(resp_str,"%d",Netgame.respawn);
+		sprintf(resp_str,"%u",Netgame.respawn);
 		Multi_ho_respawns.set_text(resp_str);	
 	}
 
@@ -7061,7 +6386,7 @@ void multi_ho_display_record_time()
 	// format the string
 	sprintf(time_str,"%d.%d",full_seconds,half_seconds);
 	gr_set_color_fast(&Color_bright);
-	gr_string(Ho_vd_coords[gr_screen.res][MULTI_HO_X_COORD],Ho_vd_coords[gr_screen.res][MULTI_HO_Y_COORD],time_str);
+	gr_string(Ho_vd_coords[gr_screen.res][MULTI_HO_X_COORD],Ho_vd_coords[gr_screen.res][MULTI_HO_Y_COORD],time_str,GR_RESIZE_MENU);
 }
 
 int multi_ho_check_values()
@@ -7176,7 +6501,7 @@ void multi_ho_blit_max_respawns()
 	// otherwise blit the max as specified by the current mission file	
 	sprintf(string,"(%d)",Multi_ho_mission_respawn);	
 	gr_set_color_fast(&Color_normal);
-	gr_string(Ho_max_rsp_coords[gr_screen.res][MULTI_HO_X_COORD], Ho_max_rsp_coords[gr_screen.res][MULTI_HO_Y_COORD], string);
+	gr_string(Ho_max_rsp_coords[gr_screen.res][MULTI_HO_X_COORD], Ho_max_rsp_coords[gr_screen.res][MULTI_HO_Y_COORD], string, GR_RESIZE_MENU);
 }
 
 void multi_ho_display_skill_level()
@@ -7190,7 +6515,7 @@ void multi_ho_display_skill_level()
 	}
 
 	gr_set_color_fast(&Color_bright);
-	gr_string(Ho_st_coords[gr_screen.res][0], Ho_st_coords[gr_screen.res][1], Skill_level_names(skill_level, 1));
+	gr_string(Ho_st_coords[gr_screen.res][0], Ho_st_coords[gr_screen.res][1], Skill_level_names(skill_level, 1), GR_RESIZE_MENU);
 }
 
 // -------------------------------------------------------------------------------------------------------------
@@ -7443,7 +6768,7 @@ void multi_game_client_setup_do_frame()
 	GR_MAYBE_CLEAR_RES(Multi_jw_bitmap);
 	if(Multi_jw_bitmap != -1){		
 		gr_set_bitmap(Multi_jw_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	// if we're not in team vs. team mode, don't draw the team buttons
@@ -7469,7 +6794,7 @@ void multi_game_client_setup_do_frame()
 			gr_set_color_fast(&Color_normal);
 		}
 				
-		gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0], Multi_jw_sw_checkbox_text[gr_screen.res][1], "SquadWar");
+		gr_string(Multi_jw_sw_checkbox_text[gr_screen.res][0], Multi_jw_sw_checkbox_text[gr_screen.res][1], "SquadWar", GR_RESIZE_MENU);
 	}	
 
 	// draw the UI window
@@ -7492,28 +6817,28 @@ void multi_game_client_setup_do_frame()
 
 	// blit the mission filename if possible
 	if(Netgame.campaign_mode){
-		if(strlen(Netgame.campaign_name) > 0){			
-			strcpy(mission_text,Netgame.campaign_name);
+		if(Netgame.campaign_name[0] != '\0'){			
+			strcpy_s(mission_text,Netgame.campaign_name);
 			
-			if(strlen(Netgame.title) > 0){
-				strcat(mission_text,", ");
-				strcat(mission_text,Netgame.title);
+			if(Netgame.title[0] != '\0'){
+				strcat_s(mission_text,", ");
+				strcat_s(mission_text,Netgame.title);
 			}
 
 			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text);
+			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
 		}								
 	} else {
-		if(strlen(Netgame.mission_name) > 0){			
-			strcpy(mission_text,Netgame.mission_name);
+		if(Netgame.mission_name[0] != '\0'){			
+			strcpy_s(mission_text,Netgame.mission_name);
 
-			if(strlen(Netgame.title) > 0){
-				strcat(mission_text,", ");
-				strcat(mission_text,Netgame.title);
+			if(Netgame.title[0] != '\0'){
+				strcat_s(mission_text,", ");
+				strcat_s(mission_text,Netgame.title);
 			}			
 
 			gr_set_color_fast(&Color_bright_white);
-			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text);
+			gr_string(Mjw_mission_name_coords[gr_screen.res][MJW_X_COORD],Mjw_mission_name_coords[gr_screen.res][MJW_Y_COORD],mission_text,GR_RESIZE_MENU);
 		}
 	}	
 
@@ -7675,6 +7000,7 @@ void multi_jw_plist_blit_normal()
 	int idx;		
 	char str[CALLSIGN_LEN+1];
 	int y_start = Mjw_players_coords[gr_screen.res][MJW_Y_COORD];	
+	int line_height = gr_get_font_height() + 1;
 	int total_offset;
 
 	// display all the players	
@@ -7702,20 +7028,20 @@ void multi_jw_plist_blit_normal()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
 			
 			// make sure the string will fit, then display it
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,"(0)");
+				strcat_s(str,"(0)");
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
-			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str);
+			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
 
-			y_start += 10;			
+			y_start += line_height;			
 		}
 	}		
 }
@@ -7725,6 +7051,7 @@ void multi_jw_plist_blit_team()
 	int idx;		
 	char str[CALLSIGN_LEN+1];
 	int y_start = Mjw_players_coords[gr_screen.res][MJW_Y_COORD];	
+	int line_height = gr_get_font_height() + 1;
 	int total_offset;
 
 	// always blit the proper team button based on _my_ team status
@@ -7759,7 +7086,7 @@ void multi_jw_plist_blit_team()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1, GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
@@ -7768,26 +7095,26 @@ void multi_jw_plist_blit_team()
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 				if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2);
+					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2,GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM0_SELECT][0] + 1;
 				}				
 			} else {
 				if(Multi_common_icons[MICON_TEAM0] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2);
+					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2,GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM0][0] + 1;
 				}
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
-			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str);
-			y_start += 10;
+			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
+			y_start += line_height;
 		}
 	}	
 	
@@ -7816,7 +7143,7 @@ void multi_jw_plist_blit_team()
 			// optionally draw his CD status
 			if((Net_players[idx].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 				gr_set_bitmap(Multi_common_icons[MICON_CD]);
-				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1);
+				gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start - 1,GR_RESIZE_MENU);
 
 				total_offset += Multi_common_icon_dims[MICON_CD][0] + 1;
 			}			
@@ -7825,29 +7152,29 @@ void multi_jw_plist_blit_team()
 			if(Net_players[idx].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 				if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2);
+					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2,GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM1_SELECT][0] + 1;
 				}
 			} else {
 				if(Multi_common_icons[MICON_TEAM1] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2);
+					gr_bitmap(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start-2,GR_RESIZE_MENU);
 
 					total_offset += Multi_common_icon_dims[MICON_TEAM1][0] + 1;
 				}
 			}
 
 			// make sure the string will fit
-			strcpy(str,Net_players[idx].m_player->callsign);
+			strcpy_s(str,Net_players[idx].m_player->callsign);
 			if(Net_players[idx].flags & NETINFO_FLAG_OBSERVER){
-				strcat(str,"(0)");
+				strcat_s(str,"(0)");
 			}
 			gr_force_fit_string(str,CALLSIGN_LEN,Mjw_players_coords[gr_screen.res][MJW_W_COORD] - total_offset);
 
 			// display him in the correct half of the list depending on his team
-			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str);
-			y_start += 10;
+			gr_string(Mjw_players_coords[gr_screen.res][MJW_X_COORD] + total_offset,y_start,str,GR_RESIZE_MENU);
+			y_start += line_height;
 		}
 	}			
 }
@@ -7865,7 +7192,7 @@ short multi_jw_get_mouse_id()
 	Multi_jw_plist_select_button.get_mouse_pos(NULL,&y);
 
 	// select things a little differently if we're in team vs. team or non-team vs. team mode			
-	nth = (y / 10);			
+	nth = (y / (gr_get_font_height() + 1));			
 	if(Netgame.type_flags & NG_TYPE_TEAM){
 		int player_index = -1;
 
@@ -8059,8 +7386,7 @@ int Multi_sync_countdown_coords[GR_NUM_RESOLUTIONS][2] = {
 
 //XSTR:ON
 
-anim *Multi_sync_countdown_anim = NULL;
-anim_instance *Multi_sync_countdown_instance = NULL;
+static generic_anim Multi_sync_countdown_anim;
 
 
 // PREBRIEFING STUFF
@@ -8087,8 +7413,8 @@ void multi_sync_check_buttons();
 void multi_sync_button_pressed(int n);
 void multi_sync_scroll_info_up();
 void multi_sync_scroll_info_down();
-void multi_sync_display_name(char *name,int index,int np_index);		// display info on the left hand portion of the status window thingie
-void multi_sync_display_status(char *status,int index);					// display info on the right hand portion of the status window thingie
+void multi_sync_display_name(const char *name,int index,int np_index);		// display info on the left hand portion of the status window thingie
+void multi_sync_display_status(const char *status,int index);					// display info on the right hand portion of the status window thingie
 void multi_sync_force_start_pre();
 void multi_sync_force_start_post();
 void multi_sync_launch();
@@ -8120,9 +7446,6 @@ void multi_sync_init()
 
 	// reset all timestamp
 	multi_reset_timestamps();
-
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		multi_sync_common_init();
@@ -8168,7 +7491,7 @@ void multi_sync_do()
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
 			gr_set_bitmap(Multi_sync_bitmap);
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 		Multi_sync_window.draw();
 
@@ -8199,7 +7522,7 @@ void multi_sync_close()
 	}
 }
 
-char *multi_sync_tooltip_handler(char *str)
+const char *multi_sync_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@launch"))) {
 		if (Multi_launch_button_created){
@@ -8326,9 +7649,6 @@ void multi_sync_common_close()
 	if(!bm_unload(Multi_sync_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sync_bitmap_fname[gr_screen.res]));
 	}	
-
-	//extern int Player_multi_died_check;
-	//Player_multi_died_check = -1;
 	
 	// destroy the UI_WINDOW
 	Multi_sync_window.destroy();
@@ -8457,10 +7777,10 @@ void multi_sync_blit_screen_all()
 						}
 						// otherwise
 						else {
-							strcpy(txt,XSTR("Mission file xfer",829));
+							strcpy_s(txt,XSTR("Mission file xfer",829));
 						}					
 					} else {
-						strcpy(txt,XSTR("Mission file xfer",829));
+						strcpy_s(txt,XSTR("Mission file xfer",829));
 					}
 				}
 				// clients should display only for themselves (which is the only thing they know)
@@ -8475,12 +7795,12 @@ void multi_sync_blit_screen_all()
 						}
 						// otherwise
 						else {
-							strcpy(txt,XSTR("Mission file xfer",829));
+							strcpy_s(txt,XSTR("Mission file xfer",829));
 						}
 					}
 					// otherwise
 					else {
-						strcpy(txt,XSTR("Mission file xfer",829));
+						strcpy_s(txt,XSTR("Mission file xfer",829));
 					}
 				}
 
@@ -8496,7 +7816,10 @@ void multi_sync_blit_screen_all()
 	}	
 
 	// display the mission start countdown timer (if any)
-	anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);	
+	//anim_render_all(GS_STATE_MULTI_MISSION_SYNC,flFrametime);
+	if((gameseq_get_state() == GS_STATE_MULTI_MISSION_SYNC && Multi_sync_countdown_timer > -1.0f) || (Multi_sync_countdown != -1))
+		generic_anim_render(&Multi_sync_countdown_anim, flFrametime, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD], true);
+
 
 	// process and show the chatbox thingie	
 	chatbox_render();
@@ -8799,7 +8122,7 @@ void multi_sync_pre_do()
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
 			gr_set_bitmap(Multi_sync_bitmap);
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 		Multi_sync_window.draw();
 
@@ -8848,11 +8171,11 @@ void multi_sync_post_init()
 	}	
 
 	// if I'm not a standalone server, load up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		Multi_sync_countdown_anim = NULL;
-		Multi_sync_countdown_instance = NULL;
-		Multi_sync_countdown_anim = anim_load(Multi_sync_countdown_fname[gr_screen.res]);				
-		if(Multi_sync_countdown_anim == NULL){
+	if(!(Game_mode & GM_STANDALONE_SERVER)){
+		generic_anim_init(&Multi_sync_countdown_anim, Multi_sync_countdown_fname[gr_screen.res]);
+		Multi_sync_countdown_anim.ani.bg_type = bm_get_type(Multi_sync_bitmap);
+		generic_anim_stream(&Multi_sync_countdown_anim);
+		if(Multi_sync_countdown_anim.num_frames < 1){
 			nprintf(("General","WARNING!, Could not load countdown animation %s!\n",Multi_sync_countdown_fname[gr_screen.res]));
 		}
 	}
@@ -8941,17 +8264,6 @@ void multi_sync_post_do()
 			// increment by frametime.
 			Multi_sync_countdown_timer += flFrametime;
 
-			// if the animation is not playing, start it
-			if(!(Game_mode & GM_STANDALONE_SERVER) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-				anim_play_struct aps;				
-
-				anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-				aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-				aps.framerate_independent = 1;
-
-				Multi_sync_countdown_instance = anim_play(&aps);
-			}
-
 			// if the next second has expired
 			if( Multi_sync_countdown_timer >= 1.0f ) {
 
@@ -8982,17 +8294,6 @@ void multi_sync_post_do()
 				multi_common_add_text(XSTR("Moving into game\n",842),1);			
 			}
 		}
-	} else {
-		// maybe start the animation countdown 
-		if((Multi_sync_countdown >= 0) && (Multi_sync_countdown_instance == NULL) && (Multi_sync_countdown_anim != NULL)){
-			anim_play_struct aps;				
-
-			anim_play_init(&aps, Multi_sync_countdown_anim, Multi_sync_countdown_coords[gr_screen.res][MS_X_COORD], Multi_sync_countdown_coords[gr_screen.res][MS_Y_COORD]);
-			aps.screen_id = GS_STATE_MULTI_MISSION_SYNC;
-			aps.framerate_independent = 1;
-
-			Multi_sync_countdown_instance = anim_play(&aps);
-		}
 	}
 
 	// host - specific stuff
@@ -9009,7 +8310,7 @@ void multi_sync_post_do()
 		GR_MAYBE_CLEAR_RES(Multi_sync_bitmap);
 		if(Multi_sync_bitmap != -1){
 			gr_set_bitmap(Multi_sync_bitmap);
-			gr_bitmap(0,0);
+			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 		Multi_sync_window.draw();
 
@@ -9023,18 +8324,8 @@ void multi_sync_post_close()
 {
 	int idx;
 
-	// if I'm not a standalone server, unload up the countdown stuff
-	if(!(Game_mode & GM_STANDALONE_SERVER)){				
-		// release all rendering animation instances (should only be 1)
-		anim_release_all_instances(GS_STATE_MULTI_MISSION_SYNC);
-		Multi_sync_countdown_instance = NULL;
-
-		// free up the countdown animation
-		if(Multi_sync_countdown_anim != NULL){
-			anim_free(Multi_sync_countdown_anim);
-			Multi_sync_countdown_anim = NULL;
-		}
-	}
+	if(Multi_sync_countdown_anim.num_frames > 0)
+		generic_anim_unload(&Multi_sync_countdown_anim);
 	
 	// all players should reset sequencing
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -9056,12 +8347,13 @@ void multi_sync_post_close()
 	*/
 }
 
-void multi_sync_display_name(char *name,int index,int np_index)
+void multi_sync_display_name(const char *name,int index,int np_index)
 {
 	char fit[CALLSIGN_LEN];	
+	int line_height = gr_get_font_height() + 1;
 	
 	// make sure the string actually fits
-	strcpy(fit,name);
+	strcpy_s(fit,name);
 
 	// if we're in team vs. team mode
 	if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -9075,7 +8367,7 @@ void multi_sync_display_name(char *name,int index,int np_index)
 		}
 
 		// blit the string
-		gr_string(Ms_status_coords[gr_screen.res][0] + Ms_cd_icon_offset[gr_screen.res] + Ms_team_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10),fit);
+		gr_string(Ms_status_coords[gr_screen.res][0] + Ms_cd_icon_offset[gr_screen.res] + Ms_team_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height),fit,GR_RESIZE_MENU);
 
 		// blit his team icon 
 		// team 0		
@@ -9084,14 +8376,14 @@ void multi_sync_display_name(char *name,int index,int np_index)
 			if(Net_players[np_index].flags & NETINFO_FLAG_TEAM_CAPTAIN){				
 				if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10) - 2);
+					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height) - 2, GR_RESIZE_MENU);
 				} 
 			}
 			// normal team member icon
 			else {
 				if(Multi_common_icons[MICON_TEAM0] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10) - 2);
+					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height) - 2, GR_RESIZE_MENU);
 				}
 			}
 		}
@@ -9101,14 +8393,14 @@ void multi_sync_display_name(char *name,int index,int np_index)
 			if(Net_players[np_index].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 				if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10) - 2);
+					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height) - 2, GR_RESIZE_MENU);
 				}
 			}
 			// normal team member icon
 			else {
 				if(Multi_common_icons[MICON_TEAM1] != -1){
 					gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10) - 2);
+					gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height) - 2, GR_RESIZE_MENU);
 				}
 			}
 		}		
@@ -9123,25 +8415,25 @@ void multi_sync_display_name(char *name,int index,int np_index)
 		}
 
 		// blit the string
-		gr_string(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10),fit);
+		gr_string(Ms_status_coords[gr_screen.res][MS_X_COORD] + Ms_cd_icon_offset[gr_screen.res], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height),fit,GR_RESIZE_MENU);
 	}
 
 	// maybe blit his CD status icon
 	if((Net_players[np_index].flags & NETINFO_FLAG_HAS_CD) && (Multi_common_icons[MICON_CD] != -1)){
 		gr_set_bitmap(Multi_common_icons[MICON_CD]);
-		gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * 10));
+		gr_bitmap(Ms_status_coords[gr_screen.res][MS_X_COORD], Ms_status_coords[gr_screen.res][MS_Y_COORD] + (index * line_height), GR_RESIZE_MENU);
 	}
 }
 
-void multi_sync_display_status(char *status,int index)
+void multi_sync_display_status(const char *status,int index)
 {
 	char fit[250];
 
 	// make sure the string actually fits
-	strcpy(fit, status);
+	strcpy_s(fit, status);
 	gr_force_fit_string(fit, 250, Ms_status2_coords[gr_screen.res][MS_W_COORD] - 20);
 	gr_set_color_fast(&Color_bright);	
-	gr_string(Ms_status2_coords[gr_screen.res][MS_X_COORD], Ms_status2_coords[gr_screen.res][MS_Y_COORD] + (index * 10), fit);		
+	gr_string(Ms_status2_coords[gr_screen.res][MS_X_COORD], Ms_status2_coords[gr_screen.res][MS_Y_COORD] + (index * (gr_get_font_height() + 1)), fit, GR_RESIZE_MENU);		
 }
 
 void multi_sync_force_start_pre()
@@ -9284,7 +8576,7 @@ void multi_sync_handle_plist()
 		Multi_sync_plist_button.get_mouse_pos(NULL,&my);
 
 		// get the index of the item selected
-		select_index = my / 10;
+		select_index = my / (gr_get_font_height() + 1);
 
 		// if the index is greater than the current # connections, do nothing
 		if(select_index > (multi_num_connections() - 1)){
@@ -9411,16 +8703,16 @@ void multi_debrief_close()
 void multi_maybe_set_mission_loop()
 {
 	int cur = Campaign.current_mission;
-	if (Campaign.missions[cur].has_mission_loop) {
+	if (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) {
 		Assert(Campaign.loop_mission != CAMPAIGN_LOOP_MISSION_UNINITIALIZED);
 	}
 	bool require_repeat_mission = (Campaign.current_mission == Campaign.next_mission);
 
 	// check for (1) mission loop available, (2) don't have to repeat last mission
-	if ( (Campaign.missions[cur].has_mission_loop && (Campaign.loop_mission != -1)) && !require_repeat_mission ) {
+	if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 
 		char buffer[512];
-		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_loop_desc);
+		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc);
 
 		int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 		if (choice == 1) {
@@ -9678,7 +8970,10 @@ void multi_debrief_server_process()
 	if((Multi_debrief_time >= Multi_debrief_resend_time) && !multi_netplayer_state_check3(NETPLAYER_STATE_DEBRIEF, NETPLAYER_STATE_DEBRIEF_ACCEPT, NETPLAYER_STATE_DEBRIEF_REPLAY, 1)){
 		// find all players who are not in the debrief state and hit them with the endgame packet
 		for(idx=0; idx<MAX_PLAYERS; idx++){
-			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && ((Net_players[idx].state != NETPLAYER_STATE_DEBRIEF) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY)) ){
+			if( MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && 
+				( ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_ACCEPT ) && 
+				  ( Net_players[idx].state != NETPLAYER_STATE_DEBRIEF_REPLAY ) ) ){
 				send_endgame_packet(&Net_players[idx]);
 			}
 		}
@@ -9958,7 +9253,7 @@ void multi_passwd_do(char *passwd)
 			gr_restore_screen(Multi_passwd_background);		
 		}
 		gr_set_bitmap(Multi_pwd_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 		Multi_pwd_window.draw();
 			
 		// flip the buffer

@@ -7,254 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.20.2.3 $
- * $Date: 2006-08-14 22:02:43 $
- * $Author: Goober5000 $
- *
- * Multiplayer Team Selection Code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.20.2.2  2006/08/14 19:57:42  karajorma
- * Fix a Multiplayer bug where anything that included the name of a player wing was automatically considered to be a part of that wing.
- *
- * Revision 2.20.2.1  2006/08/02 22:47:38  Goober5000
- * fix display of ship copy class names in ship loadout screen
- * --Goober5000
- *
- * Revision 2.20  2005/12/29 08:08:39  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.19  2005/11/16 05:46:27  taylor
- * bunch of error checking and code cleanup for the team stuff in ship/weapon select
- *
- * Revision 2.18  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.17  2005/09/27 02:36:58  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.16  2005/09/05 09:38:19  taylor
- * merge of OSX tree
- * a lot of byte swaps were still missing, will hopefully be fully network compatible now
- *
- * Revision 2.15  2005/07/22 03:53:31  taylor
- * fix crash on commit in the multi ship selection screen
- * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
- * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
- *
- * Revision 2.14  2005/07/18 03:45:08  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.13  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.12  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.11  2005/04/25 00:28:17  wmcoolmon
- * MAX_SHIP_CLASSES > Num_ship_classes
- *
- * Revision 2.10  2005/04/03 08:48:31  Goober5000
- * brought weapon loadout banks into agreement with ship info banks
- * improved error reporting on apply-to-all
- * --Goober5000
- *
- * Revision 2.9  2005/03/02 21:18:20  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.8  2005/02/04 20:06:05  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.7  2004/12/14 14:46:13  Goober5000
- * allow different wing names than ABGDEZ
- * --Goober5000
- *
- * Revision 2.6  2004/07/26 20:47:43  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:58  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.2.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.2  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 27    9/13/99 12:54p Jefff
- * coord fix
- * 
- * 26    9/12/99 3:21p Jefff
- * commit button coord fix in 640
- * 
- * 25    8/05/99 9:57p Jefff
- * fixed some button wierdness
- * 
- * 24    8/05/99 5:08p Jefff
- * fixed some location probs
- * 
- * 23    7/28/99 5:34p Dave
- * Nailed the missing stats bug to the wall. Problem was optimized build
- * and using GET_DATA() with array elements. BLECH.
- * 
- * 22    7/24/99 6:02p Jefff
- * Added "lock" text to lock button
- * 
- * 21    5/03/99 8:32p Dave
- * New version of multi host options screen.
- * 
- * 20    3/25/99 6:36p Neilk
- * more hires coord fixes
- * 
- * 19    3/25/99 2:44p Neilk
- * Fixed lock button
- * 
- * 18    3/23/99 11:56a Neilk
- * new source safe checkin
- * 
- * 17    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 16    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 15    2/21/99 6:02p Dave
- * Fixed standalone WSS packets. 
- * 
- * 14    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 13    2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 12    1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 11    1/30/99 1:29a Dave
- * Fixed nebula thumbnail problem. Full support for 1024x768 choose pilot
- * screen.  Fixed beam weapon death messages.
- * 
- * 10    1/29/99 5:07p Dave
- * Fixed multiplayer stuff. Put in multiplayer support for rapid fire
- * missiles.
- * 
- * 9     1/13/99 7:19p Neilk
- * Converted Mission Brief, Barracks, Synch to high res support
- * 
- * 8     12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 7     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 6     11/19/98 8:04a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 5     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 4     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 112   9/18/98 2:22a Dave
- * Fixed freespace-side PXO api to correctly handle length 10 id strings.
- * Fixed team select screen to handle alpha/beta/gamma ships which are not
- * marked as OF_PLAYER_SHIP
- * 
- * 111   9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 110   8/20/98 5:31p Dave
- * Put in handy multiplayer logfile system. Now need to put in useful
- * applications of it all over the code.
- * 
- * 109   8/07/98 10:17a Allender
- * use obj_set_flags for setting COULD_BE_PLAYER flag to trap bugs
- * 
- * 108   7/24/98 9:27a Dave
- * Tidied up endgame sequencing by removing several old flags and
- * standardizing _all_ endgame stuff with a single function call.
- * 
- * 107   6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 106   6/13/98 3:19p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 105   5/19/98 8:35p Dave
- * Revamp PXO channel listing system. Send campaign goals/events to
- * clients for evaluation. Made lock button pressable on all screens. 
- * 
- * 104   5/19/98 11:23a Dave
- * Change mask value for "lock" button.
- * 
- * 103   5/18/98 12:41a Allender
- * fixed subsystem problems on clients (i.e. not reporting properly on
- * damage indicator).  Fixed ingame join problem with respawns.  minor
- * comm menu stuff
- * 
- * 102   5/17/98 1:43a Dave
- * Eradicated chatbox problems. Remove speed match for observers. Put in
- * help screens for PXO. Fix messaging and end mission privelges. Fixed
- * team select screen bugs. Misc UI fixes.
- * 
- * 101   5/15/98 5:16p Dave
- * Fix a standalone resetting bug.Tweaked PXO interface. Display captaincy
- * status for team vs. team. Put in asserts to check for invalid team vs.
- * team situations.
- * 
- * 100   5/10/98 7:06p Dave
- * Fix endgame sequencing ESC key. Changed how host options warning popups
- * are done. Fixed pause/message scrollback/options screen problems in mp.
- * Make sure observer HUD doesn't try to lock weapons. 
- *   
- */
+
 
 
 #include "network/multiteamselect.h"
@@ -282,6 +35,7 @@
 #include "weapon/weapon.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "mission/missionparse.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -665,7 +419,7 @@ void multi_ts_init_objnums();
 void multi_ts_init_flags();
 
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index);
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch);
 
 // handle an available ship scroll down button press
 void multi_ts_avail_scroll_down();
@@ -733,9 +487,6 @@ void multi_ts_init()
 
 	// use the common interface palette
 	multi_common_set_palette();
-
-	// set the interface palette
-	// common_set_interface_palette(MULTI_TS_PALETTE);
 
 	Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
 
@@ -853,7 +604,7 @@ void multi_ts_do()
 	GR_MAYBE_CLEAR_RES(Multi_ts_bitmap);
 	if(Multi_ts_bitmap != -1){
 		gr_set_bitmap(Multi_ts_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 	Multi_ts_window.draw();
 
@@ -1086,11 +837,19 @@ void multi_ts_assign_players_all()
 	// this is valid for coop games as well because the first starting wing
 	// and the first tvt wing must have the same name
 	memset(name_lookup,0,100);
-	if(Netgame.type_flags & NG_TYPE_TEAM){
+
+	if(Netgame.type_flags & NG_TYPE_TEAM) {
 		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
-	} else {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[0]);
 	}
+	else {
+		// To account for cases where <Wingname> 1 is not a player ship
+		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
+			wing_bash_ship_name(name_lookup, TVT_wing_names[0], i + 1);
+			if (!stricmp(name_lookup, Player_start_shipname))
+				break;
+		}
+	}
+		
 	shipnum = ship_name_lookup(name_lookup);
 	
 	// if we couldn't find the ship for the host
@@ -1113,7 +872,7 @@ void multi_ts_assign_players_all()
 		// find a valid player ship - ignoring the ship which was assigned to the host
 		if((objp->flags & OF_PLAYER_SHIP) && stricmp(Ships[objp->instance].ship_name,name_lookup)){
 			// determine what team and slot this ship is				
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);
+			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index, true);
 			Assert((team_index != -1) && (slot_index != -1));
 
 			// in a team vs. team situation
@@ -1262,21 +1021,6 @@ void multi_ts_handle_player_drop()
 void multi_ts_set_status_bar_mode(int m)
 {
 	Multi_ts_status_bar_mode = m;
-}
-
-// blit the proper "locked" button - used for weapon select and briefing screens
-void multi_ts_blit_locked_button()
-{		
-	// if we're locked down and we have a valid bitmap
-	if((Multi_ts_team[Net_player->p_info.team].multi_players_locked) && (Multi_ts_locked_bitmaps[2] != -1)){
-		gr_set_bitmap(Multi_ts_locked_bitmaps[2]);
-		gr_bitmap(Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].x, Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].y);
-	}
-	// draw as "not locked" if possible
-	else if(Multi_ts_locked_bitmaps[0] != -1){
-		gr_set_bitmap(Multi_ts_locked_bitmaps[0]);
-		gr_bitmap( Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].x, Multi_ts_buttons[gr_screen.res][MULTI_TS_LOCK].y);
-	}
 }
 
 // the "lock" button has been pressed
@@ -1491,7 +1235,7 @@ void multi_ts_blit_wings()
 			// if this is a team vs team game, and the slot is occupised by a team captain, put a c there
 			if((Netgame.type_flags & NG_TYPE_TEAM) && (Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL) && (Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->flags & NETINFO_FLAG_TEAM_CAPTAIN)){
 				gr_set_color_fast(&Color_bright);
-				gr_string(Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_X_COORD] - 5,Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_Y_COORD] - 5, XSTR("C",737));  // [[ Team captain ]]
+				gr_string(Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_X_COORD] - 5,Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_Y_COORD] - 5, XSTR("C",737), GR_RESIZE_MENU);  // [[ Team captain ]]
 			}
 		}
 	}	
@@ -1514,16 +1258,16 @@ void multi_ts_blit_wing_callsigns()
 		// if there is a player in the slot
 		if(Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL){
 			// make sure the string fits
-			strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
+			strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
 		} else {
 			// determine if this is a locked AI ship
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
 			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
-				strcpy(callsign, NOX("<"));
-				strcat(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
-				strcat(callsign, NOX(">"));
+				strcpy_s(callsign, NOX("<"));
+				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcat_s(callsign, NOX(">"));
 			} else {
-				strcpy(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcpy_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 			}
 		}
 			
@@ -1538,7 +1282,7 @@ void multi_ts_blit_wing_callsigns()
 		} else {
 			gr_set_color_fast(&Color_normal);
 		}
-		gr_string(Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_X_COORD] + ((Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_W_COORD] - callsign_w)/2),Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_Y_COORD],callsign);								
+		gr_string(Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_X_COORD] + ((Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_W_COORD] - callsign_w)/2),Multi_ts_slot_text_coords[idx][gr_screen.res][MULTI_TS_Y_COORD],callsign,GR_RESIZE_MENU);								
 	}	
 }
 
@@ -1563,7 +1307,7 @@ void multi_ts_blit_avail_ships()
 				// blit the ship count available
 				sprintf(count,"%d",Ss_pool[idx]);
 				gr_set_color_fast(&Color_normal);
-				gr_string(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD] - 20,Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],count);
+				gr_string(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD] - 20,Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],count,GR_RESIZE_MENU);
 
 				// increment the counts
 				display_count++;				
@@ -1734,7 +1478,7 @@ int multi_ts_player_index(int region)
 // blit any active ship information text
 void multi_ts_blit_ship_info()
 {
-	int y_start;
+	int y_start, line_height;
 	ship_info *sip;
 	char str[100];
 
@@ -1749,103 +1493,105 @@ void multi_ts_blit_ship_info()
 	// starting line
 	y_start = Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_Y_COORD];
 
+	line_height = gr_get_font_height() + 1;
+
 	memset(str,0,100);
 
 	// blit the ship class (name)
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Class",739));
-	if(strlen(sip->name)){
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Class",739), GR_RESIZE_MENU);
+	if(strlen((sip->alt_name[0]) ? sip->alt_name : sip->name)){
 		gr_set_color_fast(&Color_bright);
 
 		// Goober5000
 		char temp[NAME_LENGTH];
-		strcpy(temp, sip->name);
+		strcpy_s(temp, (sip->alt_name[0]) ? sip->alt_name : sip->name);
 		end_string_at_first_hash_symbol(temp);
 
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the ship type
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Type",740));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
 	if((sip->type_str != NULL) && strlen(sip->type_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the ship length
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Length",741));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the max velocity
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Max Velocity",742));	
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Max Velocity",742), GR_RESIZE_MENU);	
 	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(&Color_bright);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str);	
-	y_start += 10;
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str,GR_RESIZE_MENU);	
+	y_start += line_height;
 
 	// blit the maneuverability
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Maneuverability",744));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the armor
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Armor",745));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
 	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the gun mounts 
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Gun Mounts",746));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
 	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the missile banke
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Missile Banks",747));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
 	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the manufacturer
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Manufacturer",748));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
 	}
-	y_start += 10;
+	y_start += line_height;
 
 	// blit the _short_ text description
-	/*
+	
 	Assert(Multi_ts_ship_info_line_count < 3);
 	gr_set_color_fast(&Color_normal);
-	for(idx=0;idx<Multi_ts_ship_info_line_count;idx++){
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx]);
-		y_start += 10;
+	for(int idx=0;idx<Multi_ts_ship_info_line_count;idx++){
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx], GR_RESIZE_MENU);
+		y_start += line_height;
 	}
-	*/
+	
 }
 
 
@@ -1859,11 +1605,11 @@ void multi_ts_blit_status_bar()
 	// mode specific text
 	switch(Multi_ts_status_bar_mode){
 	case 0 :
-		strcpy(text, XSTR("Ships/Weapons Locked",749));
+		strcpy_s(text, XSTR("Ships/Weapons Locked",749));
 		blit = 1;
 		break;
 	case 1 :
-		strcpy(text, XSTR("Ships/Weapons Are Now Free",750));
+		strcpy_s(text, XSTR("Ships/Weapons Are Now Free",750));
 		blit = 1;
 		break;
 	}
@@ -1872,7 +1618,7 @@ void multi_ts_blit_status_bar()
 	if(blit){	
 		gr_get_string_size(&text_w,NULL,text);
 		gr_set_color_fast(&Color_bright_blue);
-		gr_string(Multi_ts_status_coords[gr_screen.res][MULTI_TS_X_COORD] + ((Multi_ts_status_coords[gr_screen.res][MULTI_TS_W_COORD] - text_w)/2),Multi_ts_status_coords[gr_screen.res][MULTI_TS_Y_COORD],text);
+		gr_string(Multi_ts_status_coords[gr_screen.res][MULTI_TS_X_COORD] + ((Multi_ts_status_coords[gr_screen.res][MULTI_TS_W_COORD] - text_w)/2),Multi_ts_status_coords[gr_screen.res][MULTI_TS_Y_COORD],text,GR_RESIZE_MENU);
 	}
 }
 
@@ -1947,7 +1693,7 @@ bool multi_ts_validate_ship(char *shipname, char *wingname)
 }
 
 // get the proper team and slot index for the given ship name
-void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
+void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index, bool mantis2757switch)
 {
 	int idx; 
 
@@ -1987,6 +1733,8 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 			}
 		}
 	}
+	if(mantis2757switch)
+		Assert((*team_index != -1) && (*slot_index != -1)); // For tracking down Mantis 2757 - Valathil
 }
 
 // function to return the shipname of the ship in the slot designated by the team and slot
@@ -1995,10 +1743,10 @@ void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
 		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
-		sprintf(ship_name, "%s %d", TVT_wing_names[team], slot_index);
+		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index);
 	} else {
 		Assert( team == 0 );
-		sprintf(ship_name, "%s %d", Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
+		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
 	}
 }
 
@@ -2097,14 +1845,18 @@ void multi_ts_handle_mouse()
 			break;
 		case MULTI_TS_SLOT_LIST:
 			region_index = multi_ts_slot_index(snazzy_region);
-			region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] >= 0) ? 0 : 1;
-			if(!region_empty){
-				ship_class = Wss_slots[region_index].ship_class;
+			if(region_index >= 0 ) {
+				region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] >= 0) ? 0 : 1;
+				if(!region_empty){
+					ship_class = Wss_slots[region_index].ship_class;
+				}
 			}
 			break;
 		case MULTI_TS_PLAYER_LIST:
 			region_index = multi_ts_player_index(snazzy_region);
-			region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_player[region_index] != NULL) ? 0 : 1;
+			if(region_index >= 0 ) {
+				region_empty = (Multi_ts_team[Net_player->p_info.team].multi_ts_player[region_index] != NULL) ? 0 : 1;
+			}
 			break;
 		}
 	}	
@@ -2189,8 +1941,10 @@ void multi_ts_handle_mouse()
 				multi_ts_maybe_host_only_popup();			
 				return;
 			}
-			if(Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] < 0){
-				return;
+			if(region_index >= 0 ) {
+				if(Multi_ts_team[Net_player->p_info.team].multi_ts_flag[region_index] < 0){
+					return;
+				}
 			}
 			break;
 		case MULTI_TS_PLAYER_LIST:
@@ -2280,11 +2034,6 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
 			return 0;
 		}
-
-		// if the slot he's trying to drop it on is "permanently" empty
-		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
-			return 0;
-		}
 		break;
 
 	case TS_SWAP_SLOT_SLOT:
@@ -2294,11 +2043,6 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 		}
 
 		// if the slot we're taking from is invalid
-		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
-			return 0;
-		}
-
-		// if the slot he's trying to drop it on is "permanently" empty
 		if(Multi_ts_team[pl->p_info.team].multi_ts_flag[to_index] == MULTI_TS_FLAG_NONE){
 			return 0;
 		}
@@ -2492,6 +2236,7 @@ void multi_ts_apply(int from_type,int from_index,int to_type,int to_index,int sh
 	case TS_MOVE_PLAYER :
 		nprintf(("Network","Apply move player %d %d\n",from_index,to_index));
 		update = multi_ts_move_player(from_index,to_index,&sound,player_index);
+		break;
 	default :
 		update = 0;
 		break;
@@ -2717,7 +2462,7 @@ void multi_ts_blit_carried_icon()
 		break;
 	case MULTI_TS_PLAYER_LIST:
 		// get the final length of the string so we can calculate a valid offset
-		strcpy(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
+		strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
 		gr_force_fit_string(callsign,CALLSIGN_LEN,Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_W_COORD]);						
 		gr_get_string_size(&callsign_w,NULL,callsign);
 
@@ -2726,7 +2471,7 @@ void multi_ts_blit_carried_icon()
 		offset_y = Multi_ts_slot_text_coords[Multi_ts_carried_from_index][gr_screen.res][MULTI_TS_Y_COORD] - Multi_ts_clicked_y;
 
 		gr_set_color_fast(&Color_normal);
-		gr_string(x + offset_x,y + offset_y,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign);
+		gr_string(x + offset_x,y + offset_y,Multi_ts_team[Net_player->p_info.team].multi_ts_player[Multi_ts_carried_from_index]->m_player->callsign,GR_RESIZE_MENU);
 		break;
 	default : 
 		break;			
@@ -2838,13 +2583,12 @@ int multi_ts_slot_bmap_num(int slot_index)
 // select the given slot and setup any information, etc
 void multi_ts_select_ship()
 {
-	/*
-	int n_lines, idx;
+	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
 	char ship_desc[1000];
-	char *p_str[MAX_BRIEF_LINES];
+	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
-	*/
+	
 	
 	// blast all current text
 	memset(Multi_ts_ship_info_lines,0,MULTI_TS_SHIP_INFO_MAX_TEXT);
@@ -2871,44 +2615,46 @@ void multi_ts_select_ship()
 	}
 	
 	// split the text info up	
-	/*
+	
 	Assert(Multi_ts_select_ship_class >= 0);
-	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
+//	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
+	if (Ship_info[Multi_ts_select_ship_class].desc != NULL)
+	{
 
-	// strip out newlines
-	memset(ship_desc,0,1000);
-	strcpy(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
-	token = strtok(ship_desc,"\n");
-	if(token != NULL){
-		strcpy(Multi_ts_ship_info_text,token);
-		while(token != NULL){
-			token = strtok(NULL,"\n");
-			if(token != NULL){
-				strcat(Multi_ts_ship_info_text," ");
-				strcat(Multi_ts_ship_info_text,token);
+		// strip out newlines
+		memset(ship_desc,0,1000);
+		strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
+		token = strtok(ship_desc,"\n");
+		if(token != NULL){
+			strcpy_s(Multi_ts_ship_info_text,token);
+			while(token != NULL){
+				token = strtok(NULL,"\n");
+				if(token != NULL){
+					strcat_s(Multi_ts_ship_info_text," ");
+					strcat_s(Multi_ts_ship_info_text,token);
+				}
 			}
 		}
-	}
 	
-	if(strlen(Multi_ts_ship_info_text) > 0){
-		// split the string into multiple lines
-		n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
+		if(Multi_ts_ship_info_text[0] != '\0'){
+			// split the string into multiple lines
+			n_lines = split_str(Multi_ts_ship_info_text, Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_W_COORD], n_chars, p_str, MULTI_TS_SHIP_INFO_MAX_LINES, 0);	
 
-		// copy the split up lines into the text lines array
-		for (idx=0;idx<n_lines;idx++ ) {
-			Assert(n_chars[idx] < MULTI_TS_SHIP_INFO_MAX_LINE_LEN);
-			strncpy(Multi_ts_ship_info_lines[idx], p_str[idx], n_chars[idx]);
-			Multi_ts_ship_info_lines[idx][n_chars[idx]] = 0;
-			drop_leading_white_space(Multi_ts_ship_info_lines[idx]);		
+			// copy the split up lines into the text lines array
+			for (int idx = 0;idx<n_lines;idx++ ) {
+				Assert(n_chars[idx] < MULTI_TS_SHIP_INFO_MAX_LINE_LEN);
+				strncpy(Multi_ts_ship_info_lines[idx], p_str[idx], n_chars[idx]);
+				Multi_ts_ship_info_lines[idx][n_chars[idx]] = 0;
+				drop_leading_white_space(Multi_ts_ship_info_lines[idx]);		
+			}
+
+			// get the line count
+			Multi_ts_ship_info_line_count = n_lines;
+		} else {
+			// set the line count to 
+			Multi_ts_ship_info_line_count = 0;
 		}
-
-		// get the line count
-		Multi_ts_ship_info_line_count = n_lines;
-	} else {
-		// set the line count to 
-		Multi_ts_ship_info_line_count = 0;
 	}	
-	*/
 }
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)

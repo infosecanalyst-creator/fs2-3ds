@@ -7,196 +7,13 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.22.2.1 $
- * $Date: 2006-10-01 19:31:19 $
- * $Author: taylor $
- *
- * Code to setup matrix instancing and viewers
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.22  2006/05/13 07:09:25  taylor
- * minor cleanup and a couple extra error checks
- * get rid of some wasteful math from the gr_set_proj_matrix() calls
- *
- * Revision 2.21  2006/03/18 10:23:46  taylor
- * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
- *
- * Revision 2.20  2005/04/05 05:53:24  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.19  2005/01/28 11:06:22  Goober5000
- * changed a bunch of transpose-rotate sequences to use unrotate instead
- * --Goober5000
- *
- * Revision 2.18  2004/10/09 17:54:32  taylor
- * better debugging for g3_end_frame() - mostly for FRED2
- *
- * Revision 2.17  2004/07/26 20:47:50  Kazan
- * remove MCD complete
- *
- * Revision 2.16  2004/07/12 16:33:04  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.15  2004/02/13 04:17:14  randomtiger
- * Turned off fog in OGL for Fred.
- * Simulated speech doesn't say tags marked by $ now.
- * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
- * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
- * Error now given on missing briefing icon and bad ship normal data.
- * Solved more species divide by zero error.
- * Fixed neb cube crash.
- *
- * Revision 2.14  2004/01/17 21:59:54  randomtiger
- * Some small changes to the main codebase that allow Fred_open OGL to compile.
- *
- * Revision 2.13  2003/11/16 04:09:27  Goober5000
- * language
- *
- * Revision 2.12  2003/11/11 18:04:06  phreak
- * made g3_done_instance take a parameter that decides wether to pop the matrix stack.
- * without it, underflows would have been caused
- *
- * Revision 2.11  2003/11/11 03:56:12  bobboau
- * lots of bug fixing, much of it in nebula and bitmap drawing
- *
- * Revision 2.10  2003/11/06 22:49:22  phreak
- * fixed up some of the matrix functions that were causing problems
- * bob: i there is an important change here. i don't know if its going to cause any d3d problems
- *
- * Revision 2.9  2003/11/01 21:59:22  bobboau
- * new matrix handeling code, and fixed some problems with 3D lit verts,
- * several other small fixes
- *
- * Revision 2.8  2003/10/25 06:56:06  bobboau
- * adding FOF stuff,
- * and fixed a small error in the matrix code,
- * I told you it was indeed suposed to be gr_start_instance_matrix
- * in g3_done_instance,
- * g3_start_instance_angles needs to have an gr_ API abstraction version of it made
- *
- * Revision 2.7  2003/10/25 03:27:21  phreak
- * fixed some old bugs that reappeared after RT committed his texture code
- *
- * Revision 2.6  2003/10/23 18:03:24  randomtiger
- * Bobs changes (take 2)
- *
- * Revision 2.5  2003/10/14 17:39:18  randomtiger
- * Implemented hardware fog for the HT&L code path.
- * It doesn't use the backgrounds anymore but it's still an improvement.
- * Currently it fogs to a brighter colour than it should because of Bob specular code.
- * I will fix this after discussing it with Bob.
- *
- * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
- * the htl code to use the existing D3D engine instead of work around it.
- * And added extra information in version number on bottom left of frontend screen.
- *
- * Revision 2.4  2003/10/10 03:59:41  matt
- * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
- * out now. -Sticks
- *
- * Revision 2.3  2003/09/26 14:37:15  bobboau
- * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
- * still needs a lot of work, ubt the frame rates were getting with it are incredable
- * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
- * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
- * and weapons, I think these should be modifyed to be sent through hardware,
- * it would be slightly faster and it would likely fix the problem
- *
- * also the thruster glow/particle stuff I did is now in.
- *
- * Revision 2.2  2003/08/09 06:07:24  bobboau
- * slightly better implementation of the new zbuffer thing, it now checks only three diferent formats defalting to the 16 bit if neither the 24 or 32 bit versions are suported
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:28  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 23    5/24/98 11:32a John
- * safely handled null vector being passed to start_user_clip_plane.
- * 
- * 22    3/18/98 4:53p John
- * Fixed some bugs with docked ships warping out
- * 
- * 21    3/18/98 4:33p John
- * Called vm_vec_normalize_safe to prevent assert from bogus docked
- * objects.
- * 
- * 20    3/16/98 5:02p John
- * Better comments
- * 
- * 19    3/16/98 4:51p John
- * Added low-level code to clip all polygons against an arbritary plane.
- * Took out all old model_interp_zclip and used this new method instead.  
- * 
- * 18    3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 17    1/19/98 6:15p John
- * Fixed all my Optimized Build compiler warnings
- * 
- * 16    11/24/97 12:04p John
- * 
- * 15    11/07/97 7:24p John
- * changed lighting to take two ranges.
- * In textest, added test code to draw nebulas
- * 
- * 14    10/29/97 5:05p John
- * Changed dynamic lighting to only rotate and calculate lighting for
- * point lights that are close to an object.  Changed lower framerate cap
- * from 4 to .5.
- * 
- * 13    4/29/97 12:24p Adam
- * JAS:   Added code for delayed point to vec.   Fixed some FRED
- * sequencing problems with g3_start_frame / g3_end_frame.
- * 
- * 12    4/29/97 9:55a John
- * 
- * 11    4/08/97 5:18p John
- * First rev of decent (dynamic, correct) lighting in FreeSpace.
- * 
- * 10    3/24/97 3:26p John
- * Cleaned up and restructured model_collide code and fvi code.  In fvi
- * made code that finds uvs work..  Added bm_get_pixel to BmpMan.
- * 
- * 9     3/10/97 2:25p John
- * Made pofview zbuffer.   Made textest work with new model code.  Took
- * out some unnecessary Asserts in the 3d clipper.
- * 
- * 
- * 8     2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 
 #include "render/3dinternal.h"
 #include "graphics/tmapper.h"
 #include "graphics/2d.h"			// Needed for w,h,aspect of canvas
 #include "lighting/lighting.h"
-
-
 
 
 matrix		View_matrix;		// The matrix to convert local coordinates to screen
@@ -210,8 +27,8 @@ matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
 float		Eye_fov;			// What the viewer's FOV is
 
-float			View_zoom;			// The zoom factor
-float			Proj_fov;			// The fov (for HTL projection matrix)
+float			View_zoom;		// The zoom factor
+float			Proj_fov;		// The fov (for HTL projection matrix)
 
 vec3d		Window_scale;		// Scaling for window aspect
 vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
@@ -219,14 +36,14 @@ vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
 int			Canvas_width;		// The actual width
 int			Canvas_height;		// The actual height
 
-float			Canv_w2;				// Canvas_width / 2
-float			Canv_h2;				// Canvas_height / 2
+float			Canv_w2;		// Canvas_width / 2
+float			Canv_h2;		// Canvas_height / 2
 
 vec3d Object_position;
 matrix	Object_matrix;			// Where the opject is pointing in World coordinates
 
 
-#define MAX_INSTANCE_DEPTH	5
+#define MAX_INSTANCE_DEPTH	10
 
 struct instance_context {
 	matrix m;
@@ -243,23 +60,23 @@ int G3_count = 0;
 int G3_frame_count = 0;
 extern int Cmdline_nohtl;
 
-// check if in frame
+/**
+ * Check if in frame
+ */
 int g3_in_frame()
 {
 	return G3_count;
 }
 
-//start the frame
-// Pass true for zbuffer_flag to turn on zbuffering
+/**
+ * Start the frame
+ * Pass true for zbuffer_flag to turn on zbuffering
+ */
 void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 {
 	float s;
 	int width, height;
 	float aspect;
-
-//Uncomment this to figure out who called g3_start_frame without calling g3_end_frame.
-
-//	mprintf(( "g3_start_frame called from %s, line %d\n", filename, lineno ));
 
  	Assert( G3_count == 0 );
 	G3_count++;
@@ -279,7 +96,6 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	Canv_h2 = (float)height / 2.0f;
 	
 	//compute aspect ratio for this canvas
-
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
 	if ( !Cmdline_nohtl || (s <= 0.0f) ) {		//scale x
@@ -302,21 +118,17 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 	}
 
 	G3_frame_count++;
-
-	//init_interface_vars_to_assembler();		//for the texture-mapper
-
 }
 
-//this doesn't do anything, but is here for completeness
+/**
+ * This doesn't do anything, but is here for completeness
+ */
 void g3_end_frame_func(char *filename, int lineno)
 {
-//	mprintf(( "g3_end_frame called from %s, line %d\n", filename, lineno ));
-
 	G3_count--;
 	Assert( G3_count == 0 );
 
 	free_point_num = 0;
-//	Assert(free_point_num==0);
 }
 
 
@@ -334,7 +146,9 @@ void g3_set_view(camera *cam)
 		g3_set_view_matrix(&pos, &ori, Sexp_fov);
 }
 
-//set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
+/**
+ * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
+ */
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 {
 	Assert( G3_count == 1 );
@@ -344,7 +158,6 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 
 	View_matrix = *view_matrix;
 
-//	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
 	Proj_fov = 1.39626348f * View_zoom;
 
 	Eye_matrix = View_matrix;
@@ -363,7 +176,9 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 }
 
 
-//set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
+/**
+ * Set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
+ */
 void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom)
 {
 	matrix tmp;
@@ -375,7 +190,9 @@ void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom)
 }
 
 
-//performs aspect scaling on global view matrix
+/**
+ * Performs aspect scaling on global view matrix
+ */
 void scale_matrix(void)
 {
 	Unscaled_matrix = View_matrix;		//so we can use unscaled if we want
@@ -417,15 +234,18 @@ ubyte g3_rotate_vertex_popped(vertex *dest,vec3d *src)
 	Assert( instance_depth > 0 );
 
 	vm_vec_sub(&tempv,src,&instance_stack[0].p);
-	vm_vec_rotate( (vec3d *)&dest->x, &tempv, &instance_stack[0].m );
+	vm_vec_rotate( &dest->world, &tempv, &instance_stack[0].m );
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	
 
 
-//instance at specified point with specified orientation
-//if matrix==NULL, don't modify matrix.  This will be like doing an offset   
-//if pos==NULL, no position change
+/**
+ * nstance at specified point with specified orientation
+ *
+ * if matrix==NULL, don't modify matrix.  This will be like doing an offset   
+ * if pos==NULL, no position change
+ */
 void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 {
 	vec3d tempv;
@@ -448,7 +268,6 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 		orient = &vmd_identity_matrix;		// Assume no change in orient
 	}
 
-
 	if ( pos )	{
 		//step 1: subtract object position from view position
 		vm_vec_sub2(&View_position,pos);
@@ -470,7 +289,6 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 	View_matrix = tempm;
 
 	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
-//	Object_matrix = tempm;
 
 	// Update the lighting matrix
 	matrix saved_orient = Light_matrix;
@@ -491,8 +309,11 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 }
 
 
-//instance at specified point with specified orientation
-//if angles==NULL, don't modify matrix.  This will be like doing an offset
+/**
+ * Instance at specified point with specified orientation
+ *
+ * If angles==NULL, don't modify matrix.  This will be like doing an offset
+ */
 void g3_start_instance_angles(vec3d *pos,angles *orient)
 {
 	matrix tm;
@@ -513,7 +334,9 @@ void g3_start_instance_angles(vec3d *pos,angles *orient)
 }
 
 
-//pops the old context
+/**
+ * Pops the old context
+ */
 void g3_done_instance(bool use_api)
 {
 	Assert( G3_count == 1 );
@@ -537,21 +360,23 @@ int G3_user_clip = 0;
 vec3d G3_user_clip_normal;
 vec3d G3_user_clip_point;
 
-// Enables clipping with an arbritary plane.   This will be on
-// until g3_stop_clip_plane is called or until next frame.
-// The points passed should be relative to the instance.  Probably
-// that means world coordinates.
-/*
-  This works like any other clip plane... if this is enabled and you
-rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
-It is completely handled by most g3_draw primitives, except maybe lines.
-
-  As far as performance, when enabled, it will slow down each point
-rotation (or g3_code_vertex call) by a vec3d subtraction and dot
-product.   It won't slow anything down for polys that are completely
-clipped on or off by the plane, and will slow each clipped polygon by
-not much more than any other clipping we do.
-*/
+/**
+ * Enables clipping with an arbritary plane.   
+ *
+ * This will be on until g3_stop_clip_plane is called or until next frame.
+ * The points passed should be relative to the instance. Probably
+ * that means world coordinates.
+ * 
+ * This works like any other clip plane... if this is enabled and you
+ * rotate a point, the CC_OFF_USER bit will be set in the clipping codes.
+ * It is completely handled by most g3_draw primitives, except maybe lines.
+ *
+ * As far as performance, when enabled, it will slow down each point
+ * rotation (or g3_code_vertex call) by a vec3d subtraction and dot
+ * product.   It won't slow anything down for polys that are completely
+ * clipped on or off by the plane, and will slow each clipped polygon by
+ * not much more than any other clipping we do.
+ */
 void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 {
 	float mag = vm_vec_mag( plane_normal );
@@ -566,9 +391,6 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	if(!Cmdline_nohtl) {
 		G3_user_clip_normal = *plane_normal;
 		G3_user_clip_point = *plane_point;
-//	return;
-
-
 		gr_start_clip();
 	}
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
@@ -579,7 +401,9 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	vm_vec_rotate(&G3_user_clip_point,&tempv,&View_matrix );
 }
 
-// Stops arbritary plane clipping
+/**
+ * Stops arbritary plane clipping
+ */
 void g3_stop_user_clip_plane()
 {
 	G3_user_clip = 0;
@@ -588,7 +412,9 @@ void g3_stop_user_clip_plane()
 	}
 }
 
-// Returns TRUE if point is behind user plane
+/**
+ * Returns TRUE if point is behind user plane
+ */
 int g3_point_behind_user_plane( vec3d *pnt )
 {
 	if ( G3_user_clip ) {

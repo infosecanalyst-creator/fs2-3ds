@@ -7,328 +7,17 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.9.2.1 $
- * $Date: 2007-12-28 02:10:37 $
- * $Author: Backslash $
- *
- * Header file for HUD targeting functions
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.9  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.8  2005/10/25 01:21:52  wmcoolmon
- * Bumped MAX_HOTKEY_TARGET_ITEMS
- *
- * Revision 2.7  2005/10/09 08:03:20  wmcoolmon
- * New SEXP stuff
- *
- * Revision 2.6  2005/07/22 09:19:40  wmcoolmon
- * Dynamic AI Class number commit. KNOWN BUG: When AI_CLASS_INCREMENT is hit and vm_realloc is called, memory corruption seems to
- * result. Not at all sure what causes this; if this can't be resolved soon, we can always treat _INCREMENT like _MAX
- *
- * Revision 2.5  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.4  2005/04/05 05:53:17  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.3  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/03/05 09:02:04  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 8     9/07/99 11:26p Andsager
- * Fix "r" targeting key, making evaluate_ship_as_closest_target() and
- * hud_target_live_turret() consider if turret is targeting player
- * 
- * 7     8/24/99 2:55p Andsager
- * Add new prioritized turret selection code.
- * 
- * 6     7/09/99 12:00a Andsager
- * Added target box with distance for remote detonate weapons
- * 
- * 5     5/28/99 10:00a Andsager
- * Make player hud target affected by Nebula range
- * 
- * 4     2/26/99 6:01p Andsager
- * Add sexp has-been-tagged-delay and cap-subsys-cargo-known-delay
- * 
- * 3     12/21/98 5:03p Dave
- * Modified all hud elements to be multi-resolution friendly.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 101   8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 100   5/15/98 8:36p Lawrance
- * Add 'target ship that last sent transmission' target key
- * 
- * 99    5/04/98 6:12p Lawrance
- * Write generic function hud_end_string_at_first_hash_symbol(), to use in
- * various spots on the HUD
- * 
- * 98    4/13/98 5:06p Lawrance
- * truncate secondary weapons names at the '#' char
- * 
- * 97    4/08/98 1:18a Lawrance
- * Externalize function to find distance between two objects.
- * 
- * 96    4/07/98 5:30p Lawrance
- * Player can't send/receive messages when comm is destroyed.  Garble
- * messages when comm is damaged.
- * 
- * 95    3/30/98 12:20a Lawrance
- * remove CARGO_REVEAL time, it is now in ship_info
- * 
- * 94    3/20/98 5:40p Lawrance
- * Change targeting of uninspected cargo to select the next closest.
- * 
- * 93    3/12/98 5:36p John
- * Took out any unused shaders.  Made shader code take rgbc instead of
- * matrix and vector since noone used it like a matrix and it would have
- * been impossible to do in hardware.   Made Glide implement a basic
- * shader for online help.  
- * 
- * 92    3/11/98 12:14a Lawrance
- * Added hud_target_auto_target_next()
- * 
- * 91    3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 90    3/07/98 3:50p Lawrance
- * Add lead indicator for asteroids
- * 
- * 89    3/04/98 3:44p Lawrance
- * Only flash docking text for a couple of seconds
- * 
- * 88    3/02/98 11:32p Lawrance
- * Allow asteroids about to impact ships to be bracketed
- * 
- * 87    2/26/98 12:33a Lawrance
- * Added back slew mode,  lots of changes to external and chase views.
- * 
- * 86    2/24/98 2:49p Lawrance
- * Enable cheat key to disable 'hidden from sensors' targeting
- * 
- * 85    2/06/98 4:33p Lawrance
- * extern hud_get_best_primary_bank()
- * 
- * 84    2/02/98 7:00p Lawrance
- * Adding new targeting keys (bomb, uninspected cargo, new ship, live
- * turrets).
- * 
- * 83    1/29/98 11:53p Lawrance
- * Change repair ship targeting to favor support ships that are headed for
- * the player.
- * 
- * 82    1/20/98 9:30p Lawrance
- * Have lead indicator, offscreen indicator and distance be relative to
- * targeted subsystem when possible.
- * 
- * 81    1/17/98 1:30a Lawrance
- * Add countermeasure gauge
- * 
- * 80    1/10/98 12:42a Lawrance
- * make cargo inspection more realistic
- * 
- * 79    1/08/98 11:34p Lawrance
- * change cargo reveal formula to max(150,1.5*radius)
- * 
- * 78    1/02/98 9:10p Lawrance
- * Big changes to how colors get set on the HUD.
- * 
- * 77    12/16/97 9:13p Lawrance
- * Integrate new gauges into HUD config.
- * 
- * 76    12/09/97 8:12a Allender
- * changes to hotkey stuff.  Don't allow mission defined hotkeys to
- * override user defined ones once the mission starts
- * 
- * 75    12/04/97 10:23a Lawrance
- * don't allow matching speed unless target speed is above
- * MATCH_SPEED_THRESHOLD
- * 
- * 74    12/01/97 5:12p Lawrance
- * have minimial targeting gauges shown in chase and external view 
- * 
- * 73    12/01/97 12:27a Lawrance
- * redo default alpha color for HUD, make it easy to modify in the future
- * 
- * 72    11/27/97 4:23p Lawrance
- * add subsys_in_view to the player struct, which indicates that the
- * player has a line of sight to his targeted subsystem
- * 
- * 71    11/20/97 5:40p Lawrance
- * Make cargo revealing work so that anyone (including AI) on your team
- * can reveal cargo for everyone else on the team.
- * 
- * 70    11/20/97 1:09a Lawrance
- * add support for 'target closest friendly repair ship'
- * 
- * 69    11/11/97 12:58a Lawrance
- * implement new target monitor view
- * 
- * 68    10/30/97 12:33a Lawrance
- * update to show AIM_STRAFE debug output
- * 
- * 67    10/27/97 10:48p Lawrance
- * get previous hostile/friendly targeting working.. simplify code a lot
- * 
- * 66    10/22/97 5:53p Lawrance
- * move out subsystem_in_sight function
- * 
- * 65    10/12/97 3:44p Lawrance
- * use target lists to cycle through closest hostile and friendly ships
- * 
- * 64    10/11/97 6:38p Lawrance
- * having damage affect targeting
- * 
- * 63    10/10/97 6:15p Hoffoss
- * Implemented a training objective list display.
- * 
- * 62    10/08/97 5:07p Lawrance
- * make sensors and communication subsystem damage affect player
- * 
- * 61    9/22/97 4:55p Hoffoss
- * Added a training message window display thingy.
- * 
- * 60    8/31/97 6:40p Lawrance
- * make auto-target always target fighters/bombers first
- * 
- * 59    8/25/97 12:24a Lawrance
- * implemented HUD shield management
- * 
- * 58    8/19/97 11:46p Lawrance
- * adding new hud gauges for shileds, escort view, and weapons
- * 
- * 57    8/15/97 9:26a Lawrance
- * split off target box code into HUDtargetbox.cpp
- * 
- * 56    8/14/97 5:29p Lawrance
- * restructure target monitor code... support missile view and red shading
- * 
- * 55    8/12/97 5:51p Lawrance
- * allow targeting of missiles
- * 
- * 54    7/13/97 5:54p Lawrance
- * fix bug with restore game and the keyed targets
- * 
- * 53    7/01/97 11:53a Lawrance
- * allow cycling through targets in the reticle
- * 
- * 52    5/14/97 8:55a Lawrance
- * fix autotargeting so it switches to a new target as soon as current
- * target is dying
- * 
- * 51    5/02/97 2:11p Lawrance
- * added hud_prune_hotkeys()
- * 
- * 50    4/28/97 2:18p Lawrance
- * made hotkey_add_remove more generic
- * 
- * 49    4/22/97 4:53p Lawrance
- * allow auto-targeting to not play target fail sound when searching for
- * the closest target
- * 
- * 48    4/15/97 4:00p Mike
- * Intermediate checkin caused by getting other files.  Working on camera
- * slewing system.
- * 
- * 47    4/13/97 3:53p Lawrance
- * separate out the non-rendering dependant portions of the HUD ( sounds,
- * updating lock position, changing targets, etc) and put into
- * hud_update_frame()
- * 
- * 46    4/12/97 4:29p Lawrance
- * get missle locking and offscreen indicator working properly with
- * different sized screens
- * 
- * 45    4/10/97 5:29p Lawrance
- * hud rendering split up into hud_render_3d(), hud_render_2d() and
- * hud_render_target_model()
- * 
- * 44    4/08/97 10:55a Allender
- * draw purple brackets on ship sending a message
- * 
- * 43    4/07/97 3:50p Allender
- * ability to assign > 1 ship to a hotkey.  Enabled use of hotkeys in
- * squadmate messaging
- * 
- * 42    3/27/97 3:58p Lawrance
- * modified target_closest() to allow targeting closest ship that is
- * attacking a given objnum
- * 
- * 41    3/27/97 9:29a Lawrance
- * If reach maximum bounding box size, use radius targeting box method
- * 
- * 40    3/26/97 6:43p Lawrance
- * implemented new method for detecting target in reticle, that doesn't
- * require center point of target to be in reticle
- * 
- * 39    3/26/97 12:44p Lawrance
- * modified targeting functions to take team into accout for Target
- * Next/Prev/Closest
- * 
- * 38    3/19/97 5:53p Lawrance
- * integrating new Misc_sounds[] array (replaces old Game_sounds
- * structure)
- * 
- * 37    3/17/97 3:47p Mike
- * Homing missile lock sound.
- * More on AI ships firing missiles.
- * 
- * 36    3/10/97 8:53a Lawrance
- * using hud_stop_looped_locking_sounds() in place of
- * hud_stop_looped_sounds()
- * 
- * 35    1/02/97 10:32a Lawrance
- * fixed some bugs related to stopping looped sounds when targets die and
- * going to menus
- * 
- * 34    12/24/96 4:31p Lawrance
- * Target bracket drawing code moved to separate files
- * 
- * 33    12/23/96 7:53p Lawrance
- * took out missile lock code and moved to HUDlock.cpp and HUDlock.h
- * 
- * 32    12/17/96 11:10a Lawrance
- * added targeting of subsystem in reticle
- * 
-*/
+
 
 #ifndef _HUDTARGET_H
 #define _HUDTARGET_H
 
 #include "graphics/2d.h"
+#include "hud/hud.h"
 
-struct ship;
-struct ship_subsys;
-struct object;
+class ship;
+class ship_subsys;
+class object;
 struct weapon_info;
 
 #define INCREASING	0
@@ -355,6 +44,9 @@ struct weapon_info;
 #define HOTKEY_USER_ADDED				1
 #define HOTKEY_MISSION_FILE_ADDED	2
 
+// regular and ballistic weapon gauges
+#define NUM_HUD_SETTINGS	2
+
 typedef struct htarget_list {
 	struct htarget_list	*next, *prev;		// for linked lists
 	int						how_added;			// determines how this hotkey was added (mission default or player)
@@ -377,6 +69,22 @@ extern char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 
+/// \brief An abbreviation for "Evaluate Ship as Closest Target", defines a 
+///        data structure used to hold the required arguments for evaluating 
+///        a prospective closest target to an attacked object.
+typedef struct esct
+{
+	int				team_mask;
+	int				filter;
+	ship*				shipp;
+	float				min_distance;
+	int				check_nearest_turret;
+	int				attacked_objnum;
+	int				check_all_turrets;
+	int				turret_attacking_target;		// check that turret is actually attacking the attacked_objnum
+} esct;
+
+bool evaluate_ship_as_closest_target(esct *esct);
 void	hud_init_targeting();
 void	hud_target_next(int team_mask = -1);
 void	hud_target_prev(int team_mask = -1);
@@ -384,15 +92,15 @@ int	hud_target_closest(int team_mask = -1, int attacked_objnum = -1, int play_fa
 void	hud_target_in_reticle_old();
 void	hud_target_in_reticle_new();
 void	hud_target_subsystem_in_reticle();
-void	hud_show_targeting_gauges(float frametime, int in_cockpit=1);
+void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
 void	hud_target_closest_locked_missile(object *A);
 void	hud_target_missile(object *source_obj, int next_flag);
-void	hud_target_next_list(int hostile=1, int next_flag=1);
+void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
 void	hud_target_auto_target_next();
-void	hud_show_remote_detonate_missile();
+void	hud_process_remote_detonate_missile();
 
 void	hud_target_uninspected_object(int next_flag);
 void	hud_target_newest_ship();
@@ -413,28 +121,16 @@ int	subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye, vec3d* sub
 vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos);
 void	hud_target_change_check();
 
-void hud_show_target_triangle_indicator(vertex *projected_v);
-void hud_show_lead_indicator(vec3d *target_world_pos);
-void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp);
-void hud_show_orientation_tee();
 void hud_show_hostile_triangle();
-void hud_show_target_data();
-void hud_show_afterburner_gauge();
-void hud_show_weapons();
 void hud_start_flash_weapon(int index);
-void hud_show_auto_icons();
-void hud_show_weapon_energy_gauge();
-void hud_show_cmeasure_gauge();
-void hud_show_brackets(object *targetp, vertex *projected_v);
-void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance=0.0f, int draw_solid=1);
-void hud_show_homing_missiles(void);
+void hud_update_weapon_flash();
+void hud_process_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
-int hud_communications_state(ship *sp, int show_msg = 0);
+int hud_communications_state(ship *sp);
 
 int hud_get_best_primary_bank(float *range);
 void hud_target_toggle_hidden_from_sensors();
-void hud_maybe_flash_docking_text(object *objp);
 int hud_target_invalid_awacs(object *objp);
 
 // functions for hotkey selection sets
@@ -456,9 +152,421 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 float hud_find_target_distance( object *targetee, object *targeter );
 
 extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
+void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
 
 void hud_stuff_ship_name(char *ship_name_text, ship *shipp);
 void hud_stuff_ship_callsign(char *ship_callsign_text, ship *shipp);
 void hud_stuff_ship_class(char *ship_class_text, ship *shipp);
+
+#define TARGET_DISPLAY_DIST		(1<<0)
+#define TARGET_DISPLAY_DOTS		(1<<1)
+#define TARGET_DISPLAY_LEAD		(1<<2)
+#define TARGET_DISPLAY_SUBSYS	(1<<3)
+#define TARGET_DISPLAY_NAME		(1<<4)
+#define TARGET_DISPLAY_CLASS	(1<<5)
+
+typedef struct target_display_info {
+	object* objp;
+	vertex target_point;
+	vec3d target_pos;
+	color bracket_clr;
+	int correction;
+	int flags;
+	char name[32];
+} target_display_info;
+
+extern SCP_vector<target_display_info> target_display_list;
+
+void hud_target_add_display_list(object *objp, vertex *target_point, vec3d *target_pos, int correction, color *bracket_clr, char *name, int flags);
+void hud_target_clear_display_list();
+
+class HudGaugeAutoTarget: public HudGauge
+{
+protected:
+	hud_frames Toggle_frame;
+
+	int Auto_text_offsets[2];
+	int Target_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
+public:
+	HudGaugeAutoTarget();
+	void initAutoTextOffsets(int x, int y);
+	void initTargetTextOffsets(int x, int y);
+	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeAutoSpeed: public HudGauge
+{
+protected:
+	hud_frames Toggle_frame;
+
+	int Auto_text_offsets[2];
+	int Speed_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
+public:
+	HudGaugeAutoSpeed();
+	void initAutoTextOffsets(int x, int y);
+	void initSpeedTextOffsets(int x, int y);
+	void initBitmaps(char *fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeCmeasures: public HudGauge
+{
+protected:
+	hud_frames Cmeasure_gauge;
+	
+	int Cm_text_offsets[2];
+	int Cm_text_val_offsets[2];
+public:
+	HudGaugeCmeasures();
+	void initBitmaps(char *fname);
+	void initCountTextOffsets(int x, int y);
+	void initCountValueOffsets(int x, int y);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeAfterburner: public HudGauge
+{
+protected:
+	hud_frames Energy_bar;
+
+	int Energy_h;
+public:
+	HudGaugeAfterburner();
+	void initEnergyHeight(int h);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeWeaponEnergy: public HudGauge
+{
+protected:
+	hud_frames Energy_bar;
+
+	int Wenergy_text_offsets[2];
+	int Wenergy_h;
+	int Text_alignment;
+
+	int Armed_name_offsets[2];
+	int Armed_alignment;
+	bool Show_armed;
+	int Armed_name_h;
+	
+	bool Always_show_text;
+	bool Moving_text;
+	bool Show_ballistic;
+public:
+	HudGaugeWeaponEnergy();
+	void initBitmaps(char *fname);
+	void initTextOffsets(int x, int y);
+	void initEnergyHeight(int h);
+	void initAlwaysShowText(bool show_text);
+	void initMoveText(bool move_text);
+	void initShowBallistics(bool show_ballistics);
+	void initAlignments(int text_align, int armed_align);
+	void initArmedOffsets(int x, int y, int h, bool show);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeWeapons: public HudGauge
+{
+protected:
+	hud_frames primary_top[NUM_HUD_SETTINGS]; // Weapon_gauges[ballistic_hud_index][0]
+	int top_offset_x[NUM_HUD_SETTINGS]; // Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][0]
+
+	int Weapon_header_offsets[NUM_HUD_SETTINGS][2];
+
+	hud_frames primary_middle[NUM_HUD_SETTINGS]; // Weapon_gauges[ballistic_hud_index][1]
+	hud_frames primary_last[NUM_HUD_SETTINGS]; // New_weapon
+	
+	// for the rest of the gauge
+	int frame_offset_x[NUM_HUD_SETTINGS]; // Weapon_gauge_primary_coords[ballistic_hud_index][gr_screen.res][1][0]
+
+	hud_frames secondary_top[NUM_HUD_SETTINGS];
+	hud_frames secondary_middle[NUM_HUD_SETTINGS];
+	hud_frames secondary_bottom[NUM_HUD_SETTINGS];
+	
+	int Weapon_plink_offset_x; // Weapon_plink_coords[gr_screen.res][0][0]
+	int Weapon_pname_offset_x; // Weapon_pname_coords[gr_screen.res][0][0]
+	int Weapon_pammo_offset_x; 
+
+	int Weapon_sammo_offset_x;
+	int Weapon_sname_offset_x;
+	int Weapon_sreload_offset_x;
+	int Weapon_slinked_offset_x;
+	int Weapon_sunlinked_offset_x;
+	ubyte Weapon_link_icon;
+
+	int top_primary_h;
+	int pname_start_offset_y;
+
+	int top_secondary_h;
+	int sname_start_offset_y;
+
+	int primary_text_h;
+
+	int secondary_text_h;
+public:
+	HudGaugeWeapons();
+	void initBitmapsPrimaryTop(char *fname, char *fname_ballistic);
+	void initBitmapsPrimaryMiddle(char *fname, char *fname_ballistic);
+	void initBitmapsPrimaryLast(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryTop(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryMiddle(char *fname, char *fname_ballistic);
+	void initBitmapsSecondaryBottom(char *fname, char *fname_ballistic);
+	void initTopOffsetX(int x, int x_b);
+	void initHeaderOffsets(int x, int y, int x_b, int y_b);
+	void initFrameOffsetX(int x, int x_b);
+	void initPrimaryWeaponOffsets(int link_x, int name_x, int ammo_x);
+	void initSecondaryWeaponOffsets(int ammo_x, int name_x, int reload_x, int linked_x, int unlinked_x);
+	void initStartNameOffsetsY(int p_y, int s_y);
+	void initPrimaryHeights(int top_h, int text_h);
+	void initSecondaryHeights(int top_h, int text_h);
+	void initLinkIcon();
+
+	void render(float frametime);
+	void pageIn();
+	void maybeFlashWeapon(int index);
+};
+
+class HudGaugeWeaponList: public HudGauge
+{
+protected:
+	hud_frames _background_first;
+	hud_frames _background_entry;
+	hud_frames _background_last;
+	ubyte Weapon_link_icon;
+
+	int _bg_first_offset_x;
+	int _bg_entry_offset_x;
+	int _bg_last_offset_x;
+	int _bg_last_offset_y;
+
+	int _background_first_h;
+	int _background_entry_h;
+
+	int _header_offsets[2];
+	int _entry_start_y;
+	int _entry_h;
+
+	char header_text[NAME_LENGTH];
+public:
+	HudGaugeWeaponList(int gauge_object);
+	void initBitmaps(char *fname_first, char *fname_entry, char *fname_last);
+	void initBgFirstOffsetX(int x);
+	void initBgEntryOffsetX(int x);
+	void initBgLastOffsetX(int x);
+	void initBgLastOffsetY(int x);
+	void initBgFirstHeight(int h);
+	void initBgEntryHeight(int h);
+	void initHeaderText(char *text);
+	void initHeaderOffsets(int x, int y);
+	void initEntryStartY(int y);
+	void initEntryHeight(int h);
+	void initLinkIcon();
+
+	virtual void render(float frametime);
+	void pageIn();
+	void maybeFlashWeapon(int index);
+};
+
+class HudGaugePrimaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _plink_offset_x; 
+	int _pname_offset_x; 
+	int _pammo_offset_x; 
+public:
+	HudGaugePrimaryWeapons();
+	void initPrimaryLinkOffsetX(int x);
+	void initPrimaryNameOffsetX(int x);
+	void initPrimaryAmmoOffsetX(int x);
+
+	void render(float frametime);
+};
+
+class HudGaugeSecondaryWeapons: public HudGaugeWeaponList
+{
+protected:
+	int _sammo_offset_x;
+	int _sname_offset_x;
+	int _sreload_offset_x;
+	int _slinked_offset_x;
+	int _sunlinked_offset_x;
+public:
+	HudGaugeSecondaryWeapons();
+	void initSecondaryAmmoOffsetX(int x);
+	void initSecondaryNameOffsetX(int x);
+	void initSecondaryReloadOffsetX(int x);
+	void initSecondaryLinkedOffsetX(int x);
+	void initSecondaryUnlinkedOffsetX(int x);
+
+	void render(float frametime);
+};
+
+class HudGaugeHardpoints: public HudGauge
+{
+	int _size[2];
+	float _line_width;
+	int _view_direction;
+
+	bool draw_secondary_models;
+	bool draw_primary_models;
+public:
+	enum {TOP, FRONT};
+
+	void initSizes(int w, int h);
+	void initLineWidth(float w);
+	void initViewDir(int dir);
+	void initDrawOptions(bool primary_models, bool secondary_models);
+
+	HudGaugeHardpoints();
+	void render(float frametime);
+};
+
+class HudGaugeWarheadCount: public HudGauge
+{
+	hud_frames Warhead;
+	
+	int Warhead_name_offsets[2];
+	int Warhead_count_offsets[2];
+	int Warhead_count_size[2];
+
+	int Max_symbols;
+	int Text_align;
+	int Max_columns;
+public:
+	HudGaugeWarheadCount();
+	void initBitmap(char *fname);
+	void initNameOffsets(int x, int y);
+	void initCountOffsets(int x, int y);
+	void initCountSizes(int w, int h);
+	void initMaxSymbols(int count);
+	void initMaxColumns(int count);
+	void initTextAlign(int align);
+	void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeOrientationTee: public HudGauge
+{
+protected:
+	int Radius;
+public:
+	HudGaugeOrientationTee();
+	void initRadius(int length);
+	void render(float frametime);
+	void renderOrientation(object *from_objp, object *to_objp, matrix *from_orientp);
+	void pageIn();
+};
+
+class HudGaugeReticleTriangle: public HudGauge
+{
+protected:
+	int Radius; 
+	float Target_triangle_base;
+	float Target_triangle_height;
+public:
+	HudGaugeReticleTriangle();
+	HudGaugeReticleTriangle(int _gauge_object, int _gauge_config);
+	void initRadius(int length);
+	void initTriBase(float length);
+	void initTriHeight(float h);
+	virtual void render(float frametime);
+	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
+	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
+};
+
+class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeHostileTriangle();
+	void render(float frametime);
+};
+
+class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeTargetTriangle();
+	void render(float frametime);
+};
+
+class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
+{
+protected:
+public:
+	HudGaugeMissileTriangles();
+	void render(float frametime);
+};
+
+class HudGaugeOffscreen: public HudGauge
+{
+protected:
+	float Max_offscreen_tri_seperation;
+	float Max_front_seperation;
+	float Offscreen_tri_base;
+	float Offscreen_tri_height;
+public:
+	HudGaugeOffscreen();
+	void initMaxTriSeperation(float length);
+	void initMaxFrontSeperation(float length);
+	void initTriBase(float length);
+	void initTriHeight(float length);
+	void render(float frametime);
+	void calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
+	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true);
+	void pageIn();
+};
+
+class HudGaugeLeadIndicator: public HudGauge
+{
+protected:
+	hud_frames Lead_indicator_gauge;
+	float Lead_indicator_half[2];
+public:
+	HudGaugeLeadIndicator();
+	void initHalfSize(float w, float h);
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void renderIndicator(int frame_offset, object *targetp, vec3d *lead_target_pos);
+	void renderLeadCurrentTarget();
+	void renderLeadQuick(vec3d *target_pos, object *targetp);
+	int pickFrame(float prange, float srange, float dist_to_target);
+	void pageIn();
+};
+
+class HudGaugeLeadSight: public HudGauge
+{
+protected:
+	hud_frames Lead_sight;
+	int Lead_sight_half[2];
+public:
+	HudGaugeLeadSight();
+	void initBitmaps(char *fname);
+	void render(float frametime);
+	void renderSight(int indicator_frame, vec3d *target_pos, vec3d *lead_target_pos);
+	void pageIn();
+};
 
 #endif

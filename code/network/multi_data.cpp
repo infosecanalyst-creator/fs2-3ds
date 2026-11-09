@@ -7,158 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_data.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.9  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.7  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.6  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/22 01:22:25  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 8     6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 7     1/21/99 2:06p Dave
- * Final checkin for multiplayer testing.
- * 
- * 6     1/14/99 6:06p Dave
- * 100% full squad logo support for single player and multiplayer.
- * 
- * 5     12/18/98 12:31p Johnson
- * Fixed a bug where the server would not properly redistribute a data
- * file that he already had to other players.
- * 
- * 4     12/14/98 4:01p Dave
- * Got multi_data stuff working well with new xfer stuff. 
- * 
- * 3     12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 19    6/13/98 3:18p Hoffoss
- * NOX()ed out a bunch of strings that shouldn't be translated.
- * 
- * 18    5/21/98 3:45a Sandeep
- * Make sure file xfer sender side uses correct directory type.
- * 
- * 17    5/17/98 6:32p Dave
- * Make sure clients/servers aren't kicked out of the debriefing when team
- * captains leave a game. Fixed chatbox off-by-one error. Fixed image
- * xfer/pilot info popup stuff.
- * 
- * 16    5/13/98 6:54p Dave
- * More sophistication to PXO interface. Changed respawn checking so
- * there's no window for desynchronization between the server and the
- * clients.
- * 
- * 15    4/30/98 4:53p John
- * Restructured and cleaned up cfile code.  Added capability to read off
- * of CD-ROM drive and out of multiple pack files.
- * 
- * 14    4/21/98 4:44p Dave
- * Implement Vasudan ships in multiplayer. Added a debug function to bash
- * player rank. Fixed a few rtvoice buffer overrun problems. Fixed ui
- * problem in options screen. 
- * 
- * 13    4/16/98 1:55p Dave
- * Removed unneeded Assert when processing chat packets. Fixed standalone
- * sequencing bugs. Laid groundwork for join screen server status
- * icons/text.
- * 
- * 12    4/14/98 12:19p Dave
- * Revised the pause system yet again. Seperated into its own module.
- * 
- * 11    4/08/98 2:51p Dave
- * Fixed pilot image xfer once again. Solidify team selection process in
- * pre-briefing multiplayer.
- * 
- * 10    4/04/98 4:22p Dave
- * First rev of UDP reliable sockets is done. Seems to work well if not
- * overly burdened.
- * 
- * 9     3/30/98 6:27p Dave
- * Put in a more official set of multiplayer options, including a system
- * for distributing netplayer and netgame settings.
- * 
- * 8     3/26/98 6:01p Dave
- * Put in file checksumming routine in cfile. Made pilot pic xferring more
- * robust. Cut header size of voice data packets in half. Put in
- * restricted game host query system.
- * 
- * 7     3/23/98 5:42p Dave
- * Put in automatic xfer of pilot pic files. Changed multi_xfer system so
- * that it can support multiplayer sends/received between client and
- * server simultaneously.
- * 
- * 6     3/21/98 7:14p Dave
- * Fixed up standalone player slot switching. Made training missions not
- * count towards player stats.
- * 
- * 5     3/15/98 4:17p Dave
- * Fixed oberver hud problems. Put in handy netplayer macros. Reduced size
- * of network orientation matrices.
- * 
- * 4     3/11/98 2:04p Dave
- * Removed optimized build warnings.
- * 
- * 3     2/20/98 4:43p Dave
- * Finished support for multiplayer player data files. Split off
- * multiplayer campaign functionality.
- * 
- * 2     2/19/98 6:44p Dave
- * Finished server getting data from players. Now need to rebroadcast the
- * data.
- * 
- * 1     2/19/98 6:21p Dave
- * Player data file xfer module.
- * 
- * $NoKeywords: $
- */
+
 
 
 #include <time.h>
@@ -182,9 +31,9 @@
 
 // player data struct
 typedef struct np_data {
+	ushort player_id;									// id of the player who sent the file
 	char filename[MAX_FILENAME_LEN+1];			// filename
 	ubyte status[MAX_PLAYERS];						// status for all players (0 == don't have it, 1 == have or sending, 2 == i sent it originally)
-	ushort player_id;									// id of the player who sent the file
 	ubyte used;											// in use or not
 } np_data;
 
@@ -418,11 +267,11 @@ void multi_data_send_my_junk()
 	if(ok_to_send){
 		with_ext = cf_add_ext(Net_player->m_player->image_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->m_player->image_filename, with_ext);
+			strcpy_s(Net_player->m_player->image_filename, with_ext);
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->image_filename) > 0)){
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (Net_player->m_player->image_filename[0] != '\0')){
 			multi_data_add_new(Net_player->m_player->image_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send
@@ -437,8 +286,8 @@ void multi_data_send_my_junk()
 
 	// verify that my pilot pic is valid
 	ok_to_send = 1;
-	if(strlen(Net_player->m_player->squad_filename)){
-		bmap = bm_load(Net_player->m_player->squad_filename);
+	if(strlen(Net_player->m_player->m_squad_filename)){
+		bmap = bm_load(Net_player->m_player->m_squad_filename);
 		if(bmap == -1){			
 			ok_to_send = 0;
 		}
@@ -463,19 +312,19 @@ void multi_data_send_my_junk()
 	}
 
 	if(ok_to_send){
-		with_ext = cf_add_ext(Net_player->m_player->squad_filename, NOX(".pcx"));
+		with_ext = cf_add_ext(Net_player->m_player->m_squad_filename, NOX(".pcx"));
 		if(with_ext != NULL){
-			strcpy(Net_player->m_player->squad_filename,with_ext);
+			strcpy_s(Net_player->m_player->m_squad_filename,with_ext);
 		}
 
 		// host should put his own pic file in the list now
-		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (strlen(Net_player->m_player->squad_filename) > 0)){
-			multi_data_add_new(Net_player->m_player->squad_filename, MY_NET_PLAYER_NUM);
+		if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && !(Game_mode & GM_STANDALONE_SERVER) && (Net_player->m_player->m_squad_filename[0] != '\0')){
+			multi_data_add_new(Net_player->m_player->m_squad_filename, MY_NET_PLAYER_NUM);
 		}
 		// otherwise clients should just queue up a send
 		else {
 			// add a file extension if necessary			
-			multi_xfer_send_file(Net_player->reliable_socket, Net_player->m_player->squad_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
+			multi_xfer_send_file(Net_player->reliable_socket, Net_player->m_player->m_squad_filename, CF_TYPE_ANY, MULTI_XFER_FLAG_AUTODESTROY | MULTI_XFER_FLAG_QUEUE);
 		}		
 	}
 }
@@ -548,7 +397,7 @@ int multi_data_add_new(char *filename, int player_index)
 
 	// assign the data
 	memset(&Multi_data[slot], 0, sizeof(np_data));								// clear the slot out
-	strcpy(Multi_data[slot].filename, filename);									// copy the filename
+	strcpy_s(Multi_data[slot].filename, filename);									// copy the filename
 	Multi_data[slot].used = 1;															// set it as being in use
 	Multi_data[slot].player_id = Net_players[player_index].player_id;		// player id of who's sending the file
 	Multi_data[slot].status[player_index] = 2;									// mark his status appropriately
@@ -564,8 +413,8 @@ void multi_data_maybe_reload()
 
 	// go through all connected and try to reload their images if necessary
 	for(idx=0; idx<MAX_PLAYERS; idx++){
-		if(MULTI_CONNECTED(Net_players[idx]) && strlen(Net_players[idx].m_player->squad_filename) && (Net_players[idx].m_player->insignia_texture == -1)){
-			Net_players[idx].m_player->insignia_texture = bm_load_duplicate(Net_players[idx].m_player->squad_filename);
+		if(MULTI_CONNECTED(Net_players[idx]) && strlen(Net_players[idx].m_player->m_squad_filename) && (Net_players[idx].m_player->insignia_texture == -1)){
+			Net_players[idx].m_player->insignia_texture = bm_load_duplicate(Net_players[idx].m_player->m_squad_filename);
 
 			// if the bitmap loaded properly, lock it as a transparent texture
 			if(Net_players[idx].m_player->insignia_texture != -1){

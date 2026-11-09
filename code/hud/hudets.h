@@ -7,81 +7,46 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDets.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
- *
- * Header file that supports code to manage and display the Energy Transfer System (ETS)
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.5  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.4  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/09/13 06:02:05  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     8/11/97 10:51a Lawrance
- * fix problem that was not setting correct weapon energy when
- * change_ship_type() was called
- * 
- * 6     4/03/97 5:29p Mike
- * 
- * 5     2/25/97 4:12p Lawrance
- * using frametime to calculate energy recharge
- * 
- * 4     1/01/97 7:34p Lawrance
- * added cheat (Del+W) which keeps weapon energy at max levels.
- * 
- * 3     12/24/96 4:31p Lawrance
- * refining energy transfer system
- * 
- * 2     12/22/96 3:41p Lawrance
- * ETS system working
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _HUD_ETS_H
 #define _HUD_ETS_H
 
-struct object;
+#include "hud/hud.h"
+
+class object;
+
+#define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
+#define INTIAL_SHIELD_RECHARGE_INDEX	4		// default shield charge rate (index in Energy_levels[])
+#define INTIAL_WEAPON_RECHARGE_INDEX	4		// default weapon charge rate (index in Energy_levels[])
+#define INTIAL_ENGINE_RECHARGE_INDEX	4		// default engine charge rate (index in Energy_levels[])
+
+#define NUM_ENERGY_LEVELS	13
+#define MAX_ENERGY_INDEX	(NUM_ENERGY_LEVELS - 1)
+
+#define AI_MODIFY_ETS_INTERVAL 500	// time between ets modifications for ai's (in milliseconds)
+
+#define ZERO_INDEX			0
+#define ONE_THIRD_INDEX		4
+#define ONE_HALF_INDEX		6
+#define ALL_INDEX			12
+
+#define HAS_ENGINES			(1<<0)
+#define HAS_SHIELDS			(1<<1)
+#define HAS_WEAPONS			(1<<2)
 
 #define	ETS_RECHARGE_RATE	4.0f			//	Recharge this percent of total shields/second
 
+const int num_retail_ets_gauges = 3;
+
 extern float Energy_levels[];
 extern int Weapon_energy_cheat;
-
 
 enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 
 void update_ets(object* obj, float fl_frametime);
 void ets_init_ship(object* obj);
 void ai_manage_ets(object* obj);
-
-void hud_init_ets();
-void hud_show_ets();
 
 void increase_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
 void decrease_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
@@ -90,5 +55,68 @@ void set_default_recharge_rates(object* obj);
 void transfer_energy_to_shields(object* obj);
 void transfer_energy_to_weapons(object* obj);
 
+float ets_get_max_speed(object* objp, float engine_energy);
+void sanity_check_ets_inputs(int (&ets_indexes)[num_retail_ets_gauges]);
+bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail_ets_gauges]);
+void zero_one_ets (int *reduce, int *add1, int *add2);
+
+class HudGaugeEts: public HudGauge // HUD_ETS_GAUGE
+{
+protected:
+	hud_frames Ets_bar;
+	int System_type;
+
+	char Letter;
+	int	Letter_offsets[2];
+	int	Top_offsets[2];
+	int	Bottom_offsets[2];
+
+	int ETS_bar_h;
+public:
+	HudGaugeEts();
+	HudGaugeEts(int _gauge_object, int _system_type);
+	void initLetterOffsets(int _x, int _y);
+	void initTopOffsets(int _x, int _y);
+	void initBottomOffsets(int _x, int _y);
+	void initLetter(char _letter);	// obligatory PC Load Letter joke. (Swifty)
+	void initBarHeight(int _ets_bar_h);
+	void initBitmaps(char *fname);
+	virtual void blitGauge(int index);
+	virtual void render(float frametime);
+	void pageIn();
+};
+
+class HudGaugeEtsWeapons: public HudGaugeEts
+{
+public:
+	HudGaugeEtsWeapons();
+	void render(float frametime);
+};
+
+class HudGaugeEtsShields: public HudGaugeEts
+{
+public:
+	HudGaugeEtsShields();
+	void render(float frametime);
+};
+
+class HudGaugeEtsEngines: public HudGaugeEts
+{
+public:
+	HudGaugeEtsEngines();
+	void render(float frametime);
+};
+
+class HudGaugeEtsRetail: public HudGaugeEts
+{
+protected:
+	char Letters[num_retail_ets_gauges];
+	int Gauge_positions[num_retail_ets_gauges];
+public:
+	HudGaugeEtsRetail();
+	void render(float frametime);
+	void initLetters(char *_letters);
+	void initGaugePositions(int *_gauge_positions);
+};
 
 #endif

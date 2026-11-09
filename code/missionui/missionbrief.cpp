@@ -7,450 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.42.2.3 $
- * $Date: 2007-11-19 20:24:37 $
- * $Author: Goober5000 $
- *
- * C module that contains code to display the mission briefing to the player
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.42.2.2  2007/03/22 20:35:44  taylor
- * be sure to page in textures for change ship class sexp preload
- * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
- * make event music keep extension if it exists, so that the special data will be accurate
- * bits of cleanup from old MS code that we don't need
- *
- * Revision 2.42.2.1  2007/02/20 04:19:22  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.42  2006/05/13 07:09:25  taylor
- * minor cleanup and a couple extra error checks
- * get rid of some wasteful math from the gr_set_proj_matrix() calls
- *
- * Revision 2.41  2006/02/19 00:32:47  Goober5000
- * additional error checking
- * --Goober5000
- *
- * Revision 2.40  2006/01/26 03:58:14  Goober5000
- * added variable replacement to command briefings, briefings, and debriefings
- * --Goober5000
- *
- * Revision 2.39  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.38  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.37  2005/09/26 04:08:54  Goober5000
- * some more cleanup
- * --Goober5000
- *
- * Revision 2.36  2005/09/25 05:13:06  Goober5000
- * hopefully complete species upgrade
- * --Goober5000
- *
- * Revision 2.35  2005/09/23 22:48:56  Goober5000
- * something for WCS
- * --Goober5000
- *
- * Revision 2.34  2005/09/09 05:11:20  Goober5000
- * braces for clarity
- *
- * Revision 2.33  2005/07/25 05:24:16  Goober5000
- * cleaned up some command line and mission flag stuff
- * --Goober5000
- *
- * Revision 2.32  2005/07/24 18:32:58  taylor
- * various incarnations of freaky and stupid, need to do this everywhere eventually
- *
- * Revision 2.31  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.30  2005/07/18 03:45:08  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.29  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.28  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.27  2005/06/03 06:39:26  taylor
- * better audio pause/unpause support when game window loses focus or is minimized
- *
- * Revision 2.26  2005/05/30 05:33:11  taylor
- * if a briefing does have any stages (no text) then don't carry over text from a previous mission
- * some generic cleanup to V code that isn't a real problem now but could easily have been a memleak
- *
- * Revision 2.25  2005/05/12 17:49:14  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.24  2005/04/05 05:53:19  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.23  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.22  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.21  2005/02/21 09:00:58  wmcoolmon
- * Multi-res support
- *
- * Revision 2.20  2005/02/14 23:56:51  taylor
- * fix mouse click issues in weapon/ship select screen
- * skip real VCR controls for Closeup check rather than using hardcoded values
- *
- * Revision 2.19  2005/01/31 23:27:54  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.18  2005/01/29 08:09:47  wmcoolmon
- * Various updates; shader, clipping
- *
- * Revision 2.17  2004/11/24 20:12:25  taylor
- * fix briefing related crash(es) (forgot I had this)
- *
- * Revision 2.16  2004/07/26 20:47:38  Kazan
- * remove MCD complete
- *
- * Revision 2.15  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.14  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.13  2003/12/16 20:48:41  phreak
- * made gr_set_proj_matrix use the MIN/MAX_DRAW_DISTANCE constants
- *
- * Revision 2.12  2003/11/17 04:25:57  bobboau
- * made the poly list dynamicly alocated,
- * started work on fixing the node model not rendering,
- * but most of that got commented out so I wouldn't have to deal with it
- * while mucking about with the polylist
- *
- * Revision 2.11  2003/11/16 04:08:47  Goober5000
- * fixed briefing scroll and display of "more"
- * --Goober5000
- *
- * Revision 2.10  2003/11/11 03:56:11  bobboau
- * lots of bug fixing, much of it in nebula and bitmap drawing
- *
- * Revision 2.9  2003/11/09 06:31:40  Kazan
- * a couple of htl functions being called in nonhtl (ie NULL functions) problems fixed
- * conflicts in cmdline and timerbar.h log entries
- * cvs stopped acting like it was on crack obviously
- *
- * Revision 2.8  2003/11/06 22:45:55  phreak
- * added gr_start_**_matrix() and gr_end_**_matrix() around where ships are rendered
- *
- * Revision 2.7  2003/09/07 18:14:54  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.6  2003/09/05 04:25:28  Goober5000
- * well, let's see here...
- *
- * * persistent variables
- * * rotating gun barrels
- * * positive/negative numbers fixed
- * * sexps to trigger whether the player is controlled by AI
- * * sexp for force a subspace jump
- *
- * I think that's it :)
- * --Goober5000
- *
- * Revision 2.5  2003/03/30 21:16:21  Goober5000
- * fixed stupid spelling mistake
- * --Goober5000
- *
- * Revision 2.4  2003/03/20 07:15:37  Goober5000
- * implemented mission flags for no briefing or no debriefing - yay!
- * --Goober5000
- *
- * Revision 2.3  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.2  2003/01/17 07:59:08  Goober5000
- * fixed some really strange behavior with strings not being truncated at the
- * # symbol
- * --Goober5000
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.5  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.4  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.3  2002/05/09 23:02:59  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 48    10/14/99 2:51p Jefff
- * localiztion fixes
- * 
- * 47    10/13/99 3:23p Jefff
- * fixed unnumbered XSTRs
- * 
- * 46    9/12/99 8:09p Dave
- * Fixed problem where skip-training button would cause mission messages
- * not to get paged out for the current mission.
- * 
- * 45    9/09/99 3:40p Jefff
- * no exit loop outisde of campaign mode
- * 
- * 44    9/07/99 6:53p Jefff
- * functionality to break out of a loop
- * 
- * 43    9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 42    9/03/99 10:57a Jefff
- * numbered an xstr
- * 
- * 41    8/30/99 5:30p Jefff
- * fixed "more" being cut off in d3d
- * 
- * 40    8/30/99 10:29a Jefff
- * added autocenter flag to closup rendering
- * 
- * 39    8/19/99 11:33a Dave
- * Fixed debug build.
- * 
- * 38    8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 37    8/16/99 4:05p Dave
- * Big honking checkin.
- * 
- * 36    8/16/99 9:48a Jefff
- * all clicks on briefing icons should now register
- * 
- * 35    8/10/99 7:29p Jefff
- * added mission title to briefing screen
- * 
- * 34    8/03/99 1:34a Andsager
- * fix skip training mission (again)
- * 
- * 33    8/02/99 12:01p Jefff
- * fixed "skip training" text pos
- * 
- * 32    7/30/99 5:42p Jasenw
- * Fixed coords for skip training button.
- * 
- * 31    7/29/99 10:50p Dave
- * Oops. Accidentally blew away some interface text changes.
- * 
- * 30    7/29/99 10:48p Dave
- * 
- * 29    7/29/99 3:05p Andsager
- * Add skip training text. and properly skip.
- * 
- * 28    7/24/99 6:07p Jefff
- * Added "lock" text to multiplayer lock button
- * 
- * 27    7/21/99 10:51a Jefff
- * added "more" indicator to briefing text box
- * 
- * 26    7/19/99 3:01p Dave
- * Fixed icons. Added single transport icon.
- * 
- * 25    7/18/99 5:20p Dave
- * Jump node icon. Fixed debris fogging. Framerate warning stuff.
- * 
- * 24    7/16/99 1:49p Dave
- * 8 bit aabitmaps. yay.
- * 
- * 23    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 22    7/09/99 5:54p Dave
- * Seperated cruiser types into individual types. Added tons of new
- * briefing icons. Campaign screen.
- * 
- * 21    6/29/99 7:39p Dave
- * Lots of small bug fixes.
- * 
- * 20    6/11/99 11:13a Dave
- * last minute changes before press tour build.
- * 
- * 19    6/04/99 1:18p Dave
- * Fixed briefing model rendering problems. Made show background option in
- * fred toggle nebula rendering.
- * 
- * 18    5/07/99 10:34a Andsager
- * Make red alert work in FS2
- * 
- * 17    4/23/99 12:01p Johnson
- * Added SIF_HUGE_SHIP
- * 
- * 16    3/25/99 2:45p Neilk
- * Fixed lock button
- * 
- * 15    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 14    2/05/99 7:19p Neilk
- * Removed black part from mission screen, fixed info text coords
- * 
- * 13    2/02/99 4:35p Neilk
- * fixed coordinate problem where primary goals was on top of interface in
- * mission briefing
- * 
- * 12    2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 11    1/30/99 7:32p Neilk
- * Fixed coords problems for mission briefing screens
- * 
- * 10    1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 9     1/30/99 1:29a Dave
- * Fixed nebula thumbnail problem. Full support for 1024x768 choose pilot
- * screen.  Fixed beam weapon death messages.
- * 
- * 8     1/29/99 4:17p Dave
- * New interface screens.
- * 
- * 7     1/13/99 7:19p Neilk
- * Converted Mission Brief, Barracks, Synch to high res support
- * 
- * 6     12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 5     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 4     11/20/98 4:08p Dave
- * Fixed flak effect in multiplayer.
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 114   9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 113   6/19/98 3:52p Lawrance
- * Don't use large text in popup, since it is missing large foreign chars
- * 
- * 112   6/09/98 5:17p Lawrance
- * French/German localization
- * 
- * 111   6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 110   6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 109   5/22/98 10:44a Lawrance
- * put in case label to suppress warning
- * 
- * 108   5/19/98 11:35p Lawrance
- * Play sound for briefing control button presses
- * 
- * 107   5/19/98 8:47p Lawrance
- * Set proper distance for jump nodes
- * 
- * 106   5/19/98 8:35p Dave
- * Revamp PXO channel listing system. Send campaign goals/events to
- * clients for evaluation. Made lock button pressable on all screens. 
- * 
- * 105   5/12/98 2:16p Hoffoss
- * Added debug code to switch models of closeup icon to more easily check
- * positions and zooms.
- * 
- * 104   5/06/98 11:50p Lawrance
- * Clean up help overlay code for loadout screens
- * 
- * 103   5/06/98 8:03p Allender
- * AL: only free pointers in brief_compact_stages if non-null
- * 
- * 102   5/05/98 4:48p Lawrance
- * Fix bug with launching closeup icon when pause button is pressed
- * 
- * 101   4/29/98 1:45p Lawrance
- * Print out mission filename if debug build, or if INTERPLAY QA defined
- * 
- * 100   4/29/98 12:15a Lawrance
- * reset demo trailer timer when briefing moves to a new stage
- * 
- * 98    4/25/98 11:55p Lawrance
- * fix bug with the auto-advance button
- * 
- * 97    4/25/98 3:49p Lawrance
- * Save briefing auto-advance pref
- * 
- * 96    4/25/98 12:00p Lawrance
- * disable advance keypress for 1/2 second after autoadvance
- * 
- * 95    4/22/98 7:24p Dave
- * Made sure the "player/ships" locked button for multiplayer appears on
- * all briefing screens.
- * 
- * 94    4/20/98 3:53p Lawrance
- * Fix various bugs with auto-advancing through briefings.
- * 
- * 93    4/19/98 12:11p Lawrance
- * add new art for pause button in the briefing
- * 
- * 92    4/17/98 10:39p Andsager
- * AL: Fix bug with auto-advance of briefing stages.
- * 
- * 91    4/16/98 8:05p Lawrance
- * Don't show closeup icon for planets
- * 
- * 90    4/15/98 5:17p Lawrance
- * fix bug with skip training 
- *
- * $NoKeywords: $
- *
-*/
+
 
 
 #include "freespace2/freespace.h"
@@ -489,15 +46,8 @@
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "missionui/chatbox.h"
+#include "lighting/lighting.h"
 
-
-
-/*
-#define OBJECTIVES_X	65
-#define OBJECTIVES_Y	137
-#define OBJECTIVES_W	508
-#define OBJECTIVES_H	233
-*/
 
 static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
 	{
@@ -523,6 +73,8 @@ hud_anim		Fade_anim;
 
 int	Briefing_music_handle = -1;
 int	Briefing_music_begin_timestamp = 0;
+
+int Briefing_overlay_id = -1;
 
 // --------------------------------------------------------------------------------------
 // Module scope globals
@@ -652,6 +204,8 @@ int Brief_inited = FALSE;
 
 int Briefing_paused = 0;	// for stopping audio and stage progression
 
+int Max_brief_Lines;
+
 // --------------------------------------------------------------------------------------
 // Briefing specific UI
 // --------------------------------------------------------------------------------------
@@ -748,6 +302,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 
 //stuff for ht&l. vars and such
 extern int Cmdline_nohtl;
+extern bool Cmdline_brief_lighting;
 
 
 // --------------------------------------------------------------------------------------
@@ -757,7 +312,7 @@ int brief_setup_closeup(brief_icon *bi);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
-char *brief_tooltip_handler(char *str)
+const char *brief_tooltip_handler(const char *str)
 {
 	if (!stricmp(str, NOX("@close"))) {
 		if (Closeup_icon)
@@ -798,17 +353,13 @@ void brief_skip_training_pressed()
 	mission_campaign_eval_next_mission();
 	mission_campaign_mission_over();	
 
-	// CD CHECK
-	if(game_do_cd_mission_check(Game_current_mission_filename)){
-		gameseq_post_event( GS_EVENT_START_GAME );
-	} else {
+	if ( The_mission.flags & MISSION_FLAG_END_TO_MAINHALL ) {
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
 	}
 }
 
-#ifdef FS2_DEMO
-	extern void demo_reset_trailer_timer();
-#endif
 // --------------------------------------------------------------------------------------
 //	brief_do_next_pressed()
 //
@@ -821,10 +372,6 @@ void brief_do_next_pressed(int play_sound)
 	if ( (now - Brief_last_auto_advance) < 500 ) {
 		return;
 	}
-
-#ifdef FS2_DEMO
-	demo_reset_trailer_timer();
-#endif
 
 	Current_brief_stage++;
 	if ( Current_brief_stage >= Num_brief_stages ) {
@@ -850,9 +397,14 @@ void brief_do_prev_pressed()
 	Current_brief_stage--;
 	if ( Current_brief_stage < 0 ) {
 		Current_brief_stage = 0;
-		gamesnd_play_iface(SND_GENERAL_FAIL);
-		if ( Quick_transition_stage != -1 )
-			brief_transition_reset();
+		if (common_num_cutscenes_valid(MOVIE_PRE_BRIEF)) {
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
+		}
+		else {
+			gamesnd_play_iface(SND_GENERAL_FAIL);
+			if ( Quick_transition_stage != -1 )
+				brief_transition_reset();
+		}
 	} else {
 		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 	}
@@ -866,7 +418,11 @@ void brief_do_prev_pressed()
 //
 void brief_do_start_pressed()
 {
-	if ( Current_brief_stage != 0 ) {
+	if (common_num_cutscenes_valid(MOVIE_PRE_BRIEF)) {
+			common_maybe_play_cutscene(MOVIE_PRE_BRIEF, true, SCORE_BRIEFING);
+		Current_brief_stage = 0;
+	}
+	else if ( Current_brief_stage != 0 ) {
 		gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 		Current_brief_stage = 0;
 		if ( Quick_transition_stage != -1 )
@@ -910,7 +466,7 @@ void brief_scroll_up_text()
 void brief_scroll_down_text()
 {
 	Top_brief_text_line++;
-	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Brief_text_max_lines[gr_screen.res]) {
+	if ( (Num_brief_text_lines[0] - Top_brief_text_line) < Max_brief_Lines) {
 		Top_brief_text_line--;
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 	} else {
@@ -1232,17 +788,13 @@ void brief_set_default_closeup()
 	}
 }
 
-//  funciton to evaluate the sexpressions of the briefing stages eliminating those stages
-// which shouldn't get shown
+/**
+ * Evaluate the sexpressions of the briefing stages eliminating those stages
+ * which shouldn't get shown
+ */
 void brief_compact_stages()
 {
 	int num, before, result, i;
-
-	/*
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.campaign_mode == MP_CAMPAIGN) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		Game_mode |= GM_CAMPAIGN_MODE;
-	}
-	*/
 
 	before = Briefing->num_stages;
 
@@ -1250,16 +802,12 @@ void brief_compact_stages()
 	while ( num < Briefing->num_stages ) {
 		result = eval_sexp( Briefing->stages[num].formula );
 		if ( !result ) {
-			if ( Briefing->stages[num].new_text != NULL ) {
-				vm_free( Briefing->stages[num].new_text );
-				Briefing->stages[num].new_text = NULL;
-			}
+			Briefing->stages[num].text = "";
 
 			if ( Briefing->stages[num].icons != NULL ) {
 				vm_free( Briefing->stages[num].icons );
 				Briefing->stages[num].icons = NULL;
 			}
-
 
 			if ( Briefing->stages[num].lines != NULL ) {
 				vm_free( Briefing->stages[num].lines );
@@ -1279,15 +827,9 @@ void brief_compact_stages()
 	// completely clear out the old entries (if any) so we don't access them by mistake - taylor
 	if ( before > Briefing->num_stages ) {
 		for ( i = Briefing->num_stages; i < before; i++ ) {
-			memset( &Briefing->stages[i], 0, sizeof(brief_stage) );
+			Briefing->stages[i] = brief_stage();
 		}
 	}
-
-	/*
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.campaign_mode == MP_CAMPAIGN) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-		Game_mode &= ~(GM_CAMPAIGN_MODE);
-	}
-	*/
 }
 
 
@@ -1299,12 +841,6 @@ void brief_compact_stages()
 void brief_init()
 {
 	int i;
-
-	// Since first stage of briefing can take some time to arrive and play, 
-	// reset the trailer timer on briefing init.
-#ifdef FS2_DEMO
-	demo_reset_trailer_timer();
-#endif
 
 	// for multiplayer, change the state in my netplayer structure
 	// and initialize the briefing chat area thingy
@@ -1320,7 +856,7 @@ void brief_init()
 	}
 
 	// get a pointer to the appropriate briefing structure
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)){
+	if(MULTI_TEAM){
 		Briefing = &Briefings[Net_player->p_info.team];
 	} else {
 		Briefing = &Briefings[0];			
@@ -1328,10 +864,7 @@ void brief_init()
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Briefing->num_stages; i++)
-	{
-		if (Briefing->stages[i].new_text)
-			sexp_replace_variable_names_with_values(Briefing->stages[i].new_text, MAX_BRIEF_LEN);
-	}
+		sexp_replace_variable_names_with_values(Briefing->stages[i].text);
 
 	Brief_last_auto_advance = 0;
 
@@ -1339,14 +872,14 @@ void brief_init()
 
 	common_set_interface_palette("BriefingPalette");
 
-	ship_stop_animation();
 	set_active_ui(&Brief_ui_window);
 	Current_screen = ON_BRIEFING_SELECT;
 	brief_restart_text_wipe();
 	common_flash_button_init();
 	common_music_init(SCORE_BRIEFING);
 
-	help_overlay_set_state(BR_OVERLAY,0);
+	Briefing_overlay_id = help_overlay_get_index(BR_OVERLAY);
+	help_overlay_set_state(Briefing_overlay_id,gr_screen.res,0);
 
 	if ( Brief_inited == TRUE ) {
 		common_buttons_maybe_reload(&Brief_ui_window);	// AL 11-21-97: this is necessary since we may returning from the hotkey
@@ -1356,10 +889,10 @@ void brief_init()
 		return;
 	}
 
-	if (The_mission.game_type & MISSION_TYPE_TRAINING)
-		Num_brief_stages = Briefing->num_stages;
-	else
+	if (The_mission.flags & MISSION_FLAG_ALWAYS_SHOW_GOALS || !(The_mission.game_type & MISSION_TYPE_TRAINING))
 		Num_brief_stages = Briefing->num_stages + 1;
+	else
+		Num_brief_stages = Briefing->num_stages;
 
 	Current_brief_stage = 0;
 	Last_brief_stage = 0;
@@ -1367,15 +900,11 @@ void brief_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-#ifndef FS2_DEMO	
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
-#endif
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
-
-	help_overlay_load(BR_OVERLAY);
 
 	// Set up the mask regions
    // initialize the different regions of the menu that will react when the mouse moves over it
@@ -1473,7 +1002,7 @@ void brief_render_closeup_text()
 	render_x = Closeup_region[0];
 	render_y = Closeup_region[1] + CLOSEUP_IMG_H;
 	
-	gr_set_clip(render_x+CLOSEUP_TEXT_OFFSET, render_y, CLOSEUP_W,CLOSEUP_TEXT_H);
+	gr_set_clip(render_x+CLOSEUP_TEXT_OFFSET, render_y, CLOSEUP_W,CLOSEUP_TEXT_H, GR_RESIZE_MENU);
 	gr_set_color_fast(&Color_white);
 
 //	n_lines = split_str(bi->text, CLOSEUP_W - 2*CLOSEUP_TEXT_OFFSET, n_chars, p_str, MAX_ICON_TEXT_LINES);
@@ -1483,7 +1012,7 @@ void brief_render_closeup_text()
 		Assert(n_chars[i] < MAX_ICON_TEXT_LINE_LEN);
 		strncpy(line, p_str[i], n_chars[i]);
 		line[n_chars[i]] = 0;
-		gr_printf(0,0+i*Closeup_font_height,line);
+		gr_printf_menu(0,0+i*Closeup_font_height,line);
 	}
 */
 }
@@ -1517,7 +1046,7 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	w = Closeup_region[gr_screen.res][2];
 	h = Closeup_region[gr_screen.res][3];
-	gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h);
+	gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
 
 	g3_start_frame(1);
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
@@ -1528,6 +1057,18 @@ void brief_render_closeup(int ship_class, float frametime)
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 	
+	if (Cmdline_brief_lighting) {
+		// the following is copied from menuui/techmenu.cpp ... it works heehee :D  - delt.
+		// lighting for techroom
+		light_reset();
+		vec3d light_dir = vmd_zero_vector;
+		light_dir.xyz.y = 1.0f;
+		light_add_directional(&light_dir, 0.85f, 1.0f, 1.0f, 1.0f);
+		light_rotate_all();
+		// lighting for techroom
+		Glowpoint_use_depth_buffer = false;
+	}
+
 	model_clear_instance( Closeup_icon->modelnum );
 	model_set_detail_level(0);
 
@@ -1538,15 +1079,17 @@ void brief_render_closeup(int ship_class, float frametime)
 		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
 	}
 
-	int model_render_flags;
+	int model_render_flags_local;
 	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		model_set_outline_color(HUD_color_red, HUD_color_green, HUD_color_blue);		
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE;
+	} else if (Cmdline_brief_lighting) {
+		model_render_flags_local = MR_LOCK_DETAIL | MR_AUTOCENTER;
 	} else {
-		model_render_flags = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
+		model_render_flags_local = MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER;
 	}
 
-	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags );
+	model_render( Closeup_icon->modelnum, &Closeup_orient, &Closeup_pos, model_render_flags_local );
 
 	if (is_neb) {
 		The_mission.flags |= MISSION_FLAG_FULLNEB;
@@ -1562,7 +1105,7 @@ void brief_render_closeup(int ship_class, float frametime)
 
 	gr_set_color_fast(&Color_bright_white);
 
-	gr_string(0x8000,2,Closeup_icon->closeup_label,false);
+	gr_string(0x8000,2,Closeup_icon->closeup_label,GR_RESIZE_MENU);
 //	brief_render_closeup_text();
 
 	Closeup_close_button.enable();
@@ -1582,25 +1125,25 @@ void brief_render(float frametime)
 	if ( Num_brief_stages <= 0 ) {
 		gr_set_color_fast(&Color_white);
 		Assert( Game_current_mission_filename != NULL );
-		gr_printf(0x8000,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
+		gr_printf_menu(0x8000,200,XSTR( "No Briefing exists for mission: %s", 430), Game_current_mission_filename);
 
 		#ifndef NDEBUG
 		gr_get_string_size(&w, &h, The_mission.name);
 		gr_set_color_fast(&Color_normal);
-		gr_printf(0x8000, 230, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
+		gr_printf_menu(0x8000, 230, NOX("[filename: %s, last mod: %s]"), Mission_filename, The_mission.modified);
 		#endif
 
 		return;
 	}
 
 	gr_set_bitmap(Brief_grid_bitmap);
-	gr_bitmap(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1]);
+	gr_bitmap(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1], GR_RESIZE_MENU);
 
 	brief_render_map(Current_brief_stage, frametime);
 
 	// draw the frame bitmaps
 	gr_set_bitmap(Brief_text_bitmap);
-	gr_bitmap(Brief_infobox_coords[gr_screen.res][0], Brief_infobox_coords[gr_screen.res][1]);
+	gr_bitmap(Brief_infobox_coords[gr_screen.res][0], Brief_infobox_coords[gr_screen.res][1], GR_RESIZE_MENU);
 	brief_blit_stage_num(Current_brief_stage, Num_brief_stages);
 
 	// only try to render text and play audio if there is really something here - taylor
@@ -1610,26 +1153,28 @@ void brief_render(float frametime)
 			brief_voice_play(Current_brief_stage);
 		}
 
+		Max_brief_Lines = Brief_text_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
+
 		// maybe output the "more" indicator
-		if ( (Brief_text_max_lines[gr_screen.res] + Top_brief_text_line) < Num_brief_text_lines[0] ) {
+		if ( (Max_brief_Lines + Top_brief_text_line) < Num_brief_text_lines[0] ) {
 			// can be scrolled down
 			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
 
 			gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 			gr_set_color_fast(&Color_black);
-			gr_rect(more_txt_x-2, more_txt_y, w+3, h);
-			gr_set_color_fast(&Color_red);
-			gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+			gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
+			gr_set_color_fast(&Color_more_indicator);
+			gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 		}
 	}
 
 	brief_maybe_blit_scene_cut(frametime);	
 
-#if !defined(NDEBUG) || defined(INTERPLAYQA)
+#if !defined(NDEBUG)
 	gr_set_color_fast(&Color_normal);
 	int title_y_offset = (Game_mode & GM_MULTIPLAYER) ? 20 : 10;
-	gr_printf(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1]-title_y_offset, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
+	gr_printf_menu(Brief_bmap_coords[gr_screen.res][0], Brief_bmap_coords[gr_screen.res][1]-title_y_offset, NOX("[name: %s, mod: %s]"), Mission_filename, The_mission.modified);
 #endif
 
 	// output mission title
@@ -1639,10 +1184,10 @@ void brief_render(float frametime)
 		char buf[256];
 		strncpy(buf, The_mission.name, 256);
 		gr_force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
-		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf);
+		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 	} else {
 		gr_get_string_size(&w, NULL, The_mission.name);
-		gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name);
+		gr_string(Title_coords[gr_screen.res][0] - w, Title_coords[gr_screen.res][1], The_mission.name, GR_RESIZE_MENU);
 	}
 
 	// maybe do objectives
@@ -1706,32 +1251,30 @@ int brief_setup_closeup(brief_icon *bi)
 		Closeup_icon = NULL;
 		return -1;
 		/*
-		strcpy(pof_filename, NOX("planet.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR("planet",-1));
+		strcpy_s(pof_filename, NOX("planet.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR("planet",-1));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -8300.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		*/
 		break;
 	case ICON_ASTEROID_FIELD:
-#ifndef FS2_DEMO
-		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
-		strcpy(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
-		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
-		Closeup_zoom = 0.5f;
-#endif
+		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
+		Closeup_cam_pos = Asteroid_icon_closeup_position;
+		Closeup_zoom = Asteroid_icon_closeup_zoom;
 		break;
 	case ICON_JUMP_NODE:
-		strcpy(pof_filename, NOX("subspacenode.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR( "jump node", 432));
+		strcpy_s(pof_filename, NOX("subspacenode.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "jump node", 432));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
 		break;
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
-		strcpy(pof_filename, NOX("unknownship.pof"));
-		strcpy(Closeup_icon->closeup_label, XSTR( "unknown", 433));
+		strcpy_s(pof_filename, NOX("unknownship.pof"));
+		strcpy_s(Closeup_icon->closeup_label, XSTR( "unknown", 433));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
 		break;
@@ -1740,15 +1283,14 @@ int brief_setup_closeup(brief_icon *bi)
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
 
-		strcpy(Closeup_icon->closeup_label,sip->name);
+		strcpy_s(Closeup_icon->closeup_label,(sip->alt_name[0]) ? sip->alt_name : sip->name);
 
 		// cut any text off after (and including) '#' char
 		end_string_at_first_hash_symbol(Closeup_icon->closeup_label);
 
 		// Goober5000 - wcsaga doesn't want this
-		if (!Cmdline_wcsaga && sip->flags & (SIF_SMALL_SHIP|SIF_BIG_SHIP|SIF_HUGE_SHIP|SIF_SENTRYGUN))
-		{
-			strcat(Closeup_icon->closeup_label, XSTR( " class", 434));
+		if (Ship_types[sip->class_type].hud_bools & STI_HUD_NO_CLASS_DISPLAY ) {
+			strcat_s(Closeup_icon->closeup_label, XSTR( " class", 434));
 		}
 
 		break;
@@ -1864,7 +1406,7 @@ void brief_check_for_anim()
 
 	for ( i = 0; i < bs->num_icons; i++ ) {
 		bi = &bs->icons[i];
-		brief_common_get_icon_dimensions(&iw, &ih, bi->type, bi->ship_class);
+		brief_common_get_icon_dimensions(&iw, &ih, bi);
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;
@@ -1900,18 +1442,12 @@ void brief_maybe_flash_button()
 
 	if ( common_flash_bright() ) {
 		if ( Current_brief_stage == (Num_brief_stages-1) ) {
-
-			// AL 4-4-98: Don't flash ship selection button on briefing in demo build
-#ifdef FS2_DEMO
-				return;
-#else
 			// AL 30-3-98: Don't flash ship selection button if in a training mission, 
 			if ( brief_only_allow_briefing() ) {
 				return;
 			}
 
 			b = &Common_buttons[Current_screen-1][gr_screen.res][1].button;		// ship select button
-#endif
 		} else {
 			b = &Brief_buttons[gr_screen.res][1].button;		// next stage button
 		}
@@ -1961,7 +1497,7 @@ void brief_do_frame(float frametime)
 		Brief_mouse_up_flag = 0;
 	}
 
-	if ( help_overlay_active(BR_OVERLAY) ) {
+	if ( help_overlay_active(Briefing_overlay_id) ) {
 		common_flash_button_init();
 		brief_turn_off_closeup_icon();
 	}
@@ -1980,7 +1516,7 @@ void brief_do_frame(float frametime)
 
 #ifndef NDEBUG			
 			case KEY_CTRLED | KEY_PAGEUP: {
-				if (Closeup_icon->ship_class) {
+				if ( Closeup_icon && Closeup_icon->ship_class ) {
 					Closeup_icon->ship_class--;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
@@ -1996,7 +1532,7 @@ void brief_do_frame(float frametime)
 			}
 
 			case KEY_CTRLED | KEY_PAGEDOWN: {
-				if (Closeup_icon->ship_class < Num_ship_classes - 1) {
+				if ( Closeup_icon && (Closeup_icon->ship_class < Num_ship_classes - 1) ) {
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
@@ -2109,7 +1645,7 @@ void brief_do_frame(float frametime)
 	common_render(frametime);
 
 	if ( Current_brief_stage < (Num_brief_stages-1) ) {
-		if ( !help_overlay_active(BR_OVERLAY) && brief_time_to_advance(Current_brief_stage, frametime) ) {
+		if ( !help_overlay_active(Briefing_overlay_id) && brief_time_to_advance(Current_brief_stage) ) {
 			brief_do_next_pressed(0);
 			common_flash_button_init();
 			Brief_last_auto_advance = timer_get_milliseconds();
@@ -2195,7 +1731,7 @@ void brief_do_frame(float frametime)
 		if (Closeup_icon && (Closeup_bitmap >= 0)) {
 			// blit closeup background
 			gr_set_bitmap(Closeup_bitmap);
-			gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD], Closeup_coords[gr_screen.res][BRIEF_Y_COORD]);
+			gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD], Closeup_coords[gr_screen.res][BRIEF_Y_COORD], GR_RESIZE_MENU);
 		}
 
 		Brief_ui_window.draw();
@@ -2213,9 +1749,6 @@ void brief_do_frame(float frametime)
 
 			// render the status indicator for the voice system
 			multi_common_voice_display_status();
-
-			// blit the "ships/players" locked button
-			// multi_ts_blit_locked_button();
 
 			// maybe blit the multiplayer "locked" button	
 			// if its locked, everyone blits it as such
@@ -2238,7 +1771,7 @@ void brief_do_frame(float frametime)
 	brief_maybe_flash_button();
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(BR_OVERLAY);	
+	help_overlay_maybe_blit(Briefing_overlay_id, gr_screen.res);
 
 	gr_flip();	
 
@@ -2281,8 +1814,6 @@ void brief_unload_bitmaps()
 		bm_release(Brief_background_bitmap);
 		Brief_background_bitmap = -1;
 	}
-
-	help_overlay_unload(BR_OVERLAY);
 }
 
 // ------------------------------------------------------------------------------------
@@ -2304,9 +1835,7 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-#ifndef FS2_DEMO
 	bm_unload(Fade_anim.first_frame);
-#endif
 
 	Brief_ui_window.destroy();
 
@@ -2320,10 +1849,10 @@ void brief_close()
 	Brief_inited = FALSE;
 }
 
-void briefing_stop_music()
+void briefing_stop_music(bool fade)
 {
 	if ( Briefing_music_handle != -1 ) {
-		audiostream_close_file(Briefing_music_handle, 1);
+		audiostream_close_file(Briefing_music_handle, fade);
 		Briefing_music_handle = -1;
 	}
 }
@@ -2388,19 +1917,6 @@ void brief_unpause()
 void brief_maybe_blit_scene_cut(float frametime)
 {
 	if ( Start_fade_up_anim ) {
-
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 1;
-		Current_brief_stage = Quick_transition_stage;
-
-		if ( Current_brief_stage < 0 ) {
-			brief_transition_reset();
-			Current_brief_stage = Last_brief_stage;
-		}
-		goto Fade_down_anim_start;
-#else
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2434,21 +1950,12 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + framenum);
-		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-#endif
+		gr_bitmap(Fade_anim.sx, Fade_anim.sy, GR_RESIZE_MENU);
 	}
 
 
 	Fade_down_anim_start:
 	if ( Start_fade_down_anim ) {
-
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 0;
-		return;
-#else
-
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2469,9 +1976,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + (Fade_anim.num_frames-1) - framenum);
-		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-
-#endif
+		gr_bitmap(Fade_anim.sx, Fade_anim.sy, GR_RESIZE_MENU);
 	}
 }
 

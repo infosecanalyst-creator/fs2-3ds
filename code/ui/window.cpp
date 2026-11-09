@@ -7,159 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.8.2.1 $
- * $Date: 2007-09-02 02:07:48 $
- * $Author: Goober5000 $
- *
- * Routines to handle UI windows.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/07/22 03:53:32  taylor
- * fix crash on commit in the multi ship selection screen
- * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
- * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
- *
- * Revision 2.7  2005/07/18 03:45:10  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.6  2005/07/02 19:45:02  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.5  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.4  2005/01/31 23:27:55  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 30    10/14/99 2:52p Jefff
- * localization fixes.  added support for hi-res specific xstr offsets
- * 
- * 29    8/16/99 4:06p Dave
- * Big honking checkin.
- * 
- * 28    7/16/99 1:50p Dave
- * 8 bit aabitmaps. yay.
- * 
- * 27    7/15/99 3:07p Dave
- * 32 bit detection support. Mouse coord commandline.
- * 
- * 26    7/13/99 5:38p Jefff
- * Added support for x offsets when drawing strings
- * 
- * 25    6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 24    6/22/99 7:03p Dave
- * New detail options screen.
- * 
- * 23    6/19/99 2:46p Dave
- * New control config screen.
- * 
- * 22    6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 21    6/04/99 11:32a Dave
- * Added reset text to ship select screen. Fixed minor xstr bug in ui
- * window
- * 
- * 20    6/02/99 6:18p Dave
- * Fixed TNT lockup problems! Wheeeee!
- * 
- * 19    6/01/99 3:52p Dave
- * View footage screen. Fixed xstrings to not display the & symbol. Popup,
- * dead popup, pxo find player popup, pxo private room popup.
- * 
- * 18    5/22/99 5:35p Dave
- * Debrief and chatbox screens. Fixed small hi-res HUD bug.
- * 
- * 17    5/21/99 6:45p Dave
- * Sped up ui loading a bit. Sped up localization disk access stuff. Multi
- * start game screen, multi password, and multi pxo-help screen.
- * 
- * 16    5/17/99 11:28a Dave
- * 
- * 15    5/17/99 9:25a Dave
- * Updated PXO screen. Still needs popups.
- * 
- * 14    5/03/99 8:33p Dave
- * New version of multi host options screen.
- * 
- * 13    4/16/99 5:22p Neilk
- * Fixed UI_SLIDER2 bug
- * 
- * 12    2/21/99 6:02p Dave
- * Fixed standalone WSS packets. 
- * 
- * 11    2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 10    1/29/99 2:08a Dave
- * Fixed beam weapon collisions with players. Reduced size of scoring
- * struct for multiplayer. Disabled PXO.
- * 
- * 9     1/29/99 12:47a Dave
- * Put in sounds for beam weapon. A bunch of interface screens (tech
- * database stuff).
- * 
- * 8     12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 7     12/02/98 5:47p Dave
- * Put in interface xstr code. Converted barracks screen to new format.
- * 
- * 6     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 5     10/23/98 3:51p Dave
- * Full support for tstrings.tbl and foreign languages. All that remains
- * is to make it active in Fred.
- * 
- * 4     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- *
- * $NoKeywords: $
- */
+
 
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -292,20 +140,20 @@ void UI_WINDOW::set_foreground_bmap(char *fname)
 }
 
 
-void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags )
+void UI_WINDOW::create( int _x, int _y, int _w, int _h, int _flags, int _f_id )
 {
 	x = _x;
 	y = _y;
 	w = _w;
 	h = _h;
 	flags = _flags;
+	f_id = (_f_id >= 0 && _f_id < Num_fonts) ? _f_id : FONT1;
+
 	first_gadget = NULL;
 	selected_gadget = NULL;
 	tooltip_handler = NULL;  // pointer to function to handle custom tooltips
 	ignore_gadgets = 0;
 	use_hack_to_get_around_stupid_problem_flag = 0;
-
-	f_id = gr_init_font("font01.vf");
 
 	if (_x < 0)
 		_x = 0;
@@ -381,7 +229,7 @@ void UI_WINDOW::draw()
 
 	if (foreground_bmap_id >= 0) {
 		gr_set_bitmap(foreground_bmap_id);
-		gr_bitmap(x, y);
+		gr_bitmap(x, y, GR_RESIZE_MENU);
 	}
 
 	if (flags & WIN_FILLED)	{
@@ -485,11 +333,12 @@ void UI_WINDOW::draw_tooltip()
 	if (first_gadget) {
 		gadget = first_gadget;
 		do	{
-			if (gadget->get_hotspot() == hotspot)
+			if (gadget->get_hotspot() == hotspot) {
 				if (gadget->hidden)  // if control is hidden, don't draw tooltip for it.
 					return;
 				else
 					break;
+			}
 
 			gadget = gadget->next;
 
@@ -541,14 +390,14 @@ void UI_WINDOW::render_tooltip(char *str)
 	if (ttx + str_w + 2 > gr_screen.max_w_unscaled)
 		ttx = gr_screen.max_w_unscaled - str_w;
 
-	if (tty + str_h + 2 > gr_screen.max_w_unscaled)
+	if (tty + str_h + 2 > gr_screen.max_h_unscaled)
 		tty = gr_screen.max_h_unscaled - str_h;
 
 	gr_set_color_fast(&Color_black);
-	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1);
+	gr_rect(ttx - 1, tty - 1, str_w + 2, str_h + 1, GR_RESIZE_MENU);
 
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(ttx, tty, str);
+	gr_string(ttx, tty, str, GR_RESIZE_MENU);
 }
 
 // key_in: If not -1, this means to use this key as input, and not call game_poll()
@@ -792,10 +641,10 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 	strncpy(str, XSTR(xs->xstr, xs->xstr_id), 254);
 	if(str[0] == '&'){
 		if(strlen(str) > 1){			
-			gr_string((xs->x) + xoffset, xs->y, str + 1);
+			gr_string((xs->x) + xoffset, xs->y, str + 1, GR_RESIZE_MENU);
 		}
 	} else {
-		gr_string((xs->x) + xoffset, xs->y, str);
+		gr_string((xs->x) + xoffset, xs->y, str, GR_RESIZE_MENU);
 	}
 
 	// maybe restore the old font
@@ -962,10 +811,7 @@ void init_tooltips()
 	static int inited = 0;
 
 	if (!inited) {
-#ifndef DEMO
 		parse_tooltips();
-#endif
-
 		inited = 1;
 	}
 }

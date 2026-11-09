@@ -4,96 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13.2.9 $
- * $Date: 2007-10-15 06:43:08 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.13.2.8  2007/09/02 02:07:37  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 1.13.2.7  2007/07/28 22:04:13  Goober5000
- * apply some of Turey's changes to stable branch
- *
- * Revision 1.13.2.6  2007/07/15 02:45:48  Goober5000
- * fixed a small bug in the lab
- * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
- * removed my old supercap damage scaling change
- * moved Turey's truefire flag to ai_profiles
- *
- * Revision 1.13.2.5  2007/02/27 01:44:44  Goober5000
- * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
- *
- * Revision 1.13.2.4  2006/09/11 01:15:03  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 1.13.2.3  2006/07/12 04:57:20  taylor
- * fix the endless-loop fix ;)  (this is what broke shield recharging btw)
- *
- * Revision 1.13.2.2  2006/07/06 18:19:55  Goober5000
- * fix dumb endless loop bug
- * --Goober5000
- *
- * Revision 1.13.2.1  2006/07/02 03:39:34  Goober5000
- * remove associated AI flags
- * --Goober5000
- *
- * Revision 1.13  2006/04/20 06:32:00  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.12  2006/03/20 06:25:19  taylor
- * change wording to ease Goober's ulcer. ;)
- *
- * Revision 1.11  2006/03/20 06:19:03  taylor
- * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
- * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
- *
- * Revision 1.10  2006/02/13 04:56:58  Goober5000
- * enabled modular tables for ai_profiles and added the default table to def_files
- * --Goober5000
- *
- * Revision 1.9  2006/02/13 00:20:44  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 1.8  2005/12/22 04:32:44  taylor
- * GCC knows that fix == int so it hates the utility functions here, for sanity sake just rename them to type specific to avoid rampant casting
- *
- * Revision 1.7  2005/12/06 03:17:48  taylor
- * cleanup some debug log messages:
- *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
- *   make sure that OpenAL init failures always get to the debug log
- *
- * Revision 1.6  2005/11/24 09:08:44  Goober5000
- * bah, forgot a colon
- * --Goober5000
- *
- * Revision 1.5  2005/11/24 08:46:11  Goober5000
- * * cleaned up mission_do_departure
- *   * fixed a hidden crash (array index being -1; would only
- * be triggered for ships w/o subspace drives under certain conditions)
- *   * removed finding a new fighterbay target because it might screw up missions
- *   * improved clarity, code flow, and readability :)
- * * added custom AI flag for disabling warpouts if navigation subsystem fails
- * --Goober5000
- *
- * Revision 1.4  2005/11/24 07:27:14  taylor
- * fix fred2 startup crash (we probably need to Assert() this case so it doesn't easily happen again)
- *
- * Revision 1.3  2005/11/21 15:01:18  taylor
- * little cleaner, lot more friendly to 64-bit archs (long type is usually 64-bit there)
- *
- * Revision 1.2  2005/11/21 03:47:51  Goober5000
- * bah and double bah
- * --Goober5000
- *
- * Revision 1.1  2005/11/21 02:43:30  Goober5000
- * change from "setting" to "profile"; this way makes more sense
- * --Goober5000
- *
- */
+
 
 
 #include "globalincs/pstypes.h"
@@ -101,6 +12,8 @@
 #include "ai/ai_profiles.h"
 #include "parse/parselo.h"
 #include "localization/localize.h"
+#include "weapon/weapon.h"
+#include "ship/ship.h"
 
 
 // global stuff
@@ -114,35 +27,57 @@ static char Default_profile_name[NAME_LENGTH];
 
 
 // utility
-void set_flag(ai_profile_t *profile, char *name, int flag)
+void set_flag(ai_profile_t *profile, char *name, int flag, int type)
 {
 	if (optional_string(name))
 	{
 		bool val;
 		stuff_boolean(&val);
 
-		if (val)
-			profile->flags |= flag;
-		else
-			profile->flags &= ~flag;
+		if (type == AIP_FLAG) {
+			if (val)
+				profile->flags |= flag;
+			else
+				profile->flags &= ~flag;
+		} else {
+			if (val)
+				profile->flags2 |= flag;
+			else
+				profile->flags2 &= ~flag;
+		}
 	}
 }
 
-void parse_ai_profiles_tbl(char *filename)
+char *AI_path_types[] = {
+	"normal",
+	"alt1",
+};
+
+int Num_ai_path_types = sizeof(AI_path_types)/sizeof(char*);
+
+int ai_path_type_match(char *p)
+{
+	int i;
+	for(i = 0; i < Num_ai_path_types; i++)
+	{
+		if(!stricmp(AI_path_types[i], p))
+			return i;
+	}
+
+	return -1;
+}
+
+void parse_ai_profiles_tbl(const char *filename)
 {
 	int i, rval;
-	bool no_create = false;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
 	char *saved_Mp = NULL;
-
-	// open localization
-	lcl_ext_open();
+	char buf[NAME_LENGTH];
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default ai_profiles.tbl>", rval));
-		lcl_ext_close();
 		return;
 	}
 
@@ -166,6 +101,7 @@ void parse_ai_profiles_tbl(char *filename)
 	{
 		ai_profile_t *profile = &dummy_profile;
 		ai_profile_t *previous_profile = NULL;
+		bool no_create = false;
 		
 		// get the name
 		required_string("$Profile Name:");
@@ -229,7 +165,7 @@ void parse_ai_profiles_tbl(char *filename)
 		}
 
 		// set the name
-		strcpy(profile->profile_name, profile_name);
+		strcpy_s(profile->profile_name, profile_name);
 
 
 		// fill in any and all settings; they're all optional and can be in any order
@@ -256,13 +192,16 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$AI Maybe Links Ammo Weapons:"))
 				parse_float_list(profile->link_ammo_levels_maybe, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Primary Ammo Burst Multiplier:"))
+				parse_float_list(profile->primary_ammo_burst_mult, NUM_SKILL_LEVELS);
+
 			if (optional_string("$AI Always Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_always, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Maybe Links Energy Weapons:"))
 				parse_float_list(profile->link_energy_levels_maybe, NUM_SKILL_LEVELS);
 
-			if (optional_string("$Max Missles Locked on Player:"))
+			if (optional_string("$Max Missles Locked on Player:") || optional_string("$Max Missiles Locked on Player:"))
 				parse_int_list(profile->max_allowed_player_homers, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Max Player Attackers:"))
@@ -280,17 +219,14 @@ void parse_ai_profiles_tbl(char *filename)
 			// represented in fractions of F1_0
 			if (optional_string("$Predict Position Delay:"))
 			{
-				int i;
+				int iLoop;
 				float temp_list[NUM_SKILL_LEVELS];
 
 				parse_float_list(temp_list, NUM_SKILL_LEVELS);
 
-				for (i = 0; i < NUM_SKILL_LEVELS; i++)
-					profile->predict_position_delay[i] = fl2f(temp_list[i]);
+				for (iLoop = 0; iLoop < NUM_SKILL_LEVELS; iLoop++)
+					profile->predict_position_delay[iLoop] = fl2f(temp_list[iLoop]);
 			}
-
-			if (optional_string("$Player Shield Recharge Scale:"))
-				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$AI Shield Manage Delay:") || optional_string("$AI Shield Manage Delays:"))
 				parse_float_list(profile->shield_manage_delay, NUM_SKILL_LEVELS);
@@ -307,11 +243,69 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Hostile AI Secondary Fire Delay Scale:"))
 				parse_float_list(profile->ship_fire_secondary_delay_scale_hostile, NUM_SKILL_LEVELS);
 
-			if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
-				parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
-
 			if (optional_string("$AI Turn Time Scale:"))
 				parse_float_list(profile->turn_time_scale, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Glide Attack Percent:")) {
+				parse_float_list(profile->glide_attack_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->glide_attack_percent[i] < 0.0f || profile->glide_attack_percent[i] > 100.0f) {
+						Warning(LOCATION, "$Glide Attack Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_attack_percent[i]);
+						profile->glide_attack_percent[i] = 0.0f;
+					}
+					profile->glide_attack_percent[i] /= 100.0;
+				}
+			}
+
+			if (optional_string("$Circle Strafe Percent:")) {
+				parse_float_list(profile->circle_strafe_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->circle_strafe_percent[i] < 0.0f || profile->circle_strafe_percent[i] > 100.0f) {
+						Warning(LOCATION, "$Circle Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->circle_strafe_percent[i]);
+						profile->circle_strafe_percent[i] = 0.0f;
+					}
+					profile->circle_strafe_percent[i] /= 100.0;
+				}
+			}
+
+			if (optional_string("$Glide Strafe Percent:")) {
+				parse_float_list(profile->glide_strafe_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->glide_strafe_percent[i] < 0.0f || profile->glide_strafe_percent[i] > 100.0f) {
+						Warning(LOCATION, "$Glide Strafe Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->glide_strafe_percent[i]);
+						profile->glide_strafe_percent[i] = 0.0f;
+					}
+					profile->glide_strafe_percent[i] /= 100.0;
+				}
+			}
+
+			if (optional_string("$Random Sidethrust Percent:")) {
+				parse_float_list(profile->random_sidethrust_percent, NUM_SKILL_LEVELS);
+				//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
+				//While we're at it, verify the range
+				for (i = 0; i < NUM_SKILL_LEVELS; i++) {
+					if (profile->random_sidethrust_percent[i] < 0.0f || profile->random_sidethrust_percent[i] > 100.0f) {
+						Warning(LOCATION, "$Random Sidethrust Percent should be between 0 and 100.0 (read %f). Setting to 0.", profile->random_sidethrust_percent[i]);
+						profile->random_sidethrust_percent[i] = 0.0f;
+					}
+					profile->random_sidethrust_percent[i] /= 100.0;
+				}
+			}
+
+			if (optional_string("$Stalemate Time Threshold:"))
+				parse_float_list(profile->stalemate_time_thresh, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Stalemate Distance Threshold:"))
+				parse_float_list(profile->stalemate_dist_thresh, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Player Shield Recharge Scale:"))
+				parse_float_list(profile->shield_energy_scale, NUM_SKILL_LEVELS);
 
 			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
@@ -331,61 +325,181 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Percentage Awarded For Capship Assist:"))
 				parse_float_list(profile->assist_award_percentage_scale, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
+			if (optional_string("$Repair Penalty:"))
+				parse_int_list(profile->repair_penalty, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
+			if (optional_string("$Delay Before Allowing Bombs to Be Shot Down:"))
+				parse_float_list(profile->delay_bomb_arm_timer, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$smart secondary weapon selection:", AIPF_SMART_SECONDARY_WEAPON_SELECTION);
+			if (optional_string("$Chance AI Has to Fire Missiles at Player:"))
+				parse_int_list(profile->chance_to_use_missiles_on_plr, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT);
+			if (optional_string("$Max Aim Update Delay:"))
+				parse_float_list(profile->max_aim_update_delay, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT);
+			if (optional_string("$Turret Max Aim Update Delay:"))
+				parse_float_list(profile->turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
-			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE);
+			if (optional_string("$Player Autoaim FOV:"))
+			{
+				float fov_list[NUM_SKILL_LEVELS];
+				parse_float_list(fov_list, NUM_SKILL_LEVELS);
+				for (i = 0; i < NUM_SKILL_LEVELS; i++)
+				{
+					//Enforce range
+					if (fov_list[i] < 0.0f || fov_list[i] >= 360.0f)
+					{
+						Warning(LOCATION, "$Player Autoaim FOV should be >= 0 and < 360.0 (read %f). Setting to 0.", fov_list[i]);
+						fov_list[i] = 0.0f;
+					}
+
+					//Convert units
+					profile->player_autoaim_fov[i] = fov_list[i] * PI / 180.0f;
+				}
+			}
+
+			if (optional_string("$Detail Distance Multiplier:"))
+				parse_float_list(profile->detail_distance_mult, NUM_SKILL_LEVELS);
+
+			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS, AIP_FLAG);
+
+			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION, AIP_FLAG);
+
+			set_flag(profile, "$smart secondary weapon selection:", AIPF_SMART_SECONDARY_WEAPON_SELECTION, AIP_FLAG);
+
+			set_flag(profile, "$smart shield management:", AIPF_SMART_SHIELD_MANAGEMENT, AIP_FLAG);
+
+			set_flag(profile, "$smart afterburner management:", AIPF_SMART_AFTERBURNER_MANAGEMENT, AIP_FLAG);
+
+			set_flag(profile, "$allow rapid secondary dumbfire:", AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE, AIP_FLAG);
 			
-			set_flag(profile, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS);
+			set_flag(profile, "$huge turret weapons ignore bombs:", AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS, AIP_FLAG);
 
-			set_flag(profile, "$don't insert random turret fire delay:", AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY);
+			set_flag(profile, "$don't insert random turret fire delay:", AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY, AIP_FLAG);
 
-			set_flag(profile, "$hack improve non-homing swarm turret fire accuracy:", AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY);
+			set_flag(profile, "$hack improve non-homing swarm turret fire accuracy:", AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY, AIP_FLAG);
 
-			set_flag(profile, "$shockwaves damage small ship subsystems:", AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS);
+			set_flag(profile, "$shockwaves damage small ship subsystems:", AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS, AIP_FLAG);
 
-			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
+			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP, AIP_FLAG);
 
-			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
+			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP, AIP_FLAG);
 
-			set_flag(profile, "$disable linked fire penalty:", AIPF_DISABLE_LINKED_FIRE_PENALTY);
+			set_flag(profile, "$disable linked fire penalty:", AIPF_DISABLE_LINKED_FIRE_PENALTY, AIP_FLAG);
 
-			set_flag(profile, "$disable weapon damage scaling:", AIPF_DISABLE_WEAPON_DAMAGE_SCALING);
+			set_flag(profile, "$disable weapon damage scaling:", AIPF_DISABLE_WEAPON_DAMAGE_SCALING, AIP_FLAG);
 
-			set_flag(profile, "$use additive weapon velocity:", AIPF_USE_ADDITIVE_WEAPON_VELOCITY);
+			set_flag(profile, "$use additive weapon velocity:", AIPF_USE_ADDITIVE_WEAPON_VELOCITY, AIP_FLAG);
 
-			set_flag(profile, "$use newtonian dampening:", AIPF_USE_NEWTONIAN_DAMPENING);
+			set_flag(profile, "$use newtonian dampening:", AIPF_USE_NEWTONIAN_DAMPENING, AIP_FLAG);
 
-			set_flag(profile, "$include beams for kills and assists:", AIPF_INCLUDE_BEAMS_IN_STAT_CALCS);
+			set_flag(profile, "$include beams for kills and assists:", AIPF_INCLUDE_BEAMS_IN_STAT_CALCS, AIP_FLAG);
 
-			set_flag(profile, "$score kills based on damage caused:", AIPF_KILL_SCORING_SCALES_WITH_DAMAGE);
+			set_flag(profile, "$score kills based on damage caused:", AIPF_KILL_SCORING_SCALES_WITH_DAMAGE, AIP_FLAG);
 
-			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE);
+			set_flag(profile, "$score assists based on damage caused:", AIPF_ASSIST_SCORING_SCALES_WITH_DAMAGE, AIP_FLAG);
 
-			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING);
+			set_flag(profile, "$allow event and goal scoring in multiplayer:", AIPF_ALLOW_MULTI_EVENT_SCORING, AIP_FLAG);
 
-			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG);
+			set_flag(profile, "$fix linked primary weapon decision bug:", AIPF_FIX_LINKED_PRIMARY_BUG, AIP_FLAG);
 
-			set_flag(profile, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE);
+			set_flag(profile, "$prevent turrets targeting too distant bombs:", AIPF_PREVENT_TARGETING_BOMBS_BEYOND_RANGE, AIP_FLAG);
 
-			set_flag(profile, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS);
+			set_flag(profile, "$smart subsystem targeting for turrets:", AIPF_SMART_SUBSYSTEM_TARGETING_FOR_TURRETS, AIP_FLAG);
 
-			set_flag(profile, "$fix heat seekers homing on stealth ships bug:", AIPF_FIX_HEAT_SEEKER_STEALTH_BUG);
+			set_flag(profile, "$fix heat seekers homing on stealth ships bug:", AIPF_FIX_HEAT_SEEKER_STEALTH_BUG, AIP_FLAG);
 
-			set_flag(profile, "$multi allow empty primaries:", AIPF_MULTI_ALLOW_EMPTY_PRIMARIES);
+			set_flag(profile, "$multi allow empty primaries:", AIPF_MULTI_ALLOW_EMPTY_PRIMARIES, AIP_FLAG);
 
-			set_flag(profile, "$multi allow empty secondaries:", AIPF_MULTI_ALLOW_EMPTY_SECONDARIES);
+			set_flag(profile, "$multi allow empty secondaries:", AIPF_MULTI_ALLOW_EMPTY_SECONDARIES, AIP_FLAG);
+
+			set_flag(profile, "$allow turrets target weapons freely:", AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY, AIP_FLAG);
+
+			set_flag(profile, "$use only single fov for turrets:", AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS, AIP_FLAG);
+
+			set_flag(profile, "$allow vertical dodge:", AIPF_ALLOW_VERTICAL_DODGE, AIP_FLAG);
+
+			set_flag(profile, "$force beam turrets to use normal fov:", AIPF_FORCE_BEAM_TURRET_FOV, AIP_FLAG);
+
+			set_flag(profile, "$fix ai class bug:", AIPF_FIX_AI_CLASS_BUG, AIP_FLAG);
+
+			set_flag(profile, "$turrets ignore targets radius in range checks:", AIPF2_TURRETS_IGNORE_TARGET_RADIUS, AIP_FLAG2);
+
+			set_flag(profile, "$no extra collision avoidance vs player:", AIPF2_NO_SPECIAL_PLAYER_AVOID, AIP_FLAG2);
+
+			set_flag(profile, "$perform fewer checks for death screams:", AIPF2_PERFORM_FEWER_SCREAM_CHECKS, AIP_FLAG2);
+
+			set_flag(profile, "$advanced turret fov edge checks:", AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS, AIP_FLAG2);
+
+			set_flag(profile, "$require turrets to have target in fov:", AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV, AIP_FLAG2);
+
+			set_flag(profile, "$all ships manage shields:", AIPF2_ALL_SHIPS_MANAGE_SHIELDS, AIP_FLAG2);
+
+			set_flag(profile, "$ai aims from ship center:", AIPF2_AI_AIMS_FROM_SHIP_CENTER, AIP_FLAG2);
+
+			set_flag(profile, "$allow primary link at mission start:", AIPF2_ALLOW_PRIMARY_LINK_AT_START, AIP_FLAG2);
+
+			set_flag(profile, "$allow beams to damage bombs:", AIPF2_BEAMS_DAMAGE_WEAPONS, AIP_FLAG2);
+
+			set_flag(profile, "$disable weapon damage scaling for player:", AIPF2_PLAYER_WEAPON_SCALE_FIX, AIP_FLAG2);
+
+			set_flag(profile, "$countermeasures affect aspect seekers:", AIPF2_ASPECT_LOCK_COUNTERMEASURE, AIP_FLAG2);
+
+			set_flag(profile, "$ai guards specific ship in wing:", AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING, AIP_FLAG2);
+
+			profile->ai_path_mode = AI_PATH_MODE_NORMAL;
+			if(optional_string("$ai path mode:"))
+			{
+				stuff_string(buf, F_NAME, NAME_LENGTH);
+				int j = ai_path_type_match(buf);
+				if(j >= 0) {
+					profile->ai_path_mode = j;
+				} else {
+					Warning(LOCATION, "Invalid ai path mode '%s' specified", buf);
+				}
+			}
+
+			set_flag(profile, "$no warp camera:", AIPF2_NO_WARP_CAMERA, AIP_FLAG2);
+
+			set_flag(profile, "$fix ai path order bug:", AIPF2_FIX_AI_PATH_ORDER_BUG, AIP_FLAG2);
+
+			set_flag(profile, "$strict turret-tagged-only targeting:", AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING, AIP_FLAG2);
+
+			// ----------
+
+			// compatibility
+			if (optional_string("$perform less checks for death screams:"))
+			{
+				mprintf(("Warning: \"$perform less checks for death screams\" flag is deprecated in favor of \"$perform fewer checks for death screams\"\n"));
+				bool temp;
+				stuff_boolean(&temp);
+				if (temp)
+					profile->flags2 |= AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+				else
+					profile->flags2 &= ~AIPF2_PERFORM_FEWER_SCREAM_CHECKS;
+			}
+			if (optional_string("$allow primary link delay:"))
+			{
+				mprintf(("Warning: \"$allow primary link delay\" flag is deprecated in favor of \"$allow primary link at mission start\"\n"));
+				bool temp;
+				stuff_boolean(&temp);
+				if (temp)
+					profile->flags2 &= ~AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+				else
+					profile->flags2 |= AIPF2_ALLOW_PRIMARY_LINK_AT_START;
+			}
+
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
+			{
+				char tmp[60];
+				memset(tmp, 0, 60);
+				strncpy(tmp, Mp, 59);
+				mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
+
 				Mp++;
+			}
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");
@@ -396,11 +510,8 @@ void parse_ai_profiles_tbl(char *filename)
 	required_string("#End");
 
 	// add tbl/tbm to multiplayer validation list
-	extern void fs2netd_add_table_validation(char *tblname);
+	extern void fs2netd_add_table_validation(const char *tblname);
 	fs2netd_add_table_validation(filename);
-
-	// close localization
-	lcl_ext_close();
 }
 
 void ai_profiles_init()

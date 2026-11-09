@@ -4,50 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.4.2.5 $
- * $Date: 2007-07-28 22:04:14 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.4.2.4  2007/07/15 02:45:48  Goober5000
- * fixed a small bug in the lab
- * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
- * removed my old supercap damage scaling change
- * moved Turey's truefire flag to ai_profiles
- *
- * Revision 1.4.2.3  2007/02/27 01:44:44  Goober5000
- * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
- *
- * Revision 1.4.2.2  2006/07/02 04:13:43  Goober5000
- * bah
- *
- * Revision 1.4.2.1  2006/07/02 03:39:34  Goober5000
- * remove associated AI flags
- * --Goober5000
- *
- * Revision 1.4  2006/04/20 06:32:00  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.3  2006/03/20 06:19:03  taylor
- * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
- * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
- *
- * Revision 1.2  2005/11/24 08:46:11  Goober5000
- * * cleaned up mission_do_departure
- *   * fixed a hidden crash (array index being -1; would only
- * be triggered for ships w/o subspace drives under certain conditions)
- *   * removed finding a new fighterbay target because it might screw up missions
- *   * improved clarity, code flow, and readability :)
- * * added custom AI flag for disabling warpouts if navigation subsystem fails
- * --Goober5000
- *
- * Revision 1.1  2005/11/21 02:43:30  Goober5000
- * change from "setting" to "profile"; this way makes more sense
- * --Goober5000
- *
- */
+
 
 #ifndef _AI_PROFILES_H_
 #define _AI_PROFILES_H_
@@ -56,6 +13,9 @@
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 
+// flag int defines
+#define AIP_FLAG		1
+#define AIP_FLAG2		2
 
 // flags
 #define AIPF_SMART_SHIELD_MANAGEMENT								(1 << 0)
@@ -84,8 +44,33 @@
 #define AIPF_FIX_HEAT_SEEKER_STEALTH_BUG							(1 << 23)
 #define AIPF_MULTI_ALLOW_EMPTY_PRIMARIES							(1 << 24)
 #define AIPF_MULTI_ALLOW_EMPTY_SECONDARIES							(1 << 25)
+#define AIPF_ALLOW_TURRETS_TARGET_WEAPONS_FREELY                    (1 << 26)
+#define AIPF_USE_ONLY_SINGLE_FOV_FOR_TURRETS						(1 << 27)
+#define AIPF_ALLOW_VERTICAL_DODGE									(1 << 28)	//Allows AI ships to evade weapons vertically as well as horizontally
+#define AIPF_FORCE_BEAM_TURRET_FOV									(1 << 29)
+#define AIPF_FIX_AI_CLASS_BUG										(1 << 30)
 
+// flags2
+#define AIPF2_TURRETS_IGNORE_TARGET_RADIUS							(1 << 0)
+#define AIPF2_NO_SPECIAL_PLAYER_AVOID								(1 << 1)
+#define AIPF2_PERFORM_FEWER_SCREAM_CHECKS							(1 << 2)
+#define AIPF2_ALL_SHIPS_MANAGE_SHIELDS								(1 << 3)
+#define AIPF2_ADVANCED_TURRET_FOV_EDGE_CHECKS						(1 << 4)
+#define AIPF2_REQUIRE_TURRET_TO_HAVE_TARGET_IN_FOV					(1 << 5)
+#define AIPF2_AI_AIMS_FROM_SHIP_CENTER								(1 << 6)
+#define AIPF2_ALLOW_PRIMARY_LINK_AT_START							(1 << 7)
+#define	AIPF2_BEAMS_DAMAGE_WEAPONS									(1 << 8)
+#define AIPF2_PLAYER_WEAPON_SCALE_FIX								(1 << 9)
+#define AIPF2_NO_WARP_CAMERA										(1 << 10)
+#define AIPF2_ASPECT_LOCK_COUNTERMEASURE							(1 << 11)
+#define AIPF2_AI_GUARDS_SPECIFIC_SHIP_IN_WING						(1 << 12)
+#define AIPF2_FIX_AI_PATH_ORDER_BUG									(1 << 13)
+#define AIPF2_STRICT_TURRET_TAGGED_ONLY_TARGETING					(1 << 14)
 
+// AI Path types
+#define	AI_PATH_MODE_NORMAL 0
+#define	AI_PATH_MODE_ALT1	1
+	
 #define MAX_AI_PROFILES	5
 
 typedef struct ai_profile_t {
@@ -93,6 +78,7 @@ typedef struct ai_profile_t {
 	char profile_name[NAME_LENGTH];
 
 	int flags;
+	int flags2;
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
@@ -107,8 +93,9 @@ typedef struct ai_profile_t {
 	float link_energy_levels_maybe[NUM_SKILL_LEVELS];		// link if hull strength low
 
 	// AI ships link primaries if ammunition levels greater than these percents
-	float link_ammo_levels_always[NUM_SKILL_LEVELS];		//	always link
-	float link_ammo_levels_maybe[NUM_SKILL_LEVELS];			//	link if hull strength low
+	float link_ammo_levels_always[NUM_SKILL_LEVELS];		// always link
+	float link_ammo_levels_maybe[NUM_SKILL_LEVELS];			// link if hull strength low
+	float primary_ammo_burst_mult[NUM_SKILL_LEVELS];		// SUSHI: Multiplier adjusting burst frequency for ballistic primary weapons
 
 	// difficulty-related scales
 	float cmeasure_life_scale[NUM_SKILL_LEVELS];			// life of countermeasures
@@ -121,6 +108,14 @@ typedef struct ai_profile_t {
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
 	float turn_time_scale[NUM_SKILL_LEVELS];				// speed at which enemy ships turn
+	float glide_attack_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "glide attack" move
+	float circle_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "circle strafe" move
+	float glide_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use glide when strafing capships
+	float random_sidethrust_percent[NUM_SKILL_LEVELS];		// SUSHI: The likelihood (0.0-1.0) of the AI to randomly use sidethrust while dogfihthing
+	float stalemate_time_thresh[NUM_SKILL_LEVELS];			// SUSHI: The amount of time required for the AI to detect (and try to break) dogfight stalemate
+	float stalemate_dist_thresh[NUM_SKILL_LEVELS];			// SUSHI: The maximum distance the AI and target must be within for a stalemate
+	float max_aim_update_delay[NUM_SKILL_LEVELS];			// SUSHI: The maximum delay before the AI updates their aim against small ships
+	float turret_max_aim_update_delay[NUM_SKILL_LEVELS];	// SUSHI: As above, but for turrets updating their aim
 
 	//	Multiplicative delay factors for increasing skill levels.
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];
@@ -140,6 +135,21 @@ typedef struct ai_profile_t {
 
 	// percentage of the capships score given to other team mates on a kill
 	float assist_award_percentage_scale[NUM_SKILL_LEVELS];
+
+	// the number of points subtracted from score for a rearm started on a player
+	int repair_penalty[NUM_SKILL_LEVELS];
+
+	float delay_bomb_arm_timer[NUM_SKILL_LEVELS];
+
+	// the chance (x/7) that ship is allowed to fire missiles at player ship.
+	int chance_to_use_missiles_on_plr[NUM_SKILL_LEVELS];
+
+	// Player-specific autoaim FOV override
+	float player_autoaim_fov[NUM_SKILL_LEVELS];
+
+	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
+
+	int ai_path_mode;
 
 } ai_profile_t;
 

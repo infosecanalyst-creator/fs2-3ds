@@ -7,246 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.16.2.1 $
- * $Date: 2007-10-28 16:39:58 $
- * $Author: taylor $
- *
- * File to deal with Mission logs
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.16  2006/05/21 02:12:21  Goober5000
- * fix for Mantis #827
- * --Goober5000
- *
- * Revision 2.15  2006/05/20 02:03:01  Goober5000
- * fix for Mantis #755, plus make the missionlog #defines uniform
- * --Goober5000
- *
- * Revision 2.14  2006/03/19 05:05:59  taylor
- * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
- * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
- *
- * Revision 2.13  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.12  2005/10/30 20:03:39  taylor
- * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
- * fix Mantis bug #381
- * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
- *
- * Revision 2.11  2005/10/10 17:21:05  taylor
- * remove NO_NETWORK
- *
- * Revision 2.10  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.9  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/05/12 17:49:13  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.7  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.6  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.5  2005/01/11 21:28:24  Goober5000
- * made a capitalization thing consistent
- * --Goober500
- *
- * Revision 2.4  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 10    11/01/99 2:13p Jefff
- * some changes in how objective events are displayed in german
- * 
- * 9     10/13/99 3:22p Jefff
- * fixed unnumbered XSTRs
- * 
- * 8     9/08/99 4:05p Dave
- * Fixed string ID on self-destruxt message.
- * 
- * 7     9/06/99 8:18p Andsager
- * Make destroyed weapon subsystems display as turrets in event log.
- * 
- * 6     8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 5     8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 4     2/26/99 6:01p Andsager
- * Add sexp has-been-tagged-delay and cap-subsys-cargo-known-delay
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 57    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 56    5/07/98 1:11a Ed
- * AL: fix bogus null pointer test in message_log_add_seg()
- * 
- * 55    4/28/98 4:45p Allender
- * fix mission log problems on clients
- * 
- * 54    4/23/98 10:06a Allender
- * don't use the word "player" in event log for rearm event.  Send
- * shipname instead (players only)
- * 
- * 53    3/28/98 1:56p Allender
- * clarify the destroyed mission log entry.
- * 
- * 52    3/13/98 2:49p Allender
- * put fix into debug code so that it doesn't trip when no ships have
- * departed (i.e. wing was waxes before they actulaly left)
- * 
- * 51    3/12/98 5:52p Hoffoss
- * Moved stuff over so icons don't overlap frame.
- * 
- * 50    3/09/98 6:22p Hoffoss
- * Fixed text overrun problems in event log display.
- * 
- * 49    2/25/98 4:44p Allender
- * fix up mission log and wing/ship departed problems (hopefully).  There
- * was problem where wing was marked departed although all ships were
- * destroyed (I think).
- * 
- * 48    2/25/98 11:07a Allender
- * added debug code to help trap problems with wing departure and ship
- * departure weirdness
- * 
- * 47    2/23/98 8:55a John
- * More string externalization
- * 
- * 46    2/22/98 4:30p John
- * More string externalization classification
- * 
- * 45    2/10/98 12:47p Allender
- * clear log memeory before mission start to prevent entries from previous
- * mission from being used incorrectly
- * 
- * 44    2/05/98 10:33a Hoffoss
- * Changed refernce go "goal" to "objective" instead.
- * 
- * 43    1/30/98 11:16a Comet
- * DOH!  fix bug checking for exited ships
- * 
- * 42    1/08/98 1:59p Allender
- * fixed problem with some subsystems not getting recognized on
- * is-subsystem-destroyed sexpressions
- * 
- * 41    1/07/98 4:41p Allender
- * minor modification to special messages.  Fixed cargo_revealed problem
- * for multiplayer and problem with is-cargo-known sexpression
- * 
- * 40    11/21/97 10:31a Allender
- * minor cosmetic changes
- * 
- * 39    11/20/97 3:52p Hoffoss
- * Fixed timestamp color in mission log scrollback.
- * 
- * 38    11/19/97 2:30p Allender
- * hide waypoints done log entries
- * 
- * 37    11/13/97 4:25p Allender
- * hide certain mission log entries
- * 
- * 36    11/13/97 4:05p Hoffoss
- * Added hiding code for mission log entries.
- * 
- * 35    11/06/97 5:42p Hoffoss
- * Added support for fixed size timstamp rendering.
- * 
- * 34    11/03/97 10:12p Hoffoss
- * Finished up work on the hud message/mission log scrollback screen.
- * 
- * 33    10/09/97 5:21p Allender
- * try to check for bogus secondary names on ship destroy.
- * 
- * 32    10/07/97 3:09p Allender
- * fix typo
- * 
- * 31    9/26/97 3:47p Allender
- * add code to keep track of ships which have left mission (departed or
- * destroyed).  Log who killed who in mission log
- * 
- * 30    9/10/97 3:30p Allender
- * ignore waypoints_done entry when determining teams for log actions
- * 
- * 29    9/10/97 8:53a Allender
- * made the mission log prettier.  Added team info to log entries -- meant
- * reordering some code
- * 
- * 28    8/31/97 6:38p Lawrance
- * pass in frametime to do_frame loop
- * 
- * 27    8/20/97 3:53p Allender
- * minor fix to message log display
- * 
- * 26    8/07/97 11:37a Allender
- * made mission log cull non-essential entries when log starts getting
- * full.  More drastic action is taken as the log gets more full.
- * 
- * 25    7/24/97 4:13p Mike
- * Comment out check in mission_log_add_entry that prevented logging
- * events when player is dead.
- * 
- * 24    7/14/97 11:46a Lawrance
- * allow log entries when in the navmap
- * 
- * 23    7/10/97 1:40p Allender
- * make dock/undock log entries work with either name (docker/dockee)
- * coming first
- * 
- * 22    7/07/97 9:23a Allender
- * added code for valid/invalid goals.  Invalid goals are eval'ed,
- * counted, or otherwise used
- * 
- * 21    7/01/97 2:52p Allender
- * added packets for mission log stuff and for pregame chat stuff
- * 
- * 20    7/01/97 1:23p Allender
- * temp checkin
- * 
-*/
+
 
 
 #include "mission/missionlog.h"
@@ -303,7 +64,7 @@ static int X, P_width;
 
 // Log_lines is used for scrollback display purposes.
 static log_text_seg *Log_lines[MAX_LOG_LINES];
-static int Log_line_timestamps[MAX_LOG_LINES];
+static fix Log_line_timestamps[MAX_LOG_LINES];
 
 log_entry log_entries[MAX_LOG_ENTRIES];	// static array because John says....
 int last_entry;
@@ -367,9 +128,9 @@ void mission_log_obsolete_entries(int type, char *pname)
 	int i;
 	log_entry *entry = NULL;
 
-	// before adding this entry, check to see if the entry type is a ship destroyed entry.
+	// before adding this entry, check to see if the entry type is a ship destroyed or destructed entry.
 	// If so, we can remove any subsystem destroyed entries from the log for this ship.  
-	if ( type == LOG_SHIP_DESTROYED ) {
+	if ( type == LOG_SHIP_DESTROYED || type == LOG_SELF_DESTRUCTED ) {
 		for (i = 0; i < last_entry; i++) {
 			entry = &log_entries[i];
 
@@ -427,7 +188,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
-	if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
+	if ( MULTIPLAYER_CLIENT ){
 		return;
 	}
 
@@ -446,15 +207,15 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	entry->type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy(entry->pname, pname);
+		strcpy_s(entry->pname, pname);
 	} else
-		strcpy( entry->pname, EMPTY_LOG_NAME );
+		strcpy_s( entry->pname, EMPTY_LOG_NAME );
 
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy(entry->sname, sname);
+		strcpy_s(entry->sname, sname);
 	} else
-		strcpy( entry->sname, EMPTY_LOG_NAME );
+		strcpy_s( entry->sname, EMPTY_LOG_NAME );
 
 	entry->index = info_index;
 	entry->flags = 0;
@@ -464,7 +225,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	// determine the contents of the flags member based on the type of entry we added.  We need to store things
 	// like team for the primary and (possibly) secondary object for this entry.
 	switch ( type ) {
-	int index, si;
+	int index;
 
 	case LOG_SHIP_DESTROYED:
 	case LOG_SHIP_ARRIVED:
@@ -521,7 +282,6 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 					if ( index == -1 ) {
 						index = ship_find_exited_ship_by_name( sname );
 						if ( index == -1 ) {
-						//	Int3();		// get allender.  name of object who killed ship appears to be bogus!!!
 							break;
 						}
 						team = Ships_exited[index].team;
@@ -552,9 +312,19 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
-		// first ship in the list
+		// first ship in the list because the info_index contains the wave count
 		if ( type == LOG_WING_ARRIVED ) {
-			si = Wings[index].ship_index[0];
+			int i, si = -1;
+
+			// Goober5000 - get the team value from any ship in the list, because
+			// ships that arrive initially docked could be created in random order
+			for (i = 0; i < MAX_SHIPS_PER_WING; ++i) {
+				// get first valid ship
+				si = Wings[index].ship_index[i];
+				if (si >= 0) {
+					break;
+				}
+			}
 			Assert( si != -1 );
 			entry->primary_team = Ships[si].team;
 		} else {
@@ -569,7 +339,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 			int i;
 
 			// if all were destroyed, then don't do this debug code.
-			if ( Wings[index].total_destroyed == Wings[index].total_arrived_count ){
+			if ( (Wings[index].total_destroyed + Wings[index].total_vanished) == Wings[index].total_arrived_count ){
 				break;
 			}
 
@@ -601,7 +371,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	entry->timestamp = Missiontime;
 
 	// if in multiplayer and I am the master, send this log entry to everyone
-	if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ){
+	if ( MULTIPLAYER_MASTER ){
 		send_mission_log_packet( last_entry );
 	}
 
@@ -643,11 +413,11 @@ void mission_log_add_entry_multi( int type, char *pname, char *sname, int index,
 	entry->type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy(entry->pname, pname);
+		strcpy_s(entry->pname, pname);
 	}
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy(entry->sname, sname);
+		strcpy_s(entry->sname, sname);
 	}
 	entry->index = index;
 
@@ -691,8 +461,15 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 					continue;
 				}
 
-				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
-					found = 1;
+				// if we are looking for a subsystem entry, the subsystem names must be compared
+				if ((type == LOG_SHIP_SUBSYS_DESTROYED || type == LOG_CAP_SUBSYS_CARGO_REVEALED)) {
+					if ( (sname == NULL) || !subsystem_stricmp(sname, entry->sname) ) {
+						found = 1;
+					}
+				} else {
+					if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
+						found = 1;
+					}
 				}
 			}
 
@@ -770,7 +547,7 @@ int mission_log_get_count( int type, char *pname, char *sname )
 }
 
 
-void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
+void message_log_add_seg(int n, int x, int msg_color, const char *text, int flags = 0)
 {
 	log_text_seg *seg, **parent;
 
@@ -784,51 +561,57 @@ void message_log_add_seg(int n, int x, int color, char *text, int flags = 0)
 	seg = (log_text_seg *) vm_malloc(sizeof(log_text_seg));
 	Assert(seg);
 	seg->text = vm_strdup(text);
-	seg->color = color;
+	seg->color = msg_color;
 	seg->x = x;
 	seg->flags = flags;
 	seg->next = NULL;
 	*parent = seg;
 }
 
-void message_log_add_segs(char *text, int color, int flags = 0)
+void message_log_add_segs(const char *source_string, int msg_color, int flags = 0)
 {
-	char *ptr;
+	if (!source_string) {
+		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
+		return;
+	}
+	if (!*source_string) {
+		return;
+	}
+        
 	int w;
 
-	while (1) {
+	// duplicate the string so that we can split it without modifying the source
+	char *dup_string = vm_strdup(source_string);
+	char *str = dup_string;
+	char *split = NULL;
+
+	while (true) {
 		if (X == ACTION_X) {
-			while (is_white_space(*text))
-				text++;
+			while (is_white_space(*str))
+				str++;
 		}
-
-		if (!text) {
-			mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
-			return;
-		}
-
-		if ( !text[0] ) {
-			return;
-		}
-
+        
 		if (P_width - X < 1)
-			ptr = text;
+			split = str;
 		else
-			ptr = split_str_once(text, P_width - X);
+			split = split_str_once(str, P_width - X);
 
-		if (ptr != text)
-			message_log_add_seg(Num_log_lines, X, color, text, flags);
+		if (split != str)
+			message_log_add_seg(Num_log_lines, X, msg_color, str, flags);
 
-		if (!ptr) {
-			gr_get_string_size(&w, NULL, text);
+		if (!split) {
+			gr_get_string_size(&w, NULL, str);
 			X += w;
-			return;
+			break;
 		}
 
 		Num_log_lines++;
 		X = ACTION_X;
-		text = ptr;
+		str = split;
 	}
+
+	// free the buffer
+	vm_free(dup_string);
 }
 
 void message_log_remove_segs(int n)
@@ -848,9 +631,9 @@ void message_log_remove_segs(int n)
 	Log_lines[n] = NULL;
 }
 
-int message_log_color_get_team(int color)
+int message_log_color_get_team(int msg_color)
 {
-	return color - NUM_LOG_COLORS;
+	return msg_color - NUM_LOG_COLORS;
 }
 
 int message_log_team_get_color(int team)
@@ -882,7 +665,7 @@ void message_log_init_scrollback(int pw)
 			continue;
 
 		// track time of event (normal timestamp milliseconds format)
-		Log_line_timestamps[Num_log_lines] = (int) ( f2fl(entry->timestamp) * 1000.0f );
+		Log_line_timestamps[Num_log_lines] = entry->timestamp;
 
 		// Goober5000
 		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
@@ -896,6 +679,9 @@ void message_log_init_scrollback(int pw)
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Einsatzziel");
+		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
+			// same thing for polish
+			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Cel misji");
 		} else {
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname);
 		}
@@ -939,7 +725,7 @@ void message_log_init_scrollback(int pw)
 				if (entry->index > 1){
 					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry->index);
 				} else {
-					strcpy(text, XSTR( "Arrived", 406));
+					strcpy_s(text, XSTR( "Arrived", 406));
 				}
 				message_log_add_segs(text, LOG_COLOR_NORMAL);
 				break;
@@ -965,7 +751,7 @@ void message_log_init_scrollback(int pw)
 
 				message_log_add_segs(XSTR( "Subsystem ", 410), LOG_COLOR_NORMAL);
 				//message_log_add_segs(entry->sname, LOG_COLOR_BRIGHT);
-				char *subsys_name = Ship_info[si_index].subsystems[model_index].name;
+				const char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
 				if (Ship_info[si_index].subsystems[model_index].type == SUBSYSTEM_TURRET) {
 					subsys_name = XSTR("Turret", 1487);
 				}
@@ -1000,14 +786,18 @@ void message_log_init_scrollback(int pw)
 				break;
 
 			case LOG_CARGO_REVEALED:
-				Assert( entry->index != -1 );
+				Assert( entry->index >= 0 );
+				Assert(!(entry->index & CARGO_NO_DEPLETE));
+
 				message_log_add_segs(XSTR( "Cargo revealed: ", 418), LOG_COLOR_NORMAL);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
 				message_log_add_segs( text, LOG_COLOR_BRIGHT );
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
-				Assert( entry->index != -1 );
+				Assert( entry->index >= 0 );
+				Assert(!(entry->index & CARGO_NO_DEPLETE));
+
 				message_log_add_segs(entry->sname, LOG_COLOR_NORMAL);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
@@ -1027,9 +817,9 @@ void message_log_init_scrollback(int pw)
 
 				sprintf( text, XSTR( "%s objective ", 419), Goal_type_text(type) );
 				if ( entry->type == LOG_GOAL_SATISFIED )
-					strcat(text, XSTR( "satisfied.", 420));
+					strcat_s(text, XSTR( "satisfied.", 420));
 				else
-					strcat(text, XSTR( "failed.", 421));
+					strcat_s(text, XSTR( "failed.", 421));
 
 				message_log_add_segs(text, LOG_COLOR_BRIGHT, (entry->type == LOG_GOAL_SATISFIED?LOG_FLAG_GOAL_TRUE:LOG_FLAG_GOAL_FAILED) );
 				break;
@@ -1040,7 +830,7 @@ void message_log_init_scrollback(int pw)
 			message_log_remove_segs(Num_log_lines);
 
 		} else {
-			if (Num_log_lines < MAX_LOG_LINES)
+			if (Num_log_lines < MAX_LOG_LINES-1)
 				Num_log_lines++;
 		}
 	}
@@ -1072,7 +862,7 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 
 		if (Log_line_timestamps[line]) {
 			gr_set_color_fast(&Color_text_normal);
-			gr_print_timestamp(list_x + TIME_X, list_y + y, Log_line_timestamps[line]);
+			gr_print_timestamp(list_x + TIME_X, list_y + y, Log_line_timestamps[line], GR_RESIZE_MENU);
 		}
 
 		seg = Log_lines[line];
@@ -1098,14 +888,14 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 				}
 			}
 
-			strcpy(buf, seg->text);
+			strcpy_s(buf, seg->text);
 			if (seg->x < ACTION_X)
 				gr_force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
 			else
 				gr_force_fit_string(buf, 256, list_w - seg->x);
 
 			end_string_at_first_hash_symbol(buf);
-			gr_string(list_x + seg->x, list_y + y, buf);
+			gr_string(list_x + seg->x, list_y + y, buf, GR_RESIZE_MENU);
 
 			// possibly "print" some symbols for interesting log entries
 			if ( (seg->flags & LOG_FLAG_GOAL_TRUE) || (seg->flags & LOG_FLAG_GOAL_FAILED) ) {
@@ -1117,13 +907,13 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 					gr_set_color_fast(&Color_bright_green);
 
 				i = list_y + y + font_h / 2 - 1;
-				gr_circle(list_x + TIME_X - 6, i, 5);
+				gr_circle(list_x + TIME_X - 6, i, 5, GR_RESIZE_MENU);
 
 				gr_set_color_fast(&Color_bright);
-				gr_line(list_x + TIME_X - 10, i, list_x + TIME_X - 8, i);
-				gr_line(list_x + TIME_X - 6, i - 4, list_x + TIME_X - 6, i - 2);
-				gr_line(list_x + TIME_X - 4, i, list_x + TIME_X - 2, i);
-				gr_line(list_x + TIME_X - 6, i + 2, list_x + TIME_X - 6, i + 4);
+				gr_line(list_x + TIME_X - 10, i, list_x + TIME_X - 8, i, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 6, i - 4, list_x + TIME_X - 6, i - 2, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 4, i, list_x + TIME_X - 2, i, GR_RESIZE_MENU);
+				gr_line(list_x + TIME_X - 6, i + 2, list_x + TIME_X - 6, i + 4, GR_RESIZE_MENU);
 			}
 
 			seg = seg->next;
