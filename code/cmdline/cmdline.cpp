@@ -368,7 +368,11 @@ int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
+#ifdef SCP_3DS
+int Cmdline_stretch_menu = 1;	// New 3DS: menus fill the 800x480 target, as in 3.6.10 (the zoom and pointer expect it)
+#else
 int Cmdline_stretch_menu = 0;
+#endif
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL, AT_NONE);	// Cmdline_query_speech
