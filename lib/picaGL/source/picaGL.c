@@ -302,8 +302,8 @@ void pglPresentScreensEx(int stereo, int bottom)
 	if (pglState->topWide != _gfxWide)
 	{
 		_gfxWide = pglState->topWide;
-		gfxSetWide(_gfxWide);
-		gfxSet3D(!_gfxWide);
+		/* libctru keeps 3D and wide in one setting (gfxTopMode): each call replaces the other, so call only the wanted one */
+		if (_gfxWide) gfxSetWide(true); else gfxSet3D(true);
 	}
 	int topw = pglState->topWide ? 800 : 400;
 	u32 *top = (u32*)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
