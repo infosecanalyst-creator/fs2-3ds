@@ -1501,7 +1501,7 @@ void psnet_rel_work()
 						if(memcmp(&d3_rcv_addr, &Reliable_sockets[i].m_net_addr, sizeof(net_addr)) == 0){
 							//We already have a reliable link to this user, so we will ignore it...
 							ml_printf("Received duplicate connection request. %d",i);
-							psnet_rel_send_ack(&Reliable_sockets[i].addr, rcv_buff.seq, link_type, rcv_buff.send_time);
+							psnet_rel_send_ack((SOCKADDR *)&Reliable_sockets[i].addr, rcv_buff.seq, link_type, rcv_buff.send_time);
 							//We will change this as a hack to prevent later code from hooking us up
 							rcv_buff.type = 0xff;
 							continue;

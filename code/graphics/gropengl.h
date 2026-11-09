@@ -38,6 +38,15 @@
 #endif // __APPLE__
 #endif
 
+#ifdef SCP_3DS	// picaGL's headers lack a few enums 3.7.2 refers to
+#ifndef GL_LINE_WIDTH
+#define GL_LINE_WIDTH 0x0B21
+#endif
+#ifndef GL_DEPTH_COMPONENT
+#define GL_DEPTH_COMPONENT 0x1902
+#endif
+#endif
+
 #include "globalincs/pstypes.h"
 #include "graphics/grinternal.h"
 

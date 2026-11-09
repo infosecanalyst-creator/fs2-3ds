@@ -177,7 +177,6 @@ code/network/multi_voice.cpp
 code/network/multi_xfer.cpp
 code/network/psnet2.cpp
 code/network/stand_gui.cpp
-code/network/stand_gui-unix.cpp
 code/object/collidedebrisship.cpp
 code/object/collidedebrisweapon.cpp
 code/object/collideshipship.cpp
