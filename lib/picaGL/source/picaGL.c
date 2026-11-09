@@ -139,7 +139,7 @@ void pglBindTarget(int which)
 		int bottom = (which == PGL_TARGET_BOTTOM);
 		pglState->targetColor  = pglState->screenColor[bottom];
 		pglState->targetDepth  = NULL;
-		pglState->targetWidth  = bottom ? 320 : 400;
+		pglState->targetWidth  = bottom ? 320 : (pglState->topWide ? 800 : 400);
 		pglState->targetHeight = 240;
 		pglState->bufferGpuW   = 240;
 		pglState->bufferGpuH   = pglState->targetWidth;
@@ -278,6 +278,16 @@ static void _waitPreviousSwap(void)
 	pglStats.swapWaitTicks += svcGetSystemTick() - t0;
 }
 
+static int _gfxWide = 0;
+
+/* fs2-3ds: compose the top screen 800 wide from now on (call before binding PGL_TARGET_TOP
+   for a frame). Returns whether wide mode is on (it needs the large top compose buffer). */
+int pglSetTopWide(int wide)
+{
+	pglState->topWide = (wide && pglState->topWideCap) ? 1 : 0;
+	return pglState->topWide;
+}
+
 void pglPresentScreensEx(int stereo, int bottom)
 {
 	_presentSetup();
@@ -287,8 +297,17 @@ void pglPresentScreensEx(int stereo, int bottom)
 
 	_waitPreviousSwap();
 
+	/* the top screen's mode follows what this frame was composed for: 800x240 wide (2D, the
+	   LCD's own columns) or the normal 400x240 per eye. The change takes effect with the swap. */
+	if (pglState->topWide != _gfxWide)
+	{
+		_gfxWide = pglState->topWide;
+		gfxSetWide(_gfxWide);
+		gfxSet3D(!_gfxWide);
+	}
+	int topw = pglState->topWide ? 800 : 400;
 	u32 *top = (u32*)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	GX_DisplayTransfer(pglState->screenColor[0], GX_BUFFER_DIM(240, 400), top, GX_BUFFER_DIM(240, 400),
+	GX_DisplayTransfer(pglState->screenColor[0], GX_BUFFER_DIM(240, topw), top, GX_BUFFER_DIM(240, topw),
 		GX_TRANSFER_OUT_FORMAT(gfxGetScreenFormat(GFX_TOP)));
 
 	if (bottom)

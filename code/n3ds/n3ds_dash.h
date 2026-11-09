@@ -8,6 +8,14 @@ void n3ds_dash_draw(void);
 /* touch on the dashboard (bottom screen in menus): BACK / ENTER / ZOOM / MANUAL buttons */
 void n3ds_dash_touch(int held, int x, int y, int pressed);
 
+/* index of the dashboard button at (x, y), or -1 (the rest of the dashboard is a touchpad) */
+int n3ds_dash_button_at(int x, int y);
+
+/* buttons without touch (dashboard on the top screen): on = show the gold highlight; call
+   n3ds_dash_nav every menu frame with the D-Pad step and A (press = 1) */
+void n3ds_dash_set_nav(int on);
+void n3ds_dash_nav(int dx, int dy, int press);
+
 /* label of the menu region under the pointer (main hall rooms etc.) for this frame */
 void n3ds_dash_hover(const char *text);
 

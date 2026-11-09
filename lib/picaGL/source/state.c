@@ -22,7 +22,10 @@ void _stateInitialize()
 	if(!pglState->mainWidth) { pglState->mainWidth = 800; pglState->mainHeight = 480; }
 	pglState->mainColor = vramAlloc(pglState->mainGpuW * pglState->mainGpuH * 4); // RGBA8
 	pglState->mainDepth = vramAlloc(pglState->mainGpuW * pglState->mainGpuH * 4); // D24S8
-	pglState->screenColor[0] = vramAlloc(240 * 400 * 4);
+	/* fs2-3ds: the top compose buffer is big enough for the top screen's 800x240 wide mode */
+	pglState->screenColor[0] = vramAlloc(240 * 800 * 4);
+	if(!pglState->screenColor[0]) pglState->screenColor[0] = linearAlloc(240 * 800 * 4);
+	pglState->topWideCap = pglState->screenColor[0] != NULL;
 	pglState->screenColor[1] = vramAlloc(240 * 320 * 4);
 	if(!pglState->screenColor[0]) pglState->screenColor[0] = linearAlloc(240 * 400 * 4);
 	if(!pglState->screenColor[1]) pglState->screenColor[1] = linearAlloc(240 * 320 * 4);

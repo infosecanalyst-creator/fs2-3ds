@@ -28,6 +28,9 @@ void pglSnapshotMain(GLuint name);
 void pglMainSize(int *w, int *h, int *gpuW, int *gpuH);
 void pglPresentScreens(int stereo);
 void pglPresentScreensEx(int stereo, int bottom);   /* bottom = 0: leave the touchscreen as it is */
+/* compose the top screen at 800x240 (the New 3DS's wide 2D mode) instead of 400x240;
+   returns 1 if wide mode is on. Set it before binding PGL_TARGET_TOP for a frame. */
+int pglSetTopWide(int wide);
 
 typedef struct {
 	unsigned ends, batches, arrayDraws, flushes, verts;

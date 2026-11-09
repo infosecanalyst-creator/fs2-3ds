@@ -70,6 +70,26 @@ static const ets_column Ets_cols[3] = {
 
 static int Panel_pressed_key = -1;
 static int Panel_pressed_button = -1;
+static int Panel_pressed_ets = -1;      /* energy cell being pressed: column * 2 + (1 = lower half) */
+
+/* ---- buttons without touch: a gold highlight moved by the D-Pad over the 10 buttons and the
+   6 energy cells (top / bottom half of each column), A presses it */
+#define NAV_TARGETS (NUM_PANEL_BUTTONS + 6)
+static int Panel_nav = 0;
+static int Panel_focus = 0;
+static int Panel_nav_hold = 0;          /* frames left of an A press (key held, button sunk) */
+
+static void nav_rect(int i, int *x, int *y, int *w, int *h)
+{
+	if (i < NUM_PANEL_BUTTONS) {
+		const panel_button &b = Panel_buttons[i];
+		*x = b.x; *y = b.y; *w = b.w; *h = b.h;
+	} else {
+		int c = (i - NUM_PANEL_BUTTONS) / 2, lower = (i - NUM_PANEL_BUTTONS) & 1;
+		*x = Ets_cols[c].x; *w = ETS_W; *h = ETS_H / 2;
+		*y = ETS_Y + (lower ? ETS_H / 2 : 0);
+	}
+}
 
 /* ---- recent HUD messages (the top-screen message lines are off on the 3DS) */
 #define PANEL_MSGS 4
@@ -310,6 +330,15 @@ void n3ds_panel_draw(void)
 			gr_set_color(200, 200, 200);
 			gr_string(e.x + (ETS_W - text_w(e.label)) / 2, 34, (char *)e.label, false);
 			panel_vbar(e.x, ETS_Y, ETS_W, ETS_H, Energy_levels[idx[c]], 120, 200, 255);
+			if (Panel_pressed_ets >= 0 && Panel_pressed_ets / 2 == c) {
+				/* pressed half: a light frame around it */
+				int py = ETS_Y + ((Panel_pressed_ets & 1) ? ETS_H / 2 : 0);
+				gr_set_color(200, 230, 255);
+				gr_rect(e.x, py, ETS_W, 2, false);
+				gr_rect(e.x, py + ETS_H / 2 - 2, ETS_W, 2, false);
+				gr_rect(e.x, py, 2, ETS_H / 2, false);
+				gr_rect(e.x + ETS_W - 2, py, 2, ETS_H / 2, false);
+			}
 			gr_set_color(255, 255, 255);
 			gr_string(e.x + (ETS_W - text_w("+")) / 2, ETS_Y + 2, "+", false);
 			gr_string(e.x + (ETS_W - text_w("-")) / 2, ETS_Y + ETS_H - 12, "-", false);
@@ -328,6 +357,18 @@ void n3ds_panel_draw(void)
 		gr_string(b.x + (b.w - w) / 2, b.y + off + (b.h - 9) / 2, b.label, false);
 	}
 
+	/* the highlight (panel on the top screen, SELECT + B): a gold ring inside the target */
+	if (Panel_nav) {
+		int x, y, w, h;
+		nav_rect(Panel_focus, &x, &y, &w, &h);
+		if (Panel_focus < NUM_PANEL_BUTTONS && Panel_focus == Panel_pressed_button) y += 1;
+		gr_set_color(255, 220, 120);
+		gr_rect(x, y, w, 2, false);
+		gr_rect(x, y + h - 2, w, 2, false);
+		gr_rect(x, y, 2, h, false);
+		gr_rect(x + w - 2, y, 2, h, false);
+	}
+
 	gr_reset_clip();
 }
 
@@ -336,17 +377,72 @@ static void panel_release(void)
 	if (Panel_pressed_key >= 0) key_mark(Panel_pressed_key, 0, 0);
 	Panel_pressed_key = -1;
 	Panel_pressed_button = -1;
+	Panel_pressed_ets = -1;
+}
+
+void n3ds_panel_set_nav(int on)
+{
+	Panel_nav = on;
+	if (!on && Panel_nav_hold) { Panel_nav_hold = 0; panel_release(); }
+}
+
+void n3ds_panel_nav(int dx, int dy, int press)
+{
+	if (Panel_nav_hold > 0) {
+		/* the pressed key is held a few frames so the game sees it, then let go */
+		if (--Panel_nav_hold == 0) panel_release();
+		return;
+	}
+	if (!Panel_nav) return;
+	if (dx || dy) {
+		/* nearest target in that direction (distance along it, plus 2.5x the offset across) */
+		int x, y, w, h;
+		nav_rect(Panel_focus, &x, &y, &w, &h);
+		float cx = x + w * 0.5f, cy = y + h * 0.5f, bd = 1e9f;
+		int best = -1;
+		for (int i = 0; i < NAV_TARGETS; i++) {
+			if (i == Panel_focus) continue;
+			nav_rect(i, &x, &y, &w, &h);
+			float tx = x + w * 0.5f, ty = y + h * 0.5f;
+			float along = dx ? (tx - cx) * dx : (ty - cy) * dy;
+			float across = dx ? (ty - cy) : (tx - cx);
+			if (along < 2) continue;
+			float d = along + 2.5f * (across < 0 ? -across : across);
+			if (d < bd) { bd = d; best = i; }
+		}
+		if (best >= 0) Panel_focus = best;
+	}
+	if (press) {
+		panel_release();
+		int key;
+		if (Panel_focus < NUM_PANEL_BUTTONS) {
+			key = Panel_buttons[Panel_focus].key;
+			Panel_pressed_button = Panel_focus;
+		} else {
+			int e = Panel_focus - NUM_PANEL_BUTTONS;
+			key = (e & 1) ? Ets_cols[e / 2].key_down : Ets_cols[e / 2].key_up;
+			Panel_pressed_ets = e;
+		}
+		Panel_pressed_key = key;
+		n3ds_click();
+		key_mark(key, 1, 0);
+		Panel_nav_hold = 6;
+	}
 }
 
 void n3ds_panel_touch(int held, int x, int y, int pressed)
 {
+	static int by_touch = 0;   /* the pressed key came from the stylus (not from A) */
 	if (!held) {
-		panel_release();
+		if (by_touch) panel_release();
+		by_touch = 0;
 		return;
 	}
 	if (!pressed) return;   /* only react to new taps */
 
 	panel_release();
+	Panel_nav_hold = 0;
+	by_touch = 1;
 
 	for (int i = 0; i < NUM_PANEL_BUTTONS; i++) {
 		const panel_button &b = Panel_buttons[i];
@@ -360,8 +456,10 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 	}
 	for (int c = 0; c < 3; c++) {
 		if (x >= Ets_cols[c].x - 1 && x < Ets_cols[c].x + ETS_W + 1 && y >= ETS_Y && y < ETS_Y + ETS_H) {
-			int key = (y < ETS_Y + ETS_H / 2) ? Ets_cols[c].key_up : Ets_cols[c].key_down;
+			int lower = (y >= ETS_Y + ETS_H / 2);
+			int key = lower ? Ets_cols[c].key_down : Ets_cols[c].key_up;
 			Panel_pressed_key = key;
+			Panel_pressed_ets = c * 2 + lower;
 			n3ds_click();
 			key_mark(key, 1, 0);
 			return;

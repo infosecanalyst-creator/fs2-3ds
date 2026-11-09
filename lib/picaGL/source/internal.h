@@ -103,7 +103,8 @@ typedef struct {
 	uint32_t			*mainColor, *mainDepth;
 	uint16_t			mainWidth, mainHeight, mainGpuW, mainGpuH;
 	uint32_t			*screenColor[2];
-	uint32_t			*overlayColor;               /* fs2-3ds: overlay target (lazy) */             /* compose buffers: top 240x400, bottom 240x320 */
+	uint32_t			*overlayColor;               /* fs2-3ds: overlay target (lazy) */
+	uint8_t				topWideCap, topWide;         /* fs2-3ds: top compose buffer holds 240x800; top drawn 800 wide */             /* compose buffers: top 240x400, bottom 240x320 */
 
 	GLfloat				depthmapNear, depthmapFar;
 	GLfloat				polygonOffset;

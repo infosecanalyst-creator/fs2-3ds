@@ -252,6 +252,52 @@ static int swapped = 0;
 
 static int held_touch_now(void) { return (!swapped && (hidKeysHeld() & BTN_TOUCH)) ? 1 : 0; }
 
+/* move the menu pointer by (vx, vy) engine pixels, keeping the fraction between frames */
+static void move_pointer(float vx, float vy)
+{
+	static float fx = -1, fy = -1;
+	if (fx < 0 || (int)fx != touch_x || (int)fy != touch_y) { fx = (float)touch_x; fy = (float)touch_y; }
+	fx += vx;
+	fy += vy;
+	if (fx < 0) fx = 0;
+	if (fy < 0) fy = 0;
+	if (fx > N3DS_GAME_W - 1) fx = N3DS_GAME_W - 1;
+	if (fy > N3DS_GAME_H - 1) fy = N3DS_GAME_H - 1;
+	touch_x = (int)fx;
+	touch_y = (int)fy;
+}
+
+/* Menus with the game on the top screen (not swapped): the touchscreen is the dashboard,
+   and away from its buttons it is a touchpad for the menu pointer, like a laptop's: sliding
+   moves the pointer by how far the stylus moves (not to where it is), a short tap clicks
+   where the pointer is (R held: right button). The pointer is drawn on the top screen. */
+static int input_frame = 0;
+static int pad_click_left = 0, pad_click_right = 0;   /* frames a tap's click is still held */
+static int r_modifier_used = 0;                       /* R was held for a right-click tap */
+
+static void menu_touchpad(int touching, int tx, int ty, int r_held)
+{
+	static int was = 0, lx, ly, moved, start;
+	if (touching) {
+		if (!was) { lx = tx; ly = ty; moved = 0; start = input_frame; }
+		else {
+			int dx = tx - lx, dy = ty - ly;
+			if (dx || dy) {
+				/* a little faster than 1:1 on the top screen, so one slide crosses it */
+				float k = 1.5f / menu_zoom_scale();
+				move_pointer(dx * k, dy * k);
+				moved += abs(dx) + abs(dy);
+				lx = tx; ly = ty;
+			}
+		}
+	} else if (was && moved < 8 && input_frame - start < 20 && !pad_click_left && !pad_click_right) {
+		/* a tap: the button is held 6 frames so the menu's poll sees it (one click, never queued) */
+		if (r_held) { pad_click_right = 6; r_modifier_used = 1; }
+		else pad_click_left = 6;
+	}
+	was = touching;
+}
+
 extern "C" void n3ds_menu_zoom(int delta)
 {
 	if (delta == 0) {               /* ZOOM button: cycle */
@@ -300,6 +346,7 @@ extern "C" void n3ds_input_poll(void)
 	}
 
 	hidScanInput();
+	input_frame++;
 	u32 held = hidKeysHeld();
 	u32 down = hidKeysDown();
 	u32 up = hidKeysUp();
@@ -316,9 +363,52 @@ extern "C" void n3ds_input_poll(void)
 
 	int flight = in_flight();
 	static int was_flight = -1;
+	static int panel_nav = 0;         /* flight: D-Pad / A work the cockpit panel's buttons */
+	static int select_used = 0;
 	if (flight != was_flight) {
 		release_all_keys();
 		was_flight = flight;
+		panel_nav = 0;
+		n3ds_panel_set_nav(0);
+	}
+
+	/* Everything you can tap also works with the buttons, for when the panel or dashboard is
+	   on the top screen (ZL) and can't be touched: the D-Pad moves a gold highlight between
+	   its buttons and A presses the highlighted one. */
+	const u32 BTN_DPAD = BTN_DUP | BTN_DDOWN | BTN_DLEFT | BTN_DRIGHT;
+	int nav_dx = (down & BTN_DRIGHT) ? 1 : (down & BTN_DLEFT) ? -1 : 0;
+	int nav_dy = (down & BTN_DDOWN) ? 1 : (down & BTN_DUP) ? -1 : 0;
+	if (flight && !n3ds_manual_is_open()) {
+		/* cockpit panel: SELECT + B turns its highlight on / off (B alone also turns it off);
+		   while it is on, the D-Pad and A work the panel instead of their flight functions */
+		if ((held & BTN_SELECT) && (down & BTN_B)) {
+			panel_nav = !panel_nav;
+			select_used = 1;
+			down &= ~BTN_B; held &= ~BTN_B;
+			n3ds_panel_set_nav(panel_nav);
+		} else if (panel_nav && (down & BTN_B)) {
+			panel_nav = 0;
+			down &= ~BTN_B; held &= ~BTN_B;
+			n3ds_panel_set_nav(0);
+		}
+		if (panel_nav) {
+			n3ds_panel_nav(nav_dx, nav_dy, (down & BTN_A) ? 1 : 0);
+			down &= ~(BTN_DPAD | BTN_A); held &= ~(BTN_DPAD | BTN_A);
+		} else {
+			n3ds_panel_nav(0, 0, 0);       /* finishes a press in progress */
+		}
+	} else if (flight) {
+		n3ds_panel_nav(0, 0, 0);
+	}
+	/* menus with the screens swapped: the dashboard is on top; the stylus is the mouse below */
+	n3ds_dash_set_nav(swapped);
+	if (!flight) {
+		if (swapped && !n3ds_manual_is_open()) {
+			n3ds_dash_nav(nav_dx, nav_dy, (down & BTN_A) ? 1 : 0);
+			down &= ~(BTN_DPAD | BTN_A); held &= ~(BTN_DPAD | BTN_A);
+		} else {
+			n3ds_dash_nav(0, 0, 0);
+		}
 	}
 
 	/* panel buttons take the touch while flying */
@@ -329,8 +419,16 @@ extern "C" void n3ds_input_poll(void)
 		touch_down = 0;
 	} else {
 		/* menus are on the top screen; the touchscreen is the dashboard with buttons */
-		if (!n3ds_manual_is_open())
-			n3ds_dash_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
+		if (!n3ds_manual_is_open()) {
+			/* a touch that starts on a dashboard button is that button's; anywhere else on
+			   the dashboard it is the touchpad */
+			static int touch_owner = 0;        /* 1 dashboard button, 2 touchpad */
+			int th = (held & BTN_TOUCH) ? 1 : 0, td = (down & BTN_TOUCH) ? 1 : 0;
+			if (td) touch_owner = (n3ds_dash_button_at(tp.px, tp.py) >= 0) ? 1 : 2;
+			n3ds_dash_touch(th && touch_owner == 1, tp.px, tp.py, td && touch_owner == 1);
+			menu_touchpad(th && touch_owner == 2, tp.px, tp.py, (held & BTN_R) ? 1 : 0);
+			if (!th) touch_owner = 0;
+		}
 
 		/* Circle Pad and C-Stick move the pointer: slow near the centre for precision,
 		   fast at the rim. The top-screen view follows the pointer. */
@@ -352,21 +450,15 @@ extern "C" void n3ds_input_poll(void)
 				vx += dx / m * speed;
 				vy -= dy / m * speed;
 			}
-			if (vx != 0 || vy != 0) {
-				static float fx = -1, fy = -1;
-				if (fx < 0 || (int)fx != touch_x || (int)fy != touch_y) { fx = (float)touch_x; fy = (float)touch_y; }
-				fx += vx;
-				fy += vy;
-				if (fx < 0) fx = 0;
-				if (fy < 0) fy = 0;
-				if (fx > N3DS_GAME_W - 1) fx = N3DS_GAME_W - 1;
-				if (fy > N3DS_GAME_H - 1) fy = N3DS_GAME_H - 1;
-				touch_x = (int)fx;
-				touch_y = (int)fy;
-			}
-			/* L / R zoom the top-screen view */
+			if (vx != 0 || vy != 0) move_pointer(vx, vy);
+			/* L / R zoom the top-screen view. R zooms when it is let go, unless it was held
+			   for a right-click tap on the touchpad. */
 			if (down & BTN_L) n3ds_menu_zoom(-1);
-			if (down & BTN_R) n3ds_menu_zoom(+1);
+			if (down & BTN_R) r_modifier_used = 0;
+			if (up & BTN_R) {
+				if (!r_modifier_used) n3ds_menu_zoom(+1);
+				r_modifier_used = 0;
+			}
 		}
 		/* swapped: the stylus on the menu picture (whole screen, 0..320 x 24..216) is the
 		   mouse. The button goes down one frame after the pointer moves there, so the
@@ -383,12 +475,20 @@ extern "C" void n3ds_input_poll(void)
 		} else {
 			stylus_frames = 0;
 		}
-		/* A (or the stylus) = left mouse button */
-		int now = ((held & BTN_A) || stylus) ? 1 : 0;
+		/* A (or the stylus, or a touchpad tap) = left mouse button; a tap with R held = right */
+		if (pad_click_left) pad_click_left--;
+		int now = ((held & BTN_A) || stylus || pad_click_left) ? 1 : 0;
 		if (now != touch_down) {
 			/* make sure the cursor position is updated before the click lands */
 			mouse_mark_button(MOUSE_LEFT_BUTTON, now);
 			touch_down = now;
+		}
+		static int right_down = 0;
+		if (pad_click_right) pad_click_right--;
+		int rnow = pad_click_right ? 1 : 0;
+		if (rnow != right_down) {
+			mouse_mark_button(MOUSE_RIGHT_BUTTON, rnow);
+			right_down = rnow;
 		}
 	}
 
@@ -433,7 +533,6 @@ extern "C" void n3ds_input_poll(void)
 
 	/* buttons */
 	int select_held = (held & BTN_SELECT) && flight;
-	static int select_used = 0;
 	for (unsigned i = 0; i < sizeof(n3ds_keys) / sizeof(n3ds_keys[0]); i++) {
 		const keymap &k = n3ds_keys[i];
 		if (k.button == BTN_SELECT && flight) continue;   /* handled below (tap = comms) */
@@ -551,6 +650,9 @@ static void prof_report(int frames_in_window, u64 window_ticks, int state)
 #define N3DS_RT_FLIP_T 0
 #endif
 
+static int top_wide = 0;            /* this frame's top screen is drawn 800x240 (3D slider down) */
+static float compose_xs = 1.0f;     /* target pixels per layout pixel across (2 on the wide top) */
+
 static void main_uv(float ex, float ey, float *s, float *t)
 {
 	int w, h, gw, gh;
@@ -569,6 +671,13 @@ static void blit_main(float sx0, float sy0, float sx1, float sy1, float ex0, flo
 {
 	int tw, th;
 	pglGetTargetSize(&tw, &th);
+
+	/* whole-number scales (1:1, or 2x across on the wide top) are copied with nearest
+	   sampling, so text stays exactly as drawn; anything else is filtered */
+	float scx = (sx1 - sx0) * compose_xs / (ex1 - ex0), scy = (sy1 - sy0) / (ey1 - ey0);
+	int whole = scx >= 0.999f && scy >= 0.999f && fabsf(scx - roundf(scx)) < 0.001f && fabsf(scy - roundf(scy)) < 0.001f;
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, whole ? GL_NEAREST : GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, whole ? GL_NEAREST : GL_LINEAR);
 
 	float s[4], t[4];
 	main_uv(ex0, ey0, &s[0], &t[0]);   /* top-left */
@@ -591,6 +700,8 @@ static void compose_begin(int target)
 	pglBindTarget(target);
 	int tw, th;
 	pglGetTargetSize(&tw, &th);
+	/* the wide top keeps the 400x240 layout coordinates, scaled 2x across */
+	compose_xs = (target == PGL_TARGET_TOP && top_wide) ? 2.0f : 1.0f;
 
 	glViewport(0, 0, tw, th);
 	glDisable(GL_SCISSOR_TEST);
@@ -604,7 +715,7 @@ static void compose_begin(int target)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, tw, 0, th, -1, 1);
+	glOrtho(0, tw / compose_xs, 0, th, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
@@ -729,6 +840,12 @@ extern "C" void n3ds_present(void)
 	}
 	n3ds_prof_begin(N3DS_PROF_PRESENT);
 
+	/* Top-screen text is sharpest in the LCD's 800x240 wide mode (its own columns; the
+	   normal mode doubles each pixel). The game draws no stereo picture, so with the 3D
+	   slider down the top is drawn 800 wide (same 400x240 layout, 2x across); with the
+	   slider up it goes back to the normal 3D-capable mode. */
+	top_wide = pglSetTopWide(osGet3DSliderState() <= 0.0f);
+
 	pglSaveViewport();
 
 	/* where this frame was rendered: at render scale 0.5 the whole 800x480 engine frame
@@ -805,6 +922,9 @@ extern "C" void n3ds_present(void)
 		if (view_y > N3DS_GAME_H - wh) view_y = N3DS_GAME_H - wh;
 		if (view_x < 0) view_x = 0;
 		if (view_y < 0) view_y = 0;
+		/* whole engine pixels, so text lands on whole screen pixels */
+		view_x = floorf(view_x);
+		view_y = floorf(view_y);
 		/* map the view (engine coords) into wherever this frame was rendered */
 		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
 		if (swapped) {

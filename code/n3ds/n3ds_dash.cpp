@@ -218,12 +218,57 @@ static const dash_button Dash_buttons[] = {
 };
 #define NUM_DASH_BUTTONS ((int)(sizeof(Dash_buttons) / sizeof(Dash_buttons[0])))
 static int Dash_pressed = -1;
+static int Dash_nav = 0;           /* the dashboard is on the top screen: highlight shown */
+static int Dash_focus = 0;         /* highlighted button */
+static int Dash_flash = 0;         /* frames left of an A press's animation */
 
 extern "C" void n3ds_click(void);
 extern "C" void n3ds_menu_zoom(int delta);
 extern "C" void n3ds_tap_key(int key);
 #include "io/key.h"
 #include "n3ds/n3ds_manual.h"
+
+static void dash_action(int i)
+{
+	switch (i) {
+		case 0: n3ds_tap_key(KEY_ESC); break;
+		case 1: n3ds_tap_key(KEY_ENTER); break;
+		case 2: n3ds_menu_zoom(0); break;      /* 0 = cycle */
+		case 3: n3ds_manual_toggle(); break;
+	}
+}
+
+int n3ds_dash_button_at(int x, int y)
+{
+	for (int i = 0; i < NUM_DASH_BUTTONS; i++) {
+		const dash_button &b = Dash_buttons[i];
+		if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h)
+			return i;
+	}
+	return -1;
+}
+
+void n3ds_dash_set_nav(int on) { Dash_nav = on; }
+
+/* The buttons are one row: Left / Right move the highlight, A presses it - the button sinks
+   and lights for a few frames (as when tapped) and then acts. A press during that time is
+   ignored, never saved for later. */
+void n3ds_dash_nav(int dx, int dy, int press)
+{
+	(void)dy;
+	if (n3ds_manual_is_open()) { Dash_flash = 0; return; }   /* a press is dropped, not saved */
+	if (Dash_flash > 0) {
+		if (--Dash_flash == 0) dash_action(Dash_focus);
+		return;
+	}
+	if (!Dash_nav) return;
+	if (dx < 0 && Dash_focus > 0) Dash_focus--;
+	if (dx > 0 && Dash_focus < NUM_DASH_BUTTONS - 1) Dash_focus++;
+	if (press) {
+		n3ds_click();
+		Dash_flash = 6;
+	}
+}
 
 void n3ds_dash_touch(int held, int x, int y, int pressed)
 {
@@ -241,12 +286,7 @@ void n3ds_dash_touch(int held, int x, int y, int pressed)
 	}
 	if (!held && Dash_pressed >= 0) {
 		/* act on release, like a real button */
-		switch (Dash_pressed) {
-			case 0: n3ds_tap_key(KEY_ESC); break;
-			case 1: n3ds_tap_key(KEY_ENTER); break;
-			case 2: n3ds_menu_zoom(0); break;      /* 0 = cycle */
-			case 3: n3ds_manual_toggle(); break;
-		}
+		dash_action(Dash_pressed);
 		Dash_pressed = -1;
 	}
 }
@@ -255,12 +295,21 @@ static void draw_buttons(void)
 {
 	for (int i = 0; i < NUM_DASH_BUTTONS; i++) {
 		const dash_button &b = Dash_buttons[i];
-		int pressed = (i == Dash_pressed);
+		int focused = Dash_nav && i == Dash_focus;
+		int pressed = (i == Dash_pressed) || (focused && Dash_flash > 0);
 		int off = pressed ? 1 : 0;       /* pressed buttons sink by a pixel and light up */
 		gr_set_color(pressed ? 90 : 40, pressed ? 140 : 70, pressed ? 200 : 110);
 		gr_rect(b.x, b.y + off, b.w, b.h, false);
 		gr_set_color(pressed ? 160 : 70, pressed ? 200 : 110, pressed ? 250 : 160);
 		gr_rect(b.x, b.y + off, b.w, 1, false);
+		if (focused) {
+			/* the highlight: a gold ring just inside the button */
+			gr_set_color(255, 220, 120);
+			gr_rect(b.x, b.y + off, b.w, 2, false);
+			gr_rect(b.x, b.y + off + b.h - 2, b.w, 2, false);
+			gr_rect(b.x, b.y + off, 2, b.h, false);
+			gr_rect(b.x + b.w - 2, b.y + off, 2, b.h, false);
+		}
 		int w, h;
 		gr_get_string_size(&w, &h, b.label);
 		gr_set_color(240, 240, 240);
@@ -364,7 +413,7 @@ void n3ds_dash_draw(void)
 	}
 	if (popup_active()) {
 		gr_set_color(255, 160, 120);
-		y = wrapped(vx, y, "Message - answer it on top.", 12);
+		y = wrapped(vx, y, Dash_nav ? "Message - answer it below." : "Message - answer it on top.", 12);
 	}
 
 	y += 1;
@@ -388,8 +437,14 @@ void n3ds_dash_draw(void)
 	gr_rect(0, DASH_H - 29, DASH_W, 29, false);
 	gr_set_color(200, 200, 200);
 	Wrap_bottom = DASH_H;
-	gr_string(6, DASH_H - 27, "Pad / C-Stick: pointer   A: click", false);
-	gr_string(6, DASH_H - 14, "X: Enter   B: back   L / R: zoom", false);
+	if (Dash_nav) {
+		/* on the top screen (ZL): the menu is on the touchscreen */
+		gr_string(6, DASH_H - 27, "Stylus: mouse on the touchscreen", false);
+		gr_string(6, DASH_H - 14, "D-Pad: pick a button   A: press it", false);
+	} else {
+		gr_string(6, DASH_H - 27, "Pad / C-Stick / slide here: pointer", false);
+		gr_string(6, DASH_H - 14, "A or tap: click  X: Enter  B: back", false);
+	}
 
 	gr_reset_clip();
 }

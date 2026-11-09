@@ -42,7 +42,13 @@ static const manual_section Sections[] = {
 		"Touchscreen: dashboard - pilot, campaign, the",
 		"name of what the pointer is over, help for this",
 		"screen, and BACK, ENTER, ZOOM and MANUAL",
-		"buttons.",
+		"buttons. Away from the buttons it is a",
+		"touchpad: slide to move the pointer, tap to",
+		"click.",
+		"",
+		"TOP SCREEN",
+		"With the 3D slider all the way down, the top",
+		"screen uses its sharper 800-pixel-wide mode.",
 		NULL } },
 	{ "FLYING", {
 		"Circle Pad    pitch and turn",
@@ -73,6 +79,7 @@ static const manual_section Sections[] = {
 		"D-Pad Down    target next bomb / bomber",
 		"D-Pad Left    toggle target view",
 		"D-Pad Right   radar range",
+		"B             panel highlight on / off",
 		"START         open this manual",
 		NULL } },
 	{ "COCKPIT PANEL", {
@@ -94,10 +101,19 @@ static const manual_section Sections[] = {
 		"ATTACK pick targets; MATCH matches speed;",
 		"ORDERS opens comms; SHIELDS evens your shields;",
 		"BOMB targets bombs; RADAR changes radar range.",
+		"",
+		"WITHOUT TOUCH (screens swapped with ZL):",
+		"SELECT+B puts a gold highlight on the panel.",
+		"The D-Pad moves it over the buttons and the",
+		"energy columns, A presses what it is on.",
+		"B or SELECT+B turns it off. While it is on,",
+		"the D-Pad and A work the panel only.",
 		NULL } },
 	{ "MENUS", {
 		"Circle Pad / C-Stick  move the pointer",
-		"A                     click",
+		"Slide on dashboard    move the pointer",
+		"A or tap dashboard    click",
+		"R + tap dashboard     right-click",
 		"X                     Enter (accept)",
 		"B                     back (Esc)",
 		"D-Pad                 arrow keys",
@@ -105,11 +121,17 @@ static const manual_section Sections[] = {
 		"ZOOM button           cycle the zoom levels",
 		"ZL                    swap screens",
 		"",
+		"Away from its buttons the dashboard is a",
+		"touchpad, like a laptop's: slide to move the",
+		"pointer, tap to click where it points.",
+		"",
 		"SCREENS SWAPPED (ZL)",
 		"The whole menu is on the touchscreen: tap it",
 		"with the stylus like a mouse. The dashboard",
-		"moves to the top screen. In this manual, drag",
-		"the text to scroll. Press ZL again to swap back.",
+		"moves to the top screen: the D-Pad moves a",
+		"gold highlight over its buttons, A presses one.",
+		"In this manual, drag the text to scroll.",
+		"Press ZL again to swap back.",
 		"",
 		"The top-screen view scrolls when the pointer",
 		"nears its edge. Zoom out (L) to see the whole",
@@ -144,6 +166,7 @@ static int Manual_focus = 0;       /* section button highlighted by the D-Pad */
 static float Manual_scroll = 0;    /* pixels */
 static int Manual_max_scroll = 0;
 static int Manual_pressed = -1;    /* touched button, for the press animation */
+static int Manual_flash = 0;       /* frames left of an A press's animation (highlighted button) */
 
 #define LINE_H 13
 #define TEXT_TOP 24
@@ -200,7 +223,13 @@ void n3ds_manual_dpad(int dx, int dy)
 	if (dy > 0 && Manual_focus + 2 < NUM_SECTIONS) Manual_focus += 2;
 }
 
-void n3ds_manual_select(void) { open_section(Manual_focus); }
+void n3ds_manual_select(void)
+{
+	/* the same press animation and click as a tap */
+	n3ds_click();
+	Manual_flash = 6;
+	open_section(Manual_focus);
+}
 
 void n3ds_manual_touch(int held, int tx, int ty, int pressed)
 {
@@ -290,7 +319,7 @@ void n3ds_manual_draw(void)
 	for (int i = 0; i < NUM_SECTIONS; i++) {
 		int x, y, w, h;
 		button_rect(i, &x, &y, &w, &h);
-		int pressed = (i == Manual_pressed);
+		int pressed = (i == Manual_pressed) || (Manual_flash > 0 && i == Manual_focus);
 		int cur = (i == Manual_section);
 		int off = pressed ? 1 : 0;   /* pressed buttons sink a pixel and light up */
 		if (pressed)    gr_set_color(90, 140, 200);
@@ -309,6 +338,8 @@ void n3ds_manual_draw(void)
 		gr_set_color(240, 240, 240);
 		gr_string(x + (w - tw) / 2, y + off + (h - th) / 2, Sections[i].title, false);
 	}
+
+	if (Manual_flash > 0) Manual_flash--;
 
 	gr_set_color(24, 44, 74);
 	gr_rect(0, 210, 320, 30, false);
