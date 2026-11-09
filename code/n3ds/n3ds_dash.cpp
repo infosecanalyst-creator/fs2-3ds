@@ -440,10 +440,10 @@ void n3ds_dash_draw(void)
 	if (Dash_nav) {
 		/* on the top screen (ZL): the menu is on the touchscreen */
 		gr_string(6, DASH_H - 27, "Stylus: mouse on the touchscreen", false);
-		gr_string(6, DASH_H - 14, "D-Pad: pick a button   A: press it", false);
+		gr_string(6, DASH_H - 14, n3ds_lefty() ? "ABXY: pick a button   D-Rt: press it" : "D-Pad: pick a button   A: press it", false);
 	} else {
 		gr_string(6, DASH_H - 27, "Pad / C-Stick / slide here: pointer", false);
-		gr_string(6, DASH_H - 14, "A or tap: click  X: Enter  B: back", false);
+		gr_string(6, DASH_H - 14, n3ds_lefty() ? "D-Rt or tap: click  D-Lt: Enter  D-Dn: back" : "A or tap: click  X: Enter  B: back", false);
 	}
 
 	gr_reset_clip();
