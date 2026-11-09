@@ -1497,6 +1497,19 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 		GL_state.Array.SetActiveClientUnit(0);
 		GL_state.Array.EnableClientTexture();
+#ifdef SCP_3DS
+		// New 3DS: picaGL has no texture matrix, so scale the coordinates themselves
+		// (a 640x480 picture sits in a 1024x512 texture: u 0..0.625, v 0..0.9375)
+		static float n3ds_uv[2 * 64];
+		if ( ((u_scale != 1.0f) || (v_scale != 1.0f)) && nverts <= 64 ) {
+			for (int k = 0; k < nverts; k++) {
+				n3ds_uv[k * 2] = verts[k].texture_position.u * u_scale;
+				n3ds_uv[k * 2 + 1] = verts[k].texture_position.v * v_scale;
+			}
+			GL_state.Array.TexPointer(2, GL_FLOAT, 0, n3ds_uv);
+			u_scale = v_scale = 1.0f;	// skips the texture matrix below
+		} else
+#endif
 		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(vertex), &verts[0].texture_position.u);
 
 		// adjust texture coords if needed
