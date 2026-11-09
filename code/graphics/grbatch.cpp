@@ -533,7 +533,7 @@ void geometry_batcher::render(int flags, float radius)
 			for (int k = 0; k < 3; k++) {
 				vertex *src = &vert[t * 3 + k];
 				vec3d w;
-				vm_vert2vec(src, &w);
+				w = src->world;
 				tv[k] = *src;
 				g3_rotate_vertex(&tv[k], &w);
 				g3_project_vertex(&tv[k]);

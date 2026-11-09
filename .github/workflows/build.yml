@@ -20,7 +20,7 @@ jobs:
           git config --global --add safe.directory '*'
       - uses: actions/checkout@v4
       - name: Build
-        run: . ./env.sh && make -j$(nproc) 2>&1 | tee build.log; test -f fs2-3ds.3dsx
+        run: . ./env.sh && make -k -j$(nproc) 2>&1 | tee build.log; test -f fs2-3ds.3dsx
       - name: Collect
         if: always()
         run: |
