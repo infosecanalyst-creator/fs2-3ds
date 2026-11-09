@@ -57,3 +57,5 @@ int std_is_host_passwd() { return 0; }
 void std_mutate_sheet() {}
 int std_player_is_banned(const char *name) { return 0; }
 void std_add_ban(const char *name) {}
+void std_configLoaded(multi_global_options *) {}
+void std_debug_multilog_add_line(const char *) {}
