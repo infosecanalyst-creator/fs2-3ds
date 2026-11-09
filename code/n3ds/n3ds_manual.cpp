@@ -68,6 +68,9 @@ static const manual_section Sections[] = {
 		"D-Pad Right   cycle secondary weapons",
 		"START         pause / options menu",
 		"SELECT (tap)  comms menu (wingman orders)",
+		"",
+		"LEFT-HANDED   Manual > LEFT HAND swaps the",
+		"              D-Pad with Y/A/B/X (saved).",
 		NULL } },
 	{ "SELECT COMBOS", {
 		"Hold SELECT and press:",
@@ -190,9 +193,13 @@ void n3ds_manual_page(int delta) { open_section(Manual_section + delta); }
 /* section buttons: 2 columns x 3 rows on the touchscreen */
 static void button_rect(int i, int *x, int *y, int *w, int *h)
 {
-	*w = 152; *h = 44;
+	if (i >= NUM_SECTIONS) {   /* the Left hand button, under the section buttons */
+		*x = 6; *y = 158; *w = 308; *h = 36;
+		return;
+	}
+	*w = 152; *h = 36;
 	*x = 6 + (i % 2) * 156;
-	*y = 30 + (i / 2) * 58;
+	*y = 28 + (i / 2) * 44;
 }
 
 void n3ds_manual_scroll(int axis)
@@ -221,6 +228,8 @@ void n3ds_manual_dpad(int dx, int dy)
 	if (dx > 0 && (Manual_focus % 2) == 0 && Manual_focus + 1 < NUM_SECTIONS) Manual_focus++;
 	if (dy < 0 && Manual_focus >= 2) Manual_focus -= 2;
 	if (dy > 0 && Manual_focus + 2 < NUM_SECTIONS) Manual_focus += 2;
+	else if (dy > 0 && Manual_focus < NUM_SECTIONS) Manual_focus = NUM_SECTIONS;   /* down to Left hand */
+	else if (dy < 0 && Manual_focus == NUM_SECTIONS) Manual_focus = NUM_SECTIONS - 1;
 }
 
 void n3ds_manual_select(void)
@@ -228,6 +237,7 @@ void n3ds_manual_select(void)
 	/* the same press animation and click as a tap */
 	n3ds_click();
 	Manual_flash = 6;
+	if (Manual_focus >= NUM_SECTIONS) { n3ds_set_lefty(!n3ds_lefty()); return; }
 	open_section(Manual_focus);
 }
 
@@ -235,7 +245,7 @@ void n3ds_manual_touch(int held, int tx, int ty, int pressed)
 {
 	if (pressed) {
 		Manual_pressed = -1;
-		for (int i = 0; i < NUM_SECTIONS; i++) {
+		for (int i = 0; i <= NUM_SECTIONS; i++) {
 			int x, y, w, h;
 			button_rect(i, &x, &y, &w, &h);
 			if (tx >= x && tx < x + w && ty >= y && ty < y + h) {
@@ -245,7 +255,8 @@ void n3ds_manual_touch(int held, int tx, int ty, int pressed)
 			}
 		}
 	} else if (!held && Manual_pressed >= 0) {
-		open_section(Manual_pressed);
+		if (Manual_pressed >= NUM_SECTIONS) n3ds_set_lefty(!n3ds_lefty());
+		else open_section(Manual_pressed);
 		Manual_pressed = -1;
 	}
 }
@@ -316,11 +327,11 @@ void n3ds_manual_draw(void)
 	gr_string(6, 3, "MANUAL", false);
 	gr_set_font(FONT1);
 
-	for (int i = 0; i < NUM_SECTIONS; i++) {
+	for (int i = 0; i <= NUM_SECTIONS; i++) {
 		int x, y, w, h;
 		button_rect(i, &x, &y, &w, &h);
 		int pressed = (i == Manual_pressed) || (Manual_flash > 0 && i == Manual_focus);
-		int cur = (i == Manual_section);
+		int cur = (i == NUM_SECTIONS) ? n3ds_lefty() : (i == Manual_section);
 		int off = pressed ? 1 : 0;   /* pressed buttons sink a pixel and light up */
 		if (pressed)    gr_set_color(90, 140, 200);
 		else if (cur)   gr_set_color(50, 90, 140);
@@ -334,9 +345,10 @@ void n3ds_manual_draw(void)
 			gr_rect(x + w - 2, y + off, 2, h, false);
 		}
 		int tw, th;
-		gr_get_string_size(&tw, &th, Sections[i].title);
+		const char *label = (i == NUM_SECTIONS) ? (n3ds_lefty() ? "LEFT HAND: ON" : "LEFT HAND: OFF") : Sections[i].title;
+		gr_get_string_size(&tw, &th, label);
 		gr_set_color(240, 240, 240);
-		gr_string(x + (w - tw) / 2, y + off + (h - th) / 2, Sections[i].title, false);
+		gr_string(x + (w - tw) / 2, y + off + (h - th) / 2, label, false);
 	}
 
 	if (Manual_flash > 0) Manual_flash--;

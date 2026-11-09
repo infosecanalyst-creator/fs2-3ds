@@ -250,6 +250,33 @@ static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
    Touch is off while swapped. */
 static int swapped = 0;
 
+/* Left-handed play: the D-pad and the face buttons swap places
+   (Y<->Up, A<->Right, B<->Down, X<->Left). Toggled from the manual, kept as a marker file. */
+static int Lefty = -1;   /* -1: not read yet */
+int n3ds_lefty(void)
+{
+	if (Lefty < 0) { struct stat sb; Lefty = (stat(FS2_DIR "/.lefty", &sb) == 0) ? 1 : 0; }
+	return Lefty;
+}
+void n3ds_set_lefty(int on)
+{
+	Lefty = on ? 1 : 0;
+	if (on) { FILE *f = fopen(FS2_DIR "/.lefty", "w"); if (f) fclose(f); }
+	else remove(FS2_DIR "/.lefty");
+}
+static u32 lefty_remap(u32 m)
+{
+	static const u32 pr[4][2] = { { BTN_Y, BTN_DUP }, { BTN_A, BTN_DRIGHT }, { BTN_B, BTN_DDOWN }, { BTN_X, BTN_DLEFT } };
+	if (!n3ds_lefty()) return m;
+	u32 o = m;
+	for (int i = 0; i < 4; i++) {
+		o &= ~(pr[i][0] | pr[i][1]);
+		if (m & pr[i][0]) o |= pr[i][1];
+		if (m & pr[i][1]) o |= pr[i][0];
+	}
+	return o;
+}
+
 static int held_touch_now(void) { return (!swapped && (hidKeysHeld() & BTN_TOUCH)) ? 1 : 0; }
 
 /* move the menu pointer by (vx, vy) engine pixels, keeping the fraction between frames */
@@ -347,9 +374,9 @@ extern "C" void n3ds_input_poll(void)
 
 	hidScanInput();
 	input_frame++;
-	u32 held = hidKeysHeld();
-	u32 down = hidKeysDown();
-	u32 up = hidKeysUp();
+	u32 held = lefty_remap(hidKeysHeld());
+	u32 down = lefty_remap(hidKeysDown());
+	u32 up = lefty_remap(hidKeysUp());
 	if (down & BTN_ZL) swapped = !swapped;
 	held &= ~BTN_ZL; down &= ~BTN_ZL; up &= ~BTN_ZL;
 	/* swapped: the touchscreen shows the game picture, so the stylus works on that

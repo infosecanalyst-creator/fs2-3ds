@@ -1,6 +1,9 @@
 #ifndef _N3DS_MANUAL_H
 #define _N3DS_MANUAL_H
 
+int  n3ds_lefty(void);                      /* left-handed play (n3ds_platform.cpp) */
+void n3ds_set_lefty(int on);
+
 int  n3ds_manual_is_open(void);
 void n3ds_manual_toggle(void);
 void n3ds_manual_close(void);
