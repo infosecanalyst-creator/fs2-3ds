@@ -241,7 +241,7 @@ static int scale_axis(int v, int range)
 /* ---- menu view on the top screen: zoom levels show 400x240, 533x320 or the whole
    800x480 engine frame; the view scrolls to keep the pointer on screen */
 static const float Menu_zooms[3] = { 0.5f, 0.75f, 1.0f };   /* LCD pixels per engine pixel */
-static int menu_zoom = 1;                                   /* start at 0.75: popups fit */
+static int menu_zoom = 0;                                   /* start with the whole frame filling the top screen; L/R or ZOOM to zoom in (Ryan: zoom only on a button press) */
 static float view_x = 0, view_y = 0;
 
 static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
