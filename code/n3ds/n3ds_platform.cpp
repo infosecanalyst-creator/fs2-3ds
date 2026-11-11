@@ -488,15 +488,14 @@ extern "C" void n3ds_input_poll(void)
 				r_modifier_used = 0;
 			}
 		}
-		/* swapped: the stylus on the menu picture (whole screen, 0..320 x 24..216) is the
+		/* swapped: the stylus on the menu picture (the whole 320x240 touchscreen) is the
 		   mouse. The button goes down one frame after the pointer moves there, so the
 		   menu has seen the pointer over the button before the click lands. */
 		static int stylus_frames = 0;
 		int stylus = 0;
-		if (swapped && !n3ds_manual_is_open() && raw_touch_held && tp.py >= 20 && tp.py < 220) {
-			int ty = tp.py < 24 ? 24 : (tp.py > 215 ? 215 : tp.py);
+		if (swapped && !n3ds_manual_is_open() && raw_touch_held) {
 			touch_x = tp.px * N3DS_GAME_W / 320;
-			touch_y = (ty - 24) * N3DS_GAME_H / 192;
+			touch_y = tp.py * N3DS_GAME_H / 240;
 			if (touch_x > N3DS_GAME_W - 1) touch_x = N3DS_GAME_W - 1;
 			if (touch_y > N3DS_GAME_H - 1) touch_y = N3DS_GAME_H - 1;
 			stylus = (++stylus_frames >= 2);
@@ -903,7 +902,7 @@ extern "C" void n3ds_present(void)
 		/* ---- top: the cockpit view (rendered at the LCD's own 400x240) */
 		if (swapped) {
 			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 24, 320, 216, src_x0, src_y0, src_x1, src_y1);
+			blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);   /* fills the touchscreen, no bars */
 		} else {
 			compose_begin(PGL_TARGET_TOP);
 			blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
@@ -956,9 +955,9 @@ extern "C" void n3ds_present(void)
 		/* map the view (engine coords) into wherever this frame was rendered */
 		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
 		if (swapped) {
-			/* the whole screen (5:3, like 320x192) so the stylus can reach everything */
+			/* the whole touchscreen, so the stylus can reach everything and there are no bars */
 			compose_begin(PGL_TARGET_BOTTOM);
-			blit_main(0, 24, 320, 216, src_x0, src_y0, src_x1, src_y1);
+			blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);   /* fills the touchscreen, no bars */
 		} else {
 			compose_begin(PGL_TARGET_TOP);
 			blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,

@@ -7,7 +7,7 @@
  *   |---------------------------------------------------|
  *   | HULL [####]  SHLD [####]  SPEED nn / THR [###]   |
  *   |---------------------------------------------------|
- *   |  ENERGY   S  W  E   (tap top half +, bottom -)   |
+ *   |  ENERGY   S  W  E   (tap top half +, bottom -)   |  (24-px columns, x 234..314)
  *   |---------------------------------------------------|
  *   | HOSTILE | NEXT    | FRIEND | SUBSYS | ATTACKER   |
  *   | MATCH   | ORDERS  | EQ SHLD| BOMB   | RADAR      |
@@ -43,30 +43,31 @@ struct panel_button {
 };
 
 static const panel_button Panel_buttons[] = {
-	{   2, 176, 62, 30, "HOSTILE",  KEY_H },
-	{  66, 176, 62, 30, "NEXT",     KEY_T },
-	{ 130, 176, 62, 30, "FRIEND",   KEY_F },
-	{ 194, 176, 62, 30, "SUBSYS",   KEY_S },
-	{ 258, 176, 60, 30, "ATTACK",  KEY_R },
-	{   2, 208, 62, 30, "MATCH",    KEY_M },
-	{  66, 208, 62, 30, "ORDERS",   KEY_C },
-	{ 130, 208, 62, 30, "SHIELDS",  KEY_Q },
-	{ 194, 208, 62, 30, "BOMB",     KEY_B },
-	{ 258, 208, 60, 30, "RADAR",    KEY_PADPLUS },
+	/* rule 11: 58 x 30, 4 px apart, 6 px from the screen edges (x 6..312, y 168..232) */
+	{   6, 168, 58, 30, "HOSTILE",  KEY_H },
+	{  68, 168, 58, 30, "NEXT",     KEY_T },
+	{ 130, 168, 58, 30, "FRIEND",   KEY_F },
+	{ 192, 168, 58, 30, "SUBSYS",   KEY_S },
+	{ 254, 168, 58, 30, "ATTACK",  KEY_R },
+	{   6, 202, 58, 30, "MATCH",    KEY_M },
+	{  68, 202, 58, 30, "ORDERS",   KEY_C },
+	{ 130, 202, 58, 30, "SHIELDS",  KEY_Q },
+	{ 192, 202, 58, 30, "BOMB",     KEY_B },
+	{ 254, 202, 58, 30, "RADAR",    KEY_PADPLUS },
 };
 #define NUM_PANEL_BUTTONS ((int)(sizeof(Panel_buttons) / sizeof(Panel_buttons[0])))
 
 /* energy transfer columns: shields, weapons, engines (narrow, right edge) */
 struct ets_column { int x; const char *label; int key_up; int key_down; };
 static const ets_column Ets_cols[3] = {
-	{ 252, "S", KEY_HOME,   KEY_END },
-	{ 274, "W", KEY_INSERT, KEY_DELETE },
-	{ 296, "E", KEY_PAGEUP, KEY_PAGEDOWN },
+	{ 234, "S", KEY_HOME,   KEY_END },     /* 24 wide, 4 apart, ends at 314 */
+	{ 262, "W", KEY_INSERT, KEY_DELETE },
+	{ 290, "E", KEY_PAGEUP, KEY_PAGEDOWN },
 };
-#define ETS_W 20
+#define ETS_W 24
 #define ETS_Y 44
-#define ETS_H 126
-#define TEXT_W 244          /* left area for text, x 4 .. 248 */
+#define ETS_H 120           /* 44..164, 4 px above the buttons */
+#define TEXT_W 226          /* left area for text, x 4 .. 230 */
 
 static int Panel_pressed_key = -1;
 static int Panel_pressed_button = -1;
@@ -179,7 +180,7 @@ static int wrap_lines(const char *text, int maxw, char out[][96], int maxlines)
 }
 
 #define BOX_Y 96
-#define BOX_BOTTOM 172
+#define BOX_BOTTOM 164
 #define LINE_H 10
 
 void n3ds_panel_draw(void)
@@ -230,14 +231,14 @@ void n3ds_panel_draw(void)
 		panel_bar(44, 35, 72, 7, get_hull_pct(Player_obj), 80, 220, 80);
 		gr_set_color(200, 200, 200);
 		gr_string(122, 34, "SHLD", false);
-		panel_bar(162, 35, 82, 7, smax > 0.0f ? s / smax : 0.0f, 80, 160, 255);
+		panel_bar(162, 35, 64, 7, smax > 0.0f ? s / smax : 0.0f, 80, 160, 255);
 
 		gr_set_color(200, 200, 200);
 		gr_string(4, 46, "AFTB", false);
 		panel_bar(44, 47, 72, 7, sip->afterburner_fuel_capacity > 0.0f ? Player_ship->afterburner_fuel / sip->afterburner_fuel_capacity : 0.0f, 255, 120, 60);
 		gr_set_color(200, 200, 200);
 		gr_string(122, 46, "WPN", false);
-		panel_bar(162, 47, 82, 7, sip->max_weapon_reserve > 0.0f ? Player_ship->weapon_energy / sip->max_weapon_reserve : 0.0f, 220, 220, 80);
+		panel_bar(162, 47, 64, 7, sip->max_weapon_reserve > 0.0f ? Player_ship->weapon_energy / sip->max_weapon_reserve : 0.0f, 220, 220, 80);
 
 		sprintf(buf, "SPD %d", (int)Player_obj->phys_info.fspeed);
 		gr_set_color(200, 200, 200);
@@ -248,7 +249,7 @@ void n3ds_panel_draw(void)
 			gr_string(4 + text_w(buf) + 8, 58, "M", false);
 		}
 		gr_string(122, 58, "THR", false);
-		panel_bar(162, 59, 82, 7, Player_obj->phys_info.forward_thrust, 255, 180, 60);
+		panel_bar(162, 59, 64, 7, Player_obj->phys_info.forward_thrust, 255, 180, 60);
 
 		/* ---- weapons */
 		ship_weapon *swp = &Player_ship->weapons;
@@ -446,7 +447,8 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 
 	for (int i = 0; i < NUM_PANEL_BUTTONS; i++) {
 		const panel_button &b = Panel_buttons[i];
-		if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+		/* the 4-px gaps and 6-px margins count toward the nearest button */
+		if (x >= b.x - 2 && x < b.x + b.w + 2 && y >= b.y - 2 && y < b.y + b.h + 4) {
 			Panel_pressed_key = b.key;
 			Panel_pressed_button = i;
 			n3ds_click();
@@ -455,7 +457,7 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 		}
 	}
 	for (int c = 0; c < 3; c++) {
-		if (x >= Ets_cols[c].x - 1 && x < Ets_cols[c].x + ETS_W + 1 && y >= ETS_Y && y < ETS_Y + ETS_H) {
+		if (x >= Ets_cols[c].x - 2 && x < Ets_cols[c].x + ETS_W + 2 && y >= ETS_Y && y < ETS_Y + ETS_H) {
 			int lower = (y >= ETS_Y + ETS_H / 2);
 			int key = lower ? Ets_cols[c].key_down : Ets_cols[c].key_up;
 			Panel_pressed_key = key;

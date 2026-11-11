@@ -211,10 +211,11 @@ struct dash_button { int x, y, w, h; const char *label; };
 #define BTN_Y 184
 #define BTN_H 26
 static const dash_button Dash_buttons[] = {
-	{   2, BTN_Y, 77, BTN_H, "BACK" },
-	{  81, BTN_Y, 77, BTN_H, "ENTER" },
-	{ 160, BTN_Y, 77, BTN_H, "ZOOM" },
-	{ 239, BTN_Y, 79, BTN_H, "MANUAL" },
+	/* rule 11: 74 wide, 4 px apart, 6 px from the edges (x 6..314) */
+	{   6, BTN_Y, 74, BTN_H, "BACK" },
+	{  84, BTN_Y, 74, BTN_H, "ENTER" },
+	{ 162, BTN_Y, 74, BTN_H, "ZOOM" },
+	{ 240, BTN_Y, 74, BTN_H, "MANUAL" },
 };
 #define NUM_DASH_BUTTONS ((int)(sizeof(Dash_buttons) / sizeof(Dash_buttons[0])))
 static int Dash_pressed = -1;
