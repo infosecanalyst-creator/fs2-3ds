@@ -7,628 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.14 $
- * $Date: 2007-12-08 20:07:54 $
- * $Author: karajorma $
- *
- * Controls messaging to player during the mission
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.52.2.13  2007/09/02 02:07:44  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 2.52.2.12  2007/07/24 05:08:08  Goober5000
- * allow mission messages in dogfights (Mantis #1436)
- *
- * Revision 2.52.2.11  2007/07/23 16:08:26  Kazan
- * Autopilot updates, minor misc fixes, working MSVC2005 project files
- *
- * Revision 2.52.2.10  2007/05/26 12:08:18  Goober5000
- * when importing FS1 missions, account for the shuffled Head-TP4
- *
- * Revision 2.52.2.9  2007/04/13 00:36:11  taylor
- * cleanup and initialize persona_index properly for general safety reasons
- * slight change to karajorma's NO_BUILTIN_MESSAGES check, now it will be properly compiled away in release builds rather than an empty function
- *
- * Revision 2.52.2.8  2007/04/05 16:33:25  karajorma
- * What was I thinking? Fixed
- *
- * Revision 2.52.2.7  2007/03/21 20:54:25  karajorma
- * Bump the number of debriefing stages.
- * Fix an annoying (and erroneous) warning in the campaign editor.
- *
- * Revision 2.52.2.6  2007/02/11 09:07:33  taylor
- * little bit of debug message cleanup
- * don't bother dealing with message wav file if sound is disabled
- *
- * Revision 2.52.2.5  2006/10/24 13:36:05  taylor
- * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
- *
- * Revision 2.52.2.4  2006/09/30 21:58:05  Goober5000
- * more flexible checking of generic messages
- *
- * Revision 2.52.2.3  2006/09/11 01:16:31  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 2.52.2.2  2006/08/27 18:12:41  taylor
- * make Species_info[] and Asteroid_info[] dynamic
- *
- * Revision 2.52.2.1  2006/07/20 00:41:26  Goober5000
- * add WCS screaming stuff to RC branch
- * --Goober5000
- *
- * Revision 2.53  2006/07/06 20:46:39  Goober5000
- * WCS screaming stuff
- * --Goober5000
- *
- * Revision 2.52  2006/05/27 17:00:02  taylor
- * only display that "no wavefile for voice" message if sound is enabled
- *
- * Revision 2.51  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.50  2006/04/05 16:12:41  karajorma
- * Changes to support the new Enable/Disable-Builtin-Messages SEXP
- *
- * Revision 2.49  2006/01/27 06:21:10  Goober5000
- * replace quick sort with insertion sort in many places
- * --Goober5000
- *
- * Revision 2.48  2006/01/26 04:01:58  Goober5000
- * spelling
- *
- * Revision 2.47  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.46  2005/10/10 17:21:05  taylor
- * remove NO_NETWORK
- *
- * Revision 2.45  2005/09/25 05:13:07  Goober5000
- * hopefully complete species upgrade
- * --Goober5000
- *
- * Revision 2.44  2005/09/24 07:07:16  Goober5000
- * another species overhaul
- * --Goober5000
- *
- * Revision 2.43  2005/08/25 22:40:03  taylor
- * basic cleaning, removing old/useless code, sanity stuff, etc:
- *  - very minor performance boost from not doing stupid things :)
- *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
- *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
- *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
- *
- * Revision 2.42  2005/08/11 12:18:53  taylor
- * handle rare cases where anims would get freaky if one happened to still be playing or otherwise queued
- *
- * Revision 2.41  2005/07/22 10:18:39  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.40  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.39  2005/07/13 02:01:29  Goober5000
- * fixed a bunch of "issues" caused by me with the species stuff
- * --Goober5000
- *
- * Revision 2.38  2005/07/13 00:44:22  Goober5000
- * improved species support and removed need for #define
- * --Goober5000
- *
- * Revision 2.37  2005/06/30 02:36:16  Goober5000
- * the message queue now waits for simulated speech to finish
- * --Goober5000
- *
- * Revision 2.36  2005/06/30 01:48:52  Goober5000
- * * NOX'd none.wav
- * * changed comparisons on none.wav to only look at the first four letters in case
- *   we don't have an extension or in case some weirdo decides to put none.ogg
- * * simulated speech pre-empts "beeps" in in-game messages
- * --Goober5000
- *
- * Revision 2.35  2005/05/26 05:07:19  Goober5000
- * some bracket happiness, plus fixed the training message version of the crazy semicolon bug
- * (thanks to taylor for fixing the regular message version)
- * --Goober500
- *
- * Revision 2.34  2005/05/26 04:29:23  taylor
- * those crazy semi-colons
- *
- * Revision 2.33  2005/05/17 20:57:05  taylor
- * more missed stuff from the vm_* macro change (thanks Alpha0)
- *
- * Revision 2.32  2005/05/13 02:47:58  taylor
- * missed a strdup to vm_strdup conversion
- *
- * Revision 2.31  2005/05/12 17:49:14  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.30  2005/05/12 03:50:10  Goober5000
- * repeating messages with variables should work properly now
- * --Goober5000
- *
- * Revision 2.29  2005/05/12 01:34:50  Goober5000
- * removed variables in messages for now
- * --Goober5000
- *
- * Revision 2.28  2005/05/11 08:10:20  Goober5000
- * variables should now work properly in messages that are sent multiple times
- * --Goober5000
- *
- * Revision 2.27  2005/03/24 23:38:49  taylor
- * make sure we don't go one over the number of message avis
- *
- * Revision 2.26  2005/03/10 08:00:08  taylor
- * change min/max to MIN/MAX to fix GCC problems
- * add lab stuff to Makefile
- * build unbreakage for everything that's not MSVC++ 6
- * lots of warning fixes
- * fix OpenGL rendering problem with ship insignias
- * no Warnings() in non-debug mode for Linux (like Windows)
- * some campaign savefile fixage to stop reverting everyones data
- *
- * Revision 2.25  2005/03/02 21:24:45  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.24  2004/12/23 15:58:55  phreak
- * commits for scramble-messages and unscramble-messages
- * -phreak
- *
- * Revision 2.23  2004/12/17 06:43:01  taylor
- * fix crash from dynamically allocated Personas
- *
- * Revision 2.22  2004/12/14 14:46:13  Goober5000
- * allow different wing names than ABGDEZ
- * --Goober5000
- *
- * Revision 2.21  2004/12/10 17:21:00  taylor
- * dymanic allocation of Personas
- *
- * Revision 2.20  2004/10/09 17:58:48  taylor
- * one more try to fix the memory leak and end-of-mission crash for talking head anis
- *
- * Revision 2.19  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.18  2004/07/17 18:46:08  taylor
- * various OGL and memory leak fixes
- *
- * Revision 2.17  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.16  2004/05/11 02:52:12  Goober5000
- * completed the FRED import conversion stuff that I started ages ago
- * --Goober5000
- *
- * Revision 2.15  2004/05/10 13:07:22  Goober5000
- * fixed the AWACS help message
- * --Goober5000
- *
- * Revision 2.14  2004/05/02 01:26:52  taylor
- * comment out avi free code for now
- *
- * Revision 2.13  2004/04/26 01:40:53  taylor
- * better anim free stuff, disable for now to prevent CTD
- *
- * Revision 2.12  2004/03/06 23:28:23  bobboau
- * fixed motion debris
- * animated laser textures
- * and added a new error check called a safepoint, mostly for tracking the 'Y bug'
- *
- * Revision 2.11  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.10  2004/02/20 04:29:55  bobboau
- * pluged memory leaks,
- * 3D HTL lasers (they work perfictly)
- * and posably fixed Turnsky's shinemap bug
- *
- * Revision 2.9  2004/02/13 04:17:13  randomtiger
- * Turned off fog in OGL for Fred.
- * Simulated speech doesn't say tags marked by $ now.
- * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
- * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
- * Error now given on missing briefing icon and bad ship normal data.
- * Solved more species divide by zero error.
- * Fixed neb cube crash.
- *
- * Revision 2.8  2004/02/06 21:26:07  Goober5000
- * fixed a small compatibility bug
- * --Goober5000
- *
- * Revision 2.7  2004/02/05 14:29:33  Goober5000
- * fixed the talking head error
- * --Goober5000
- *
- * Revision 2.6  2004/01/14 21:12:24  Goober5000
- * I think this will fix the problem of the death head ani sometimes incorrectly playing
- * --Goober5000
- *
- * Revision 2.5  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.4  2003/10/16 16:38:16  Kazan
- * couple more types in species_defs.cpp, also finished up "Da Species Upgrade"
- *
- * Revision 2.3  2003/09/07 18:14:53  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.2  2002/10/17 20:40:51  randomtiger
- * Added ability to remove HUD ingame on keypress shift O
- * So I've added a new key to the bind list and made use of already existing hud removal code.
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.4  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.3  2002/05/10 20:42:44  mharris
- * use "ifndef NO_NETWORK" all over the place
- *
- * Revision 1.2  2002/05/10 06:08:08  mharris
- * Porting... added ifndef NO_SOUND
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 32    9/12/99 8:09p Dave
- * Fixed problem where skip-training button would cause mission messages
- * not to get paged out for the current mission.
- * 
- * 31    9/01/99 2:52p Andsager
- * Add new heads to FRED and some debug code for playing heads
- * 
- * 30    8/28/99 7:29p Dave
- * Fixed wingmen persona messaging. Make sure locked turrets don't count
- * towards the # attacking a player.
- * 
- * 29    8/26/99 8:51p Dave
- * Gave multiplayer TvT messaging a heavy dose of sanity. Cheat codes.
- * 
- * 28    8/23/99 5:04p Jefff
- * Added new mission flag to disable built-in messages from playing.
- * Added fred support as well.
- * 
- * 27    8/19/99 10:12a Alanl
- * preload mission-specific messages on machines greater than 48MB
- * 
- * 26    8/18/99 12:09p Andsager
- * Add debug if message has no anim for message.  Make messages come from
- * wing leader.
- * 
- * 25    7/31/99 2:30p Dave
- * Added nifty mission message debug viewing keys.
- * 
- * 24    7/24/99 2:19p Dave
- * Fixed broken build.
- * 
- * 23    7/23/99 5:44p Andsager
- * make personas consistently choose same ship
- * 
- * 22    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 21    7/14/99 4:27p Andsager
- * Added multiple message debug check
- * 
- * 20    7/06/99 10:41a Andsager
- * Add AWACS need help messages
- * 
- * 19    7/02/99 11:16a Andsager
- * Removed mult message debug check.
- * 
- * 18    7/02/99 11:13a Andsager
- * max debug version
- * 
- * 17    6/16/99 10:20a Dave
- * Added send-message-list sexpression.
- * 
- * 16    6/14/99 5:53p Dave
- * Removed duplicate message check temporarily.
- * 
- * 15    6/10/99 3:43p Dave
- * Do a better job of syncing text colors to HUD gauges.
- * 
- * 14    6/09/99 2:56p Andsager
- * Check all messages for repeat.  Allow multiple versions of same message
- * if queued > 20 apart.
- * 
- * 13    6/07/99 11:33a Anoop
- * Get rid of erroneous Int3() in multiple message check.
- * 
- * 12    6/07/99 10:31a Andsager
- * Get rid of false multiplayer multiple messages catch.
- * 
- * 11    6/03/99 2:56p Andsager
- * DOH!!
- * 
- * 10    6/03/99 2:44p Andsager
- * Fix stupid bug in debug code.
- * 
- * 9     6/03/99 2:08p Andsager
- * Put in debug code to find multiple mission messages.
- * 
- * 8     3/29/99 6:17p Dave
- * More work on demo system. Got just about everything in except for
- * blowing ships up, secondary weapons and player death/warpout.
- * 
- * 7     1/28/99 12:19a Dave
- * Fixed a dumb debug build unhandled exception.
- * 
- * 6     1/07/99 10:08a Jasen
- * coords
- * 
- * 5     1/07/99 9:24a Dave
- * Put in hi-res coord support for head anim.
- * 
- * 4     11/05/98 4:18p Dave
- * First run nebula support. Beefed up localization a bit. Removed all
- * conditional compiles for foreign versions. Modified mission file
- * format.
- * 
- * 3     10/23/98 3:51p Dave
- * Full support for tstrings.tbl and foreign languages. All that remains
- * is to make it active in Fred.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 127   8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 126   6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 125   5/24/98 12:55a Mike
- * Fix bug with scream from Installation.  Should also fix bug with double
- * screams from some ships.
- * 
- * 124   5/18/98 6:06p Lawrance
- * Don't play messages or auto-target on first frame
- * 
- * 123   5/15/98 8:36p Lawrance
- * Add 'target ship that last sent transmission' target key
- * 
- * 122   5/09/98 10:00p Allender
- * make vasudan persona for support use terran support persona
- * 
- * 121   5/08/98 11:21a Allender
- * fix ingame join trouble.  Small messaging fix.  Enable collisions for
- * friendlies again
- * 
- * 120   5/06/98 12:19p Lawrance
- * Fix typo for 'Stray Warning Final'
- * 
- * 119   5/05/98 9:12p Allender
- * fix large problem introduced last checkin when changiing Assert to if
- * 
- * 118   5/05/98 4:12p Chad
- * changed Assert info if statement when removing messages from queue when
- * too old
- * 
- * 117   5/01/98 12:34p John
- * Added code to force FreeSpace to run in the same dir as exe and made
- * all the parse error messages a little nicer.
- * 
- * 116   4/27/98 9:00p Allender
- * mission specific messages from #<someone> are now sourced to terran
- * command
- * 
- * 115   4/26/98 11:35a Allender
- * make traitor message play by iteself in all cases
- * 
- * 114   4/25/98 11:49p Lawrance
- * Add Terran Command stray messages
- * 
- * 113   4/22/98 9:17a Allender
- * be sure that builtin command messages play with the correct hud source.
- * Also be sure that messages which get converted to Terran command to the
- * same
- * 
- * 112   4/20/98 1:30a Lawrance
- * Don't load head animations if talking head gauge is disabled.
- * 
- * 111   4/17/98 11:03a Allender
- * some rearm message being played too often and sent with incorrect
- * 'who-from'
- * 
- * 110   4/13/98 5:06p Lawrance
- * Cut off talking head about 250ms before wave ends
- * 
- * 109   4/10/98 9:14a Lawrance
- * fix up persona code for the demo
- * 
- * 108   4/09/98 2:15p Allender
- * fixed compiler warnings
- * 
- * 107   4/09/98 12:36p Allender
- * don't allow the same ship to have messages overlapping.  Put in code to
- * check for ship's existence (wingman only) before actually playing
- * message
- * 
- * 106   4/09/98 12:32a Lawrance
- * Fix bugs related to multiple screams from same ship, builtin messages
- * playing after screams, or praising while severly damaged.
- * 
- * 105   4/08/98 3:45p Allender
- * mission message overhaul.  Make message from any wingman mean any
- * wingman with that persona.  Terran command wave and ani's for dead
- * ships now play correctly.
- * 
- * 104   4/07/98 8:09p Lawrance
- * don't play talking heads in the demo
- * 
- * 103   4/07/98 5:30p Lawrance
- * Player can't send/receive messages when comm is destroyed.  Garble
- * messages when comm is damaged.
- * 
- * 102   4/07/98 5:26p Allender
- * low priority mission specific messages won't interrupt anything.
- * 
- * 101   4/07/98 10:51a Allender
- * remove any allied from message senders.  Make heads for mission
- * specific messages play appropriately
- * 
- * 100   4/07/98 12:04a Mike
- * New system for instructor chastising player if he fires at instructor.
- * 
- * 99    4/03/98 11:39a Lawrance
- * only allow 1 wingman persona in demo
- * 
- * 98    4/02/98 1:09p Allender
- * don't process messages before player "enters" mission (i.e. due to
- * player entry delay)
- * 
- * 97    4/02/98 10:06a Allender
- * wing arrival message for delta and epsilon wings
- * 
- * 96    4/01/98 10:47p Lawrance
- * Supporting builtin messages for rearm and repair requests
- * 
- * 95    3/25/98 8:43p Hoffoss
- * Changed anim_play() to not be so complex when you try and call it.
- * 
- * 94    3/24/98 12:46p Allender
- * save shipnum before killing currently playing message in preparation
- * for playing death scream.
- * 
- * 93    3/22/98 3:54p Andsager
- * AL: Prevent -1 index into Ships[] array when playing a scream
- * 
- * 92    3/18/98 10:20p Allender
- * force wingman scream when he's talking and then dies
- * 
- * 91    3/18/98 12:03p John
- * Marked all the new strings as externalized or not.
- * 
- * 90    3/17/98 4:01p Hoffoss
- * Added HUD_SOURCE_TERRAN_CMD and changed code to utilize it when a
- * message is being sent from Terran Command.
- * 
- * 89    3/05/98 10:18p Lawrance
- * Play voice cue sound when there is no voice file present
- * 
- * 88    3/02/98 5:42p John
- * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
- * afterburner.  Made gr_set_clip work good with negative x &y.  Made
- * model_caching be on by default.  Made each cached model have it's own
- * bitmap id.  Made asteroids not rotate when model_caching is on.  
- * 
- * 87    3/02/98 9:34a Allender
- * don't allow mission specific messages to timeout.  Assert when trying
- * to remove a mission specific messages from the queue.  Print out in the
- * log file if the voice didn't play.
- * 
- * 86    2/23/98 8:45a John
- * Externalized Strings
- * 
- * 85    2/20/98 8:33p Lawrance
- * Add the 'All Alone' message
- * 
- * 84    2/16/98 2:20p Allender
- * make death scream kill any other messages from that ship
- * 
- * 83    2/12/98 4:58p Lawrance
- * Add support for 'All Clear' radio message
- * 
- * 82    2/11/98 9:44p Allender
- * rearm repair code fixes.  hud support view shows abort status.  New
- * support ship killed message.  More network stats
- * 
- * 81    2/04/98 10:44p Allender
- * mark personas as not used between missions.   Don't ever randomly
- * choose a Vasudan persona
- * 
- * 80    1/29/98 11:38a Allender
- * support for Vasudan personas
- * 
- * 79    1/25/98 10:04p Lawrance
- * Fix nasty divide-by-zero bug in message_calc_anim_start_frame().
- * 
- * 78    1/24/98 4:46p Lawrance
- * add in support for new voice messasges
- * 
- * 77    1/22/98 5:13p Lawrance
- * pick useful starting frame when playing animation
- * 
- * 76    1/21/98 7:20p Lawrance
- * Make subsystem locking only work with line-of-sight, cleaned up locking
- * code, moved globals to player struct.
- * 
- * 75    1/21/98 11:54a Duncan
- * Commended out assert for the moment to allow Fred to run.  Mark can fix
- * this properly later, since he understands it.
- * 
- * 74    1/21/98 10:33a Allender
- * fixed up messaging code to play a random head when playing a builtin
- * message
- * 
- * 73    1/20/98 6:21p Lawrance
- * Stop animation from playing when voice clip ends early.
- * 
- * 72    1/20/98 3:43p Allender
- * don't queue messages when player becomes traitor
- * 
- * 71    1/20/98 12:52p Lawrance
- * Draw talking head as alpha-color bitmap, black out region behind
- * animation.
- * 
- * 70    1/20/98 10:20a Lawrance
- * Draw head animation as alpha-colored.
- * 
- * 69    1/18/98 9:51p Lawrance
- * Add support for 'Player Died' messages.
- * 
- * 68    1/14/98 9:49p Allender
- * removed 3'oclock and 9'oclock messages
- * 
- * 67    1/13/98 3:11p Allender
- * new messages for disable/disarm
- * 
- * 66    1/12/98 11:16p Lawrance
- * Wonderful HUD config.
- * 
- * 65    1/07/98 4:41p Allender
- * minor modification to special messages.  Fixed cargo_revealed problem
- * for multiplayer and problem with is-cargo-known sexpression
- * 
- * 64    12/15/97 12:14p Allender
- * implemented overlapping messages
- * 
- * 63    12/12/97 4:58p Allender
- * make messages interruptable.  Put in code to support multiple messages
- * at once, although this feature not fully implemented yet.
- * 
- * 62    12/04/97 9:37p Dave
- * Fixed a bunch of multiplayer messaging bugs.
- * 
- * 61    12/02/97 2:37p Allender
- * added asserts to be sure that an actual ship (i.e. not cargo or
- * otherwise) is the ship sending a message to the player
- *
- * $NoKeywords: $
- */
+
 
 
 #include "mission/missionmessage.h"
@@ -646,7 +25,6 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "localization/localize.h"
-#include "demo/demo.h"
 #include "hud/hudconfig.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
@@ -655,79 +33,83 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "mod_table/mod_table.h"
+#include "parse/scripting.h"
 
+SCP_vector<SCP_string> Builtin_moods;
+int Current_mission_mood;
 
-// here is a text list of the builtin message names.  These names are used to match against
-// names read in for builtin message radio bits to see what message to play.  These are
-// generic names, meaning that there will be the same message type for a number of different
-// personas
-char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
+int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES]; 
+// here is the list of the builtin message names and the settings which control how frequently
+// they are heard.  These names are used to match against names read in for builtin message 
+// radio bits to see what message to play.  
+// These are generic names, meaning that there will be the same message type for a 
+// number of different personas
+builtin_message Builtin_messages[] =
 {
 //XSTR:OFF
-	"Arrive Enemy",
-	"Attack Target",
-	"Beta Arrived",
-	"Check 6",
-	"Engage",
-	"Gamma Arrived",
-	"Help",
-	"Praise",
-	"Backup",
-	"Ignore Target",
-	"No",
-	"Oops 1",
-	"Permission",			// AL: no code support yet
-	"Stray",					// DA: no code support
-	"Depart",
-	"yes",
-	"Rearm on Way",
-	"On way",
-	"Rearm warping in",
-	"No Target",
-	"Docking Start",		// AL: no message seems to exist for this
-	"Repair Done",
-	"Repair Aborted",
-	"Traitor",
-	"Rearm",
-	"Disable Target",
-	"Disarm Target",
-	"Player Dead",
-	"Death",
-	"Support Killed",
-	"All Clear",			// DA: no code support
-	"All Alone",
-	"Repair",
-	"Delta Arrived",
-	"Epsilon Arrived",
-	"Instructor Hit",
-	"Instructor Attack",
-	"Stray Warning",
-	"Stray Warning Final",
-	"AWACS at 75",
-	"AWACS at 25"
-//XSTR:ON
+	{"Arrive Enemy",			100,	-1,		0}, 
+	{"Attack Target",			100,	-1,		0}, 
+	{"Beta Arrived",			100,	-1,		0}, 
+	{"Check 6",					100,	2,		6000}, 
+	{"Engage",					100,	-1,		0}, 
+	{"Gamma Arrived",			100,	-1,		0}, 
+	{"Help",					100,	10,		60000}, 
+	{"Praise",					100,	10,		60000}, 
+	{"Backup",					100,	-1,		0}, 
+	{"Ignore Target",			100,	-1,		0}, 
+	{"No",						100,	-1,		0}, 
+	{"Oops 1",					100,	-1,		0}, 
+	{"Permission",				100,	-1,		0}, 		// AL: no code support yet
+	{"Stray",					100,	-1,		0}, 			// DA: no code support
+	{"Depart",					100,	-1,		0}, 
+	{"yes",						100,	-1,		0}, 
+	{"Rearm on Way",			100,	-1,		0}, 
+	{"On way",					100,	-1,		0}, 
+	{"Rearm warping in",		100,	-1,		0}, 
+	{"No Target",				100,	-1,		0}, 
+	{"Docking Start",			100,	-1,		0}, 		// AL: no message seems to exist for this
+	{"Repair Done",				100,	-1,		0}, 
+	{"Repair Aborted",			100,	-1,		0}, 
+	{"Traitor",					100,	-1,		0}, 
+	{"Rearm",					100,	-1,		0}, 
+	{"Disable Target",			100,	-1,		0}, 
+	{"Disarm Target",			100,	-1,		0}, 
+	{"Player Dead",				100,	-1,		0}, 
+	{"Death",					50,		10,		60000}, 
+	{"Support Killed",			100,	-1,		0}, 
+	{"All Clear",				100,	-1,		0}, 			// DA: no code support
+	{"All Alone",				100,	-1,		0}, 
+	{"Repair",					100,	-1,		0}, 
+	{"Delta Arrived",			100,	-1,		0}, 
+	{"Epsilon Arrived",			100,	-1,		0}, 
+	{"Instructor Hit",			100,	-1,		0}, 
+	{"Instructor Attack",		100,	-1,		0}, 
+	{"Stray Warning",			100,	-1,		0}, 
+	{"Stray Warning Final",		100,	-1,		0}, 
+	{"AWACS at 75",				100,	-1,		0}, 
+	{"AWACS at 25",				100,	-1,		0}, 
+	{"Praise Self",				10,		4,		60000}, 
+	{"High Praise",				100,	-1,		0}, 
+	{"Rearm Primaries",			100,	-1,		0}, 
+	{"Primaries Low",			100,	-1,		0}, 
+	//XSTR:ON
 };
 
-MMessage Messages[MAX_MISSION_MESSAGES];
-int Message_times[MAX_MISSION_MESSAGES];
+SCP_vector<MMessage> Messages;
 
 int Num_messages, Num_message_avis, Num_message_waves;
 int Num_builtin_messages, Num_builtin_avis, Num_builtin_waves;
 
 int Message_debug_index = -1;
 
-message_extra Message_avis[MAX_MESSAGE_AVIS];
-message_extra Message_waves[MAX_MESSAGE_WAVES];
+SCP_vector<message_extra> Message_avis;
+SCP_vector<message_extra> Message_waves;
 
 #define MAX_PLAYING_MESSAGES		2
 
-#ifdef FS2_DEMO
-	#define MAX_WINGMAN_HEADS			1
-	#define MAX_COMMAND_HEADS			1
-#else
 #define MAX_WINGMAN_HEADS			2
 #define MAX_COMMAND_HEADS			3
-#endif
 
 //XSTR:OFF
 #define HEAD_PREFIX_STRING			"head-"
@@ -739,18 +121,22 @@ message_extra Message_waves[MAX_MESSAGE_WAVES];
 // variables to keep track of messages that are currently playing
 int Num_messages_playing;						// number of is a message currently playing?
 
-typedef struct pmessage {
-	anim_instance *anim;		// handle of anim currently playing
+/*typedef struct pmessage {
+	//anim_instance *anim;		// handle of anim currently playing
+	anim *anim_data;			// animation data to be used by the talking head HUD gauge handler
+	int start_frame;			// the start frame needed to play the animation
+	bool play_anim;			// used to tell HUD gauges if they should be playing or not
 	int wave;					// handle of wave currently playing
 	int id;						// id of message currently playing
 	int priority;				// priority of message currently playing
 	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
 	int builtin_type;			// if a builtin message, type of the message
-} pmessage;
+} pmessage;*/
 
-LOCAL pmessage Playing_messages[MAX_PLAYING_MESSAGES];
+pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
+int Message_expire;							// timestamp to extend the duration of message brackets when not using voice files
 
 // variables to control message queuing.  All new messages to the player are queued.  The array
 // will be ordered by priority, then time submitted.
@@ -798,6 +184,10 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 
 int Default_command_persona;
 
+// Goober5000
+// NOTE - these are truncated filenames, i.e. without extensions
+SCP_vector<SCP_string> generic_message_filenames;
+
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
 ///////////////////////////////////////////////////////////////////
@@ -825,8 +215,9 @@ int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-// forward declaration
-void message_maybe_distort_text(char *text);
+// forward declarations
+void message_maybe_distort_text(char *text, int shipnum);
+int comm_between_player_and_ship(int other_shipnum);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
@@ -881,12 +272,16 @@ void persona_parse()
 		}
 	}
 
+	if ( i == MAX_PERSONA_TYPES )
+		WarningEx(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
+
 	char cstrtemp[NAME_LENGTH];
 	if ( optional_string("+") )
 	{
+		int j;
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 
-		for (int j = 0; j < (int)Species_info.size(); j++)
+		for (j = 0; j < (int)Species_info.size(); j++)
 		{
 			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{
@@ -894,11 +289,10 @@ void persona_parse()
 				break;
 			}
 		}
+
+		if ( j == (int)Species_info.size() )
+			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
-
-	if ( i == MAX_PERSONA_TYPES )
-		Error(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
-
 
 	Num_personas++;
 }
@@ -907,56 +301,59 @@ void persona_parse()
 int add_avi( char *avi_name )
 {
 	int i;
+	message_extra extra; 
 
-	Assert ( Num_message_avis < MAX_MESSAGE_AVIS );
 	Assert (strlen(avi_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing avi being used here
-	for ( i = 0; i < Num_message_avis; i++ ) {
+	for ( i = 0; i < (int)Message_avis.size(); i++ ) {
 		if ( !stricmp(Message_avis[i].name, avi_name) )
 			return i;
 	}
 
 	// would have returned if a slot existed.
-	strcpy( Message_avis[Num_message_avis].name, avi_name );
-	Message_avis[Num_message_avis].num = -1;
+	generic_anim_init( &extra.anim_data );
+	strcpy_s( extra.name, avi_name );
+	strcpy_s( extra.anim_data.filename, avi_name);
+	extra.num = -1;
+	generic_anim_load(&extra.anim_data);
+	Message_avis.push_back(extra); 
 	Num_message_avis++;
-	return (Num_message_avis - 1);
+	return ((int)Message_avis.size() - 1);
 }
 
-int add_wave( char *wave_name )
+int add_wave( const char *wave_name )
 {
 	int i;
+	message_extra extra; 
 
-	Assert ( Num_message_waves < MAX_MESSAGE_WAVES );
 	Assert (strlen(wave_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing wave being used here
-	for ( i = 0; i < Num_message_waves; i++ ) {
+	for ( i = 0; i < (int)Message_waves.size(); i++ ) {
 		if ( !stricmp(Message_waves[i].name, wave_name) )
 			return i;
 	}
 
-	strcpy( Message_waves[Num_message_waves].name, wave_name );
-	Message_waves[Num_message_waves].num = -1;
+	generic_anim_init( &extra.anim_data );
+	strcpy_s( extra.name, wave_name );
+	extra.num = -1;
+	Message_waves.push_back(extra);
 	Num_message_waves++;
-	return (Num_message_waves - 1);
+	return ((int)Message_waves.size() - 1);
 }
 
 // parses an individual message
 void message_parse(bool importing_from_fsm)
 {
-	MissionMessage *msgp;
+	MissionMessage msg;
 	char persona_name[NAME_LENGTH];
 
-	Assert ( Num_messages < MAX_MISSION_MESSAGES );
-	msgp = &Messages[Num_messages];
-
 	required_string("$Name:");
-	stuff_string(msgp->name, F_NAME, NAME_LENGTH);
+	stuff_string(msg.name, F_NAME, NAME_LENGTH);
 
 	// team
-	msgp->multi_team = -1;
+	msg.multi_team = -1;
 	if(optional_string("$Team:")){
 		int mt;
 		stuff_int(&mt);
@@ -966,30 +363,33 @@ void message_parse(bool importing_from_fsm)
 			mt = -1;
 		}
 
-		// only bother with filters if multiplayer and TvT
-		if(Fred_running || ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) ){
-			msgp->multi_team = mt;
+		// only bother with filters in-game if multiplayer and TvT
+		if(Fred_running || (MULTI_TEAM) ){
+			msg.multi_team = mt;
 		}
 	}
 
 	// backwards compatibility for old fred missions - all new ones should use $MessageNew
 	if(optional_string("$Message:")){
-		stuff_string(msgp->message, F_MESSAGE, MESSAGE_LENGTH);
+		stuff_string(msg.message, F_MESSAGE, MESSAGE_LENGTH);
 	} else {
 		required_string("$MessageNew:");
-		stuff_string(msgp->message, F_MULTITEXT, MESSAGE_LENGTH);
+		stuff_string(msg.message, F_MULTITEXT, MESSAGE_LENGTH);
 	}
 
-	msgp->persona_index = -1;
+	msg.persona_index = -1;
 	if ( optional_string("+Persona:") ) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
-		msgp->persona_index = message_persona_name_lookup( persona_name );
+		msg.persona_index = message_persona_name_lookup( persona_name );
+
+		if ( msg.persona_index == -1 )
+			WarningEx(LOCATION, "Unknown persona in message %s in messages.tbl -- %s\n", msg.name, persona_name );
 	}
 
 	if ( !Fred_running)
-		msgp->avi_info.index = -1;
+		msg.avi_info.index = -1;
 	else
-		msgp->avi_info.name = NULL;
+		msg.avi_info.name = NULL;
 
 	if ( optional_string("+AVI Name:") ) {
 		char avi_name[MAX_FILENAME_LEN];
@@ -1002,68 +402,176 @@ void message_parse(bool importing_from_fsm)
 			avi_name[7] = '4';
 
 		if ( !Fred_running ) {
-			msgp->avi_info.index = add_avi(avi_name);
+			msg.avi_info.index = add_avi(avi_name);
 		} else {
-			msgp->avi_info.name = vm_strdup(avi_name);
+			msg.avi_info.name = vm_strdup(avi_name);
 		}
 	}
 
 	if ( !Fred_running )
-		msgp->wave_info.index = -1;
+		msg.wave_info.index = -1;
 	else
-		msgp->wave_info.name = NULL;
+		msg.wave_info.name = NULL;
 
 	if ( optional_string("+Wave Name:") ) {
 		char wave_name[MAX_FILENAME_LEN];
 
 		stuff_string(wave_name, F_NAME, MAX_FILENAME_LEN);
 		if ( !Fred_running ) {
-			msgp->wave_info.index = add_wave(wave_name);
+			msg.wave_info.index = add_wave(wave_name);
 		} else {
-			msgp->wave_info.name = vm_strdup(wave_name);
+			msg.wave_info.name = vm_strdup(wave_name);
+		}
+	}
+
+	if ( optional_string("$Mood:")) {
+		SCP_string buf; 
+		bool found = false;
+
+		stuff_string(buf, F_NAME); 
+		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
+			if (iter->compare(buf) == 0) {
+				msg.mood = iter - Builtin_moods.begin();
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			// found a mood, but it's not in the list of moods at the start of the table
+			Warning(LOCATION, "Message.tbl has an entry for mood type %s, but this mood is not in the #Moods section of the table.", buf.c_str()); 
+		}
+	}
+	else {
+		msg.mood = 0;
+	}
+
+	if ( optional_string("$Exclude Mood:")) {
+		SCP_vector<SCP_string> buff;
+		bool found = false;
+
+		stuff_string_list(buff); 
+		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
+			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
+				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
+					msg.excluded_moods.push_back(iter - Builtin_moods.begin());
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				// found a mood, but it's not in the list of moods at the start of the table
+				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_moods->c_str()); 
+			}
 		}
 	}
 
 	Num_messages++;
+	Messages.push_back(msg); 
+}
+
+void message_frequency_parse()
+{
+	char name[32];
+	int i, max_count, min_delay, occurrence_chance;  
+	int builtin_type = -1; 
+
+	required_string("$Name:");
+	stuff_string(name, F_NAME, NAME_LENGTH);
+
+	for (i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+		if (!strcmp(name, Builtin_messages[i].name)) {
+			builtin_type = i;
+			break;
+		}
+	}
+
+	if (builtin_type == -1) {
+		Warning(LOCATION, "Unknown Builtin Message Type Detected. Type : %s not supported", name);
+		return;
+	}
+
+	if (optional_string("+Occurrence Chance:")) {
+		stuff_int(&occurrence_chance); 
+		if ((occurrence_chance >= 0) && (occurrence_chance <= 100)) {
+			Builtin_messages[builtin_type].occurrence_chance = occurrence_chance;
+		}
+	}
+
+	if (optional_string("+Maximum Count:")) {
+		stuff_int(&max_count); 
+		if (max_count > -2) {
+			Builtin_messages[builtin_type].max_count = max_count;
+		}
+	}
+
+	if (optional_string("+Minimum Delay:")) {
+		stuff_int(&min_delay); 
+		if (min_delay > -1) {
+			Builtin_messages[builtin_type].min_delay = min_delay;
+		}
+	}	
+}
+
+void message_moods_parse()
+{	
+
+	while (required_string_either("#End", "$Mood:")){
+		SCP_string buf; 
+
+		required_string("$Mood:");
+		stuff_string(buf, F_NAME);
+
+		Builtin_moods.push_back(buf);
+	}
+
+	required_string("#End");
 }
 
 void parse_msgtbl()
 {
-	char *p1, *p2, *p3;
+	int i, j;
 
-	// open localization
-	lcl_ext_open();
+	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
+	Messages.reserve(500);
+	Message_waves.reserve(300);
+	Message_avis.reserve(30);
 
 	read_file_text("messages.tbl", CF_TYPE_TABLES);
 	reset_parse();
 	Num_messages = 0;
 	Num_personas = 0;
 
-	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
-	p1 = strstr(Mp, "#End");
-	*(p1+4)=0;
-	p1 = strstr(Mp, "2926");
-	if (p1)
+	// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
+	char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
+	if (pVawacs25)
 	{
-		p2 = strstr(p1, "Vawacs25.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
+		char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+		if (pAwacs75)
 		{
-			replace_one(p2, "Vawacs25.wav", "Awacs25.wav", 500);
-		}
-	}
-	p1 = strstr(Mp, "2927");
-	if (p1)
-	{
-		p2 = strstr(p1, "Awacs75.wav");
-		p3 = strstr(p1, "$Name");
-		if (p2 && p3 && (p2 < p3))
-		{
-			replace_one(p2, "Awacs75.wav", "Vawacs75.wav", 500);
+			// move the 'V' from the first filename to the second, and adjust the 'A' case
+			*pVawacs25 = 'A';
+			for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+				pVawacs25[i] = pVawacs25[i+1];
+			pAwacs75[-1] = 'V';
+			pAwacs75[0] = 'a';
 		}
 	}
 
-	// Goober5000 - now we can start parsing
+	// now we can start parsing
+	if (optional_string("#Message Frequencies")) {
+		while (!required_string_3("$Name:", "#Personas", "#Moods" )) {
+			message_frequency_parse();
+		}
+	}	
+
+	Builtin_moods.push_back("Default");
+	if (optional_string("#Moods")) {
+		message_moods_parse();
+	}	
+
+
 	required_string("#Personas");
 	while ( required_string_either("#Messages", "$Persona:")){
 		persona_parse();
@@ -1081,8 +589,60 @@ void parse_msgtbl()
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
 
-	// close localization
-	lcl_ext_close();
+	
+	memset(Valid_builtin_message_types, 0, sizeof(int)*MAX_BUILTIN_MESSAGE_TYPES); 
+	// now cycle through the messages to determine which type of builtins we have messages for
+	for (i = 0; i < Num_builtin_messages; i++) {
+		for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
+			if (!(stricmp(Messages[i].name, Builtin_messages[j].name))) {
+				Valid_builtin_message_types[j] = 1; 
+				break;
+			}
+		}
+	}
+
+
+	// additional table part!
+	generic_message_filenames.clear();
+	generic_message_filenames.push_back("none");
+	generic_message_filenames.push_back("cuevoice");
+	generic_message_filenames.push_back("emptymsg");
+	generic_message_filenames.push_back("generic");
+	generic_message_filenames.push_back("msgstart");
+
+	if (optional_string("#Simulated Speech Overrides"))
+	{
+		char filename[MAX_FILENAME_LEN];
+
+		while (required_string_either("#End", "$File Name:"))
+		{
+			required_string("$File Name:");
+			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+			// get extension
+			char *ptr = strchr(filename, '.');
+			if (ptr == NULL)
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+				continue;
+			}
+
+			// test extension
+			if (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav"))
+			{
+				Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+				continue;
+			}
+
+			// truncate extension
+			*ptr = '\0';
+
+			// add truncated file name
+			generic_message_filenames.push_back(filename);
+		}
+
+		required_string("#End");
+	}
 }
 
 // this is called at the start of each level
@@ -1102,6 +662,8 @@ void messages_init()
 		parse_msgtbl();
 		table_read = 1;
 	}
+
+	Current_mission_mood = 0;
 
 	// reset the number of messages that we have for this mission
 	Num_messages = Num_builtin_messages;
@@ -1126,7 +688,7 @@ void messages_init()
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
 	// sound system also get reset between missions!
 	for (i = 0; i < Num_builtin_avis; i++ ) {
-		Message_avis[i].anim_data = NULL;
+		generic_anim_unload(&Message_avis[i].anim_data);
 	}
 
 	for (i = 0; i < Num_builtin_waves; i++ ){
@@ -1136,7 +698,10 @@ void messages_init()
 	Message_shipnum = -1;
 	Num_messages_playing = 0;
 	for ( i = 0; i < MAX_PLAYING_MESSAGES; i++ ) {
-		Playing_messages[i].anim = NULL;
+		//Playing_messages[i].anim = NULL;
+		Playing_messages[i].anim_data = NULL;
+		Playing_messages[i].start_frame = -1;
+		Playing_messages[i].play_anim = false;
 		Playing_messages[i].wave = -1;
 		Playing_messages[i].id = -1;
 		Playing_messages[i].priority = -1;
@@ -1152,15 +717,15 @@ void messages_init()
 	Message_wave_muted = 0;
 	Next_mute_time = 1;
 
-	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
-
+	//wipe all the non-builtin messages
+	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end()); 
+	Message_avis.erase((Message_avis.begin()+Num_builtin_avis), Message_avis.end()); 
+	Message_waves.erase((Message_waves.begin()+Num_builtin_waves), Message_waves.end());
 }
 
 // free a loaded avi
 void message_mission_free_avi(int m_index)
 {
-	int rc = 0, try_count = 0;
-
 	// check for bogus index
 	if ( (m_index < 0) || (m_index >= Num_message_avis) )
 		return;
@@ -1170,21 +735,7 @@ void message_mission_free_avi(int m_index)
 	if ( !hud_gauge_active(HUD_TALKING_HEAD) )
 		return;
 
-	if (Message_avis[m_index].anim_data != NULL) {
-		do {
-			rc = anim_free( Message_avis[m_index].anim_data );
-			try_count++;
-
-			// -2 is to catch a point where the data isn't valid and we want
-			// to just abort right now rather than to keep trying
-			if (rc == -2)
-				break;
-
-			// stop at 25 tries to avoid a possible endless loop
-		} while ( rc && (try_count < 25) );
-
-		Message_avis[m_index].anim_data = NULL;
-	}
+	generic_anim_unload(&Message_avis[m_index].anim_data);
 }
 
 // called to do cleanup when leaving a mission
@@ -1271,9 +822,12 @@ void message_kill_all( int kill_all )
 
 	// kill sounds for all voices currently playing
 	for ( i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
+		/*if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
 			anim_stop_playing( Playing_messages[i].anim );
 			Playing_messages[i].anim=NULL;
+		}*/
+		if ( Playing_messages[i].play_anim) {
+			Playing_messages[i].play_anim = false;
 		}
 
 		if ( kill_all ) {
@@ -1297,10 +851,14 @@ void message_kill_playing( int message_num )
 {
 	Assert( message_num < Num_messages_playing );
 
-	if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
+	/*if ( (Playing_messages[message_num].anim != NULL) && anim_playing(Playing_messages[message_num].anim) ) {
 		anim_stop_playing( Playing_messages[message_num].anim );
 		Playing_messages[message_num].anim=NULL;
+	}*/
+	if ( Playing_messages[message_num].play_anim) {
+		Playing_messages[message_num].play_anim = false;
 	}
+
 	if ( (Playing_messages[message_num].wave != -1 ) && snd_is_playing(Playing_messages[message_num].wave) )
 		snd_stop( Playing_messages[message_num].wave );
 
@@ -1423,10 +981,7 @@ void message_remove_from_queue(message_q *q)
 //
 void message_load_wave(int index, const char *filename)
 {
-	if (index == -1) {
-		Int3();
-		return;
-	}
+	Assertion(index >= 0, "Invalid index passed!");
 
 	if ( Message_waves[index].num >= 0) {
 		return;
@@ -1438,8 +993,7 @@ void message_load_wave(int index, const char *filename)
 	}
 
 	game_snd tmp_gs;
-	memset(&tmp_gs, 0, sizeof(game_snd));
-	strcpy( tmp_gs.filename, filename );
+	strcpy_s( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0 );
 
 	if (Message_waves[index].num == -1)
@@ -1449,10 +1003,25 @@ void message_load_wave(int index, const char *filename)
 // Goober5000
 bool message_filename_is_generic(char *filename)
 {
-	if (!strnicmp(filename, "cuevoice.wav", 8)) return true;
-	if (!strnicmp(filename, "emptymsg.wav", 8)) return true;
-	if (!strnicmp(filename, "generic.wav", 7)) return true;
-	if (!strnicmp(filename, "msgstart.wav", 8)) return true;
+	char truncated_filename[MAX_FILENAME_LEN];
+
+	// truncate any file extension
+	strcpy_s(truncated_filename, filename);
+	char *ptr = strchr(truncated_filename, '.');
+
+	// extension must be a recognized sound file
+	if ((ptr == NULL) || (stricmp(ptr, ".ogg") && stricmp(ptr, ".wav")))
+		return false;
+
+	// truncate it
+	*ptr = '\0';
+
+	// test against the list
+	for (unsigned int i = 0; i < generic_message_filenames.size(); i++)
+	{
+		if (!stricmp(generic_message_filenames[i].c_str(), truncated_filename))
+			return true;
+	}
 
 	return false;
 }
@@ -1467,19 +1036,11 @@ bool message_play_wave( message_q *q )
 	MissionMessage *m;
 	char filename[MAX_FILENAME_LEN];
 
-	// check for multiple messages playing.  don't check builtin messages.
-	if (q->message_num >= Num_builtin_messages) {
-		if ( (f2fl(Missiontime - Message_times[q->message_num]) < 10) && (f2fl(Missiontime) > 10) ) {
-			// Int3();  // Get Andsager
-		}
-		Message_times[q->message_num] = Missiontime;
-	}
-
 	m = &Messages[q->message_num];
 
 	if ( m->wave_info.index >= 0 ) {
 		index = m->wave_info.index;
-		strcpy( filename, Message_waves[index].name );
+		strcpy_s( filename, Message_waves[index].name );
 
 		// Goober5000 - if we're using simulated speech, it should pre-empt the generic beeps
 		if (fsspeech_play_from(FSSPEECH_FROM_INGAME) && message_filename_is_generic(filename))
@@ -1501,9 +1062,9 @@ bool message_play_wave( message_q *q )
 
 			// prepend the command name, and then the rest of the filename.
 			p++;
-			strcpy( new_filename, COMMAND_WAVE_PREFIX );
-			strcat( new_filename, p );
-			strcpy( filename, new_filename );
+			strcpy_s( new_filename, COMMAND_WAVE_PREFIX );
+			strcat_s( new_filename, p );
+			strcpy_s( filename, new_filename );
 		}
 
 		// load the sound file into memory
@@ -1528,7 +1089,7 @@ bool message_play_wave( message_q *q )
 // input:	time	=>		time of voice clip, in ms
 //				ani	=>		pointer to anim data
 //				reverse	=>	flag to indicate that the start should be time ms from the end (used for death screams)
-int message_calc_anim_start_frame(int time, anim *ani, int reverse)
+void message_calc_anim_start_frame(int time, generic_anim *ani, int reverse)
 {
 	float	wave_time, anim_time;
 	int	start_frame;
@@ -1537,23 +1098,24 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 
 	// If no voice clip exists, start from beginning of anim
 	if ( time <= 0 ) {
-		return start_frame;
+		return;
 	}
 
 	// convert time to seconds
 	wave_time = time/1000.0f;
-	anim_time = ani->time;
+	anim_time = ani->total_time;
 
 	// If voice clip is longer than anim, start from beginning of anim
 	if ( wave_time >= (anim_time) ) {
-		return start_frame;
+		return;
 	}
 
+	float fps = ani->num_frames / ani->total_time;
 	if ( reverse ) {
-		start_frame = (ani->total_frames-1) - fl2i(ani->fps * wave_time + 0.5f);
+		start_frame = (ani->num_frames-1) - fl2i(fps * wave_time + 0.5f);
 	} else {
 		int num_frames_extra;
-		num_frames_extra = fl2i(ani->fps * (anim_time - wave_time) + 0.5f);
+		num_frames_extra = fl2i(fps * (anim_time - wave_time) + 0.5f);
 		if ( num_frames_extra > 0 ) {
 			start_frame=rand()%num_frames_extra;
 		}
@@ -1564,7 +1126,8 @@ int message_calc_anim_start_frame(int time, anim *ani, int reverse)
 		start_frame=0;
 	}
 
-	return start_frame;
+	ani->current_frame = start_frame;
+	ani->anim_time = start_frame / fps;
 }
 
 // Play animation associated with message
@@ -1576,7 +1139,7 @@ void message_play_anim( message_q *q )
 {
 	message_extra	*anim_info;
 	int				is_death_scream=0, persona_index=-1, rand_index=0;
-	char				ani_name[MAX_FILENAME_LEN], *p;
+	char				ani_name[MAX_FILENAME_LEN], temp[MAX_FILENAME_LEN], *p;
 	MissionMessage	*m;
 
 	// don't even bother with this stuff if the gauge is disabled - taylor
@@ -1594,7 +1157,7 @@ void message_play_anim( message_q *q )
 	anim_info = &Message_avis[m->avi_info.index];
 
 	// get the filename.  Strip off the extension since we won't need it anyway
-	strcpy(ani_name, anim_info->name);
+	strcpy_s(ani_name, anim_info->name);
 	p = strchr(ani_name, '.');			// gets us to the extension
 	if ( p ) {
 		*p = '\0';
@@ -1606,15 +1169,16 @@ void message_play_anim( message_q *q )
 
 	// support ships use a wingman head.
 	// terran command uses its own set of heads.
-	int subhead_selected = FALSE;
-	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
+	if ( (anim_info->anim_data.first_frame < 0) &&	// note, first_frame will be >= 0 when ani is an existing file, and will be < 0 when the file does not exist and needs a, b, or c appended
+		((q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1))) ) {
+		int subhead_selected = FALSE;
 		persona_index = m->persona_index;
 		
 		// if this ani should be converted to a terran command, set the persona to the command persona
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
 			persona_index = The_mission.command_persona;
-			strcpy( ani_name, COMMAND_HEAD_PREFIX );
+			strcpy_s( ani_name, COMMAND_HEAD_PREFIX );
 		}
 
 		// Goober5000 - guard against negative array indexing; this way, if no persona was
@@ -1629,26 +1193,33 @@ void message_play_anim( message_q *q )
 				} else {
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
 				}
-				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				strcpy_s(temp, ani_name);
+				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
 			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
 				// get a random head
 				// Goober5000 - *sigh*... if mission designers assign a command persona
 				// to a wingman head, they risk having the death ani play
-				Assert(strlen(ani_name) >= 7);
-				if (!strnicmp(ani_name+5,"CM",2) || !strnicmp(ani_name+5,"BS",2))	// Head-CM* or Head-BSH
-					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-				else
+				if ( !strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7) ) {
+					mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
 					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-				sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+				} else {
+					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
+				}
+
+				strcpy_s(temp, ani_name);
+				sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 				subhead_selected = TRUE;
+			} else {
+				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
 			}
 		}
 
 		if (!subhead_selected) {
 			// choose between a and b
 			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-			sprintf(ani_name, "%s%c", ani_name, 'a'+rand_index);
+			strcpy_s(temp, ani_name);
+			sprintf(ani_name, "%s%c", temp, 'a'+rand_index);
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
 		nprintf(("Messaging", "playing head %s for %s\n", ani_name, q->who_from));
@@ -1658,13 +1229,15 @@ void message_play_anim( message_q *q )
 	// the avi, set the top level index to -1 to avoid multiple tries at loading the flick.
 
 	// if there is something already here that's not this same file then go ahead a let go of it - taylor
-	if ( (anim_info->anim_data != NULL) && !strstr(anim_info->anim_data->name, ani_name) ) {
+	if ( !strstr(anim_info->anim_data.filename, ani_name) ) {
 		message_mission_free_avi( m->avi_info.index );
 	}
 
-	anim_info->anim_data = anim_load( ani_name, CF_TYPE_ANY, 0 );
+	generic_anim_init(&anim_info->anim_data, ani_name);
+	if(!Full_color_head_anis)
+			anim_info->anim_data.use_hud_color = true;
 
-	if ( anim_info->anim_data == NULL ) {
+	if ( generic_anim_stream(&anim_info->anim_data) < 0 ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));
 		m->avi_info.index = -1;			// if cannot load the avi -- set this index to -1 to avoid trying to load multiple times
 	}
@@ -1681,23 +1254,17 @@ void message_play_anim( message_q *q )
 		if ( hud_disabled() ) {
 			return;
 		}
-
-		int anim_start_frame;
-		anim_play_struct aps;
-
-		// figure out anim start frame
-		anim_start_frame = message_calc_anim_start_frame(Message_wave_duration, anim_info->anim_data, is_death_scream);
-		anim_play_init(&aps, anim_info->anim_data, Head_coords[gr_screen.res][0], Head_coords[gr_screen.res][1]);
-		aps.start_at = anim_start_frame;
-
-		// aps.color = &HUD_color_defaults[HUD_color_alpha];
-		aps.color = &HUD_config.clr[HUD_TALKING_HEAD];
-
-		Playing_messages[Num_messages_playing].anim = anim_play(&aps);
+		
+		anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		Playing_messages[Num_messages_playing].anim_data = &anim_info->anim_data;
+		message_calc_anim_start_frame(Message_wave_duration, &anim_info->anim_data, is_death_scream);
+		Playing_messages[Num_messages_playing].play_anim = true;
 	}
 }
 
-// process the message queue -- called once a frame
+/** 
+ * process the message queue -- called once a frame
+ */
 void message_queue_process()
 {	
 	char	buf[MESSAGE_LENGTH];
@@ -1705,6 +1272,8 @@ void message_queue_process()
 	message_q *q;
 	int i;
 	MissionMessage *m;
+	bool builtinMessage = false; // gcc doesn't like var decls crossed by goto's
+	object* sender = NULL;
 
 	// Don't play messages until first frame has been rendered
 	if ( Framecount < 2 ) {
@@ -1721,7 +1290,7 @@ void message_queue_process()
 			int ani_done, wave_done, j;
 
 			ani_done = 1;
-			if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+			if ( Playing_messages[i].play_anim )
 				ani_done = 0;
 
 			wave_done = 1;
@@ -1736,15 +1305,17 @@ void message_queue_process()
 
 			// AL 1-20-98: If voice message is done, kill the animation early
 			if ( (Playing_messages[i].wave != -1) && wave_done ) {
-				if ( !ani_done ) {
+				/*if ( !ani_done ) {
 					anim_stop_playing( Playing_messages[i].anim );
-				}
+				}*/
+				Playing_messages[i].play_anim = false;
 			}
 
 			//if player is a traitor remove all messages that aren't traitor related
 			if ((Playing_messages[i].builtin_type != MESSAGE_OOPS) && (Playing_messages[i].builtin_type != MESSAGE_HAMMER_SWINE)) {
 				if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
 					message_kill_playing(i);
+					Message_shipnum = -1;
 					i++;
 					continue;
 				}
@@ -1772,7 +1343,7 @@ void message_queue_process()
 
 			// if both ani and wave are done, mark internal variable so we can do next message on queue, and
 			// global variable to clear voice brackets on hud
-			if ( wave_done && ani_done ) {
+			if ( wave_done && ani_done && ( timestamp_elapsed(Message_expire) || (Playing_messages[i].wave != -1) || (Playing_messages[i].shipnum == -1) ) ) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
 				Message_shipnum = -1;
 				Num_messages_playing--;
@@ -1911,11 +1482,13 @@ void message_queue_process()
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
-	Message_shipnum = ship_name_lookup( q->who_from );
+	// Goober5000 - argh, don't conflate special sources with ships!
+	// NOTA BENE: don't check for != MESSAGE_SOURCE_COMMAND, because with the new command persona code, Command could be a ship
+	if ( q->source != MESSAGE_SOURCE_SPECIAL ) {
+		Message_shipnum = ship_name_lookup( q->who_from );
 
-	// see if we need to check if sending ship is alive
-	if ( q->flags & MQF_CHECK_ALIVE ) {
-		if ( Message_shipnum == -1 ) {
+		// see if we need to check if sending ship is alive
+		if ( (Message_shipnum < 0) && (q->flags & MQF_CHECK_ALIVE) ) {
 			goto all_done;
 		}
 	}
@@ -1931,7 +1504,7 @@ void message_queue_process()
 
 	// set up module globals for this message
 	m = &Messages[q->message_num];
-	Playing_messages[Num_messages_playing].anim = NULL;
+	Playing_messages[Num_messages_playing].anim_data = NULL;
 	Playing_messages[Num_messages_playing].wave  = -1;
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
@@ -1946,6 +1519,7 @@ void message_queue_process()
 	else
 		message_translate_tokens(buf, q->special_message);
 
+	Message_expire = timestamp(42 * strlen(buf));
 	// AL: added 07/14/97.. only play avi/sound if in gameplay
 	if ( gameseq_get_state() != GS_STATE_GAME_PLAY )
 		goto all_done;
@@ -1957,10 +1531,7 @@ void message_queue_process()
 
 	//	Don't play death scream unless a small ship.
 	if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-		int t = Ship_info[Ships[Message_shipnum].ship_info_index].flags;
-		int t2 = SIF_SMALL_SHIP;
-		int t3 = t & t2;
-		if (!t3) {
+		if (!((Ship_info[Ships[Message_shipnum].ship_info_index].flags & SIF_SMALL_SHIP) || (Ships[Message_shipnum].flags2 & SF2_ALWAYS_DEATH_SCREAM)) ) {
 			goto all_done;
 		}
 	}
@@ -1971,22 +1542,20 @@ void message_queue_process()
 	}
 
 	// play animation for head
-	#ifndef DEMO // do we want this for FS2_DEMO
-		message_play_anim(q);
-	#endif
+	message_play_anim(q);
 	
 	// distort the message if comms system is damaged
-	message_maybe_distort_text(buf);
+	message_maybe_distort_text(buf, Message_shipnum);
 
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
 	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
-		strcat( buf, NOX("..(no wavefile for voice)"));
+		strcat_s( buf, NOX("..(no wavefile for voice)"));
 		snd_play(&Snds[SND_CUE_VOICE]);
 	}
 #endif
 	
-	strncpy (who_from, q->who_from, NAME_LENGTH);
+	strcpy_s (who_from, q->who_from);
 
 	// if this is a ship, do we use name or callsign or ship class?
 	if ( Message_shipnum >= 0 ) {
@@ -2000,11 +1569,29 @@ void message_queue_process()
 		}
 	}
 
-	HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
+	if ( !stricmp(who_from, "<none>") ) {
+		HUD_sourced_printf( q->source, NOX("%s"), buf );
+	} else HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
 	}
+
+	Script_system.SetHookVar("Name", 's', m->name);
+	Script_system.SetHookVar("Message", 's', buf);
+	Script_system.SetHookVar("SenderString", 's', who_from);
+
+	builtinMessage = q->builtin_type != -1;
+	Script_system.SetHookVar("Builtin", 'b', &builtinMessage);
+
+	if (Message_shipnum >= 0) {
+		sender = &Objects[Ships[Message_shipnum].objnum];
+	}
+	Script_system.SetHookObject("Sender", sender);
+
+	Script_system.RunCondition(CHA_MSGRECEIVED, 0, NULL, sender);
+
+	Script_system.RemHookVars(5, "Name", "Message", "SenderString", "Builtin", "Sender");
 
 all_done:
 	Num_messages_playing++;
@@ -2060,7 +1647,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	MessageQ[i].builtin_type = builtin_type;
 	MessageQ[i].min_delay_stamp = timestamp(delay);
 	MessageQ[i].group = group;
-	strcpy(MessageQ[i].who_from, who_from);
+	strcpy_s(MessageQ[i].who_from, who_from);
 
 	// Goober5000 - this shouldn't happen, but let's be safe
 	if (MessageQ[i].special_message != NULL)
@@ -2071,7 +1658,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// Goober5000 - replace variables if necessary
-	strcpy(temp_buf, Messages[message_num].message);
+	strcpy_s(temp_buf, Messages[message_num].message);
 	if (sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH))
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
@@ -2259,7 +1846,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				// exist, we will use Terran command
 				m_persona = Messages[i].persona_index;
 				if ( m_persona == -1 ) {
-					mprintf(("Warning:  Message %d has no persona assigned.\n", i));
+					mprintf(("Warning:  Message %s has no persona assigned.\n", Messages[i].name));
 				}
 
 				// get a ship. we allow silenced ships since this is a unique messange and therefore the mission designer 
@@ -2281,9 +1868,8 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				shipp = (ship *)data;
 				who_from = shipp->ship_name;
 				source = HUD_team_get_source(shipp->team);
-
-				// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-				Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
+			} else if ( m_source == MESSAGE_SOURCE_NONE ) {
+				who_from = "<none>";
 			}
 
 			// not multiplayer or this message is for me, then queue it
@@ -2294,15 +1880,9 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 				message_queue_message( i, priority, MESSAGE_TIME_ANYTIME, who_from, source, group, delay );
 			}
 
-			// record to the demo if necessary
-			if(Game_mode & GM_DEMO_RECORD){
-				demo_POST_unique_message(id, who_from, m_source, priority);
-			}
-			// }
-
 			// send a message packet to a player if destined for everyone or only a specific person
 			if ( MULTIPLAYER_MASTER ){
-				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1);
+				send_mission_message_packet( i, who_from, priority, MESSAGE_TIME_SOON, source, -1, -1, -1, delay);
 			}			
 
 			return;		// all done with displaying		
@@ -2311,13 +1891,32 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 	nprintf (("messaging", "Couldn't find message id %s to send to player!\n", id ));
 }
 
+#define BUILTIN_MATCHES_TYPE					0
+#define BUILTIN_MATCHES_SPECIES					1
+#define BUILTIN_MATCHES_PERSONA_CHECK_MOOD		2
+#define BUILTIN_MATCHES_PERSONA_EXCLUDED		3
+#define BUILTIN_MATCHES_PERSONA					4
+#define	BUILTIN_MATCHES_PERSONA_MOOD			5
+
+typedef	struct matching_builtin {
+		int type_of_match;
+		int message_index;
+}matching_builtin;
+
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
 // the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index = -1;
-	int source;	
+	int i, persona_index = -1, persona_species = -1, message_index = -1, random_selection = -1;
+	int source;
+	int num_matching_builtins = 0;
+	char *who_from;
+	int best_match = -1;
+
+	matching_builtin *current_builtin = new matching_builtin(); 
+	SCP_vector <matching_builtin> matching_builtins; 
+
 
 	// if we aren't showing builtin msgs, bail
 	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
@@ -2326,6 +1925,25 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
 	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
 		return;
+
+	// builtin type isn't supported by this version of the table
+	if (!Valid_builtin_message_types[type]) {
+		// downgrade certain message types to more generic ones more likely to be supported
+		if (type == MESSAGE_HIGH_PRAISE ) {
+			type = MESSAGE_PRAISE; 
+		}
+		else if ( type == MESSAGE_REARM_PRIMARIES ) {
+			type = MESSAGE_REARM_REQUEST; 
+		}
+		else {
+			return;
+		}
+
+		// check if the downgraded type is also invalid
+		if (!Valid_builtin_message_types[type]) {
+			return;
+		}
+	}
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
@@ -2346,87 +1964,142 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
 
+	char *name = Builtin_messages[type].name;
+
+	if (persona_index >= 0) {
+		persona_species = Personas[persona_index].species;
+	}
+
 	// try to find a builtin message with the given type for the given persona
-	// make a loop out of this routne since we may try to play a message in the wrong
-	// persona if we can't find the right message for the given persona
-	do {
-		for ( i = 0; i < Num_builtin_messages; i++ ) {
-			char *name, *who_from;
+	// we may try to play a message in the wrong persona if we can't find the right message for the given persona
+	for ( i = 0; i < Num_builtin_messages; i++ ) {
+		// check the type of message
+		if ( !stricmp(Messages[i].name, name) ) {
+			// condition 1: we have a type match
+			current_builtin->message_index = i;
+			current_builtin->type_of_match =  BUILTIN_MATCHES_TYPE; 
 
-			name = Builtin_message_types[type];
-
-			// see if the have the type of message
-			if ( stricmp(Messages[i].name, name) ){
-				continue;
+			// check the species of this persona (if required)
+			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
+				// condition 2: we have a type + species match
+				current_builtin->type_of_match =  BUILTIN_MATCHES_SPECIES; 
 			}
 
-			// must have the correct persona.  persona_index of -1 means find the first
-			// message possibly of the correct type
-			if ( (persona_index != -1 ) && (Messages[i].persona_index != persona_index) ){
-				continue;
+			// check the exact persona (if required)
+			// NOTE: doesn't need to be nested under the species condition above
+			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
+				// condition 3: type + species + persona index match	
+				current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
 			}
 
-			// get who this message is from -- kind of a hack since we assume Terran Command in the
-			// absence of a ship.  This will be fixed later
-			if ( shipp ) {
-				who_from = shipp->ship_name;
-				source = HUD_team_get_source( shipp->team );
-			} else {
-				who_from = The_mission.command_sender;
-
-				// Goober5000 - if Command is a ship that is present, change the source accordingly
-				int shipnum = ship_name_lookup(who_from);
-				if (shipnum >= 0)
-					source = HUD_team_get_source( Ships[shipnum].team );
-				else
-					source = HUD_SOURCE_TERRAN_CMD;
-			}
-
-			// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
-			if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
-				who_from = SUPPORT_NAME;
-			}
-
-			// determine what we should actually do with this dang message.  In multiplayer, we must
-			// deal with the fact that this message might not get played on my machine if I am a server
-
-			// not multiplayer or this message is for me, then queue it
-			if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
-
-				// if this filter matches mine
-				if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
-					message_queue_message( i, priority, timing, who_from, source, group, delay, type );
-
-					// post a builtin message
-					if(Game_mode & GM_DEMO_RECORD){
-						demo_POST_builtin_message(type, shipp, priority, timing);
+			// check if the personas mood suits this particular message, first check if it is excluded
+			if (!Messages[i].excluded_moods.empty() && (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
+				for (SCP_vector<int>::iterator iter = Messages[i].excluded_moods.begin(); iter != Messages[i].excluded_moods.end(); ++iter) {
+					if (*iter == Current_mission_mood) {
+						current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
+						break; 
 					}
 				}
 			}
 
-			// send a message packet to a player if destined for everyone or only a specific person
-			if ( MULTIPLAYER_MASTER ) {
-				// only send a message if it is of a particular type
-				if(multi_target == -1){
-					if(multi_message_should_broadcast(type)){				
-						send_mission_message_packet( i, who_from, priority, timing, source, type, -1, multi_team_filter );
-					}
-				} else {
-					send_mission_message_packet( i, who_from, priority, timing, source, type, multi_target, multi_team_filter );
+			if (current_builtin->type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
+				if (Current_mission_mood == Messages[i].mood) {
+					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
 				}
+				else {
+					current_builtin->type_of_match =  BUILTIN_MATCHES_PERSONA; 
+				}
+			}			
+
+			if (current_builtin->type_of_match == best_match) {
+				num_matching_builtins++;
+			}
+			// otherwise check to see if the this is the best kind of match we've found so far
+			else if (current_builtin->type_of_match > best_match) {
+				best_match = current_builtin->type_of_match; 
+				num_matching_builtins = 1;
 			}
 
-			return;		// all done with displaying
+			// add the match to our list
+			matching_builtins.push_back(*current_builtin); 
 		}
+	}
 
-		if ( persona_index >= 0 ) {
-			nprintf(("messaging", "Couldn't find builtin message %s for persona %d\n", Builtin_message_types[type], persona_index ));
-			nprintf(("messaging", "looking for message for any persona\n"));
-			persona_index = -1;
+	if (best_match == BUILTIN_MATCHES_PERSONA_EXCLUDED) {
+		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index ));
+		mprintf(("MESSAGING", "using an excluded message for this persona\n"));
+	}else if (best_match == BUILTIN_MATCHES_SPECIES) {
+		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		mprintf(("MESSAGING", "using a message for any persona of that species\n"));
+	} else if (best_match == BUILTIN_MATCHES_TYPE) {
+		mprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index ));
+		mprintf(("MESSAGING", "looking for message for any persona of any species\n"));
+	} else if (best_match < 0) {
+		mprintf(("MESSAGING", "Couldn't find any builtin message of type %d\n", type ));
+		Int3();
+		return; 
+	}
+	
+	// since we may have multiple builtins we need to pick one at random
+	random_selection = (int)(rand32() % num_matching_builtins) + 1; 
+
+	// loop through the vector until we have found enough elements of the correct matching type
+	for (i = 0; i < (int)matching_builtins.size(); i++) {
+		if (matching_builtins[i].type_of_match == best_match) {
+			random_selection--; 
+			if (random_selection == 0) {
+				message_index = matching_builtins[i].message_index;
+				break;
+			}
+		}
+	}
+
+	Assertion (random_selection == 0, "unable to randomly select built in message correctly, still have %d selections left", random_selection); 
+
+	// get who this message is from -- kind of a hack since we assume Terran Command in the
+	// absence of a ship.  This will be fixed later
+	if ( shipp ) {
+		who_from = shipp->ship_name;
+		source = HUD_team_get_source( shipp->team );
+	} else {
+		who_from = The_mission.command_sender;
+
+		// Goober5000 - if Command is a ship that is present, change the source accordingly
+		int shipnum = ship_name_lookup(who_from);
+		if (shipnum >= 0)
+			source = HUD_team_get_source( Ships[shipnum].team );
+		else
+			source = HUD_SOURCE_TERRAN_CMD;
+	}
+
+	// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
+	if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
+		who_from = SUPPORT_NAME;
+	}
+
+	// determine what we should actually do with this dang message.  In multiplayer, we must
+	// deal with the fact that this message might not get played on my machine if I am a server
+
+	// not multiplayer or this message is for me, then queue it
+	if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
+
+		// if this filter matches mine
+		if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
+			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type );
+		}
+	}
+
+	// send a message packet to a player if destined for everyone or only a specific person
+	if ( MULTIPLAYER_MASTER ) {
+		// only send a message if it is of a particular type
+		if(multi_target == -1){
+			if(multi_message_should_broadcast(type)){				
+				send_mission_message_packet( message_index, who_from, priority, timing, source, type, -1, multi_team_filter );
+			}
 		} else {
-			persona_index = -999;		// used here and the next line only -- hard code bad, but I'm lazy
+			send_mission_message_packet( message_index, who_from, priority, timing, source, type, multi_target, multi_team_filter );
 		}
-	} while ( persona_index != -999 );
+	}
 }
 
 // message_is_playing()
@@ -2454,7 +2127,6 @@ int message_persona_name_lookup( char *name )
 	return -1;
 }
 
-extern bool Sexp_Messages_Scrambled;
 // Blank out portions of the audio playback for the sound identified by Message_wave
 // This works by using the same Distort_pattern[][] that was used to distort the associated text
 void message_maybe_distort()
@@ -2476,9 +2148,7 @@ void message_maybe_distort()
 
 		was_muted = 0;
 
-		// added check to see if EMP effect was active
-		// 8/24/98 - DB
-		if ( (hud_communications_state(Player_ship) != COMM_OK) || emp_active_local() || Sexp_Messages_Scrambled ) {
+		if ( comm_between_player_and_ship(Playing_messages[i].shipnum) != COMM_OK) {
 			was_muted = Message_wave_muted;
 			if ( timestamp_elapsed(Next_mute_time) ) {
 				Next_mute_time = fl2i(Distort_patterns[Distort_num][Distort_next++] * Message_wave_duration);
@@ -2493,7 +2163,7 @@ void message_maybe_distort()
 					snd_set_volume(Playing_messages[i].wave, 0.0f);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, Master_sound_volume);
+					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
 			}
 		}
 	}
@@ -2509,11 +2179,11 @@ void message_maybe_distort()
 //					 Blank out portions of the sound based on Distort_num, this this is that same
 //					 data that will be used to blank out portions of the audio playback
 //
-void message_maybe_distort_text(char *text)
+void message_maybe_distort_text(char *text, int shipnum)
 {
 	int i, j, len, run, curr_offset, voice_duration, next_distort;
 
-	if ( (hud_communications_state(Player_ship) == COMM_OK) && !emp_active_local() && !Sexp_Messages_Scrambled ) { 
+	if ( comm_between_player_and_ship(shipnum) == COMM_OK ) { 
 		return;
 	}
 
@@ -2571,7 +2241,8 @@ int message_anim_is_playing()
 	int i;
 
 	for (i = 0; i < Num_messages_playing; i++ ) {
-		if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		//if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) )
+		if(Playing_messages[i].play_anim)
 			return 1;
 	}
 
@@ -2604,14 +2275,14 @@ void message_pagein_mission_messages()
 
 bool add_message(char *name, char *message, int persona_index, int multi_team)
 {
-	if (MAX_MISSION_MESSAGES == Num_messages)
-		return false;
-	strcpy(Messages[Num_messages].name, name);
-	strcpy(Messages[Num_messages].message, message);
-	Messages[Num_messages].persona_index = persona_index;
-	Messages[Num_messages].multi_team = multi_team;
-	Messages[Num_messages].avi_info.index = -1;
-	Messages[Num_messages].wave_info.index = -1;
+	MissionMessage msg; 
+	strcpy_s(msg.name, name);
+	strcpy_s(msg.message, message);
+	msg.persona_index = persona_index;
+	msg.multi_team = multi_team;
+	msg.avi_info.index = -1;
+	msg.wave_info.index = -1;
+	Messages.push_back(msg);
 	Num_messages++;
 
 	return true;
@@ -2623,7 +2294,7 @@ bool change_message(char *name, char *message, int persona_index, int multi_team
 	{
 		if (!strcmp(Messages[i].name, name)) 
 		{
-			strcpy(Messages[i].message, message);
+			strcpy_s(Messages[i].message, message);
 			Messages[i].persona_index = persona_index;
 			Messages[i].multi_team = multi_team;
 
@@ -2635,4 +2306,36 @@ bool change_message(char *name, char *message, int persona_index, int multi_team
 
 	// not found.. fall through
 	return add_message(name, message, persona_index, multi_team);
+}
+
+/**
+ * Ideally, this would return the minimum of the comm state between the player and the other ship.  In practice, retail has no checks whatsoever on a ship's ability
+ * to send messages unless that ship is the player, so such a change would require an AI profiles option and we must default to the player's state.  However, we
+ * have a bit of wiggle room with COMM_SCRAMBLED, because EMP effects are either transient or set by the newly enhanced scramble-messages SEXP.  Thus any comm
+ * dropout does not cause an unanticipated deviation in the mission design.
+ */
+int comm_between_player_and_ship(int other_shipnum)
+{
+	int player_comm_state = hud_communications_state(Player_ship);
+
+	if (other_shipnum < 0)
+		return player_comm_state;
+
+	int other_comm_state = hud_communications_state(&Ships[other_shipnum]);
+
+	/* here is where you would check the flag
+	if (hypothetical_ai_profiles_flag)
+	{
+		return MIN(player_comm_state, other_comm_state);
+	}
+	else
+	*/
+	{
+		if (player_comm_state == COMM_OK && other_comm_state == COMM_OK)
+			return COMM_OK;
+		else if (player_comm_state == COMM_SCRAMBLED || other_comm_state == COMM_SCRAMBLED)
+			return COMM_SCRAMBLED;
+		else
+			return player_comm_state;
+	}
 }

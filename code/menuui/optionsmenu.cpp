@@ -7,309 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.20.2.2 $
- * $Date: 2007-02-10 00:17:40 $
- * $Author: taylor $
- *
- * C module that contains functions to drive the Options user interface
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.20.2.1  2006/06/22 14:59:44  taylor
- * fix various things that Valgrind has been complaining about
- *
- * Revision 2.20  2006/05/27 16:59:05  taylor
- * comment out some code which used only if neither D3D nor OGL
- *
- * Revision 2.19  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.18  2005/10/10 17:21:05  taylor
- * remove NO_NETWORK
- *
- * Revision 2.17  2005/07/22 10:18:37  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.16  2005/07/13 03:15:50  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.15  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.14  2005/04/17 05:38:29  taylor
- * updated Linux joystick code that's a bit less insane speed wise
- * remove ability to build without joystick support, no reason to keep it around
- * fix unusable warning flag with libjpeg building
- *
- * Revision 2.13  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.12  2005/02/23 04:51:56  taylor
- * some bm_unload() -> bm_release() changes to save bmpman slots
- *
- * Revision 2.11  2005/01/31 23:27:53  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.10  2004/12/02 11:18:15  taylor
- * make OGL use same gamma reg setting as D3D since it's the same ramp
- * have OGL respect the -no_set_gamma cmdline option
- * reset gamma to default on OGL exit to make sure the desktop doesn't stay wrong
- *
- * Revision 2.9  2004/10/31 21:53:23  taylor
- * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
- *
- * Revision 2.8  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.7  2004/07/12 16:32:53  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.6  2004/05/25 00:38:11  wmcoolmon
- * Updated function calls for VC7 use
- *
- * Revision 2.5  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2004/02/14 00:18:33  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.3  2003/10/16 17:36:29  randomtiger
- * D3D now has its own gamma system (stored in GammaD3D reg entry) that effects everything.
- * Put in Bobs specular fog fix.
- *
- * Revision 2.2  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.7  2002/05/17 03:05:08  mharris
- * more porting tweaks
- *
- * Revision 1.6  2002/05/16 06:06:23  mharris
- * ifndef NO_JOYSTICK
- *
- * Revision 1.5  2002/05/14 21:56:40  mharris
- * added more ifndef NO_SOUND
- *
- * Revision 1.4  2002/05/13 15:11:03  mharris
- * More NO_NETWORK ifndefs added
- *
- * Revision 1.3  2002/05/10 06:08:08  mharris
- * Porting... added ifndef NO_SOUND
- *
- * Revision 1.2  2002/05/07 02:58:44  mharris
- * make Buttons[] static
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 31    10/25/99 5:47p Jefff
- * reassigned some xstr ids
- * 
- * 30    10/14/99 2:50p Jefff
- * localization fixes
- * 
- * 29    9/13/99 6:07p Jefff
- * took out audiostream pausing to allow for correct volume adjustments
- * 
- * 28    9/09/99 2:28p Jefff
- * some detail slider #defines were switched around
- * 
- * 27    9/08/99 2:38p Jefff
- * sound pausing going to menu from game
- * 
- * 26    8/05/99 3:40p Jefff
- * hi-res text adjustments
- * 
- * 25    8/04/99 4:06p Jefff
- * fixed volume sliders blacking out at master volume of 1.0
- * 
- * 24    8/02/99 6:05p Jefff
- * failure sound on skill slider when disabled in game
- * 
- * 23    7/19/99 3:29p Dave
- * Fixed gamma bitmap in the options screen.
- * 
- * 22    7/19/99 2:13p Dave
- * Added some new strings for Heiko.
- * 
- * 21    7/18/99 9:54p Andsager
- * Demo build clean up
- * 
- * 20    7/15/99 7:15p Jefff
- * Added sounds for skill select
- * 
- * 19    7/15/99 4:10p Andsager
- * Disable control_config hud_config in FS2_DEMO
- * 
- * 18    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 17    7/13/99 1:15p Dave
- * 32 bit support. Whee!
- * 
- * 16    7/09/99 5:54p Dave
- * Seperated cruiser types into individual types. Added tons of new
- * briefing icons. Campaign screen.
- * 
- * 15    6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 14    6/24/99 12:34a Dave
- * Main options screen.
- * 
- * 13    6/22/99 7:03p Dave
- * New detail options screen.
- * 
- * 12    6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 11    5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * 10    4/02/99 4:44p Jasenw
- * 
- * 9     2/05/99 7:22p Neilk
- * Fixed gamma bitmap and converted coordinates for multiple resolutions
- * 
- * 8     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 7     12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 6     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 5     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 4     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/09/98 2:57p Dave
- * Starting splitting up OS stuff.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 123   6/12/98 7:13p Hoffoss
- * Fixed options screen problem where it wasn't showing tooltips.
- * 
- * 122   6/12/98 4:52p Hoffoss
- * Added support for special characters in in forgeign languages.
- * 
- * 121   6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 120   6/05/98 9:50a Lawrance
- * OEM changes
- * 
- * 119   6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 118   5/24/98 4:42p Dan
- * AL: Fix several bugs related to pausing and enabling/disabling event
- * music
- * 
- * 117   5/20/98 5:18p John
- * Made the gamma box draw as a bitmap, not a bunch of pixels.  Speeds up
- * the menu dramatically.
- * 
- * 116   5/19/98 1:21p Duncan
- * Use 'InterfacePalette' instad of 'OptionsMainPalette'
- * 
- * 115   5/18/98 9:14p Dave
- * Put in network config files support.
- * 
- * 114   5/18/98 5:16p Hoffoss
- * Changed code to use new palette Jasen told me to use.
- * 
- * 113   5/16/98 3:40p Lawrance
- * Don't restore the original details unless they've been stored!
- * 
- * 112   5/13/98 10:03a Mitri
- * AL: Fix some bugs as a result of recent rearranging of code
- * 
- * 111   5/13/98 12:24a Lawrance
- * Only load required bitmaps and masks for the options screen
- * 
- * 110   5/08/98 3:52p Hoffoss
- * Fixed placement of gamma graphic.
- * 
- * 109   5/07/98 12:41p Hoffoss
- * Added joystick deadzone slider support and mouse on/off support.
- * 
- * 108   5/06/98 8:06p Dave
- * Made standalone reset properly under weird conditions. Tweak
- * optionsmulti screen. Upped MAX_WEAPONS to 350. Put in new launch
- * countdown anim. Minro ui fixes/tweaks.
- * 
- * 107   5/05/98 8:38p Hoffoss
- * Added sensitivity adjustment to options menu and made it save to pilot
- * file.
- * 
- * 106   4/27/98 9:00a Jasen
- * Updated coords for button change.
- * 
- * 105   4/25/98 3:33p Allender
- * do exit confirmation
- * 
- * 104   4/22/98 12:34a Dave
- * Make sure hud config and control config buttons draw properly in all
- * tab modes. Make small tab buttons light up correctly in multi options
- * screen.
- * 
- * 103   4/21/98 12:14a Allender
- * disable skill level buttons for multiplayer games
- * 
- * 102   4/20/98 6:04p Dave
- * Implement multidata cache flushing and xferring mission files to
- * multidata. Make sure observers can't change hud config. Fix pilot image
- * viewing in popup. Put in game status field. Tweaked multi options. 
- * 
- * 101   4/18/98 12:45p Dave
- * Aesthetic changes to multi options screen. Put in missing exit button.
- * oops.
- * 
- * 100   4/17/98 5:27p Dave
- * More work on the multi options screen. Fixed many minor ui todo bugs.
- *  
- *
- * $NoKeywords: $
- *
-*/
+
 
 
 #include "menuui/optionsmenu.h"
@@ -317,7 +15,7 @@
 #include "bmpman/bmpman.h"
 #include "gamesequence/gamesequence.h"
 #include "io/key.h"
-#include "playerman/managepilot.h"
+#include "pilotfile/pilotfile.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesnd/eventmusic.h"
@@ -332,7 +30,7 @@
 #include "globalincs/alphacolors.h"
 #include "io/timer.h"
 #include "nebula/neb.h"
-#include "weapon/beam.h"
+#include "weapon/weapon.h"
 #include "network/multi.h"
 #include "menuui/optionsmenumulti.h"
 
@@ -488,7 +186,7 @@ op_sliders Options_sliders[GR_NUM_RESOLUTIONS][NUM_OPTIONS_SLIDERS] = {
 		op_sliders("2_OMB_10",		50,	223,	-1,	-1,	10,	32,	10,
 					  "2_OMB_11",		11,	361,	219,
 					  "2_OMB_09",		9,		7,		219 ),								// sound fx volume slider
-		op_sliders("2_OMB_13",		50,	281,	-1,	-1,	13,	32,	10,
+		op_sliders("2_OMB_13",		50,	279,	-1,	-1,	13,	32,	10,
 					  "2_OMB_14",		14,	361,	275,
 					  "2_OMB_12",		12,	7,		275 ),								// music volume slider
 		op_sliders("2_OMB_16",		50,	335,	-1,	-1,	16,	32,	10,
@@ -510,14 +208,14 @@ static struct {
 } Backgrounds[GR_NUM_RESOLUTIONS][NUM_TABS] = {
 //XSTR:OFF
 	{	// GR_640
-		{ "OptionsMain", "OptionsMain-M"},
-		{ "OptionsMulti", "OptionsMulti-M"},
-		{ "OptionsDetail", "OptionsDetail-M"},
+		{ "OptionsMain", "OptionsMain-M", -1, -1},
+		{ "OptionsMulti", "OptionsMulti-M", -1, -1},
+		{ "OptionsDetail", "OptionsDetail-M", -1, -1},
 	},
 	{	// GR_1024
-		{ "2_OptionsMain", "2_OptionsMain-M"},
-		{ "2_OptionsMulti", "2_OptionsMulti-M"},
-		{ "2_OptionsDetail", "2_OptionsDetail-M"},
+		{ "2_OptionsMain", "2_OptionsMain-M", -1, -1},
+		{ "2_OptionsMulti", "2_OptionsMulti-M", -1, -1},
+		{ "2_OptionsDetail", "2_OptionsDetail-M", -1, -1},
 	}
 //XSTR:ON
 };
@@ -554,7 +252,7 @@ void options_force_button_frame(int n, int frame_num);
 
 extern float FreeSpace_gamma;
 
-void options_add_notify(char *str);
+void options_add_notify(const char *str);
 void options_notify_do_frame();
 
 int Options_gamma_coords[GR_NUM_RESOLUTIONS][4] = {
@@ -777,9 +475,9 @@ void options_play_voice_clip()
 	Voice_vol_handle = snd_play_raw( snd_id, 0.0f, 1.0f, SND_PRIORITY_SINGLE_INSTANCE );
 }
 
-void options_add_notify(char *str)
+void options_add_notify(const char *str)
 {
-	strcpy(Options_notify_string, str);
+	strcpy_s(Options_notify_string, str);
 	Options_notify_stamp = timestamp(OPTIONS_NOTIFY_TIME);
 }
 
@@ -793,7 +491,7 @@ void options_notify_do_frame()
 
 		} else {
 			gr_get_string_size(&w, &h, Options_notify_string);
-			gr_printf((gr_screen.max_w - w) / 2, OPTIONS_NOTIFY_Y, Options_notify_string);
+			gr_printf_menu((gr_screen.max_w_unscaled - w) / 2, OPTIONS_NOTIFY_Y, Options_notify_string);
 		}
 	}
 }
@@ -859,13 +557,7 @@ void options_tab_setup(int set_palette)
 	// do other special processing
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_select();
-
-			// need to hide the hud config and control config buttons
-			// Buttons[gr_screen.res][CONTROL_CONFIG_BUTTON].button.hide();
-			// Buttons[gr_screen.res][HUD_CONFIG_BUTTON].button.hide();
-#endif // DEMO
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -879,9 +571,7 @@ void options_tab_close()
 {
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_unselect();		
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -894,13 +584,6 @@ void options_change_tab(int n)
 {
 	int idx;
 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	if (n == MULTIPLAYER_TAB) {
-		game_feature_not_in_demo_popup();
-		return;
-	}
-#endif
-
 	switch (n) {
 		case MULTIPLAYER_TAB:
 			if ( Networking_disabled ) {
@@ -910,10 +593,8 @@ void options_change_tab(int n)
 
 			if ( !Options_multi_inited ) {
 				// init multiplayer
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 				options_multi_init(&Ui_window);
 				options_multi_unselect();
-#endif
 				Options_multi_inited = 1;
 			}
 
@@ -1019,11 +700,7 @@ void options_change_gamma(float delta)
 	gr_set_gamma(FreeSpace_gamma);
 	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
 
-//	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
-		os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
-//	} else {
-//		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
-//	}
+	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
 }
 
 void options_button_pressed(int n)
@@ -1052,10 +729,6 @@ void options_button_pressed(int n)
 			break;				
 
 		case HUD_CONFIG_BUTTON:
-#ifdef FS2_DEMO
-			game_feature_not_in_demo_popup();
-#else
-
 			// can't go to the hud config screen when a multiplayer observer
 			if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
 				gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -1065,7 +738,6 @@ void options_button_pressed(int n)
 
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_HUD_CONFIG);
-#endif
 			break;
 
 		case ACCEPT_BUTTON:
@@ -1215,9 +887,12 @@ void options_accept()
 {
 	// apply the selected multiplayer options
 	if ( Options_multi_inited ) {
-		#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
-		options_multi_accept();
-		#endif
+		// if we've failed to provide a PXO password or username but have turned on PXO, we don't want to quit
+		if (!options_multi_accept()) {
+			gamesnd_play_iface(SND_COMMIT_PRESSED);
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "PXO is selected but password or username is missing");
+			return;
+		}
 	}
 
 	// If music is zero volume, disable
@@ -1251,7 +926,7 @@ void options_menu_init()
 	Assert(!Options_menu_inited);
 
 	// pause all sounds, since we could get here through the game
-	beam_pause_sounds();
+	weapon_pause_sounds();
 	//audiostream_pause_all();
 
 	Tab = 0;
@@ -1346,8 +1021,6 @@ void options_menu_init()
 
 	Gamma_colors_inited = 0;
 
-	// used to allow all keystrokes, even when called from a demo playback
-	key_clear_filter();
 	Options_menu_inited = 1;
 
 	// hide options crap
@@ -1374,17 +1047,16 @@ void options_menu_close()
 		Voice_vol_handle = -1;
 	}
 
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 	options_multi_close();
-#endif
 
 	Ui_window.destroy();
 	common_free_interface_palette();		// restore game palette
-	write_pilot_file();
+	Pilot.save_player();
+	Pilot.save_savefile();
 	game_flush();
 	
 	// unpause all sounds, since we could be headed back to the game
-	beam_unpause_sounds();
+	weapon_unpause_sounds();
 	//audiostream_unpause_all();
 	
 	Options_menu_inited = 0;
@@ -1411,12 +1083,6 @@ void draw_gamma_box()
 		v = 0;
 	}
 
-	int Gamma_changed = 0;
-	if ( v != Gamma_last_set )	{
-		Gamma_changed = 1;
-	} else {
-		Gamma_changed = 0;
-	}
 	Gamma_last_set = v;
 
 	{
@@ -1458,7 +1124,7 @@ void draw_gamma_box()
 		// if we're in bitmap poly mode		
 		int Gamma_bitmap = bm_create( 16, Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD], Gamma_data, 0 );
 		gr_set_bitmap(Gamma_bitmap);
-		gr_bitmap( Options_gamma_coords[gr_screen.res][OPTIONS_X_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_Y_COORD] );
+		gr_bitmap( Options_gamma_coords[gr_screen.res][OPTIONS_X_COORD], Options_gamma_coords[gr_screen.res][OPTIONS_Y_COORD], GR_RESIZE_MENU );
 
 		bm_release( Gamma_bitmap );
 
@@ -1515,9 +1181,7 @@ void options_menu_do_frame(float frametime)
 			break;
 
 		case KEY_ESC:
-			// if(Tab != MULTIPLAYER_TAB){
-				options_cancel_exit();
-			// }
+			options_cancel_exit();
 			break;
 
 		case KEY_CTRLED | KEY_ENTER:
@@ -1548,7 +1212,7 @@ void options_menu_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(i);
 	if (i >= 0) {
 		gr_set_bitmap(i);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	Ui_window.draw();
@@ -1557,9 +1221,7 @@ void options_menu_do_frame(float frametime)
 	// do specific processing for the multiplayer tab
 	switch (Tab) {
 		case MULTIPLAYER_TAB:
-#if !defined(DEMO) && !defined(OEM_BUILD) // not for FS2_DEMO
 			options_multi_do(k);
-#endif
 			break;
 
 		case DETAIL_LEVELS_TAB:
@@ -1580,7 +1242,7 @@ void options_menu_do_frame(float frametime)
 		}
 	}
 
-	if ((i == NUM_TABS) /*&& (Tab != MULTIPLAYER_TAB)*/ ){
+	if (i == NUM_TABS){
 		Buttons[gr_screen.res][Tab].button.draw_forced(2);
 	}
 
@@ -1609,21 +1271,18 @@ void options_menu_do_frame(float frametime)
 		x = Options_skills_text_coords[gr_screen.res][OPTIONS_X_COORD];
 		y = Options_skills_text_coords[gr_screen.res][OPTIONS_Y_COORD];
 		gr_set_color_fast(&Color_bright_white);
-		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level));
-	}
+		gr_string(x + (Options_skills_text_coords[gr_screen.res][OPTIONS_W_COORD] / 2) - (w/2), y, Skill_level_names(Game_skill_level), GR_RESIZE_MENU);
 
-	
-	//==============================================================================
-	// Draw the gamma adjustment grid.
-	if (Tab == OPTIONS_TAB) {
+		//==============================================================================
+		// Draw the gamma adjustment grid.
 
 		draw_gamma_box();
 		
 		gr_set_color_fast(&Color_white);
-		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD]; //  + Options_gamma_num_coords[gr_screen.res][OPTIONS_W_COORD] / 2 - 12;
-		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD]; // + Options_gamma_num_coords[gr_screen.res][OPTIONS_H_COORD] / 2 - gr_get_font_height() / 2;
+		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD];
+		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD];
 
-		gr_printf(x, y, NOX("%.2f"), FreeSpace_gamma);
+		gr_printf_menu(x, y, NOX("%.2f"), FreeSpace_gamma);
 	}
 	//==============================================================================
 
@@ -1632,24 +1291,6 @@ void options_menu_do_frame(float frametime)
 		options_multi_vox_process_waveform();
 	}
 	
-/*  Debug code: Graphs the joystick range scaling
-{
-int joy_get_scaled_reading(int raw, int axn);
-	int x, y;
-
-	gr_set_color_fast(&Color_white);
-	for (x=0; x<256; x+=16) {
-		gr_line(x + 15, 0, x + 15, 255);
-		gr_line(0, x + 15, 255, x + 15);
-	}
-
-	gr_set_color_fast(&Color_bright_white);
-	for (x=0; x<256; x++) {
-		y = joy_get_scaled_reading(x * 256, 0) / 512;
-		gr_line(x, 128, x, 128 + y);
-	}
-}*/	
-
 	gr_flip();
 }
 

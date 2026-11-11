@@ -4,20 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/DeadObjectDock.cpp $
- * $Revision: 1.1.2.2 $
- * $Date: 2006-06-27 04:08:42 $
- * $Author: Goober5000 $
- *
- * Implementation of new docking system for dead objects
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.1  2006/06/27 04:07:10  Goober5000
- * handle docked objects during death roll
- * --Goober5000
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "object/deadobjectdock.h"
@@ -42,6 +29,16 @@ object *dock_get_first_dead_docked_object(object *objp)
 		return NULL;
 
 	return objp->dead_dock_list->docked_objp;
+}
+
+int dock_find_dead_dockpoint_used_by_object(object *objp, object *other_objp)
+{
+	dock_instance *result = dead_dock_find_instance(objp, other_objp);
+	
+	if (result == NULL)
+		return -1;
+	else
+		return result->dockpoint_used;
 }
 
 // dock management functions -------------------------------------------------------------------------------------
@@ -130,6 +127,17 @@ void dead_dock_remove_instance(object *objp, object *other_objp)
 		}
 
 		// delete it
+		vm_free(ptr);
+	}
+}
+
+// just free the list without worrying about undocking anything
+void dock_free_dead_dock_list(object *objp)
+{
+	while (objp->dead_dock_list != NULL)
+	{
+		dock_instance *ptr = objp->dead_dock_list;
+		objp->dead_dock_list = ptr->next;
 		vm_free(ptr);
 	}
 }

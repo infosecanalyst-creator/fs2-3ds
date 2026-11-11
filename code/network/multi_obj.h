@@ -10,13 +10,15 @@
 #ifndef _MULTI_NEW_OBJECT_UPDATE_HEADER_FILE
 #define _MULTI_NEW_OBJECT_UPDATE_HEADER_FILE
 
+#include "math/vecmat.h"
+
 // ---------------------------------------------------------------------------------------------------
 // OBJECT UPDATE DEFINES/VARS
 //
 #include "globalincs/pstypes.h"
 
 struct interp_info;
-struct object;
+class object;
 struct header;
 struct net_player;
 

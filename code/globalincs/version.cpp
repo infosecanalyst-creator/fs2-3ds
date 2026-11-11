@@ -7,47 +7,11 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/GlobalIncs/version.cpp $
- * $Revision: 2.4 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/07/26 20:47:31  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:47  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:07  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     8/09/99 2:21p Andsager
- * Fix patching from multiplayer direct to launcher update tab.
- * 
- * 3     8/06/99 3:32p Andsager
- * Handle update when no registry is set
- * 
- * 2     5/19/99 4:07p Dave
- * Moved versioning code into a nice isolated common place. Fixed up
- * updating code on the pxo screen. Fixed several stub problems.
- * 
- * 1     5/18/99 4:28p Dave
- * 
- * $NoKeywords: $
- */
+
 
 #include <stdio.h>
 #include <string.h>
+#include "globalincs/pstypes.h"
 #include "globalincs/version.h"
 #include "osapi/osregistry.h"
 
@@ -57,6 +21,7 @@
 //
 
 // Defines
+// NB: for compatibility reasons, this must not include the SVN revision
 #define VER(major, minor, build) (100*100*major+100*minor+build)
 #define MAX_LINE_LENGTH 512
 
@@ -71,6 +36,9 @@
 // 1 if same version
 // 2 if higher version
 // fills in user version and latest version values if non-NULL
+//
+// NB: since this function is only used for multiplayer (in multi_update.cpp - and actually commented out), and since multiplayer
+// doesn't care about SVN revisions, this function doesn't need to check the SVN revision
 int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, int *l_major, int *l_minor, int *l_build)
 {	
 	int usr_major, usr_minor, usr_build;
@@ -83,31 +51,30 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 	}
 
 	// grab the last line in file which isn't empty and isn't a comment
-	char buffer[MAX_LINE_LENGTH+1], verbuffer[MAX_LINE_LENGTH+1];
+	char buffer[MAX_LINE_LENGTH+1] = {0};
+	char verbuffer[MAX_LINE_LENGTH+1] = {0};
 
-	strcpy(verbuffer,"");
-	strcpy(buffer,"");
 	while ( !feof(f) ) {
 		// Read the line into a temporary buffer
 		fgets(buffer, MAX_LINE_LENGTH, f);
 
 		// take the \n off the end of it
-		if (strlen(buffer)>0 && buffer[strlen(buffer) - 1] == '\n')
+		if (buffer[0] != '\0' && buffer[strlen(buffer) - 1] == '\n')
 			buffer[strlen(buffer) - 1] = 0;
 
 		// If the line is empty, go get another one
-		if (strlen(buffer) == 0) continue;
+		if (buffer[0] == '\0') continue;
 
 		// If the line is a comment, go get another one
 		if (buffer[0] == VERSION_FILE_COMMENT_CHAR) continue;
 
 		// Line is a good one, so save it...
-		strcpy(verbuffer, buffer);
+		strcpy_s(verbuffer, buffer);
 	}
 	fclose(f);
 
 	// Make sure a version line was found
-	if (strlen(verbuffer) == 0) {
+	if (verbuffer[0] == '\0') {
 		// MessageBox(XSTR("Couldn't parse Version file!", 1205), XSTR("Error!", 1185), MB_OK|MB_ICONERROR);
 		return -1;
 	}

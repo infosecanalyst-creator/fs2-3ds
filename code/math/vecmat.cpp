@@ -7,374 +7,16 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.30.2.3 $
- * $Date: 2007-02-26 01:47:14 $
- * $Author: Goober5000 $
- *
- * C module containg functions for manipulating vectors and matricies
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.30.2.2  2006/09/13 03:12:35  taylor
- * might as well add this, just to be on the safe side (I haven't hit it anywhere, but it could be made into a warning if it starts getting hit)
- *
- * Revision 2.30.2.1  2006/08/19 04:38:46  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.30  2006/05/24 05:09:25  wmcoolmon
- * Fix for Mantis bug #0000922
- *
- * Revision 2.29  2006/04/12 22:23:41  taylor
- * compiler warning fixes to make GCC 4.1 shut the hell up
- *
- * Revision 2.28  2006/02/25 21:47:00  Goober5000
- * spelling
- *
- * Revision 2.27  2006/02/16 05:09:26  taylor
- * NULL vec warning fix (I don't really like this one that much so it may get replaced later)
- *
- * Revision 2.26  2005/10/22 06:26:30  taylor
- * couple of changes to NULL vec fixes which better match what Volition would have done (makes both Goober and myself happier :))
- * keep track of what was an error (even if erroneous) and why with "VECMAT-ERROR" comment
- *
- * Revision 2.25  2005/10/21 11:32:15  taylor
- * fix main NULL vec errors, still at least one left but these were those that happened most often:
- *   modelinterp.cpp:parse_tmap() -> first IS_VEC_NULL() check would fail, wasn't a second on reassign
- *   aicode.cpp:ai_path() -> when (Pl_objp->pos == gcvp), fixed globally in vecmat.cpp:vm_vec_dot_to_point()
- *
- * Revision 2.24  2005/07/22 09:59:30  Goober5000
- * unhide null vector bug
- * --Goober5000
- *
- * Revision 2.23  2005/04/05 05:53:18  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.22  2005/03/25 06:57:35  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.21  2005/03/24 23:36:13  taylor
- * fix compiler warnings with mismatched types and unused variables
- * cleanup some debug messages so they can be turned off if needed
- * get rid of extra strstr() check for thrusters since it should never get that far anyway
- * page_in/page_out of model glows should be better now
- * removed a bunch of unneeded casts and get type specific math functions right
- *
- * Revision 2.20  2005/03/19 18:02:34  bobboau
- * added new graphic functions for state blocks
- * also added a class formanageing a new effect
- *
- * Revision 2.19  2005/03/08 03:50:25  Goober5000
- * edited for language ;)
- * --Goober5000
- *
- * Revision 2.18  2005/03/03 06:05:29  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.17  2005/01/28 11:06:23  Goober5000
- * changed a bunch of transpose-rotate sequences to use unrotate instead
- * --Goober5000
- *
- * Revision 2.16  2005/01/27 05:26:07  Goober5000
- * added a useful bit of information to vm_vec_rotate and vm_vec_unrotate
- * --Goober5000
- *
- * Revision 2.15  2005/01/06 00:39:34  Goober5000
- * gah
- * --Goober5000
- *
- * Revision 2.14  2005/01/06 00:37:32  Goober5000
- * changed argument from dist to dist_squared
- * --Goober5000
- *
- * Revision 2.13  2005/01/06 00:27:34  Goober5000
- * added vm_vec_dist_squared_to_line
- * --Goober5000
- *
- * Revision 2.12  2004/10/31 21:49:49  taylor
- * fix math error that was hitting Assert()'s and making OGL models flip around for no reason
- *
- * Revision 2.11  2004/07/26 20:47:36  Kazan
- * remove MCD complete
- *
- * Revision 2.10  2004/07/12 16:32:52  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.9  2004/05/03 09:27:16  randomtiger
- * fl_abs(theta_goal.xyz.z) < 0.001f is reporting using mprintf now instead of assert
- *
- * Revision 2.8  2004/02/14 00:18:33  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.7  2004/02/13 04:17:13  randomtiger
- * Turned off fog in OGL for Fred.
- * Simulated speech doesn't say tags marked by $ now.
- * The following are fixes to issues that came up testing TBP in fs2_open and fred2_open:
- * Changed vm_vec_mag and parse_tmap to fail gracefully on bad data.
- * Error now given on missing briefing icon and bad ship normal data.
- * Solved more species divide by zero error.
- * Fixed neb cube crash.
- *
- * Revision 2.6  2003/10/14 16:27:01  Goober5000
- * commented back in null vector warning, because any code that flags this
- * is buggy and should be fixed (and it only pops up in release builds anyway)
- * --Goober5000
- *
- * Revision 2.5  2003/10/13 05:57:48  Kazan
- * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap
- * Added "beam no whack" flag for beams - said beams NEVER whack
- * Some reliability updates in FS2NetD
- *
- * Revision 2.4  2003/03/02 07:39:34  penguin
- * Added type for static var
- *  - penguin
- *
- * Revision 2.3  2003/02/25 06:22:48  bobboau
- * fixed a bunch of fighter beam bugs,
- * most notabley the sound now works corectly,
- * and they have limeted range with atenuated damage (table option)
- * added bank specific compatabilities
- *
- * Revision 2.2  2002/12/07 01:37:41  bobboau
- * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
- * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
- * it needs a better renderer, but is in prety good shape for now,
- * I also (think) I squashed a bug in the warpmodel code
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:08  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 10    9/08/99 3:36p Jefff
- * Make sure argument of sqrt is positive in approach.
- * 
- * 9     6/22/99 1:51p Danw
- * Some sanity for vm_vec_dist_to_line(...)
- * 
- * 8     6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 7     4/28/99 11:13p Dave
- * Temporary checkin of artillery code.
- * 
- * 6     1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 5     1/12/99 12:53a Dave
- * More work on beam weapons - made collision detection very efficient -
- * collide against all object types properly - made 3 movement types
- * smooth. Put in test code to check for possible non-darkening pixels on
- * object textures.
- * 
- * 4     1/06/99 2:24p Dave
- * Stubs and release build fixes.
- * 
- * 3     11/18/98 4:10p Johnson
- * Add assert in vm_interpolate_matrix
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 72    9/11/98 10:10a Andsager
- * Optimize and rename matrix_decomp to vm_matrix_to_rot_axis_and_angle,
- * rename quatern_rot to vm_quaternion_rotate
- * 
- * 71    5/01/98 2:25p Andsager
- * Fix bug in matrix interpolate (approach) when in rotvel is above limit.
- * 
- * 70    4/07/98 3:10p Andsager
- * Make vm_test_parallel based on absolute difference.  Optimize matrix
- * decomp.  Fix potential bug in get_camera_limits with time = 0.
- * Optimize vm_forward_interpolate.
- * 
- * 69    4/06/98 8:54a Andsager
- * Fix bug where matrix interpolate gets accel of 0
- * 
- * 68    4/03/98 5:34p Andsager
- * Optimized approach and away (used in matrix interpolation)
- * 
- * 67    4/01/98 9:21p John
- * Made NDEBUG, optimized build with no warnings or errors.
- * 
- * 66    3/23/98 1:12p Andsager
- * Reformat matrix inerpolation code
- * 
- * 65    3/23/98 12:53p Andsager
- * 
- * 63    3/09/98 3:51p Mike
- * More error checking.
- * 
- * 62    2/26/98 3:28p John
- * Changed all sqrt's to use fl_sqrt.  Took out isqrt function
- * 
- * 61    2/02/98 5:12p Mike
- * Make vm_vec_rand_vec_quick() detect potential null vector condition and
- * recover.
- * 
- * 60    1/20/98 9:47a Mike
- * Suppress optimized compiler warnings.
- * Some secondary weapon work.
- * 
- * 59    12/17/97 5:44p Andsager
- * Change vm_matrix_interpolate so that it does not overshoot if optional
- * last parameter is 1
- * 
- * 58    9/30/97 5:04p Andsager
- * add vm_estimate_next_orientation
- * 
- * 57    9/28/97 2:17p Andsager
- * added vm_project_point_onto_plane
- * 
- * 56    9/09/97 10:15p Andsager
- * added vm_rotate_vec_to_body() and vm_rotate_vec_to_world()
- * 
- * 55    8/20/97 5:33p Andsager
- * added vm_vec_projection_parallel and vm_vec_projection_onto_surface
- * 
- * 54    8/20/97 9:51a Lawrance
- * swap x and y parameters in atan2_safe() to be consistent with library
- * atan2()
- * 
- * 53    8/20/97 9:40a Lawrance
- * modified special case values in atan2_safe()
- * 
- * 52    8/19/97 11:41p Lawrance
- * use atan2_safe() instead of atan2()
- * 
- * 51    8/18/97 4:46p Hoffoss
- * Added global default axis vector constants.
- * 
- * 50    8/03/97 3:54p Lawrance
- * added vm_find_bounding_sphere()
- * 
- * 49    7/28/97 3:40p Andsager
- * remove duplicate vm_forwarad_interpolate
- * 
- * 48    7/28/97 2:21p John
- * changed vecmat functions to not return src.  Started putting in code
- * for inline vector math.    Fixed some bugs with optimizer.
- * 
- * 47    7/28/97 3:24p Andsager
- * 
- * 46    7/28/97 2:41p Mike
- * Replace vm_forward_interpolate().
- * 
- * 45    7/28/97 1:18p Andsager
- * implement vm_fvec_matrix_interpolate(), which interpolates matrices on
- * xy and then z
- * 
- * 44    7/28/97 10:28a Mike
- * Use forward_interpolate() to prevent weird banking behavior.
- * 
- * Suppress a couple annoying mprints and clarify another.
- * 
- * 43    7/24/97 5:24p Andsager
- * implement forward vector interpolation
- * 
- * 42    7/10/97 8:52a Andsager
- * optimization and clarification of matrix_decomp()
- * 
- * 41    7/09/97 2:54p Mike
- * More matrix_decomp optimization.
- * 
- * 40    7/09/97 2:52p Mike
- * Optimize and error-prevent matrix_decomp().
- * 
- * 39    7/09/97 12:05a Mike
- * Error prevention in matrix_interpolate().
- * 
- * 38    7/07/97 11:58p Lawrance
- * add get_camera_limits()
- * 
- * 37    7/03/97 11:22a Mike
- * Fix bug in matrix_interpolate.  Was doing result = goal instead of
- * *result = *goal.
- * 
- * 36    7/03/97 9:27a Mike
- * Hook in Dave's latest version of matrix_interpolate which doesn't jerk.
- * 
- * 35    7/02/97 4:25p Mike
- * Add matrix_interpolate(), but don't call it.
- * 
- * 34    7/01/97 3:27p Mike
- * Improve skill level support.
- * 
- * 33    6/25/97 12:27p Hoffoss
- * Added some functions I needed for Fred.
- * 
- * 32    5/21/97 8:49a Lawrance
- * added vm_vec_same()
- * 
- * 31    4/15/97 4:00p Mike
- * Intermediate checkin caused by getting other files.  Working on camera
- * slewing system.
- * 
- * 30    4/10/97 3:20p Mike
- * Change hull damage to be like shields.
- * 
- * 29    3/17/97 1:55p Hoffoss
- * Added function for error checking matrices.
- * 
- * 28    3/11/97 10:46p Mike
- * Fix make_rand_vec_quick.  Was generating values in -0.5..1.5 instead of
- * -1.0..1.0.
- * 
- * 27    3/06/97 5:36p Mike
- * Change vec_normalize_safe() back to vec_normalize().
- * Spruce up docking a bit.
- * 
- * 26    3/06/97 10:56a Mike
- * Write error checking version of vm_vec_normalize().
- * Fix resultant problems.
- * 
- * 25    3/04/97 3:30p John
- * added function to interpolate an angle.
- * 
- * 24    2/26/97 10:32a John
- * changed debris collision to use vm_vec_dist_squared.  Changed
- * vm_vec_dist_squared to not int3 on bad values.
- * 
- * 23    2/25/97 5:54p Hoffoss
- * Improved vector and matrix compare functions.
- * 
- * 22    2/25/97 5:28p Hoffoss
- * added some commented out test code.
- * 
- * 21    2/25/97 5:12p John
- * Added functions to see if two matrices or vectors are close.
- * 
- * $NoKeywords: $
- *
-*/
+
 
 #include <stdio.h>
 #include <math.h>
+#if _M_IX86_FP >= 1
+	#include <xmmintrin.h>
+#endif
 
 #include "math/vecmat.h"
 #include "math/floating.h"
-
 
 
 #define	SMALL_NUM	1e-7
@@ -531,21 +173,6 @@ void vm_vec_sub2(vec3d *dest,vec3d *src)
 }
 #endif
 
-
-void vm_vert2vec(vertex *vert, vec3d *vec)	//takes a vertex and makes it into a vector-Bobboau
-{
-	vec->xyz.x = vert->x;
-	vec->xyz.y = vert->y;
-	vec->xyz.z = vert->z;
-}
-
-void vm_vec2vert(vec3d *vec, vertex *vert)	//takes a vector and makes it into a vertex-Bobboau
-{
-	vert->x = vec->xyz.x;
-	vert->y = vec->xyz.y;
-	vert->z = vec->xyz.z;
-}
-
 //averages n vectors. returns ptr to dest
 //dest can equal either source
 vec3d *vm_vec_avg_n(vec3d *dest, int n, vec3d src[])
@@ -694,31 +321,21 @@ float vm_vec_dot3(float x,float y,float z,vec3d *v)
 //returns magnitude of a vector
 float vm_vec_mag(vec3d *v)
 {
-	float x,y,z,mag1, mag2;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
+	float mag1;
 
-	mag1 = x+y+z;
+	mag1 = (v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z);
 
-	if ( mag1 < 0.0 )
-		return 0;
+	if (mag1 <= 0.0f) {
+		return 0.0f;
+	}
 
-	mag2 = fl_sqrt(mag1);
-	if ( mag2 < 0.0 )
-		Int3();
-	return mag2;
+	return fl_sqrt(mag1);
 }
 
 //returns squared magnitude of a vector, useful if you want to compare distances
 float vm_vec_mag_squared(vec3d *v)
 {
-	float x,y,z,mag1;
-	x = v->xyz.x*v->xyz.x;
-	y = v->xyz.y*v->xyz.y;
-	z = v->xyz.z*v->xyz.z;
-	mag1 = x+y+z;
-	return mag1;
+	return ((v->xyz.x * v->xyz.x) + (v->xyz.y * v->xyz.y) + (v->xyz.z * v->xyz.z));
 }
 
 float vm_vec_dist_squared(vec3d *v0, vec3d *v1)
@@ -768,14 +385,20 @@ float vm_vec_mag_quick(vec3d *v)
 		c = v->xyz.z;
 
 	if (a < b) {
-		float t=a; a=b; b=t;
+		t = a;
+		a = b;
+		b = t;
 	}
 
 	if (b < c) {
-		float t=b; b=c; c=t;
+		t = b;
+		b = c;
+		c = t;
 
 		if (a < b) {
-			float t=a; a=b; b=t;
+			t = a;
+			a = b;
+			b = t;
 		}
 	}
 
@@ -870,8 +493,16 @@ float vm_vec_normalize_safe(vec3d *v)
 //returns approximation of 1/magnitude of a vector
 float vm_vec_imag(vec3d *v)
 {
-//	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );	
-	return fl_isqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
+#if _M_IX86_FP < 1
+	return 1.0f / sqrt( (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z) );
+#else
+	float x = (v->xyz.x*v->xyz.x)+(v->xyz.y*v->xyz.y)+(v->xyz.z*v->xyz.z);
+	__m128  xx = _mm_load_ss( & x );
+	xx = _mm_rsqrt_ss( xx );
+	_mm_store_ss( & x, xx );
+
+	return x;
+#endif
 }
 
 //normalize a vector. returns 1/mag of source vec. uses approx 1/mag
@@ -991,6 +622,10 @@ float vm_vec_normalized_dir_quick_mag(vec3d *dest,vec3d *end,vec3d *start)
 //dest CANNOT equal either source
 vec3d *vm_vec_normal(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
 {
+	Assert(dest != p0);
+	Assert(dest != p1);
+	Assert(dest != p2);
+
 	vm_vec_perp(dest,p0,p1,p2);
 
 	vm_vec_normalize(dest);
@@ -1028,6 +663,10 @@ int vm_test_parallel(vec3d *src0, vec3d *src1)
 //dest CANNOT equal either source
 vec3d *vm_vec_perp(vec3d *dest,vec3d *p0,vec3d *p1,vec3d *p2)
 {
+	Assert(dest != p0);
+	Assert(dest != p1);
+	Assert(dest != p2);
+
 	vec3d t0,t1;
 
 	vm_vec_sub(&t0,p1,p0);
@@ -1169,6 +808,31 @@ matrix *vm_vec_ang_2_matrix(matrix *m,vec3d *v,float a)
 	return t;
 }
 
+//generate the vectors for the vm_vector_2_matrix() an vm_vector_2_matrix_norm() functions so we can avoid goto
+void vm_vector_2_matrix_gen_vectors(matrix *m)
+{
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
+	
+	if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
+		m->vec.rvec.xyz.x = 1.0f;
+		m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
+
+		m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
+	}
+	else { 		//not straight up or down
+
+		xvec->xyz.x = zvec->xyz.z;
+		xvec->xyz.y = 0.0f;
+		xvec->xyz.z = -zvec->xyz.x;
+
+		vm_vec_normalize(xvec);
+
+		vm_vec_crossprod(yvec,zvec,xvec);
+
+	}
+}
 
 //computes a matrix from one or more vectors. The forward vector is required,
 //with the other two being optional.  If both up & right vectors are passed,
@@ -1179,72 +843,44 @@ matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 {
 	vec3d *xvec=&m->vec.rvec,*yvec=&m->vec.uvec,*zvec=&m->vec.fvec;
 
-
 	Assert(fvec != NULL);
 
-	//	This had been commented out, but that's bogus.  Code below relies on a valid zvec.
+	//  This had been commented out, but that's bogus.  Code below relies on a valid zvec.
 	if (vm_vec_copy_normalize(zvec,fvec) == 0.0f) {
 		Assert(0);
 		return m;
 	}
 
 	if (uvec == NULL) {
-
-		if (rvec == NULL) {		//just forward vec
-
-bad_vector2:
-	;
-
-			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
-
-				m->vec.rvec.xyz.x = 1.0f;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0)?1.0f:-1.0f;
-
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
-			}
-			else { 		//not straight up or down
-
-				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = 0.0f;
-				xvec->xyz.z = -zvec->xyz.x;
-
-				vm_vec_normalize(xvec);
-
-				vm_vec_crossprod(yvec,zvec,xvec);
-
-			}
-
+		if (rvec == NULL) {     //just forward vec
+			vm_vector_2_matrix_gen_vectors(m);
 		}
-		else {						//use right vec
-
+		else {                      //use right vec
 			if (vm_vec_copy_normalize(xvec,rvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			if (vm_vec_normalize(yvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
-
 		}
 	}
-	else {		//use up vec
-
+	else {      //use up vec
 		if (vm_vec_copy_normalize(yvec,uvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		vm_vec_crossprod(xvec,yvec,zvec);
-		
+
 		//normalize new perpendicular vector
 		if (vm_vec_normalize(xvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
-
 	}
 	return m;
 }
@@ -1252,67 +888,39 @@ bad_vector2:
 //quicker version of vm_vector_2_matrix() that takes normalized vectors
 matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec)
 {
-	vec3d *xvec=&m->vec.rvec,*yvec=&m->vec.uvec,*zvec=&m->vec.fvec;
-
+	vec3d *xvec=&m->vec.rvec;
+	vec3d *yvec=&m->vec.uvec;
+	vec3d *zvec=&m->vec.fvec;
 
 	Assert(fvec != NULL);
 
 	*zvec = *fvec;
 
 	if (uvec == NULL) {
-
-		if (rvec == NULL) {		//just forward vec
-
-bad_vector2:
-	;
-
-			if ((zvec->xyz.x==0.0f) && (zvec->xyz.z==0.0f)) {		//forward vec is straight up or down
-
-				m->vec.rvec.xyz.x = 1.0f;
-				m->vec.uvec.xyz.z = (zvec->xyz.y<0.0f)?1.0f:-1.0f;
-
-				m->vec.rvec.xyz.y = m->vec.rvec.xyz.z = m->vec.uvec.xyz.x = m->vec.uvec.xyz.y = 0.0f;
-			}
-			else { 		//not straight up or down
-
-				xvec->xyz.x = zvec->xyz.z;
-				xvec->xyz.y = 0.0f;
-				xvec->xyz.z = -zvec->xyz.x;
-
-				vm_vec_normalize(xvec);
-
-				vm_vec_crossprod(yvec,zvec,xvec);
-
-			}
-
+		if (rvec == NULL) {     //just forward vec
+			vm_vector_2_matrix_gen_vectors(m);
 		}
-		else {						//use right vec
-
+		else {                      //use right vec
 			vm_vec_crossprod(yvec,zvec,xvec);
 
 			//normalize new perpendicular vector
 			if (vm_vec_normalize(yvec) == 0.0f)
-				goto bad_vector2;
+				vm_vector_2_matrix_gen_vectors(m);
 
 			//now recompute right vector, in case it wasn't entirely perpendiclar
 			vm_vec_crossprod(xvec,yvec,zvec);
-
 		}
 	}
-	else {		//use up vec
-
+	else {      //use up vec
 		vm_vec_crossprod(xvec,yvec,zvec);
-		
+
 		//normalize new perpendicular vector
 		if (vm_vec_normalize(xvec) == 0.0f)
-			goto bad_vector2;
+			vm_vector_2_matrix_gen_vectors(m);
 
 		//now recompute up vector, in case it wasn't entirely perpendiclar
 		vm_vec_crossprod(yvec,zvec,xvec);
-
 	}
-
-
 	return m;
 }
 
@@ -1324,6 +932,8 @@ bad_vector2:
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
 vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m)
 {
+	Assert(dest != src);
+
 	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.rvec.xyz.y)+(src->xyz.z*m->vec.rvec.xyz.z);
 	dest->xyz.y = (src->xyz.x*m->vec.uvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.uvec.xyz.z);
 	dest->xyz.z = (src->xyz.x*m->vec.fvec.xyz.x)+(src->xyz.y*m->vec.fvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.z);
@@ -1348,6 +958,8 @@ vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m)
 // also be a normalized vector.  It took me awhile to verify online that this was true. ;)
 vec3d *vm_vec_unrotate(vec3d *dest,vec3d *src,matrix *m)
 {
+	Assert(dest != src);
+
 	dest->xyz.x = (src->xyz.x*m->vec.rvec.xyz.x)+(src->xyz.y*m->vec.uvec.xyz.x)+(src->xyz.z*m->vec.fvec.xyz.x);
 	dest->xyz.y = (src->xyz.x*m->vec.rvec.xyz.y)+(src->xyz.y*m->vec.uvec.xyz.y)+(src->xyz.z*m->vec.fvec.xyz.y);
 	dest->xyz.z = (src->xyz.x*m->vec.rvec.xyz.z)+(src->xyz.y*m->vec.uvec.xyz.z)+(src->xyz.z*m->vec.fvec.xyz.z);
@@ -1371,19 +983,18 @@ matrix *vm_transpose_matrix(matrix *m)
 //dest CANNOT equal source. use vm_transpose_matrix() if this is the case
 matrix *vm_copy_transpose_matrix(matrix *dest,matrix *src)
 {
-
 	Assert(dest != src);
 
 	dest->vec.rvec.xyz.x = src->vec.rvec.xyz.x;
 	dest->vec.rvec.xyz.y = src->vec.uvec.xyz.x;
 	dest->vec.rvec.xyz.z = src->vec.fvec.xyz.x;
 
-	dest->vec.uvec.xyz.x = src->vec.rvec.xyz.y;
+	dest->vec.uvec.xyz.x = src->vec.rvec.xyz.y; //-V537
 	dest->vec.uvec.xyz.y = src->vec.uvec.xyz.y;
-	dest->vec.uvec.xyz.z = src->vec.fvec.xyz.y;
+	dest->vec.uvec.xyz.z = src->vec.fvec.xyz.y; //-V537
 
 	dest->vec.fvec.xyz.x = src->vec.rvec.xyz.z;
-	dest->vec.fvec.xyz.y = src->vec.uvec.xyz.z;
+	dest->vec.fvec.xyz.y = src->vec.uvec.xyz.z; //-V537
 	dest->vec.fvec.xyz.z = src->vec.fvec.xyz.z;
 
 
@@ -1394,7 +1005,6 @@ matrix *vm_copy_transpose_matrix(matrix *dest,matrix *src)
 //dest CANNOT equal either source
 matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1)
 {
-
 	Assert(dest!=src0 && dest!=src1);
 
 	dest->vec.rvec.xyz.x = vm_vec_dot3(src0->vec.rvec.xyz.x,src0->vec.uvec.xyz.x,src0->vec.fvec.xyz.x, &src1->vec.rvec);
@@ -1408,7 +1018,6 @@ matrix *vm_matrix_x_matrix(matrix *dest,matrix *src0,matrix *src1)
 	dest->vec.rvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.rvec);
 	dest->vec.uvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.uvec);
 	dest->vec.fvec.xyz.z = vm_vec_dot3(src0->vec.rvec.xyz.z,src0->vec.uvec.xyz.z,src0->vec.fvec.xyz.z, &src1->vec.fvec);
-
 
 	return dest;
 }
@@ -1456,6 +1065,46 @@ angles *vm_extract_angles_matrix(angles *a,matrix *m)
 			a->b = atan2_safe(sinb,cosb);
 	}
 
+
+	return a;
+}
+
+// alternate method for extracting angles which seems to be
+// less susceptible to rounding errors -- see section 8.7.2
+// (pages 278-281) of 3D Math Primer for Graphics and Game
+// Development, 2nd Edition
+// http://books.google.com/books?id=X3hmuhBoFF0C&printsec=frontcover#v=onepage&q&f=false
+angles *vm_extract_angles_matrix_alternate(angles *a, matrix *m)
+{
+	Assert(a != NULL);
+	Assert(m != NULL);
+
+	// Extract pitch from m32, being careful for domain errors with
+	// asin().  We could have values slightly out of range due to
+	// floating point arithmetic.
+	float sp = -m->vec.fvec.xyz.y;
+	if (sp <= -1.0f) {
+		a->p = -PI_2;	// -pi/2
+	} else if (sp >= 1.0f) {
+		a->p = PI_2;	// pi/2
+	} else {
+		a->p = asin(sp);
+	}
+
+	// Check for the Gimbal lock case, giving a slight tolerance
+	// for numerical imprecision
+	if (fabs(sp) > 0.9999f) {
+		// We are looking straight up or down.
+		// Slam bank to zero and just set heading
+		a->b = 0.0f;
+		a->h = atan2(-m->vec.rvec.xyz.z, m->vec.rvec.xyz.x);
+	} else {
+		// Compute heading
+		a->h = atan2(m->vec.fvec.xyz.x, m->vec.fvec.xyz.z);
+
+		// Compute bank
+		a->b = atan2(m->vec.rvec.xyz.y, m->vec.uvec.xyz.y);
+	}
 
 	return a;
 }
@@ -1558,12 +1207,12 @@ void vm_vec_outer_product(matrix *mat, vec3d *vec)
 	mat->vec.rvec.xyz.y = vec->xyz.x * vec->xyz.y;
 	mat->vec.rvec.xyz.z = vec->xyz.x * vec->xyz.z;
 
-	mat->vec.uvec.xyz.x = vec->xyz.y * vec->xyz.x;
+	mat->vec.uvec.xyz.x = vec->xyz.y * vec->xyz.x; //-V537
 	mat->vec.uvec.xyz.y = vec->xyz.y * vec->xyz.y;
-	mat->vec.uvec.xyz.z = vec->xyz.y * vec->xyz.z;
+	mat->vec.uvec.xyz.z = vec->xyz.y * vec->xyz.z; //-V537
 
 	mat->vec.fvec.xyz.x = vec->xyz.z * vec->xyz.x;
-	mat->vec.fvec.xyz.y = vec->xyz.z * vec->xyz.y;
+	mat->vec.fvec.xyz.y = vec->xyz.z * vec->xyz.y; //-V537
 	mat->vec.fvec.xyz.z = vec->xyz.z * vec->xyz.z;
 }
 
@@ -1582,7 +1231,7 @@ float find_nearest_point_on_line(vec3d *nearest_point, vec3d *p0, vec3d *p1, vec
 	vm_vec_sub(&norm, p1, p0);
 	vm_vec_sub(&xlated_int_pnt, int_pnt, p0);
 
-	if (IS_VEC_NULL(&norm)) {
+	if (IS_VEC_NULL_SQ_SAFE(&norm)) {
 		*nearest_point = *int_pnt;
 		return 9999.9f;
 	}
@@ -1647,7 +1296,7 @@ void vm_orthogonalize_matrix(matrix *m_src)
 	if (vm_vec_normalize(&m->vec.rvec) == 0.0f)
 		Error( LOCATION, "Bad vector!" );
 
-	//now recompute up vector, in case it wasn't entirely perpendiclar
+	//now recompute up vector, in case it wasn't entirely perpendicular
 	vm_vec_crossprod(&m->vec.uvec, &m->vec.fvec, &m->vec.rvec);
 	*m_src = tempm;
 }
@@ -1755,7 +1404,7 @@ void vm_vec_rand_vec_quick(vec3d *rvec)
 	rvec->xyz.y = (frand() - 0.5f) * 2;
 	rvec->xyz.z = (frand() - 0.5f) * 2;
 
-	if (IS_VEC_NULL(rvec))
+	if (IS_VEC_NULL_SQ_SAFE(rvec))
 		rvec->xyz.x = 1.0f;
 
 	vm_vec_normalize_quick(rvec);
@@ -1814,21 +1463,31 @@ int vm_matrix_cmp( matrix * a, matrix * b )
 // Moves angle 'h' towards 'desired_angle', taking the shortest
 // route possible.   It will move a maximum of 'step_size' radians
 // each call.   All angles in radians.
-void vm_interp_angle( float *h, float desired_angle, float step_size )
+float vm_interp_angle( float *h, float desired_angle, float step_size, bool force_front )
 {
 	float delta;
+	float abs_delta;
 
 	if ( desired_angle < 0.0f ) desired_angle += PI2;
 	if ( desired_angle > PI2 ) desired_angle -= PI2;
 
 	delta = desired_angle - *h;
+	abs_delta = fl_abs(delta);
 
-	if ( fl_abs(delta) > PI )	{
-		// Go the other way, since it will be shorter.
-		if ( delta > 0.0f )	{
-			delta = delta - PI2;
-		} else {
-			delta = PI2 - delta;
+	if ((force_front) && ((desired_angle > PI) ^ (*h > PI)) ) {
+		// turn away from PI
+		if ( *h > PI )
+			delta = abs_delta;
+		else 
+			delta = -abs_delta;
+	} else {
+		if ( abs_delta > PI )	{
+			// Go the other way, since it will be shorter.
+			if ( delta > 0.0f )	{
+				delta = delta - PI2;
+			} else {
+				delta = PI2 - delta;
+			}
 		}
 	}
 
@@ -1843,6 +1502,26 @@ void vm_interp_angle( float *h, float desired_angle, float step_size )
 	// angle back in the range 0 to 2*PI.
 	if ( *h > PI2 ) *h -= PI2;
 	if ( *h < 0.0f ) *h += PI2;
+
+	return delta;
+}
+
+float vm_delta_from_interp_angle( float current_angle, float desired_angle )
+{
+	float delta;
+	if ( desired_angle < 0.0f ) desired_angle += PI2;
+	if ( desired_angle > PI2 ) desired_angle -= PI2;
+
+	delta = desired_angle - current_angle;
+
+	if ( fl_abs(delta) > PI )	{
+		if ( delta > 0.0f )	{
+			delta = delta - PI2;
+		} else {
+			delta = PI2 - delta;
+		}
+	}
+	return delta;
 }
 
 // check a matrix for zero rows and columns
@@ -1968,7 +1647,11 @@ void vm_matrix_to_rot_axis_and_angle(matrix *m, float *theta, vec3d *rot_axis)
 		rot_axis->xyz.x = (m->vec.uvec.xyz.z - m->vec.fvec.xyz.y);
 		rot_axis->xyz.y = (m->vec.fvec.xyz.x - m->vec.rvec.xyz.z);
 		rot_axis->xyz.z = (m->vec.rvec.xyz.y - m->vec.uvec.xyz.x);
-		vm_vec_normalize(rot_axis);
+		if (IS_VEC_NULL_SQ_SAFE(rot_axis)) {
+			vm_vec_make(rot_axis, 1.0f, 0.0f, 0.0f);
+		} else {
+			vm_vec_normalize(rot_axis);
+		}
 	} else { // angle is PI within limits
 		*theta = PI;
 
@@ -2872,7 +2555,7 @@ void vm_find_bounding_sphere(vec3d *pnts, int num_pnts, vec3d *center, float *ra
 		dia2 = ymax;
 	}
 	if ( zspan > maxspan ) {
-		maxspan = yspan;
+		maxspan = zspan;
 		dia1 = zmin;
 		dia2 = zmax;
 	}
@@ -3004,13 +2687,13 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float max_angle, matrix *orient)
 	}
 	
 	// axis 1
-	vm_rot_point_around_line(&t1, in, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
+	vm_rot_point_around_line(&t1, in, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.fvec);
 	
 	// axis 2
-	vm_rot_point_around_line(&t2, &t1, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
+	vm_rot_point_around_line(&t2, &t1, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.rvec);
 
 	// axis 3
-	vm_rot_point_around_line(out, &t2, fl_radian(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
+	vm_rot_point_around_line(out, &t2, fl_radians(frand_range(-max_angle, max_angle)), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle, matrix *orient){
@@ -3032,21 +2715,21 @@ void vm_vec_random_cone(vec3d *out, vec3d *in, float min_angle, float max_angle,
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(&t1, in, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.fvec);
+	vm_rot_point_around_line(&t1, in, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.fvec);
 	
 	// axis 2
 	temp_ang = (frand_range(-dif_angle, dif_angle));
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(&t2, &t1, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.rvec);
+	vm_rot_point_around_line(&t2, &t1, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.rvec);
 
 	// axis 3
 	temp_ang = (frand_range(-dif_angle, dif_angle));
 	if(temp_ang < 0)temp_ang -= (min_angle);
 	else temp_ang += (min_angle);
 
-	vm_rot_point_around_line(out, &t2, fl_radian(temp_ang), &vmd_zero_vector, &rot->vec.uvec);
+	vm_rot_point_around_line(out, &t2, fl_radians(temp_ang), &vmd_zero_vector, &rot->vec.uvec);
 }
 
 
@@ -3060,7 +2743,7 @@ void vm_vec_random_in_circle(vec3d *out, vec3d *in, matrix *orient, float radius
 	vm_vec_scale_add(&temp, in, &orient->vec.rvec, on_edge ? radius : frand_range(0.0f, radius));
 
 	// rotate to a random point on the circle
-	vm_rot_point_around_line(out, &temp, fl_radian(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
+	vm_rot_point_around_line(out, &temp, fl_radians(frand_range(0.0f, 359.0f)), in, &orient->vec.fvec);
 }
 
 // find the nearest point on the line to p. if dist is non-NULL, it is filled in
@@ -3131,3 +2814,13 @@ void vm_vec_dist_squared_to_line(vec3d *p, vec3d *l0, vec3d *l1, vec3d *nearest,
 	// get the distance
 	*dist_squared = vm_vec_dist_squared(nearest, p);
 }
+
+//SUSHI: 2D vector "box" scaling
+//Scales the vector in-place so that the longest dimension = scale
+void vm_vec_boxscale(vec2d *vec, float scale)
+{
+	float ratio = 1.0f / MAX(fl_abs(vec->x), fl_abs(vec->y));
+	vec->x *= ratio;
+	vec->y *= ratio;
+}
+

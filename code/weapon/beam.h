@@ -7,153 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.12.2.2 $
- * $Date: 2007-05-28 18:27:36 $
- * $Author: wmcoolmon $
- *
- * all sorts of cool stuff about ships
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.12.2.1  2007/02/12 00:45:24  taylor
- * bit of cleanup and minor performance tweaks
- * sync up with new generic_anim/bitmap and weapon delayed loading changes
- * with generic_anim, use Goober's animation timing for beam section and glow animations
- * make trail render list dynamic (as well as it can be)
- *
- * Revision 2.12  2006/02/25 21:47:19  Goober5000
- * spelling
- *
- * Revision 2.11  2005/12/14 08:07:33  phreak
- * Handling of exit explosions for beams when a ship is about to get destroyed, or according to the code: "tooled".
- * Bumped beam frame collisions to 10 to compensate.
- *
- * Revision 2.10  2005/07/13 03:35:30  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.9  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.8  2004/08/11 05:06:36  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.7  2004/03/17 04:07:32  bobboau
- * new fighter beam code
- * fixed old after burner trails
- * had to bump a few limits, working on some dynamic solutions
- * a few fixed to background POF rendering
- * fixing asorted bugs
- *
- * Revision 2.6  2004/03/05 09:01:54  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.5  2003/11/11 02:15:41  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.4  2002/11/14 04:18:17  bobboau
- * added warp model and type 1 glow points
- * and well as made the new glow file type,
- * some general improvement to fighter beams,
- *
- * Revision 2.3  2002/10/19 19:29:29  bobboau
- * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
- *
- * Revision 2.2  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/25 04:50:48  wmcoolmon
- * Added Bobboau's fighter-beam code.
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 21    9/08/99 10:29p Dave
- * Make beam sound pausing and unpausing much safer.
- * 
- * 20    6/29/99 7:39p Dave
- * Lots of small bug fixes.
- * 
- * 19    6/21/99 7:25p Dave
- * netplayer pain packet. Added type E unmoving beams.
- * 
- * 18    6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 17    6/04/99 2:16p Dave
- * Put in shrink effect for beam weapons.
- * 
- * 16    5/14/99 11:47a Andsager
- * Added  beam_get_weapon_info_index(object *bm)
- * 
- * 15    5/08/99 8:25p Dave
- * Upped object pairs. First run of nebula lightning.
- * 
- * 14    4/22/99 11:06p Dave
- * Final pass at beam weapons. Solidified a lot of stuff. All that remains
- * now is to tweak and fix bugs as they come up. No new beam weapon
- * features.
- * 
- * 13    4/21/99 6:15p Dave
- * Did some serious housecleaning in the beam code. Made it ready to go
- * for anti-fighter "pulse" weapons. Fixed collision pair creation. Added
- * a handy macro for recalculating collision pairs for a given object.
- * 
- * 12    4/20/99 6:39p Dave
- * Almost done with artillery targeting. Added support for downloading
- * images on the PXO screen.
- * 
- * 11    4/19/99 11:01p Dave
- * More sophisticated targeting laser support. Temporary checkin.
- * 
- * 10    4/16/99 5:54p Dave
- * Support for on/off style "stream" weapons. Real early support for
- * target-painting lasers.
- * 
- * 9     3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 8     3/04/99 6:09p Dave
- * Added in sexpressions for firing beams and checking for if a ship is
- * tagged.
- * 
- * 7     1/30/99 1:29a Dave
- * Fixed nebula thumbnail problem. Full support for 1024x768 choose pilot
- * screen.  Fixed beam weapon death messages.
- * 
- * 6     1/24/99 11:37p Dave
- * First full rev of beam weapons. Very customizable. Removed some bogus
- * Int3()'s in low level net code.
- * 
- * 5     1/21/99 10:45a Dave
- * More beam weapon stuff. Put in warmdown time.
- * 
- * 4     1/14/99 12:48a Dave
- * Todo list bug fixes. Made a pass at putting briefing icons back into
- * FRED. Sort of works :(
- * 
- * 3     1/12/99 12:53a Dave
- * More work on beam weapons - made collision detection very efficient -
- * collide against all object types properly - made 3 movement types
- * smooth. Put in test code to check for possible non-darkening pixels on
- * object textures.
- * 
- * 2     1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef __FS2_BEAM_WEAPON_HEADER_FILE
 #define __FS2_BEAM_WEAPON_HEADER_FILE
@@ -162,10 +16,11 @@
 // BEAM WEAPON DEFINES/VARS
 //
 #include "model/model.h"
+#include "globalincs/globals.h"
 
 // prototypes
-struct object;
-struct ship_subsys;
+class object;
+class ship_subsys;
 struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
@@ -192,20 +47,26 @@ typedef struct beam_info {
 	float				shot_aim[MAX_BEAM_SHOTS];		// accuracy. this is a constant multiple of radius. anything < 1.0 will guarantee a hit	
 } beam_info;
 
+#define BFIF_IS_FIGHTER_BEAM	(1<<0)
+#define BFIF_FORCE_FIRING		(1<<1)
+#define BFIF_TARGETING_COORDS	(1<<2)
+
 // pass to beam fire 
 typedef struct beam_fire_info {
 	int				beam_info_index;				// weapon info index 
 	object			*shooter;						// whos shooting
 	vec3d			targeting_laser_offset;		// offset from the center of the object (for targeting lasers only)
-	ship_subsys		*turret;							// where he's shooting from
-	float				accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
-	object			*target;							// whos getting shot
-	ship_subsys		*target_subsys;				// (optional), specific subsystem to be targeted on the target 
+	ship_subsys		*turret;						// where he's shooting from
+	float			accuracy;						// 0.0 to 1.0 (only really effects targeting on small ships)
+	object			*target;							// who's getting shot
+	ship_subsys		*target_subsys;						// (optional), specific subsystem to be targeted on the target 
+	vec3d			target_pos1;							// if we're shooting off into space
+	vec3d			target_pos2;							// if we're shooting off into space (optional second point)
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
-	bool fighter_beam;
 	int bank;									// for fighters, which bank of the primary weapons are they in
 	int point;									// for fighters, which point on the bank it is from
+	int bfi_flags;
 } beam_fire_info;
 
 typedef struct fighter_beam_fire_info {
@@ -224,6 +85,92 @@ typedef struct fighter_beam_fire_info {
 	float life_left;	
 	float life_total;
 } fighter_beam_fire_info;
+
+// max # of collisions we'll allow per frame
+#define MAX_FRAME_COLLISIONS		10
+
+// collision info
+typedef struct beam_collision {
+	mc_info			cinfo;							// collision info
+	int				c_objnum;						// objnum of the guy we recently collided with
+	int				c_sig;							// object sig
+	int				c_stamp;							// when we should next apply damage	
+	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
+	int			is_exit_collision;					//does this occur when the beam is exiting the ship
+} beam_collision;
+
+// beam flag defines
+#define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
+#define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
+#define BF_FORCE_FIRING					(1<<2)
+#define BF_IS_FIGHTER_BEAM				(1<<3)
+#define BF_TARGETING_COORDS				(1<<4)
+
+// beam struct (the actual weapon/object)
+typedef struct beam {
+	// low-level data
+	int		objnum;					// our own objnum
+	int		weapon_info_index;
+	int		sig;						// signature for the shooting object
+	object	*objp;					// the shooting object (who owns the turret that I am being fired from)
+	object	*target;					// target object
+	ship_subsys *target_subsys;	// targeted subsys
+	vec3d	target_pos1;				// if we're targeting a location in space
+	vec3d	target_pos2;				// if we're targeting a location in space (optional second point)
+	int		target_sig;				// target sig
+	ship_subsys *subsys;				// subsys its being fired from
+	beam		*next, *prev;			// link list stuff
+	vec3d	targeting_laser_offset;
+	int		framecount;				// how many frames the beam has been active
+	int		flags;					// see BF_* defines 	
+	float		shrink;					// shrink factor	
+
+	// beam info	
+	int		warmup_stamp;			// timestamp for "warming up"
+	int		warmdown_stamp;		// timestamp for "warming down"
+	int		type;						// see BEAM_TYPE_* defines in beam.h
+	float		life_left;				// in seconds
+	float		life_total;				// total life	
+	// this vector has very special meaning. BEFORE performing collision checks, it basically implies a "direction". meaning
+	// the vector between it and last_start is where the beam will be aiming. AFTER performing collision checks, it is the
+	// literal world collision point on the object (or meaningless, if we hit nothing). The function beam_move_all_pre() is
+	// responsible for then setting it up pre-collision time
+	vec3d	last_shot;				
+	vec3d	last_start;				
+	int		shot_index;				// for type D beam weapons
+	float	beam_glow_frame;		// what frame a beam glow animation is on
+	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
+
+	// recent collisions
+	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
+	int r_collision_count;														// # of recent collisions
+
+	// collision info for this frame
+	beam_collision f_collisions[MAX_FRAME_COLLISIONS];					// collisions for the current frame
+	int f_collision_count;														// # of collisions we recorded this frame
+
+	// looping sound info, HANDLE
+	int		beam_sound_loop;		// -1 if none
+
+	// team 
+	char		team;
+
+	float range;
+	float damage_threshold;
+
+	// exactly how the beam will behave. by passing this is multiplayer from server to client, we can ensure that
+	// everything looks the same
+	beam_info binfo;
+	int bank;
+
+	int Beam_muzzle_stamp;
+	int firingpoint;
+
+	float		beam_width;
+} beam;
+
+extern beam Beams[MAX_BEAMS];				// all beams
+extern int Beam_count;
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
@@ -296,8 +243,9 @@ void beam_unpause_sounds();
 
 void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
 
-// debug code
-void beam_test(int whee);
-void beam_test_new(int whee);
+// return the amount of damage which should be applied to a ship. basically, filters friendly fire damage 
+float beam_get_ship_damage(beam *b, object *objp);
+
+
 
 #endif

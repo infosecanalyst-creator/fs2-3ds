@@ -21,256 +21,134 @@
 #include "graphics/gropengltnl.h"
 #include "graphics/gropengldraw.h"
 #include "graphics/gropenglshader.h"
+#include "graphics/gropenglpostprocessing.h"
+#include "graphics/gropenglstate.h"
 
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "cmdline/cmdline.h"
+#include "mod_table/mod_table.h"
 
 
-std::vector<opengl_shader_t> GL_shader;
+SCP_vector<opengl_shader_t> GL_shader;
 
 static char *GLshader_info_log = NULL;
 static const int GLshader_info_log_size = 8192;
+GLuint Framebuffer_fallback_texture_id = 0;
 
-#define MAX_SHADER_UNIFORMS		15
+static int Effect_num = 0;
+static float Anim_timer = 0.0f;
 
-struct opengl_shader_file_t {
-	char *vert;
-	char *frag;
 
-	int flags;
-
-	int num_uniforms;
-	char *uniforms[MAX_SHADER_UNIFORMS];
+/**
+ * Static lookup reference for main shader uniforms
+ * When adding a new SDR_ flag, list all associated uniforms and attributes here
+ */
+static opengl_shader_uniform_reference_t GL_Uniform_Reference_Main[] = {
+	{ SDR_FLAG_LIGHT,		1, {"n_lights"}, 0, { NULL }, "Lighting" },
+	{ SDR_FLAG_FOG,			0, { NULL }, 0, { NULL }, "Fog Effect" },
+	{ SDR_FLAG_DIFFUSE_MAP, 5, {"sBasemap", "desaturate", "desaturate_r", "desaturate_g", "desaturate_b"}, 0, { NULL }, "Diffuse Mapping"},
+	{ SDR_FLAG_GLOW_MAP,	1, {"sGlowmap"}, 0, { NULL }, "Glow Mapping" },
+	{ SDR_FLAG_SPEC_MAP,	1, {"sSpecmap"}, 0, { NULL }, "Specular Mapping" },
+	{ SDR_FLAG_NORMAL_MAP,	1, {"sNormalmap"}, 0, { NULL }, "Normal Mapping" },
+	{ SDR_FLAG_HEIGHT_MAP,	1, {"sHeightmap"}, 0, { NULL }, "Parallax Mapping" },
+	{ SDR_FLAG_ENV_MAP,		3, {"sEnvmap", "alpha_spec", "envMatrix"}, 0, { NULL }, "Environment Mapping" },
+	{ SDR_FLAG_ANIMATED,	5, {"sFramebuffer", "effect_num", "anim_timer", "vpwidth", "vpheight"}, 0, { NULL }, "Animated Effects" },
+	{ SDR_FLAG_MISC_MAP,	1, {"sMiscmap"}, 0, { NULL }, "Utility mapping" },
+	{ SDR_FLAG_TEAMCOLOR,	2, {"stripe_color", "base_color"}, 0, { NULL }, "Team Colors" },
+	{ SDR_FLAG_THRUSTER,	1, {"thruster_scale"}, 0, { NULL }, "Thruster scaling" }
 };
 
-static opengl_shader_file_t GL_shader_file[] = {
-	{ "null-v.sdr", "null-f.sdr", (0), 0, { NULL }, },
+static const int Main_shader_flag_references = sizeof(GL_Uniform_Reference_Main) / sizeof(opengl_shader_uniform_reference_t);
 
-	{ "b-v.sdr", "b-f.sdr", (SDR_FLAG_DIFFUSE_MAP),
-		1, { "sBasemap" } },
-
-	{ "b-v.sdr", "bg-f.sdr", (SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP),
-		2, { "sBasemap", "sGlowmap" } },
-
-	{ "l-v.sdr", "lb-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP),
-		2, { "sBasemap", "n_lights" } },
-
-	{ "l-v.sdr", "lbg-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP),
-		3, { "sBasemap", "sGlowmap", "n_lights" } },
-
-	{ "l-v.sdr", "lbgs-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP),
-		4, { "sBasemap", "sGlowmap", "sSpecmap", "n_lights" } },
-
-	{ "l-v.sdr", "lbs-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP),
-		3, { "sBasemap", "sSpecmap", "n_lights" } },
-
-	{ "le-v.sdr", "lbgse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sBasemap", "sGlowmap", "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "le-v.sdr", "lbse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		6, { "sBasemap", "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "ln-v.sdr", "lbgn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP| SDR_FLAG_NORMAL_MAP),
-		4, { "sBasemap", "sGlowmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbgsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		5, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_NORMAL_MAP),
-		3, { "sBasemap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		4, { "sBasemap", "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbgnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP| SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		5, { "sBasemap", "sGlowmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbgsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		6, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		4, { "sBasemap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lbsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		5, { "sBasemap", "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lne-v.sdr", "lbgsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		8, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lbsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sBasemap", "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lbgsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		9, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lbsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		8, { "sBasemap", "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lf-v.sdr", "lfb-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP),
-		2, { "sBasemap", "n_lights" } },
-
-	{ "lf-v.sdr", "lfbg-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP),
-		3, { "sBasemap", "sGlowmap", "n_lights" } },
-
-	{ "lf-v.sdr", "lfbgs-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP),
-		4, { "sBasemap", "sGlowmap", "sSpecmap", "n_lights" } },
-
-	{ "lf-v.sdr", "lfbs-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP),
-		3, { "sBasemap", "sSpecmap", "n_lights" } },
-
-	{ "lfe-v.sdr", "lfbgse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sBasemap", "sGlowmap", "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lfe-v.sdr", "lfbse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		6, { "sBasemap", "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbgn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP| SDR_FLAG_NORMAL_MAP),
-		4, { "sBasemap", "sGlowmap", "sNormalmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbgsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		5, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_NORMAL_MAP),
-		3, { "sBasemap", "sNormalmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		4, { "sBasemap", "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbgnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP| SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		5, { "sBasemap", "sGlowmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbgsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		6, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		4, { "sBasemap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lfn-v.sdr", "lfbsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		5, { "sBasemap", "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lfne-v.sdr", "lfbgsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		8, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lfne-v.sdr", "lfbsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sBasemap", "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lfne-v.sdr", "lfbgsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		9, { "sBasemap", "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lfne-v.sdr", "lfbsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_FOG | SDR_FLAG_DIFFUSE_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		8, { "sBasemap", "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "l-v.sdr", "null-f.sdr", (SDR_FLAG_LIGHT), 0, { NULL } },
-
-	{ "l-v.sdr", "lg-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP),
-		2, { "sGlowmap", "n_lights" } },
-
-	{ "l-v.sdr", "lgs-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP),
-		3, { "sGlowmap", "sSpecmap", "n_lights" } },
-
-	{ "l-v.sdr", "ls-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP),
-		2, { "sSpecmap", "n_lights" } },
-
-	{ "le-v.sdr", "lgse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		6, { "sGlowmap", "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "le-v.sdr", "lse-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP | SDR_FLAG_ENV_MAP),
-		5, { "sSpecmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "ln-v.sdr", "lgn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_NORMAL_MAP),
-		3, { "sGlowmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lgsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		4, { "sGlowmap", "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "ln-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_NORMAL_MAP),
-		2, { "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lsn-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP),
-		3, { "sSpecmap", "sNormalmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lgnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		4, { "sGlowmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lgsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		5, { "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		3, { "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "ln-v.sdr", "lsnh-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP),
-		4, { "sSpecmap", "sNormalmap", "sHeightmap", "n_lights" } },
-
-	{ "lne-v.sdr", "lgsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sGlowmap", "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lsne-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_ENV_MAP),
-		6, { "sSpecmap", "sNormalmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lgsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_GLOW_MAP | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		8, { "sGlowmap", "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } },
-
-	{ "lne-v.sdr", "lsnhe-f.sdr", (SDR_FLAG_LIGHT | SDR_FLAG_SPEC_MAP | SDR_FLAG_NORMAL_MAP | SDR_FLAG_HEIGHT_MAP | SDR_FLAG_ENV_MAP),
-		7, { "sSpecmap", "sNormalmap", "sHeightmap", "sEnvmap", "envMatrix", "alpha_spec", "n_lights" } }
+/**
+ * Static lookup referene for particle shader uniforms
+ */
+static opengl_shader_uniform_reference_t GL_Uniform_Reference_Particle[] = {
+	{ (SDR_FLAG_SOFT_QUAD | SDR_FLAG_DISTORTION), 6, {"baseMap", "window_width", "window_height", "distMap", "frameBuffer", "use_offset"}, 1, { "offset_in" }, "Distorted Particles" },
+	{ (SDR_FLAG_SOFT_QUAD),	6, {"baseMap", "depthMap", "window_width", "window_height", "nearZ", "farZ"}, 1, { "radius_in" }, "Depth-blended Particles" }
 };
 
-static const int Num_shader_files = sizeof(GL_shader_file) / sizeof(opengl_shader_file_t);
+static const int Particle_shader_flag_references = sizeof(GL_Uniform_Reference_Particle) / sizeof(opengl_shader_uniform_reference_t);
 
 opengl_shader_t *Current_shader = NULL;
 
 
 void opengl_shader_check_info_log(GLhandleARB shader_object);
 
-
+/**
+ * Set the currently active shader 
+ * @param shader_obj	Pointer to an opengl_shader_t object. This function calls glUseProgramARB with parameter 0 if shader_obj is NULL or if function is called without parameters, causing OpenGL to revert to fixed-function processing 
+ */
 void opengl_shader_set_current(opengl_shader_t *shader_obj)
 {
-	Current_shader = shader_obj;
-
-	if (Current_shader != NULL) {
-		vglUseProgramObjectARB(Current_shader->program_id);
+	if (shader_obj != NULL) {
+		if(!Current_shader || (Current_shader->program_id != shader_obj->program_id)) {
+			Current_shader = shader_obj;
+			vglUseProgramObjectARB(Current_shader->program_id);
 
 #ifndef NDEBUG
-		if ( opengl_check_for_errors("shader_set_current()") ) {
-			vglValidateProgramARB(Current_shader->program_id);
+			if ( opengl_check_for_errors("shader_set_current()") ) {
+				vglValidateProgramARB(Current_shader->program_id);
 
-			GLint obj_status = 0;
-			vglGetObjectParameterivARB(Current_shader->program_id, GL_OBJECT_VALIDATE_STATUS_ARB, &obj_status);
+				GLint obj_status = 0;
+				vglGetObjectParameterivARB(Current_shader->program_id, GL_OBJECT_VALIDATE_STATUS_ARB, &obj_status);
 
-			if ( !obj_status ) {
-				opengl_shader_check_info_log(Current_shader->program_id);
+				if ( !obj_status ) {
+					opengl_shader_check_info_log(Current_shader->program_id);
 	
-				mprintf(("VALIDATE INFO-LOG:\n"));
+					mprintf(("VALIDATE INFO-LOG:\n"));
 
-				if (strlen(GLshader_info_log) > 5) {
-					mprintf(("%s\n", GLshader_info_log));
-				} else {
-					mprintf(("<EMPTY>\n"));
+					if (strlen(GLshader_info_log) > 5) {
+						mprintf(("%s\n", GLshader_info_log));
+					} else {
+						mprintf(("<EMPTY>\n"));
+					}
 				}
 			}
-		}
 #endif
+		}
 	} else {
+		Current_shader = NULL;
 		vglUseProgramObjectARB(0);
 	}
 }
 
-int opengl_shader_get_index(int flags)
+/**
+ * Given a set of flags, determine whether a shader with these flags exists within the GL_shader vector. If no shader with the requested flags exists, attempt to compile one.
+ *
+ * @param flags	Integer variable, holding a combination of SDR_* flags
+ * @return 		Index into GL_shader, referencing a valid shader, or -1 if shader compilation failed
+ */
+int gr_opengl_maybe_create_shader(int flags)
 {
-	uint idx;
+	if (Use_GLSL < 2)
+		return -1;
 
-	for (idx = 0; idx < GL_shader.size(); idx++) {
+	size_t idx;
+	size_t max = GL_shader.size();
+
+	for (idx = 0; idx < max; idx++) {
 		if (GL_shader[idx].flags == flags) {
 			return idx;
 		}
 	}
 
+	// If we are here, it means we need to compile a new shader
+	opengl_compile_main_shader(flags);
+	if (GL_shader.back().flags == flags)
+		return (int)GL_shader.size() - 1;
+
+	// If even that has failed, bail
 	return -1;
 }
 
+/**
+ * Go through GL_shader and call glDeleteObject() for all created shaders, then clear GL_shader
+ */
 void opengl_shader_shutdown()
 {
-	uint i;
+	size_t i;
 
 	if ( !Use_GLSL ) {
 		return;
@@ -293,137 +171,239 @@ void opengl_shader_shutdown()
 	}
 }
 
-void opengl_shader_init()
+/**
+ * Load a shader file from disc or from the builtin defaults in def_files.cpp if none can be found.
+ * This function will also create a list of preprocessor defines for the GLSL compiler based on the shader flags
+ * and the supported GLSL version as reported by the GPU driver.
+ *
+ * @param filename	C-string holding the filename (with extension) of the shader file
+ * @param flags		integer variable holding a combination of SDR_* flags
+ * @return			C-string holding the complete shader source code
+ */
+static char *opengl_load_shader(char *filename, int flags)
 {
-	char *vert = NULL, *frag = NULL;
-	CFILE *cf_vert = NULL, *cf_frag = NULL;
-	int i, idx, len;
+	SCP_string sflags;
 
-	if ( !Use_GLSL ) {
-		return;
+	if (Use_GLSL >= 4) {
+		sflags += "#define SHADER_MODEL 4\n";
+	} else if (Use_GLSL == 3) {
+		sflags += "#define SHADER_MODEL 3\n";
+	} else {
+		sflags += "#define SHADER_MODEL 2\n";
 	}
 
-	GL_shader.reserve(Num_shader_files);
+	if (flags & SDR_FLAG_DIFFUSE_MAP) {
+		sflags += "#define FLAG_DIFFUSE_MAP\n";
+	}
 
-	for (idx = 0; idx < Num_shader_files; idx++) {
-		bool in_error = false;
-		opengl_shader_t new_shader;
-		opengl_shader_file_t *shader_file = &GL_shader_file[idx];
+	if (flags & SDR_FLAG_ENV_MAP) {
+		sflags += "#define FLAG_ENV_MAP\n";
+	}
 
+	if (flags & SDR_FLAG_FOG) {
+		sflags += "#define FLAG_FOG\n";
+	}
 
-		if ( !Cmdline_glow && (shader_file->flags & SDR_FLAG_GLOW_MAP) ) {
-			continue;
+	if (flags & SDR_FLAG_GLOW_MAP) {
+		sflags += "#define FLAG_GLOW_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_HEIGHT_MAP) {
+		sflags += "#define FLAG_HEIGHT_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_LIGHT) {
+		sflags += "#define FLAG_LIGHT\n";
+	}
+
+	if (flags & SDR_FLAG_NORMAL_MAP) {
+		sflags += "#define FLAG_NORMAL_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_SPEC_MAP) {
+		sflags += "#define FLAG_SPEC_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_ANIMATED) {
+		sflags += "#define FLAG_ANIMATED\n";
+	}
+
+	if (flags & SDR_FLAG_DISTORTION) {
+		sflags += "#define FLAG_DISTORTION\n";
+	}
+
+	if (flags & SDR_FLAG_MISC_MAP) {
+		sflags += "#define FLAG_MISC_MAP\n";
+	}
+
+	if (flags & SDR_FLAG_TEAMCOLOR) {
+		sflags += "#define FLAG_TEAMCOLOR\n";
+	}
+
+	if (flags & SDR_FLAG_THRUSTER) {
+		sflags += "#define FLAG_THRUSTER\n";
+	}
+
+	const char *shader_flags = sflags.c_str();
+	int flags_len = strlen(shader_flags);
+
+	if (Enable_external_shaders) {
+		CFILE *cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	
+		if (cf_shader != NULL) {
+			int len = cfilelength(cf_shader);
+			char *shader = (char*) vm_malloc(len + flags_len + 1);
+
+			strcpy(shader, shader_flags);
+			memset(shader + flags_len, 0, len + 1);
+			cfread(shader + flags_len, len + 1, 1, cf_shader);
+			cfclose(cf_shader);
+
+			return shader;	
 		}
+	}
 
-		if ( !Cmdline_spec && (shader_file->flags & SDR_FLAG_SPEC_MAP) ) {
-			continue;
-		}
+	//If we're still here, proceed with internals
+	mprintf(("   Loading built-in default shader for: %s\n", filename));
+	char* def_shader = defaults_get_file(filename);
+	size_t len = strlen(def_shader);
+	char *shader = (char*) vm_malloc(len + flags_len + 1);
 
-		if ( !Cmdline_env && (shader_file->flags & SDR_FLAG_ENV_MAP) ) {
-			continue;
-		}
+	strcpy(shader, shader_flags);
+	strcat(shader, def_shader);
 
-		if ( !Cmdline_normal && (shader_file->flags & SDR_FLAG_NORMAL_MAP) ) {
-			continue;
-		}
+	return shader;
+}
 
-		if ( !Cmdline_height && (shader_file->flags & SDR_FLAG_HEIGHT_MAP) ) {
-			continue;
-		}
+/**
+ * Compiles a new shader, and creates an opengl_shader_t that will be put into the GL_shader vector
+ * if compilation is successful.
+ * This function is used for main (i.e. model rendering) and particle shaders, post processing shaders use their own infrastructure
+ *
+ * @param flags		Combination of SDR_* flags
+ */
+void opengl_compile_main_shader(int flags) {
+	char *vert = NULL, *frag = NULL;
 
-		mprintf(("  Compiling shader ->  %s / %s ... \n", shader_file->vert, shader_file->frag));
+	mprintf(("Compiling new shader:\n"));
 
-		// read vertex shader
-		cf_vert = cfopen(shader_file->vert, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	bool in_error = false;
+	opengl_shader_t new_shader;
 
-		if (cf_vert != NULL) {
-			len = cfilelength(cf_vert);
-			vert = (char*) vm_malloc(len+1);
-			memset( vert, 0, len+1 );
-			cfread(vert, len+1, 1, cf_vert);
-			cfclose(cf_vert);
-			cf_vert = NULL;
-		} else {
-			in_error = true;
-			goto Done;
-		}
+	// choose appropriate files
+	char vert_name[NAME_LENGTH];
+	char frag_name[NAME_LENGTH];
 
-		// read fragment shader
-		cf_frag = cfopen(shader_file->frag, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+	if (flags & SDR_FLAG_SOFT_QUAD) {
+		strcpy_s( vert_name, "soft-v.sdr");
+		strcpy_s( frag_name, "soft-f.sdr");
+	} else {
+		strcpy_s( vert_name, "main-v.sdr");
+		strcpy_s( frag_name, "main-f.sdr");
+	}
 
-		if (cf_frag != NULL) {
-			len = cfilelength(cf_frag);
-			frag = (char*) vm_malloc(len+1);
-			memset( frag, 0, len+1 );
-			cfread(frag, len+1, 1, cf_frag);
-			cfclose(cf_frag);
-			cf_frag = NULL;
-		} else {
-			in_error = true;
-			goto Done;
-		}
+	// read vertex shader
+	if ( (vert = opengl_load_shader(vert_name, flags)) == NULL ) {
+		in_error = true;
+		goto Done;
+	}
 
-		Verify( vert != NULL );
-		Verify( frag != NULL );
+	// read fragment shader
+	if ( (frag = opengl_load_shader(frag_name, flags)) == NULL ) {
+		in_error = true;
+		goto Done;
+	}
 
-		new_shader.program_id = opengl_shader_create(vert, frag);
+	Verify( vert != NULL );
+	Verify( frag != NULL );
 
-		if ( !new_shader.program_id ) {
-			in_error = true;
-			goto Done;
-		}
+	new_shader.program_id = opengl_shader_create(vert, frag);
 
-		new_shader.flags = shader_file->flags;
+	if ( !new_shader.program_id ) {
+		in_error = true;
+		goto Done;
+	}
 
-		opengl_shader_set_current( &new_shader );
+	new_shader.flags = flags;
 
-		new_shader.uniforms.reserve(shader_file->num_uniforms);
+	opengl_shader_set_current( &new_shader );
+	
+	mprintf(("Shader features:\n"));
 
-		for (i = 0; i < shader_file->num_uniforms; i++) {
-			opengl_shader_init_uniform( shader_file->uniforms[i] );
-		}
+	//Init all the uniforms
+	if (new_shader.flags & SDR_FLAG_SOFT_QUAD) {
+		for (int j = 0; j < Particle_shader_flag_references; j++) {
+			if (new_shader.flags == GL_Uniform_Reference_Particle[j].flag) {
+				int k;
 
-		opengl_shader_set_current();
+			// Equality check needed because the combination of SDR_FLAG_SOFT_QUAD and SDR_FLAG_DISTORTION define something very different
+			// than just SDR_FLAG_SOFT_QUAD alone
+				for (k = 0; k < GL_Uniform_Reference_Particle[j].num_uniforms; k++) {
+					opengl_shader_init_uniform( GL_Uniform_Reference_Particle[j].uniforms[k] );
+				}
 
-		// add it to our list of embedded shaders
-		GL_shader.push_back( new_shader );
+				for (k = 0; k < GL_Uniform_Reference_Particle[j].num_attributes; k++) {
+					opengl_shader_init_attribute( GL_Uniform_Reference_Particle[j].attributes[k] );
+				}
 
-	Done:
-		if (cf_vert != NULL) {
-			cfclose(cf_vert);
-			cf_vert = NULL;
-		}
-
-		if (cf_frag != NULL) {
-			cfclose(cf_frag);
-			cf_frag = NULL;
-		}
-
-		if (vert != NULL) {
-			vm_free(vert);
-			vert = NULL;
-		}
-
-		if (frag != NULL) {
-			vm_free(frag);
-			frag = NULL;
-		}
-
-		if (in_error) {
-			// shut off relevant usage things ...
-
-			if (shader_file->flags & SDR_FLAG_HEIGHT_MAP) {
-				mprintf(("  Shader in_error!  Disabling height maps!\n"));
-				Cmdline_height = 0;
+				mprintf(("   %s\n", GL_Uniform_Reference_Particle[j].name));
 			}
+		}
+	} else {
+		for (int j = 0; j < Main_shader_flag_references; j++) {
+			if (new_shader.flags & GL_Uniform_Reference_Main[j].flag) {
+				if (GL_Uniform_Reference_Main[j].num_uniforms > 0) {
+					for (int k = 0; k < GL_Uniform_Reference_Main[j].num_uniforms; k++) {
+						opengl_shader_init_uniform( GL_Uniform_Reference_Main[j].uniforms[k] );
+					}
+				}
 
-			if (shader_file->flags & SDR_FLAG_NORMAL_MAP) {
-				mprintf(("  Shader in_error!  Disabling normal maps and height maps!\n"));
-				Cmdline_height = 0;
-				Cmdline_normal = 0;
+				if (GL_Uniform_Reference_Main[j].num_attributes > 0) {
+					for (int k = 0; k < GL_Uniform_Reference_Main[j].num_attributes; k++) {
+						opengl_shader_init_attribute( GL_Uniform_Reference_Main[j].attributes[k] );
+					}
+				}
+
+				mprintf(("   %s\n", GL_Uniform_Reference_Main[j].name));
 			}
+		}
+	}
 
-			if (idx == 0) {
+	opengl_shader_set_current();
+
+	// add it to our list of embedded shaders
+	GL_shader.push_back( new_shader );
+
+Done:
+	if (vert != NULL) {
+		vm_free(vert);
+		vert = NULL;
+	}
+
+	if (frag != NULL) {
+		vm_free(frag);
+		frag = NULL;
+	}
+
+	if (in_error) {
+		// shut off relevant usage things ...
+		bool dealt_with = false;
+
+		if (flags & SDR_FLAG_HEIGHT_MAP) {
+			mprintf(("  Shader in_error!  Disabling height maps!\n"));
+			Cmdline_height = 0;
+			dealt_with = true;
+		}
+
+		if (flags & SDR_FLAG_NORMAL_MAP) {
+			mprintf(("  Shader in_error!  Disabling normal maps and height maps!\n"));
+			Cmdline_height = 0;
+			Cmdline_normal = 0;
+			dealt_with = true;
+		}
+
+		if (!dealt_with) {
+			if (flags == 0) {
 				mprintf(("  Shader in_error!  Disabling GLSL!\n"));
 
 				Use_GLSL = 0;
@@ -431,14 +411,63 @@ void opengl_shader_init()
 				Cmdline_normal = 0;
 
 				GL_shader.clear();
-				break;;
+			} else {
+				// We died on a lighting shader, probably due to instruction count.
+				// Drop down to a special var that will use fixed-function rendering
+				// but still allow for post-processing to work
+				mprintf(("  Shader in_error!  Disabling GLSL model rendering!\n"));
+				Use_GLSL = 1;
+				Cmdline_height = 0;
+				Cmdline_normal = 0;
 			}
 		}
 	}
+}
+
+/**
+ * Initializes the shader system. Creates a 1x1 texture that can be used as a fallback texture when framebuffer support is missing.
+ * Also compiles the shaders used for particle rendering.
+ */
+void opengl_shader_init()
+{
+	if ( !Use_GLSL ) {
+		return;
+	}
+
+	glGenTextures(1,&Framebuffer_fallback_texture_id);
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Framebuffer_fallback_texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	GLuint pixels[4] = {0,0,0,0};
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels);
+
+	if (Cmdline_no_glsl_model_rendering) {
+		Use_GLSL = 1;
+	}
+
+	GL_shader.clear();
+	
+	// Reserve 32 shader slots. This should cover most use cases in real life.
+	GL_shader.reserve(32);
+
+	// Compile the particle shaders, since these are most definitely going to be used
+	opengl_compile_main_shader(SDR_FLAG_SOFT_QUAD);
+	opengl_compile_main_shader(SDR_FLAG_SOFT_QUAD | SDR_FLAG_DISTORTION);
 
 	mprintf(("\n"));
 }
 
+/**
+ * Retrieve the compilation log for a given shader object, and store it in the GLshader_info_log global variable
+ *
+ * @param shader_object		OpenGL handle of a shader object
+ */
 void opengl_shader_check_info_log(GLhandleARB shader_object)
 {
 	if (GLshader_info_log == NULL) {
@@ -450,6 +479,15 @@ void opengl_shader_check_info_log(GLhandleARB shader_object)
 	vglGetInfoLogARB(shader_object, GLshader_info_log_size-1, 0, GLshader_info_log);
 }
 
+/**
+ * Pass a GLSL shader source to OpenGL and compile it into a usable shader object.
+ * Prints compilation errors (if any) to the log.
+ * Note that this will only compile shaders into objects, linking them into executables happens later
+ *
+ * @param shader_source		GLSL sourcecode for the shader
+ * @param shader_type		OpenGL ID for the type of shader being used, like GL_FRAGMENT_SHADER_ARB, GL_VERTEX_SHADER_ARB
+ * @return 					OpenGL handle for the compiled shader object
+ */
 GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum shader_type)
 {
 	GLhandleARB shader_object = 0;
@@ -486,6 +524,14 @@ GLhandleARB opengl_shader_compile_object(const GLcharARB *shader_source, GLenum 
 	return shader_object;
 }
 
+/**
+ * Link a vertex shader object and a fragment shader object into a usable shader executable.
+ * Prints linker errors (if any) to the log.
+ * 
+ * @param vertex_object		Compiled vertex shader object
+ * @param fragment_object	Compiled fragment shader object
+ * @return					Shader executable
+ */
 GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fragment_object)
 {
 	GLhandleARB shader_object = 0;
@@ -527,48 +573,13 @@ GLhandleARB opengl_shader_link_object(GLhandleARB vertex_object, GLhandleARB fra
 	return shader_object;
 }
 
-/*GLhandleARB opengl_shader_create(const char *vs, const char *fs)
-{
-	GLhandleARB vs_o = 0;
-	GLhandleARB fs_o = 0;
-	GLhandleARB program = 0;
-
-	if (vs) {
-		vs_o = opengl_shader_compile_object( (const GLcharARB*)vs, GL_VERTEX_SHADER_ARB );
-
-		if ( !vs_o ) {
-			mprintf(("ERROR! Unable to create vertex shader!\n"));
-			goto Done;
-		}
-	}
-
-	if (fs) {
-		fs_o = opengl_shader_compile_object( (const GLcharARB*)fs, GL_FRAGMENT_SHADER_ARB );
-
-		if ( !fs_o ) {
-			mprintf(("ERROR! Unable to create fragment shader!\n"));
-			goto Done;
-		}
-	}
-
-	program = opengl_shader_link_object(vs_o, fs_o);
-
-	if ( !program ) {
-		mprintf(("ERROR! Unable to create shader program!\n"));
-	}
-
-Done:
-	if (vs_o) {
-		vglDeleteObjectARB(vs_o);
-	}
-
-	if (fs_o) {
-		vglDeleteObjectARB(fs_o);
-	}
-
-	return program;
-}*/
-
+/**
+ * Creates an executable shader.
+ *
+ * @param vs	Vertex shader source code
+ * @param fs	Fragment shader source code
+ * @return 		Internal ID of the compiled and linked shader as generated by OpenGL
+ */
 GLhandleARB opengl_shader_create(const char *vs, const char *fs)
 {
 	GLhandleARB vs_o = 0;
@@ -611,7 +622,61 @@ Done:
 	return program;
 }
 
-void opengl_shader_init_uniform(char *uniform_text)
+/**
+ * Initialize a shader attribute. Requires that the Current_shader global variable is valid.
+ *
+ * @param attribute_text	Name of the attribute to be initialized
+ */
+void opengl_shader_init_attribute(const char *attribute_text)
+{
+	opengl_shader_uniform_t new_attribute;
+
+	if ( ( Current_shader == NULL ) || ( attribute_text == NULL ) ) {
+		Int3();
+		return;
+	}
+
+	new_attribute.text_id = attribute_text;
+	new_attribute.location = vglGetAttribLocationARB(Current_shader->program_id, attribute_text);
+
+	if ( new_attribute.location < 0 ) {
+		nprintf(("SHADER-DEBUG", "WARNING: Unable to get shader attribute location for \"%s\"!\n", attribute_text));
+		return;
+	}
+
+	Current_shader->attributes.push_back( new_attribute );
+}
+
+/**
+ * Get the internal OpenGL location for a given attribute. Requires that the Current_shader global variable is valid
+ *
+ * @param attribute_text	Name of the attribute
+ * @return					Internal OpenGL location for the attribute
+ */
+GLint opengl_shader_get_attribute(const char *attribute_text)
+{
+	if ( (Current_shader == NULL) || (attribute_text == NULL) ) {
+		Int3();
+		return -1;
+	}
+
+	SCP_vector<opengl_shader_uniform_t>::iterator attribute;
+
+	for (attribute = Current_shader->attributes.begin(); attribute != Current_shader->attributes.end(); ++attribute) {
+		if ( !attribute->text_id.compare(attribute_text) ) {
+			return attribute->location;
+		}
+	}
+
+	return -1;
+}
+
+/**
+ * Initialize a shader uniform. Requires that the Current_shader global variable is valid.
+ *
+ * @param uniform_text		Name of the uniform to be initialized
+ */
+void opengl_shader_init_uniform(const char *uniform_text)
 {
 	opengl_shader_uniform_t new_uniform;
 
@@ -624,27 +689,73 @@ void opengl_shader_init_uniform(char *uniform_text)
 	new_uniform.location = vglGetUniformLocationARB(Current_shader->program_id, uniform_text);
 
 	if (new_uniform.location < 0) {
-		mprintf(("WARNING: Unable to get shader uniform location for \"%s\"!\n", uniform_text));
+		nprintf(("SHADER-DEBUG", "WARNING: Unable to get shader uniform location for \"%s\"!\n", uniform_text));
 		return;
 	}
 
 	Current_shader->uniforms.push_back( new_uniform );
 }
 
-GLint opengl_shader_get_uniform(char *uniform_text)
+/**
+ * Get the internal OpenGL location for a given uniform. Requires that the Current_shader global variable is valid
+ *
+ * @param uniform_text	Name of the uniform
+ * @return				Internal OpenGL location for the uniform
+ */
+GLint opengl_shader_get_uniform(const char *uniform_text)
 {
 	if ( (Current_shader == NULL) || (uniform_text == NULL) ) {
 		Int3();
 		return -1;
 	}
 
-	std::vector<opengl_shader_uniform_t>::iterator uniform;
+	SCP_vector<opengl_shader_uniform_t>::iterator uniform;
+	SCP_vector<opengl_shader_uniform_t>::iterator uniforms_end = Current_shader->uniforms.end();
 	
-	for (uniform = Current_shader->uniforms.begin(); uniform != Current_shader->uniforms.end(); ++uniform) {
+	for (uniform = Current_shader->uniforms.begin(); uniform != uniforms_end; ++uniform) {
 		if ( !uniform->text_id.compare(uniform_text) ) {
 			return uniform->location;
 		}
 	}
 
 	return -1;
+}
+
+/**
+ * Sets the currently active animated effect.
+ *
+ * @param effect	Effect ID, needs to be implemented and checked for in the shader
+ */
+void opengl_shader_set_animated_effect(int effect)
+{
+	Assert(effect > -1);
+	Effect_num = effect;
+}
+
+/**
+ * Returns the currently active animated effect ID.
+ *
+ * @return		Currently active effect ID
+ */
+int opengl_shader_get_animated_effect()
+{
+	return Effect_num;
+}
+
+/**
+ * Set the timer for animated effects.
+ *
+ * @param timer		Timer value to be passed to the shader
+ */
+void opengl_shader_set_animated_timer(float timer)
+{
+	Anim_timer = timer;
+}
+
+/**
+ * Get the timer for animated effects.
+ */
+float opengl_shader_get_animated_timer()
+{
+	return Anim_timer;
 }

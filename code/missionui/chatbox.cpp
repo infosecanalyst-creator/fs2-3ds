@@ -7,320 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-06-02 09:17:09 $
- * $Author: taylor $
- *
- * C module to handle all code for multiplayer chat windows
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.13  2006/03/26 08:25:05  taylor
- * the bmpman release issues for the chatbox should be fixed now so we can go back to using bm_release() on the bitmaps
- * Chatbox_p_coords (the multi-pause background) should be at 0,0 (even though this isn't used I thought it was a good idea to go ahead and fix it)
- *
- * Revision 2.12  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.11  2005/07/13 03:25:58  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.10  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.9  2005/06/19 02:38:33  taylor
- * fix possible crash from popups, especially in multi
- *
- * Revision 2.8  2005/04/21 15:53:24  taylor
- * make sure we don't try to process chatbox_close() more than once
- *
- * Revision 2.7  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.6  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.5  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.4  2004/07/26 20:47:38  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 12    8/05/99 4:05p Jefff
- * fixed pause chatbox display coords
- * 
- * 11    7/29/99 10:47p Dave
- * Standardized D3D fogging using vertex fog. Shook out Savage 4 bugs.
- * 
- * 10    5/22/99 5:35p Dave
- * Debrief and chatbox screens. Fixed small hi-res HUD bug.
- * 
- * 9     2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 8     2/23/99 8:11p Dave
- * Tidied up dogfight mode. Fixed TvT ship type problems for alpha wing.
- * Small pass over todolist items.
- * 
- * 7     2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 6     2/01/99 5:55p Dave
- * Removed the idea of explicit bitmaps for buttons. Fixed text
- * highlighting for disabled gadgets.
- * 
- * 5     1/29/99 2:08a Dave
- * Fixed beam weapon collisions with players. Reduced size of scoring
- * struct for multiplayer. Disabled PXO.
- * 
- * 4     1/28/99 7:09p Neilk
- * Modified chatbox to use new interface graphics (only 640)
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 57    9/17/98 3:08p Dave
- * PXO to non-pxo game warning popup. Player icon stuff in create and join
- * game screens. Upped server count refresh time in PXO to 35 secs (from
- * 20).
- * 
- * 56    9/11/98 5:08p Dave
- * More tweaks to kick notification system.
- * 
- * 55    9/11/98 4:14p Dave
- * Fixed file checksumming of < file_size. Put in more verbose kicking and
- * PXO stats store reporting.
- * 
- * 54    6/09/98 5:15p Lawrance
- * French/German localization
- * 
- * 53    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 52    6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 51    5/22/98 9:35p Dave
- * Put in channel based support for PXO. Put in "shutdown" button for
- * standalone. UI tweaks for TvT
- * 
- * 50    5/17/98 6:32p Dave
- * Make sure clients/servers aren't kicked out of the debriefing when team
- * captains leave a game. Fixed chatbox off-by-one error. Fixed image
- * xfer/pilot info popup stuff.
- * 
- * 49    5/17/98 1:43a Dave
- * Eradicated chatbox problems. Remove speed match for observers. Put in
- * help screens for PXO. Fix messaging and end mission privelges. Fixed
- * team select screen bugs. Misc UI fixes.
- * 
- * 48    5/15/98 9:52p Dave
- * Added new stats for freespace. Put in artwork for viewing stats on PXO.
- * 
- * 47    5/15/98 5:15p Dave
- * Fix a standalone resetting bug.Tweaked PXO interface. Display captaincy
- * status for team vs. team. Put in asserts to check for invalid team vs.
- * team situations.
- * 
- * 46    5/08/98 7:08p Dave
- * Lots of UI tweaking.
- * 
- * 45    5/07/98 6:26p Dave
- * Fix strange boundary conditions which arise when players die/respawn
- * while the game is being ended. Spiff up the chatbox doskey thing a bit.
- * 
- * 44    5/04/98 10:39p Dave
- * Put in endgame sequencing.  Need to check campaign situations.
- * Realigned ship info on team select screen.
- * 
- * 43    5/02/98 5:38p Dave
- * Put in new tracker API code. Put in ship information on mp team select
- * screen. Make standalone server name permanent. Fixed standalone server
- * text messages.
- * 
- * 42    4/29/98 6:00p Dave
- * Fixed chatbox font colors. Made observer offscreen indicators work.
- * Numerous small UI fixes. Fix rank limitations for mp games. 
- * 
- * 41    4/25/98 3:14p Dave
- * Fixed chatbox clipping problem.
- * 
- * 40    4/16/98 6:34p Dave
- * Fixed reversed team vs. team colors.
- * 
- * 39    4/14/98 5:06p Dave
- * Don't load or send invalid pilot pics. Fixed chatbox graphic errors.
- * Made chatbox display team icons in a team vs. team game. Fixed up pause
- * and endgame sequencing issues.
- * 
- * 38    4/13/98 7:48p Dave
- * Fixed chatbox overrun errors. Put in line recall function (4 deep).
- * 
- * 37    4/12/98 2:09p Dave
- * Make main hall door text less stupid. Make sure inputbox focus in the
- * multi host options screen is managed more intelligently.
- * 
- * 36    4/01/98 11:19p Dave
- * Put in auto-loading of xferred pilot pic files. Grey out background
- * behind pinfo popup. Put a chatbox message in when players are kicked.
- * Moved mission title down in briefing. Other ui fixes.
- * 
- * 35    3/31/98 4:42p Allender
- * mission objective support for team v. team mode.  Chatbox changes to
- * make input box be correct length when typing
- * 
- * 34    3/29/98 1:24p Dave
- * Make chatbox not clear between multiplayer screens. Select player ship
- * as default in mp team select and weapons select screens. Made create
- * game mission list use 2 fixed size columns.
- * 
- * 33    3/19/98 5:05p Dave
- * Put in support for targeted multiplayer text and voice messaging (all,
- * friendly, hostile, individual).
- * 
- * 32    3/18/98 12:03p John
- * Marked all the new strings as externalized or not.
- * 
- * 31    3/17/98 12:30a Dave
- * Put in hud support for rtvoice. Several ui interface changes.
- * 
- * 30    3/10/98 10:59p Dave
- * Fixed single player pause screen. Put in temporary fix for multiplayer
- * version. Fixed several chatbox display and text string bugs.
- * 
- * 29    2/27/98 9:41a Dave
- * Made "up/down" arrows flip direction when toggling chatbox sizes.
- * 
- * 28    2/26/98 4:21p Dave
- * More robust multiplayer voice.
- * 
- * 27    2/22/98 4:17p John
- * More string externalization classification... 190 left to go!
- * 
- * 26    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 25    2/13/98 3:46p Dave
- * Put in dynamic chatbox sizing. Made multiplayer file lookups use cfile
- * functions.
- * 
- * 24    2/04/98 10:50p Allender
- * zero out chat line before storing text
- * 
- * 23    1/29/98 5:23p Dave
- * Made ingame join handle bad packets gracefully.
- * 
- * 22    1/23/98 5:43p Dave
- * Finished bringing standalone up to speed. Coded in new host options
- * screen.
- * 
- * 21    1/17/98 5:51p Dave
- * Bug fixes for bugs generated by multiplayer testing.
- * 
- * 20    1/16/98 5:23p Allender
- * more chatbox changes
- * 
- * 19    1/16/98 4:28p Allender
- * automatically send line when close to end of chatbox.  
- * 
- * 18    1/16/98 2:34p Dave
- * Made pause screen work properly (multiplayer). Changed how chat packets
- * work.
- * 
- * 17    1/15/98 6:12p Dave
- * Fixed weapons loadout bugs with multiplayer respawning. Added
- * multiplayer start screen. Fixed a few chatbox bugs.
- * 
- * 16    1/15/98 5:10p Allender
- * ton of interface changes.  chatbox in multiplayer now behaves
- * differently than before.  It's always active in any screen that uses
- * it.  Only non-printatble characters will get passed back out from
- * chatbox
- * 
- * 15    1/12/98 5:17p Dave
- * Put in a bunch of multiplayer sequencing code. Made weapon/ship select
- * work through the standalone.
- * 
- * 14    1/07/98 5:20p Dave
- * Put in support for multiplayer campaigns with the new interface
- * screens.
- * 
- * 13    1/05/98 5:06p Dave
- * Fixed a chat packet bug. Fixed a few state save/restore bugs. Updated a
- * few things for multiplayer server transfer.
- * 
- * 12    12/29/97 3:15p Dave
- * Put in auto-indenting for multiplayer chatbox. Tweaked some multiplayer
- * interface code.
- * 
- * 11    12/22/97 9:13p Allender
- * fixed up a few minor issues with chatbox
- * 
- * 10    12/19/97 7:08p Jasen
- * Updated coords for new ChatBox (small)
- * 
- * 9     12/18/97 8:59p Dave
- * Finished putting in basic support for weapon select and ship select in
- * multiplayer.
- * 
- * 8     12/06/97 4:27p Dave
- * Another load of interface and multiplayer bug fixes.
- * 
- * 7     12/03/97 4:16p Hoffoss
- * Changed sound stuff used in interface screens for interface purposes.
- * 
- * 6     11/12/97 4:40p Dave
- * Put in multiplayer campaign support parsing, loading and saving. Made
- * command-line variables better named. Changed some things on the initial
- * pilot select screen.
- * 
- * 5     10/24/97 10:59p Hoffoss
- * Added in create pilot popup window and barracks screen.
- * 
- * 4     10/08/97 5:08p Lawrance
- * use mask region for chat box inputbox, so getting focus is easier
- * 
- * 3     10/01/97 4:47p Lawrance
- * move some #defines out of header file into .cpp file
- * 
- * 2     10/01/97 4:39p Lawrance
- * move chat code into Chatbox.cpp, simplify interface
- * 
- * 1     10/01/97 10:54a Lawrance
- *
- * $NoKeywords: $
- */
+
 
 
 #include "ui/ui.h"
@@ -646,7 +333,7 @@ void chatbox_set_mode(int mode_flags)
 	// set up the display/init variables based upon what mode we chode
 	switch(size){
 	case 0:		
-		strcpy(Chatbox_mask, Chatbox_small_bitmap_mask_fname[gr_screen.res]);
+		strcpy_s(Chatbox_mask, Chatbox_small_bitmap_mask_fname[gr_screen.res]);
 		Chatbox_x1 = Chatbox_small_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_y1 = Chatbox_small_coords[gr_screen.res][CHATBOX_Y_COORD];		
 		Chatbox_icon_x = Chatbox_small_display_coords[gr_screen.res][CHATBOX_X_COORD] - CHATBOX_TEAM_ICON_SPACE;
@@ -662,7 +349,7 @@ void chatbox_set_mode(int mode_flags)
 		break;
 
 	case 1:		
-		strcpy(Chatbox_mask, Chatbox_big_bitmap_mask_fname[gr_screen.res]);
+		strcpy_s(Chatbox_mask, Chatbox_big_bitmap_mask_fname[gr_screen.res]);
 		Chatbox_x1 = Chatbox_big_coords[gr_screen.res][CHATBOX_X_COORD];
 		Chatbox_y1 = Chatbox_big_coords[gr_screen.res][CHATBOX_Y_COORD];		
 		Chatbox_icon_x = Chatbox_big_display_coords[gr_screen.res][CHATBOX_X_COORD] - CHATBOX_TEAM_ICON_SPACE;
@@ -694,17 +381,52 @@ void chatbox_set_mode(int mode_flags)
 	}
 }
 
+int chatbox_get_msg_target_type(char *msg )
+{
+	if (msg[0] != '/') {
+		return MULTI_MSG_ALL;
+	}
+
+	if (!strnicmp (msg, "/f:", 3)) {
+		return MULTI_MSG_FRIENDLY;
+	}	
+
+	if (!strnicmp (msg, "/h:", 3)) {
+		return MULTI_MSG_HOSTILE;
+	}	
+
+	return MULTI_MSG_EXPR;
+}
+
+int chatbox_get_msg_target_length(char *msg)
+{
+	if ((msg[0] != '/') && (strchr(msg, ':') != NULL) ) {
+		return -1;
+	}
+
+	// find the first space
+	return strcspn(msg, ":") + 1 ;
+
+}
+
 // automatically split up any input text, send it, and leave the remainder 
 void chatbox_autosplit_line()
 {
 	char *remainder,msg[150];
+	char temp[150];
 	int msg_pixel_width;
+	int target, target_length = -1; 
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
 	memset(msg,0,150);
 	Chat_inputbox.get_text(msg);
 	remainder = "";
+
+	// check if this message is supposed to have a recipient
+	target = chatbox_get_msg_target_type(msg); 
+	target_length = chatbox_get_msg_target_length(msg); 
+
 	// determine if the width of the string in pixels is > than the inputbox width -- if so,
 	// then send the message
 	gr_get_string_size(&msg_pixel_width, NULL, msg);
@@ -719,20 +441,49 @@ void chatbox_autosplit_line()
 		}	
 		// if I'm the server, then broadcast the packet		
 		chatbox_recall_add(msg);
-  		send_game_chat_packet(Net_player, msg, MULTI_MSG_ALL,NULL);
+
+		if (target != MULTI_MSG_EXPR) {
+  			send_game_chat_packet(Net_player, msg, target);
+		}
+		else {
+			// copy the name of the player the message is being sent to
+			strncpy(temp, msg+1, target_length-2);
+			temp[target_length-2] = '\0';
+			send_game_chat_packet(Net_player, msg, target, NULL, temp);
+		}
 		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
 
-		// display any remainder of text on the next line
-		Chat_inputbox.set_text(remainder);
-	} else if((Chat_inputbox.pressed() && (strlen(msg) > 0)) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
+		if (target != MULTI_MSG_ALL) {
+			// we need to add the target the message is going to before we add the rest of the string
+			strncpy(temp, msg, target_length);
+ 			temp[target_length] = ' '; 
+ 			temp[target_length+1] = '\0'; 
+			strcat_s(temp, remainder); 
+			Chat_inputbox.set_text(temp);
+		}
+		else {
+			// display any remainder of text on the next line
+			Chat_inputbox.set_text(remainder);
+		}
+	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
 		// tack on the null terminator in the boundary case
 		int x = strlen(msg);
 		if(x >= CHATBOX_MAX_LEN){
 			msg[CHATBOX_MAX_LEN-1] = '\0';
-		}		
+		}
+	
 		// if I'm the server, then broadcast the packet		
 		chatbox_recall_add(msg);
-  		send_game_chat_packet(Net_player, msg, MULTI_MSG_ALL,NULL);
+		if (target != MULTI_MSG_EXPR) {
+  			send_game_chat_packet(Net_player, msg, target);
+		}
+		else {
+			// copy the name of the player the message is being sent to
+			strncpy(temp, msg+1, target_length-2);
+			temp[target_length-2] = '\0';
+			send_game_chat_packet(Net_player, msg, target, NULL, temp);
+		}
+
 		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
 
 		// display any remainder of text on the next line
@@ -936,14 +687,14 @@ void chatbox_render()
 	}
 
 	// clear the multiplayer chat window
-	// gr_set_clip(Chatbox_x1, Chatbox_y1, Chatbox_w, Chatbox_h);
+	// gr_set_clip(Chatbox_x1, Chatbox_y1, Chatbox_w, Chatbox_h, GR_RESIZE_MENU);
 	// gr_clear();
 	// gr_reset_clip();
 
 	// draw the background bitmap if we're supposed to
 	if ( (Chatbox_bitmap != -1) && (Chatbox_mode_flags & CHATBOX_FLAG_DRAW_BOX)) {
 		gr_set_bitmap( Chatbox_bitmap );
-		gr_bitmap(Chatbox_x1, Chatbox_y1);		
+		gr_bitmap(Chatbox_x1, Chatbox_y1, GR_RESIZE_MENU);		
 	}
 
 	// render the chat lines
@@ -1025,12 +776,12 @@ void chatbox_chat_init()
 }
 
 // int Test_color = 0;
-void chatbox_add_line(char *msg, int pid, int add_id)
+void chatbox_add_line(const char *msg, int pid, int add_id)
 {
 	int backup;
 	int	n_lines,idx;
 	int	n_chars[3];		
-	char	*p_str[3];			// for the initial line (unindented)
+	const char	*p_str[3];			// for the initial line (unindented)
 	char msg_extra[CHATBOX_STRING_LEN];
 
 	if(!Chatbox_created){
@@ -1045,7 +796,7 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
 		}
 	} else {
-		strcpy(msg_extra,msg);
+		strcpy_s(msg_extra,msg);
 	}	
 	Assert(strlen(msg_extra) < (CHATBOX_STRING_LEN - 2));	
 
@@ -1113,7 +864,7 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 	}
 			
 	// COMMAND LINE OPTION
-	if(Cmdline_multi_stream_chat_to_file && Multi_chat_stream!=NULL && strlen(msg)>0){ // stream to the file if we're supposed to
+	if(Cmdline_multi_stream_chat_to_file && Multi_chat_stream!=NULL && msg[0] != '\0'){ // stream to the file if we're supposed to
 		cfwrite_string(msg,Multi_chat_stream);
 		cfwrite_char('\n',Multi_chat_stream);
 	}	
@@ -1136,11 +887,12 @@ void chatbox_add_line(char *msg, int pid, int add_id)
 
 void chatbox_render_chat_lines()
 {
-   int started_at,player_num,count,ly;	
+   int started_at,player_num,count,ly,line_height;	
 	
 	started_at = Brief_start_display_index;
 	count = 0;	
 	ly = Chatbox_begin_y;
+	line_height = gr_get_font_height() + 1;
 	while((count < Chatbox_max_lines) && (count < Num_brief_chat_lines)){	
 		// determine what player this chat line came from, and set the appropriate text color
 		player_num = Brief_chat_lines[started_at][0];	   		
@@ -1149,7 +901,7 @@ void chatbox_render_chat_lines()
 		gr_set_color_fast(Color_netplayer[player_num]);
 
 		// draw the first line (no indent)						
-		gr_string(Chatbox_begin_x + Brief_chat_indents[started_at],ly,&Brief_chat_lines[started_at][1]);		
+		gr_string(Chatbox_begin_x + Brief_chat_indents[started_at],ly,&Brief_chat_lines[started_at][1],GR_RESIZE_MENU);		
 
 		// if we're in a team vs. team game, blit the player color icon
 		if(Netgame.type_flags & NG_TYPE_TEAM){
@@ -1159,14 +911,14 @@ void chatbox_render_chat_lines()
 				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 					if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					} 
 				}
 				// just you're average peon
 				else {
 					if(Multi_common_icons[MICON_TEAM0] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				break;
@@ -1175,14 +927,14 @@ void chatbox_render_chat_lines()
 				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
 					if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				// just your average peon
 				else {
 					if(Multi_common_icons[MICON_TEAM1] != -1){
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-						gr_bitmap(Chatbox_icon_x,ly-2);
+						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
 					}
 				}
 				break;
@@ -1191,7 +943,7 @@ void chatbox_render_chat_lines()
 
 		// increment the count and line position
 		count++;		
-		ly += 10;
+		ly += line_height;
 		
 		// increment the started at index
 		started_at = Brief_chat_next_index[started_at];
@@ -1375,7 +1127,7 @@ void chatbox_recall_add(char *string)
 	}
 
 	// copy the new item into spot 0
-	strcpy(Chatbox_recall_lines[0],string);
+	strcpy_s(Chatbox_recall_lines[0],string);
 
 	// increment the recall count if necessary
 	if(Chatbox_recall_count < CHATBOX_MAX_RECALL_LINES){

@@ -7,396 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.45.2.8 $
- * $Date: 2007-10-15 06:43:19 $
- * $Author: taylor $
- *
- * C file that contains misc. functions to support multiplayer
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.45.2.7  2007/04/24 12:07:33  karajorma
- * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
- *
- * Revision 2.45.2.6  2007/04/24 09:52:26  karajorma
- * Add the knock feature from Tom's build.
- *
- * Revision 2.45.2.5  2007/04/05 16:49:21  karajorma
- * Fix bug whereby clients who were gliding can't jump out at the end of the mission. Remove a couple of magic numbers that looked at me the wrong way.
- *
- * Revision 2.45.2.4  2006/09/24 22:53:22  taylor
- * more standalone server fixes:
- *  - add some basic bmpman functionality to grstub, since it needs to do something at least
- *  - add missing gr_* function ptrs to grstrub
- *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
- *  - deal with default pilot file properly (also caused a bmpman headache)
- *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
- *
- * Revision 2.45.2.3  2006/09/24 13:29:20  taylor
- * move FS2NetD connection checks to *after* it tries to connect ;)  (Mantis bug #1065)
- *
- * Revision 2.45.2.2  2006/09/20 05:01:36  taylor
- * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
- *
- * Revision 2.45.2.1  2006/08/19 04:38:47  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.45  2006/02/06 02:06:02  wmcoolmon
- * Various fixes; very beginnings of Directives scripting support
- *
- * Revision 2.44  2006/02/03 22:28:10  taylor
- * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
- * some cleanup, extra logging, and very slight speedup with mission and table validation checking
- * fix memory leak from mission and table validation checking
- *
- * Revision 2.43  2006/01/26 03:23:30  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.42  2005/12/29 08:08:39  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.41  2005/12/22 04:35:04  taylor
- * more big-endian fixes
- * fix the totally retarded check I made for multi fighter beams (they really don't work right yet anyway) since it broke normal beams for clients
- *
- * Revision 2.40  2005/10/10 17:21:08  taylor
- * remove NO_NETWORK
- *
- * Revision 2.39  2005/09/27 02:36:58  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.38  2005/08/20 20:29:47  taylor
- * Fix an old unix define, should be SCP_UNIX
- *
- * Revision 2.37  2005/07/13 03:35:33  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.36  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.35  2005/05/13 23:10:17  taylor
- * unbreak joining (when forming, not in-game) (Jens Granseuer)
- *
- * Revision 2.34  2005/05/12 17:49:15  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.33  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.32  2005/03/11 14:14:05  taylor
- * forgot to remove this with the MIN/MAX change
- *
- * Revision 2.31  2005/03/10 08:00:11  taylor
- * change min/max to MIN/MAX to fix GCC problems
- * add lab stuff to Makefile
- * build unbreakage for everything that's not MSVC++ 6
- * lots of warning fixes
- * fix OpenGL rendering problem with ship insignias
- * no Warnings() in non-debug mode for Linux (like Windows)
- * some campaign savefile fixage to stop reverting everyones data
- *
- * Revision 2.30  2005/03/08 03:50:23  Goober5000
- * edited for language ;)
- * --Goober5000
- *
- * Revision 2.29  2005/03/02 21:18:20  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.28  2005/02/16 10:00:40  wmcoolmon
- * "-ingame" command line option
- *
- * Revision 2.27  2005/02/04 20:06:05  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.26  2004/12/14 14:46:13  Goober5000
- * allow different wing names than ABGDEZ
- * --Goober5000
- *
- * Revision 2.25  2004/11/26 08:41:11  taylor
- * couple of LAN game vs. FS2NetD fixes
- *
- * Revision 2.24  2004/08/26 18:19:36  Kazan
- * small standalone-related multibug fix
- * prohibited execution of process_debug_keys(int) while Game_mode & GM_MULTIPLAYER
- *
- * Revision 2.23  2004/07/26 20:47:43  Kazan
- * remove MCD complete
- *
- * Revision 2.22  2004/07/12 16:32:58  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.21  2004/07/12 14:38:13  Kazan
- * fix a small multibug in tables validation (I had added this once before.. where did it go)
- *
- * Revision 2.20  2004/07/12 03:04:33  wmcoolmon
- * ...
- *
- * Revision 2.19  2004/07/12 03:04:03  wmcoolmon
- * Oops. :p
- *
- * Revision 2.18  2004/07/12 02:50:48  wmcoolmon
- * Ingame joining stuff - use -rt to enabled/disable
- *
- * Revision 2.17  2004/07/07 21:00:08  Kazan
- * FS2NetD: C2S Ping/Pong, C2S Ping/Pong, Global IP Banlist, Global Network Messages
- *
- * Revision 2.16  2004/03/31 05:42:27  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.15  2004/03/05 21:19:39  Kazan
- * Fixed mission validation (was returning false positives)
- *
- * Revision 2.14  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.13  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.12  2003/11/09 04:09:18  Goober5000
- * edited for language
- * --Goober5000
- *
- * Revision 2.11  2003/11/06 20:22:13  Kazan
- * slight change to .dsp - leave the release target as fs2_open_r.exe already
- * added myself to credit
- * killed some of the stupid warnings (including doing some casting and commenting out unused vars in the graphics modules)
- * Release builds should have warning level set no higher than 2 (default is 1)
- * Why are we getting warning's about function selected for inline expansion... (killing them with warning disables)
- * FS2_SPEECH was not defined (source file doesn't appear to capture preproc defines correctly either)
- *
- * Revision 2.10  2003/10/30 15:30:23  Kazan
- * lil update
- *
- * Revision 2.9  2003/10/15 22:03:26  Kazan
- * Da Species Update :D
- *
- * Revision 2.8  2003/10/13 05:57:50  Kazan
- * Removed a bunch of Useless *_printf()s in the rendering pipeline that were just slowing stuff down
- * Commented out the "warning null vector in vector normalize" crap
- * Added "beam no whack" flag for beams - said beams NEVER whack
- * Some reliability updates in FS2NetD
- *
- * Revision 2.7  2003/10/04 22:42:23  Kazan
- * fs2netd now TCP
- *
- * Revision 2.6  2003/09/25 21:12:24  Kazan
- * ##Kazan## FS2NetD Completed!  Just needs some thorough bug checking (i don't think there are any serious bugs)
- * Also D3D8 Screenshots work now.
- *
- * Revision 2.5  2003/09/24 19:35:59  Kazan
- * ##KAZAN## FS2 Open PXO --- W00t! Stats Storage, everything but table verification completed!
- *
- * Revision 2.4  2003/09/23 02:42:54  Kazan
- * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
- *
- * Revision 2.3  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/22 01:22:26  penguin
- * Linux port -- added NO_STANDALONE ifdefs
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/13 21:09:28  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 47    9/15/99 1:45a Dave
- * Don't init joystick on standalone. Fixed campaign mode on standalone.
- * Fixed no-score-report problem in TvT
- * 
- * 46    9/09/99 8:53p Dave
- * Fixed multiplayer degenerate orientation case problem. Make sure warp
- * effect never goes lower than LOD 1. 
- * 
- * 45    8/24/99 1:50a Dave
- * Fixed client-side afterburner stuttering. Added checkbox for no version
- * checking on PXO join. Made button info passing more friendly between
- * client and server.
- * 
- * 44    8/23/99 10:30a Dave
- * Make sure a kill limit of 0 really means "no kill limit"
- * 
- * 43    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 42    8/22/99 1:19p Dave
- * Fixed up http proxy code. Cleaned up scoring code. Reverse the order in
- * which d3d cards are detected.
- * 
- * 41    8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 40    8/06/99 2:44a Dave
- * Make sure dead players who leave respawn AI.
- * 
- * 39    8/06/99 12:29a Dave
- * Multiple bug fixes.
- * 
- * 38    8/03/99 11:02p Dave
- * Maybe fixed sync problems in multiplayer.
- * 
- * 37    7/30/99 7:01p Dave
- * Dogfight escort gauge. Fixed up laser rendering in Glide.
- * 
- * 36    7/26/99 5:50p Dave
- * Revised ingame join. Better? We'll see....
- * 
- * 35    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 34    7/08/99 10:53a Dave
- * New multiplayer interpolation scheme. Not 100% done yet, but still
- * better than the old way.
- * 
- * 33    6/25/99 5:04p Jasenw
- * Added some debug line stuff.
- * 
- * 32    6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 31    5/18/99 11:50a Andsager
- * Remove unused object type OBJ_GHOST_SAVE
- * 
- * 30    5/04/99 5:20p Dave
- * Fixed up multiplayer join screen and host options screen. Should both
- * be at 100% now.
- * 
- * 29    5/03/99 8:33p Dave
- * New version of multi host options screen.
- * 
- * 28    4/27/99 12:16a Dave
- * Fixed beam weapon muzzle glow problem. Fixed premature timeout on the
- * pxo server list screen. Fixed secondary firing for hosts on a
- * standalone. Fixed wacky multiplayer weapon "shuddering" problem.
- * 
- * 27    4/25/99 7:43p Dave
- * Misc small bug fixes. Made sun draw properly.
- * 
- * 26    4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 25    4/09/99 2:21p Dave
- * Multiplayer beta stuff. CD checking.
- * 
- * 24    4/08/99 2:10a Dave
- * Numerous bug fixes for the beta. Added builtin mission info for the
- * beta.
- * 
- * 23    3/10/99 6:50p Dave
- * Changed the way we buffer packets for all clients. Optimized turret
- * fired packets. Did some weapon firing optimizations.
- * 
- * 22    3/09/99 6:24p Dave
- * More work on object update revamping. Identified several sources of
- * unnecessary bandwidth.
- * 
- * 21    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 20    3/01/99 10:00a Dave
- * Fxied several dogfight related stats bugs.
- * 
- * 19    2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 18    2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- * 
- * 17    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 16    2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 15    2/08/99 5:07p Dave
- * FS2 chat server support. FS2 specific validated missions.
- * 
- * 14    1/30/99 1:29a Dave
- * Fixed nebula thumbnail problem. Full support for 1024x768 choose pilot
- * screen.  Fixed beam weapon death messages.
- * 
- * 13    1/14/99 6:06p Dave
- * 100% full squad logo support for single player and multiplayer.
- * 
- * 12    1/12/99 4:07a Dave
- * Put in barracks code support for selecting squad logos. Properly
- * distribute squad logos in a multiplayer game.
- * 
- * 11    12/14/98 4:01p Dave
- * Got multi_data stuff working well with new xfer stuff. 
- * 
- * 10    12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 9     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 8     11/19/98 8:04a Dave
- * Full support for D3-style reliable sockets. Revamped packet lag/loss
- * system, made it receiver side and at the lowest possible level.
- * 
- * 7     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 6     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 5     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 4     10/09/98 2:57p Dave
- * Starting splitting up OS stuff.
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 283   9/28/98 1:54p Dave
- * Make sure French and German don't xfer builtin files they don't have
- * (to themselves)
- * 
- * 282   9/28/98 1:41p Dave
- * Properly detect "builtin" missions.
- * 
- * 281   9/21/98 11:46p Dave
- * Flag mission disk players in the right spot.
- * 
- * 280   9/15/98 7:24p Dave
- * Minor UI changes. Localized bunch of new text.
- * 
- * $NoKeywords: $
- */
+
 
 
 #if defined _WIN32
@@ -466,14 +77,12 @@
 #include "network/multi_rate.h"
 #include "fs2netd/fs2netd_client.h"
 #include "parse/parselo.h"
-
-extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
-extern int MSG_WINDOW_Y_START;
-extern int MSG_WINDOW_HEIGHT;
+#include "debugconsole/console.h"
 
 extern int ascii_table[];
 extern int shifted_ascii_table[];
 
+extern int Multi_ping_timestamp;
 
 // network object management
 ushort Next_ship_signature;										// next permanent network signature to assign to an object
@@ -665,7 +274,7 @@ ushort netmisc_calc_checksum( void * vptr, int len )
 
 #define NUM_DEATH_WORDS	40
 
-char *multi_random_death_word()
+const char *multi_random_death_word()
 {
 	int index;
 
@@ -764,7 +373,7 @@ char *multi_random_death_word()
 #define NUM_CHAT_START_WORDS	8
 #define MAX_CHAT_PHRASE_LEN	25		// be careful not to exceed (or update if exceeded)
 
-char *multi_random_chat_start()
+const char *multi_random_chat_start()
 {
 	int index;
 
@@ -797,7 +406,7 @@ char *multi_random_chat_start()
 //
 //
 
-int multi_ship_class_lookup(char* ship_name)
+int multi_ship_class_lookup(const char* ship_name)
 {
 	int i, player_ship_class;
 
@@ -969,7 +578,7 @@ int multi_find_player_by_parse_object( p_object *p_objp )
 	return -1;
 }
 
-int multi_find_player_by_ship_name(char *ship_name, bool inc_respawning)
+int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning)
 {
 	int idx;
 	p_object *p_objp;
@@ -1103,7 +712,6 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 	// works properly.
 	Net_players[net_player].p_info.p_objp = mission_parse_get_arrival_ship( shipp->ship_name );
 	Assert( Net_players[net_player].p_info.p_objp != NULL );		// get allender -- ship should be on list
-	Net_players[net_player].p_info.p_objp->ship_class = ship_class;		// be sure this gets set so respawns work
 
 	// game server and this client need to initialize this information so object updating
 	// works properly.
@@ -1128,7 +736,7 @@ void multi_assign_player_ship( int net_player, object *objp,int ship_class )
 // depends on the parameter ship_class.  Note that if ship_class is invalid, the ship default_player_ship
 // is used.  Returns 1 on success, 0 otherwise
 
-int multi_create_player( int net_player_num, player *pl, char* name, net_addr* addr, int ship_class, short id)
+int multi_create_player( int net_player_num, player *pl, const char* name, net_addr* addr, int ship_class, short id)
 {
 	int player_ship_class = ship_class;
 	int i,current_player_count;
@@ -1176,11 +784,11 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	}
 
 	// blast the old player data
-	memset(pl,0,sizeof(player));
+	pl->reset();
 
 	// set up the net_player structure
-	stuff_netplayer_info( &Net_players[net_player_num], addr, player_ship_class, pl );
-	Net_players[net_player_num].s_info.num_last_buttons = 0;
+	stuff_netplayer_info( &Net_players[net_player_num], addr, player_ship_class, pl );	Net_players[net_player_num].s_info.num_last_buttons = 0;
+
 	// Net_players[net_player_num].respawn_count = 0;
 	Net_players[net_player_num].last_heard_time = timer_get_fixed_seconds();
 	Net_players[net_player_num].reliable_socket = INVALID_SOCKET;
@@ -1212,7 +820,7 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	Net_players[net_player_num].s_info.reliable_buffer_size = 0;
 	
 	// various ack handles	
-	strcpy(pl->callsign, name);
+	strcpy_s(pl->callsign, name);
 	pilot_set_short_callsign(pl, SHORT_CALLSIGN_PIXEL_W);   // calculate the short callsign 
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 	pl->objnum = -1;
@@ -1382,7 +990,7 @@ void delete_player(int player_num,int kicked_reason)
 	multi_rate_reset(player_num);
 
 	// display a message that this guy has left
-	if(Net_players[player_num].m_player->callsign){
+	if(*Net_players[player_num].m_player->callsign){
 		sprintf(notify_string,XSTR("<%s has left>",901),Net_players[player_num].m_player->callsign);
 		multi_display_chat_msg(notify_string,0,0);
 	}
@@ -1704,7 +1312,7 @@ void multi_subsys_update_all()
 	*/
 }
 
-int multi_find_player_by_callsign(char *callsign)
+int multi_find_player_by_callsign(const char *callsign)
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -1724,7 +1332,7 @@ int multi_is_builtin_mission()
 
 	// get the full filename
 	memset(name,0,512);
-	strcpy(name,Game_current_mission_filename);
+	strcpy_s(name,Game_current_mission_filename);
 	cf_add_ext(name, FS_MISSION_FILE_EXT);
 
 	// if this mission is builtin	
@@ -1739,24 +1347,6 @@ int multi_is_builtin_mission()
 // verify that the player has a valid mission file and do 1 of 3 things
 void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 {   	
-#if defined(MULTIPLAYER_BETA_BUILD) || defined(FS2_DEMO)
-	net_player *pl;
-   int player;
-
-	player = find_player_id(player_id);
-	Assert(player >= 0);
-	if(player < 0){
-		return;
-	}
-	pl = &Net_players[player];
-
-	// all missions should be builtin, so if we don't have a match, kick the player
-	if((sum_sig != Multi_current_file_checksum) || (length_sig != Multi_current_file_length)){
-		multi_kick_player(player, 0, KICK_REASON_CANT_XFER);
-	} else {
-		pl->flags |= NETINFO_FLAG_MISSION_OK;
-	}
-#else
 	net_player *pl;
    int player;
 	int ok;	
@@ -1817,7 +1407,6 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 			pl->flags |= NETINFO_FLAG_MISSION_OK;			
 		}
 	}
-#endif
 }
 
 // check to see if every client has NETINFO_FLAG_MISSION_OK
@@ -1946,8 +1535,6 @@ void multi_eval_socket_error(PSNET_SOCKET sock, int error)
 		// mwa -- don't go back to main menu.  You don't want host to do this.  Maybe we can ignore it
 		// because of a leaving player.
 		return;
-		//gameseq_post_event(GS_EVENT_MAIN_MENU);
-		// Int3();							// get allender -- something happened to socket connection!!!
 	}
 
 	if ( (error != WSAECONNRESET) && (error != WSAECONNABORTED) && (error != WSAESHUTDOWN) ) {
@@ -2019,7 +1606,7 @@ void multi_create_standalone_object()
 	Net_player->m_player->objnum = objnum;
 
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(&Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
 	obj_set_flags(&Objects[pobj_num],OF_PLAYER_SHIP);
 	Objects[pobj_num].net_signature = STANDALONE_SHIP_SIG;
@@ -2028,7 +1615,7 @@ void multi_create_standalone_object()
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
 	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
-	strcpy(Player_ship->ship_name, XSTR("Standalone Ship",904));
+	strcpy_s(Player_ship->ship_name, XSTR("Standalone Ship",904));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 
 }
@@ -2106,9 +1693,9 @@ active_game *multi_update_active_games(active_game *ag)
 
 			// copy in the game information
 			memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
-			strcpy(gp->name,ag->name);
-			strcpy(gp->mission_name,ag->mission_name);
-			strcpy(gp->title,ag->title);			
+			strcpy_s(gp->name,ag->name);
+			strcpy_s(gp->mission_name,ag->mission_name);
+			strcpy_s(gp->title,ag->title);			
 			gp->num_players = ag->num_players;
 			gp->flags = ag->flags;
 			
@@ -2124,11 +1711,11 @@ active_game *multi_update_active_games(active_game *ag)
 		// otherwise update the netgame info we have for this guy
 		else {				
 			memset(gp->name,0,MAX_GAMENAME_LEN+1);
-			strcpy(gp->name,ag->name);
+			strcpy_s(gp->name,ag->name);
 			memset(gp->mission_name,0,NAME_LENGTH+1);
-			strcpy(gp->mission_name,ag->mission_name);
+			strcpy_s(gp->mission_name,ag->mission_name);
 			memset(gp->title,0,NAME_LENGTH+1);
-			strcpy(gp->title,ag->title);			
+			strcpy_s(gp->title,ag->title);			
 			gp->num_players = ag->num_players;
 			gp->flags = ag->flags;			
 		}
@@ -2138,9 +1725,9 @@ active_game *multi_update_active_games(active_game *ag)
 
 		// copy in the game information	
 		memcpy(&gp->server_addr,&ag->server_addr,sizeof(net_addr));
-		strcpy(gp->name,ag->name);
-		strcpy(gp->mission_name,ag->mission_name);
-		strcpy(gp->title,ag->title);		
+		strcpy_s(gp->name,ag->name);
+		strcpy_s(gp->mission_name,ag->mission_name);
+		strcpy_s(gp->title,ag->title);		
 		gp->num_players = ag->num_players;
 		gp->flags = ag->flags;
 		
@@ -2604,7 +2191,7 @@ void multi_warpout_all_players()
 	
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
-		(Net_player->flags & NETINFO_FLAG_OBSERVER) || ((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
+		((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
 
 		multi_handle_sudden_mission_end(); 
 
@@ -2793,7 +2380,7 @@ void multi_file_xfer_notify(int handle)
 
 	// QUICK FIX
 	// check to see if the file is read-only			
-	if((strlen(filename) > 0) && !cf_access(filename, cf_type, 00) && (cf_access(filename, cf_type, 02) == -1)){	
+	if((filename[0] != '\0') && !cf_access(filename, cf_type, 00) && (cf_access(filename, cf_type, 02) == -1)){	
 		multi_xfer_xor_flags(handle, MULTI_XFER_FLAG_REJECT);
 
 		Net_player->flags &= ~(NETINFO_FLAG_DO_NETWORKING);
@@ -2867,15 +2454,15 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 
 		// copy his pilot image filename
-		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
+		if(jr->image_filename[0] != '\0'){
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);		
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2890,10 +2477,10 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		Net_players[net_player_num].tracker_player_id = jr->tracker_id;
 
 		// store pxo info
-		if(strlen(jr->pxo_squad_name) > 0){
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
+		if(jr->pxo_squad_name[0] != '\0'){
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
 		} else {
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, "");
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, "");
 		}		
 
 		// if he's using hacked data
@@ -2913,15 +2500,15 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		}
 		
 		// copy his pilot image filename
-		if(strlen(jr->image_filename) > 0){
-			strcpy(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
+		if(jr->image_filename[0] != '\0'){
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, jr->image_filename);
 		} else {
-			strcpy(Net_players[net_player_num].m_player->image_filename, "");
+			strcpy_s(Net_players[net_player_num].m_player->image_filename, "");
 		}
 
 		// copy his pilot squad filename		
 		Net_players[net_player_num].m_player->insignia_texture = -1;
-		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename);				
+		player_set_squad_bitmap(Net_players[net_player_num].m_player, jr->squad_filename, true);
 
 		// clear his multi_data info
 		multi_data_handle_join(net_player_num);
@@ -2936,10 +2523,10 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		Net_players[net_player_num].player_id = id_num;
 
 		// store pxo info
-		if(strlen(jr->pxo_squad_name) > 0){
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
+		if(jr->pxo_squad_name[0] != '\0'){
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, jr->pxo_squad_name);
 		} else {
-			strcpy(Net_players[net_player_num].p_info.pxo_squad_name, "");
+			strcpy_s(Net_players[net_player_num].p_info.pxo_squad_name, "");
 		}		
 
 		// if he's using hacked data
@@ -2949,7 +2536,6 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 		
 		// flag him appropriately if he's doing an ingame join
 		if(MULTI_IN_MISSION){
-	//		Int3(); //-C Ingame stuff
 			Net_players[net_player_num].flags |= NETINFO_FLAG_INGAME_JOIN;
 			Net_players[net_player_num].s_info.ingame_join_flags = 0;
 		}		
@@ -3016,7 +2602,6 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 
 	// set my ingame joining flag if the new guy is joining ingame
 	if ( Net_players[net_player_num].flags & NETINFO_FLAG_INGAME_JOIN ){
-//		Int3(); //-C Ingame stuff
 		Netgame.flags |= NG_FLAG_INGAME_JOINING;
 	}	
 	
@@ -3329,7 +2914,7 @@ int multi_kill_limit_reached()
 }
 
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
-void multi_display_chat_msg(char *msg, int player_index, int add_id)
+void multi_display_chat_msg(const char *msg, int player_index, int add_id)
 {
 	// if i'm a standalone, always add to the gui
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -3355,7 +2940,7 @@ void multi_display_chat_msg(char *msg, int player_index, int add_id)
 }
 
 // fill in Current_file_checksum and Current_file_length
-void multi_get_mission_checksum(char *filename)
+void multi_get_mission_checksum(const char *filename)
 {
 	CFILE *in;
 
@@ -3436,7 +3021,7 @@ int multi_show_ingame_ping()
 int multi_get_connection_speed()
 {
 	int cspeed;
-	char *connection_speed;
+	const char *connection_speed;
 
 #ifdef _WIN32	
 	connection_speed = os_config_read_string(NULL, "ConnectionSpeed", "");	
@@ -3520,10 +3105,10 @@ void multi_update_valid_missions()
 			if (tok == NULL)
 				continue;
 
-			strcpy(temp, tok);
+			strcpy_s(temp, tok);
 			drop_trailing_white_space(temp);
 			drop_leading_white_space(temp);
-			strcpy(next_filename, temp);
+			strcpy_s(next_filename, temp);
 			
 			// read in the status string
 			memset(status_string, 0, 50);
@@ -3533,10 +3118,10 @@ void multi_update_valid_missions()
 			if (tok == NULL)
 				continue;
 
-			strcpy(temp, tok);
+			strcpy_s(temp, tok);
 			drop_trailing_white_space(temp);
 			drop_leading_white_space(temp);
-			strcpy(status_string, temp);
+			strcpy_s(status_string, temp);
 
 			// try and find the file
 			file_index = multi_create_lookup_mission(next_filename);
@@ -3614,65 +3199,74 @@ short multi_get_new_id()
 // ------------------------------------
 
 //XSTR:OFF
-DCF(multi,"changes multiplayer settings")
+DCF(multi,"changes multiplayer settings (Multiplayer)")
 {
-	if(Dc_command){
-		dc_get_arg(ARG_STRING);
-		
-		if(strcmp(Dc_arg, "kick")==0){				// kick a player
-			multi_dcf_kick();
+	if (dc_optional_string("kick")) {
+		// kick a player
+		multi_dcf_kick();
+
 #ifndef NDEBUG
-		} else if(strcmp(Dc_arg, "stats")==0) {
-			// multi_toggle_stats();
-		} else if(strcmp(Dc_arg, "show_stats")==0) {
-			// multi_show_basic_stats(0);
-		} else if(strcmp(Dc_arg, "dump_stats")==0) {
-			// multi_show_basic_stats(1);
+	} else if (dc_optional_string("stats")) {
+		// multi_toggle_stats();
+
+	} else if (dc_optional_string("show_stats")) {
+		// multi_show_basic_stats(0);
+
+	} else if (dc_optional_string("dump_stats")) {
+		// multi_show_basic_stats(1);
 #endif
-		} else if(strcmp(Dc_arg, "voice")==0){				// settings for multiplayer voice
-			multi_voice_dcf();
-		} else if(strcmp(Dc_arg, "respawn_chump")==0){	// set a really large # of respawns
-			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){			
-				Netgame.respawn = 9999;
-				Netgame.options.respawn = 9999;				
 
-				// if i'm the server, send a netgame update
-				if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-					send_netgame_update_packet();
-				} 
-			}
-		} else if(strcmp(Dc_arg, "ss_leaders")==0){		// only host or team captains can modify ships
-			if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)){			
-				Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
-				multi_options_update_netgame();
-			}
-		} else if(strcmp(Dc_arg, "make_players")==0){
-#ifndef NDEBUG
-			multi_make_fake_players(MAX_PLAYERS);
-#endif
-		} else if(strcmp(Dc_arg, "givecd")==0){
-			extern int Multi_has_cd;
-			Multi_has_cd = 1;
-		} else if(strcmp(Dc_arg, "oo")==0){						
-			int new_flags = -1;
+	} else if (dc_optional_string("voice")) {
+		// settings for multiplayer voice
+		multi_voice_dcf();
 
-			dc_get_arg(ARG_INT);
-			if(Dc_arg_type & ARG_INT){
-				new_flags = Dc_arg_int;
-			}
+	} else if (dc_optional_string("respawn_chump")){
+		// set a really large # of respawns
+		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+			Netgame.respawn = 9999;
+			Netgame.options.respawn = 9999;
 
-			dc_printf("Interesting flags\nPos : %d\nVelocity : %d\nDesired vel : %d\nOrient : %d\nRotvel : %d\nDesired rotvel %d\n",
-						 1<<0, 1<<7, 1<<8, 1<<1, 1<<9, 1<<10);						
-		} else if(strcmp(Dc_arg, "oo_sort")==0){			
-			extern int OO_sort;
-
-			OO_sort = !OO_sort;
-			if(OO_sort){
-				dc_printf("Network object sorting ENABLED\n");
-			} else {
-				dc_printf("Network object sorting DISABLED\n");
-			}
+			// if i'm the server, send a netgame update
+			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+				send_netgame_update_packet();
+			} 
 		}
+
+	} else if (dc_optional_string("ss_leaders")) {
+		// only host or team captains can modify ships
+		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+			Netgame.options.flags |= MSO_FLAG_SS_LEADERS;
+			multi_options_update_netgame();
+		}
+
+	} else if (dc_optional_string("make_players")) {
+#ifndef NDEBUG
+		multi_make_fake_players(MAX_PLAYERS);
+#endif
+
+	} else if (dc_optional_string("givecd")) {
+		extern int Multi_has_cd;
+		Multi_has_cd = 1;
+
+	} else if (dc_optional_string("oo")) {
+		int new_flags;
+
+		if(!dc_maybe_stuff_int(&new_flags))
+			new_flags = -1;
+
+		dc_printf("Interesting flags\n");
+		dc_printf("Pos : %d\n", 1 << 0);
+		dc_printf("Velocity    : %d\n", 1 << 7);
+		dc_printf("Desired vel : %d\n", 1 << 8);
+		dc_printf("Orient : %d\n", 1 << 1);
+		dc_printf("Rotvel : %d\n", 1 << 9);
+		dc_printf("Desired rotvel : %d\n", 1 << 10);
+
+	} else if (dc_optional_string("oo_sort")) {
+		extern int OO_sort;
+
+		OO_sort = !OO_sort;
+		dc_printf("Network object sorting %s\n", OO_sort ? "ENABLED" : "DISABLED");
 	}
 }
 
@@ -3681,7 +3275,7 @@ DCF(multi,"changes multiplayer settings")
 // PXO crc checking stuff
 
 
-void multi_spew_pxo_checksums(int max_files, char *outfile)
+void multi_spew_pxo_checksums(int max_files, const char *outfile)
 {
 	char **file_names;
 	char full_name[MAX_PATH_LEN];
@@ -3689,16 +3283,19 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 	int count = 0, idx;
 	uint checksum;
 	FILE *out;
-	char modname[128];
-	time_t my_time = 0;
+	char description[512] = { 0 };
+	char filename[65] = { 0 };
+	char gametype[32] = { 0 };
+	size_t offset = 0;
+	char *p = NULL;
 
 	// allocate filename space	
-	file_names = (char**)malloc(sizeof(char*) * max_files);
+	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
 
 	if (file_names != NULL) {
 		memset(wild_card, 0, 10);
-		strcpy(wild_card, NOX("*"));
-		strcat(wild_card, FS_MISSION_FILE_EXT);
+		strcpy_s(wild_card, NOX("*"));
+		strcat_s(wild_card, FS_MISSION_FILE_EXT);
 		count = cf_get_file_list(max_files, file_names, CF_TYPE_MISSIONS, wild_card);	
 
 		if (count <= 0)
@@ -3712,32 +3309,67 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 		if (out == NULL)
 			goto Done;
 
-		memset( modname, 0, sizeof(modname) );
-		strcpy( modname, Cmdline_spew_mission_crcs );
+		p = Cmdline_spew_mission_crcs;
 
-		my_time = time(NULL);
+		while (*p && (offset < sizeof(description))) {
+			if (*p == '"') {
+				description[offset++] = '"';
+				description[offset++] = '"';
+			} else {
+				description[offset++] = *p;
+			}
 
-		fprintf(out, "--  Mission CRCs generated on %s \n", ctime(&my_time));
+			p++;
+		}
 
-		fprintf(out, "LOCK TABLES `missions` WRITE;\n");
-		fprintf(out, "INSERT INTO `missions` VALUES ");
+		// header
+		fprintf(out, "filename,CRC32,mission type,max players,description\r\n");
 
 		// do all the checksums
 		for (idx = 0; idx < count; idx++) {
 			memset( full_name, 0, sizeof(full_name) );			
-			strcpy( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
+			strcpy_s( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
 
-			if ( cf_chksum_long(full_name, &checksum) ) {
-				if (idx == 0)
-					fprintf(out, "('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
-				else
-					fprintf(out, ",('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
+			if ( !cf_chksum_long(full_name, &checksum) ) {
+				continue;
 			}
+
+			if (get_mission_info(full_name)) {
+				continue;
+			}
+
+			if ( !(The_mission.game_type & MISSION_TYPE_MULTI) ) {
+				continue;
+			}
+
+			offset = 0;
+			p = full_name;
+
+			while (*p && (offset < sizeof(filename))) {
+				if (*p == '"') {
+					filename[offset++] = '"';
+					filename[offset++] = '"';
+				} else {
+					filename[offset++] = *p;
+				}
+
+				p++;
+			}
+
+			filename[offset] = '\0';
+
+			if (IS_MISSION_MULTI_DOGFIGHT) {
+				strcpy_s(gametype, "dogfight");
+			} else if (IS_MISSION_MULTI_COOP) {
+				strcpy_s(gametype, "coop");
+			} else if (IS_MISSION_MULTI_TEAMS) {
+				strcpy_s(gametype, "TvT");
+			}
+
+			fprintf(out, "\"%s\",%u,\"%s\",%d,\"%s\"\r\n", filename, checksum, gametype, The_mission.num_players, description);
 		}
 
-		fprintf(out, ";\n");
-		fprintf(out, "UNLOCK TABLES;\n");
-
+		fflush(out);
 		fclose(out);
 
 Done:
@@ -3784,7 +3416,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 			goto Done;
 
 		memset( modname, 0, sizeof(modname) );
-		strcpy( modname, Cmdline_spew_table_crcs );
+		strcpy_s( modname, Cmdline_spew_table_crcs );
 
 		my_time = time(NULL);
 	
@@ -3796,7 +3428,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 		// do all the checksums
 		for (idx = 0; idx < count; idx++) {
 			memset( full_name, 0, sizeof(full_name) );			
-			strcpy( full_name, cf_add_ext(file_names[idx], ".tbl") );
+			strcpy_s( full_name, cf_add_ext(file_names[idx], ".tbl") );
 
 			if ( cf_chksum_long(full_name, &checksum) ) {
 				if (idx == 0)
@@ -3825,19 +3457,20 @@ Done:
 }
 */
 
-DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files")
+DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files (Multiplayer)")
 {
 	int max_files;
+	char file_str[MAX_NAME_LEN];
 
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		max_files = Dc_arg_int;	
-
-		dc_get_arg(ARG_STRING);
-		if(Dc_arg_type & ARG_STRING){
-			multi_spew_pxo_checksums(max_files, Dc_arg);
-		}
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: pxospew <max_files> <filename>\n");
+		return;
 	}
+
+	dc_stuff_int(&max_files);
+	dc_stuff_string_white(file_str, MAX_NAME_LEN);
+
+	multi_spew_pxo_checksums(max_files, file_str);
 }
 
 
@@ -4553,5 +4186,17 @@ void send_debrief_event() {
 		gameseq_post_event(GS_EVENT_DEBRIEF);
 	}
 }
+
+// sends out a ping if we are multi so that psnet2 doesn't kill us off for a long load
+void multi_send_anti_timeout_ping()
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		if ( (Multi_ping_timestamp == -1) || (Multi_ping_timestamp <= timer_get_milliseconds()) ) {
+			multi_ping_send_all();
+			Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
+		}
+	}
+}
+
 
 #pragma optimize("", on)

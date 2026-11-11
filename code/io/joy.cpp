@@ -7,212 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Joy.cpp $
- * $Revision: 2.3.2.1 $
- * $Date: 2006-09-20 05:00:47 $
- * $Author: taylor $
- *
- * Code to read the joystick
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/07/26 20:47:33  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:32:51  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 5     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 4     6/02/99 6:18p Dave
- * Fixed TNT lockup problems! Wheeeee!
- * 
- * 3     10/09/98 2:57p Dave
- * Starting splitting up OS stuff.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 61    5/24/98 12:56a Mike
- * Put in debug code, but comment out, to check joystick sensitivity.
- * 
- * 60    5/19/98 6:54p Lawrance
- * Set default joystick sensitivity to max
- * 
- * 59    5/13/98 7:14p Hoffoss
- * Made invalid axis return center position value.
- * 
- * 58    5/13/98 1:17a Hoffoss
- * Added joystick axes configurability.
- * 
- * 57    5/07/98 3:15p Hoffoss
- * Fixed typo.
- * 
- * 56    5/07/98 12:41p Hoffoss
- * Changed code to make joystick sensitivity default to center of range.
- * 
- * 55    5/06/98 12:02a Hoffoss
- * Fixed throttle problems with joysticks.
- * 
- * 54    5/05/98 8:38p Hoffoss
- * Added sensitivity adjustment to options menu and made it save to pilot
- * file.
- * 
- * 53    5/04/98 11:08p Hoffoss
- * Expanded on Force Feedback code, and moved it all into Joy_ff.cpp.
- * Updated references everywhere to it.
- * 
- * 52    5/03/98 6:02p Hoffoss
- * Added DirectInput support for joystick (only works with v5.0, so only
- * Win95).
- * 
- * 51    5/01/98 5:59p Hoffoss
- * Checking in code so I can switch back to NT to work on this instead
- * (Win95, bah!)
- * 
- * 50    4/30/98 12:12p Hoffoss
- * Changed code to explicitly use calibrated values from Windows for
- * joystick axis.
- * 
- * 49    4/29/98 12:13a Lawrance
- * Add function for reading down count without resetting internal count.
- * Add hook to reset demo trailer timer.
- * 
- * 48    4/25/98 12:02p Lawrance
- * take out crit sec code around joystick read in joy_process
- * 
- * 47    4/22/98 9:03p John
- * Put critical section around all the joygetposex functions.   Had to set
- * up events to signal the polling thread to end at the end of the
- * program.
- * 
- * 46    4/17/98 3:07p Jim
- * added debug code to test joystick
- * 
- * 45    4/13/98 10:16a John
- * Switched gettime back to timer_get_milliseconds, which is now thread
- * safe.
- * 
- * 44    4/12/98 11:08p Lawrance
- * switch back to using gettime() in separate threads
- * 
- * 43    4/12/98 5:31p Lawrance
- * use timer_get_milliseconds() instead of gettime()
- * 
- * 42    3/21/98 11:29a John
- * Made joy_flush work when a button is held down
- * 
- * 41    3/12/98 10:44a Hoffoss
- * Whoops, should probably use the actual define rather than 0.
- * 
- * 40    3/12/98 10:38a Hoffoss
- * Changed joystick default to first slot in never set up in FSLaunch
- * 
- * 39    3/11/98 5:27p Hoffoss
- * Added to FreeSpace usage of joystick specified through FSLaunch.
- * 
- * 38    3/09/98 4:44p Sandeep
- * 
- * 37    3/07/98 5:23p Sandeep
- * 
- * 35    3/06/98 11:12a Hoffoss
- * Fixed joystick deadzone bug.
- * 
- * 33    3/06/98 10:02a Hoffoss
- * Made dead zone adjustable, and defaulted it to 10% instead of 5%.
- * 
- * 36    3/07/98 4:50p John
- * Added code to allow toggling force feedback on/off in setup
- * 
- * 35    3/06/98 11:12a Hoffoss
- * Fixed joystick deadzone bug.
- * 
- * 33    3/06/98 10:02a Hoffoss
- * Made dead zone adjustable, and defaulted it to 10% instead of 5%.
- * 
- * 32    2/11/98 9:56p Jim
- * allender: from sandeep on Jim's machine -- some force feedback stuff
- * 
- * 31    1/29/98 11:04a Sandeep
- * 
- * 30    1/27/98 8:40p Sandeep
- * 
- * 29    1/19/98 6:15p John
- * Fixed all my Optimized Build compiler warnings
- * 
- * 28    1/08/98 6:35p Hoffoss
- * Fixed joystick undefined detection.
- * 
- * 27    1/08/98 3:48p Dan
- * Fixed bug with joystick axis reading thinking it's undefined at
- * extremes.
- * 
- * 26    10/16/97 5:37p Lawrance
- * change thread priority from THREAD_PRIORITY_TIME_CRITICAL to 
- * THREAD_PRIORITY_HIGHEST
- * 
- * 25    10/09/97 10:15a Johnson
- * try to init several times if joystick init fails
- * 
- * 24    10/07/97 10:42a Johnson
- * zero out JOYINFOEX struct before setting dwSize
- * 
- * 23    10/06/97 5:54p Johnson
- * ALAN: fix nasty bug where dwSize member of JOYINFOEX was not being set,
- * resulting in random failure
- * 
- * 22    9/15/97 11:42p Lawrance
- * change button_info to joy_button_info to avoid name conflict
- * 
- * 21    8/07/97 11:26p Lawrance
- * add support for 4th axis (rudder)
- * 
- * 20    7/29/97 5:30p Lawrance
- * move gettime() from keyboard module to timer module
- * 
- * 19    7/11/97 11:43a Lawrance
- * fix bug with joy_up_count
- * 
- * 18    7/10/97 12:29a Lawrance
- * fix problem with NT not recognizing an axis that was set under 95
- * 
- * 17    7/09/97 11:41p Lawrance
- * added throttle and hat support
- * 
- * 16    6/19/97 9:50a John
- * fixed bug where joy_close getting called out of order doesn't matter.
- * 
- * 15    5/18/97 2:40p Lawrance
- * added joy_get_caps()
- * 
- * 14    4/22/97 10:56a John
- * fixed some resource leaks.
- * 
- * 13    2/27/97 2:23p Lawrance
- * took out debug stmts
- * 
- * 12    2/27/97 10:04a Lawrance
- * fixed bug that was causing all joy buttons but 0 to be read incorrectly
- * 
- * 11    2/17/97 5:18p John
- * Added a bunch of RCS headers to a bunch of old files that don't have
- * them.
- *
- * $NoKeywords: $
- */
+
 
 #include <windows.h>
 #include <windowsx.h>
@@ -226,7 +21,7 @@
 #include "io/joy_ff.h"
 #include "directx/vdinput.h"
 #include "osapi/osapi.h"
-
+#include "debugconsole/console.h"
 
 
 #define PRECALIBRATED 1
@@ -401,23 +196,6 @@ DWORD joy_process(DWORD lparam)
 					joy_buttons[i].down_time = 0;
 
 					joy_buttons[i].state = 1;
-
-////////////////////////////
-/// SOMETHING TERRIBLE IS ABOUT TO HAPPEN.  I FEEL THIS IS NECESSARY FOR THE DEMO, SINCE
-/// I DON'T WANT TO CALL CRITICAL SECTION CODE EACH FRAME TO CHECK ALL THE JOYSTICK BUTTONS.
-/// PLEASE SEE ALAN FOR MORE INFORMATION.
-////////////////////////////
-#ifdef FS2_DEMO
-					{
-					extern void demo_reset_trailer_timer();
-					demo_reset_trailer_timer();
-					}
-#endif
-////////////////////////////
-/// IT'S OVER.  SEE, IT WASN'T SO BAD RIGHT?  IT'S IS VERY UGLY LOOKING, I KNOW.
-////////////////////////////
-
-
 				} else {
 					// went from down to up
 					if ( joy_buttons[i].state )	{
@@ -524,43 +302,60 @@ int joy_get_unscaled_reading(int raw, int axn);
 
 DCF(joytest, "Test joystick")
 {
-	if (Dc_command) {
-		while (!keyd_pressed[KEY_ESC]) {
-			int x, y, axis[JOY_NUM_AXES];
+	if (dc_optional_string_either("help", "?") || dc_optional_string_either("--help", "--?"))
+	{
+		dc_printf("Real-time test of the joystick's X and Y axes. Readings are taken from the joystick and directly");
+		dc_printf("spewed to a popup window. Press ESC to abort the test.\n");
 
-			if (joy_num_sticks < 1)
-				return;
-
-			joystick_read_raw_axis(JOY_NUM_AXES, axis);
-
-			x = joy_get_scaled_reading(axis[0], 0);
-			y = joy_get_scaled_reading(axis[1], 1);
-
-			mprintf(("X=%5d Y=%5d  Calibrated X=%6d Y=%6d\n", axis[0], axis[1], x, y));
-			Sleep(100);
-		}
+		dc_printf("First pair of readings are the raw values as reported by the OS's input library. Second pair of");
+		dc_printf("readings are what the engine uses for controls\n");
+		return;
 	}
+
+	while (!keyd_pressed[KEY_ESC]) {
+		int x, y, axis[JOY_NUM_AXES];
+
+		if (joy_num_sticks < 1)
+			return;
+
+		joystick_read_raw_axis(JOY_NUM_AXES, axis);
+
+		x = joy_get_scaled_reading(axis[0], 0);
+		y = joy_get_scaled_reading(axis[1], 1);
+
+		mprintf(("X=%5d Y=%5d  Calibrated X=%6d Y=%6d\n", axis[0], axis[1], x, y));
+		Sleep(100);
+	}
+	
 }
 
 DCF(joytest2, "Test joystick (extended)")
 {
-	if (Dc_command) {
-		while (!keyd_pressed[KEY_ESC]) {
-			int x, y, z, r, axis[JOY_NUM_AXES];
+	if (dc_optional_string_either("help", "?") || dc_optional_string_either("--help", "--?"))
+	{
+		dc_printf("Real-time test of the joystick's X, Y, Z, Rx, Ry, and Rz axes. Readings are taken from the joystick");
+		dc_printf("and directly spewed to a popup window. Press ESC to abort the test.");
 
-			if (joy_num_sticks < 1)
-				return;
+		dc_printf("First set of readings are the raw values as reported by the OS's input library. Second set of");
+		dc_printf("readings are what the engine uses for controls\n");
+		return;
+	}
 
-			joystick_read_raw_axis(JOY_NUM_AXES, axis);
+	while (!keyd_pressed[KEY_ESC]) {
+		int x, y, z, r, axis[JOY_NUM_AXES];
 
-			x = joy_get_scaled_reading(axis[0], 0);
-			y = joy_get_scaled_reading(axis[1], 1);
-			z = joy_get_unscaled_reading(axis[2], 2);
-			r = joy_get_scaled_reading(axis[3], 3);
+		if (joy_num_sticks < 1)
+			return;
 
-			mprintf(("X=%5d Y=%5d Z=%5d Rx=%5d Ry=%5d Rz=%5d Cal X=%6d Y=%6d Z=%6d R=%6d\n", axis[0], axis[1], axis[2], axis[3], axis[4], axis[5], x, y, z, r));
-			Sleep(100);
-		}
+		joystick_read_raw_axis(JOY_NUM_AXES, axis);
+
+		x = joy_get_scaled_reading(axis[0], 0);
+		y = joy_get_scaled_reading(axis[1], 1);
+		z = joy_get_unscaled_reading(axis[2], 2);
+		r = joy_get_scaled_reading(axis[3], 3);
+
+		mprintf(("X=%5d Y=%5d Z=%5d Rx=%5d Ry=%5d Rz=%5d Cal X=%6d Y=%6d Z=%6d R=%6d\n", axis[0], axis[1], axis[2], axis[3], axis[4], axis[5], x, y, z, r));
+		Sleep(100);
 	}
 }
 
@@ -627,7 +422,7 @@ int joy_init()
 		}
 	}
 
-	mprintf(("Windoze reported %d joysticks, we found %d\n", n, joy_num_sticks));
+	mprintf(("Windows reported %d joysticks, we found %d\n", n, joy_num_sticks));
 
 #ifdef PRECALIBRATED
 	// Fake a calibration
@@ -862,7 +657,7 @@ float joy_down_time(int btn)
 		bi->down_time += joy_pollrate;
 	}
 
-	if ( (now - bi->last_down_check) > 0)
+	if (now > bi->last_down_check)
 		rval = i2fl(bi->down_time) / (now - bi->last_down_check);
 	else
 		rval = 0.0f;
@@ -1103,7 +898,7 @@ int joy_get_unscaled_reading(int raw, int axn)
 int joy_get_scaled_reading(int raw, int axn)
 {
 	int x, d, dead_zone, rng;
-	float percent, sensitivity_percent, non_sensitivity_percent;
+	float percent;
 
 	// Make sure it's calibrated properly.
 	if (joystick.axis_center[axn] - joystick.axis_min[axn] < 5)
@@ -1132,15 +927,11 @@ int joy_get_scaled_reading(int raw, int axn)
 
 	Assert(Joy_sensitivity >= 0 && Joy_sensitivity <= 9);
 
-	// compute percentages as a range between 0 and 1
-	sensitivity_percent = (float) Joy_sensitivity / 9.0f;
-	non_sensitivity_percent = (float) (9 - Joy_sensitivity) / 9.0f;
-
 	// find percent of max axis is at
 	percent = (float) d / (float) rng;
 
 	// work sensitivity on axis value
-	percent = (percent * sensitivity_percent + percent * percent * percent * percent * percent * non_sensitivity_percent);
+	percent = pow(percent, (3.0f - ((float) Joy_sensitivity / 4.5f)));
 
 	x = (int) ((float) F1_0 * percent);
 

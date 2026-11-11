@@ -7,74 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.8.2.1 $
- * $Date: 2006-10-01 19:27:28 $
- * $Author: taylor $
- *
- * Campaign Loop briefing screen
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.7  2005/02/23 04:55:07  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.6  2004/07/26 20:47:40  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:55  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2003/09/07 18:14:54  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.2  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 23:02:59  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     9/06/99 9:44p Jefff
- * break out of loop support
- * 
- * 3     9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 2     8/27/99 12:04a Dave
- * Campaign loop screen.
- *  
- *
- * $NoKeywords: $
- */
+
 
 #include "missionui/missionloopbrief.h"
 #include "missionui/missionscreencommon.h"
@@ -90,6 +23,9 @@
 #include "sound/fsspeech.h"
 #include "popup/popup.h"
 
+#include "graphics/generic.h"
+
+extern char default_loop_briefing_color;	// Doesn't seem worth including alphacolors.h for -MageKing17
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -132,13 +68,15 @@ UI_XSTR Loop_text[GR_NUM_RESOLUTIONS][NUM_LOOP_TEXT] = {
 	}
 };
 
-// loop brief anim
-int Loop_brief_anim_coords[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		24, 267
+// Originally from missioncmdbrief.cpp
+// center coordinates only
+int Loop_brief_anim_center_coords[GR_NUM_RESOLUTIONS][2] =
+{
+	{
+		242, 367				// GR_640
 	},
-	{ // GR_640
-		167, 491
+	{
+		392, 587				// GR_1024
 	}
 };
 
@@ -155,8 +93,7 @@ int Loop_brief_text_coords[GR_NUM_RESOLUTIONS][4] = {
 UI_WINDOW Loop_brief_window;
 int Loop_brief_bitmap;
 
-anim *Loop_anim;
-anim_instance *Loop_anim_instance;
+generic_anim Loop_anim;
 
 int Loop_sound;
 
@@ -169,13 +106,8 @@ void loop_brief_button_pressed(int i)
 {	
 	switch(i){
 	case LOOP_BRIEF_DECLINE:		
-		// CD CHECK
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			gameseq_post_event(GS_EVENT_START_GAME);
-			gamesnd_play_iface(SND_USER_SELECT);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-		}		
+		gameseq_post_event(GS_EVENT_START_GAME);
+		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 
 	case LOOP_BRIEF_ACCEPT:
@@ -183,14 +115,9 @@ void loop_brief_button_pressed(int i)
 		Campaign.loop_enabled = 1;
 		Campaign.loop_reentry = Campaign.next_mission;			// save reentry pt, so we can break out of loop
 		Campaign.next_mission = Campaign.loop_mission;		
-		
-		// CD CHECK
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			gameseq_post_event(GS_EVENT_START_GAME);
-			gamesnd_play_iface(SND_USER_SELECT);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-		}		
+
+		gameseq_post_event(GS_EVENT_START_GAME);
+		gamesnd_play_iface(SND_USER_SELECT);
 		break;
 	}
 }
@@ -224,37 +151,35 @@ void loop_brief_init()
 		Loop_brief_window.add_XSTR(&Loop_text[gr_screen.res][idx]);
 	}
 
+	const char* anim_name;
 	// load animation if any
-	Loop_anim = NULL;
-	Loop_anim_instance = NULL;
-	if(Campaign.missions[Campaign.current_mission].mission_loop_brief_anim != NULL){
-		Loop_anim = anim_load(Campaign.missions[Campaign.current_mission].mission_loop_brief_anim);
+	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim != NULL){
+		anim_name = Campaign.missions[Campaign.current_mission].mission_branch_brief_anim;
 	} else {
-		Loop_anim = anim_load("CB_default");
+		anim_name = "CB_default";
 	}
 
-	// fire up an anim instance
-	if(Loop_anim != NULL){
-		anim_play_struct aps;
-
-		anim_play_init(&aps, Loop_anim, Loop_brief_anim_coords[gr_screen.res][0], Loop_brief_anim_coords[gr_screen.res][1]);
-		aps.framerate_independent = 1;
-		aps.looped = 1;
-		aps.screen_id = GS_STATE_LOOP_BRIEF;
-		Loop_anim_instance = anim_play(&aps);
+	int stream_result = generic_anim_init_and_stream(&Loop_anim, anim_name, bm_get_type(Loop_brief_bitmap), true);
+	// we've failed to load any animation
+	if (stream_result < 0) {
+		// load an image and treat it like a 1 frame animation
+		Loop_anim.first_frame = bm_load(anim_name);	//if we fail here, the value is still -1
+		if(Loop_anim.first_frame != -1) {
+			Loop_anim.num_frames = 1;
+		}
 	}
 
 	// init brief text
-	if(Campaign.missions[Campaign.current_mission].mission_loop_desc != NULL){
-		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_loop_desc, Loop_brief_text_coords[gr_screen.res][2]);
+	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != NULL){
+		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
 	}
 
 	bool sound_played = false;
 
 
 	// open sound
-	if(Campaign.missions[Campaign.current_mission].mission_loop_brief_sound != NULL){
-		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_loop_brief_sound, ASF_VOICE);
+	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound != NULL){
+		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound, ASF_VOICE);
 
 		if(Loop_sound != -1){
 			audiostream_play(Loop_sound, Master_voice_volume, 0);
@@ -264,7 +189,7 @@ void loop_brief_init()
 
 	if(sound_played == false) {
 		fsspeech_play(FSSPEECH_FROM_BRIEFING, 
-			Campaign.missions[Campaign.current_mission].mission_loop_desc);
+			Campaign.missions[Campaign.current_mission].mission_branch_desc);
 
 	}
 
@@ -273,7 +198,7 @@ void loop_brief_init()
 }
 
 // do
-void loop_brief_do()
+void loop_brief_do(float frametime)
 {
 	int k;
 	int idx;
@@ -287,7 +212,7 @@ void loop_brief_do()
 
 		// this popup should be straight forward, and also not allow you to get out
 		// of it without actually picking one of the two options
-		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", -1));
+		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", 1618));
 
 		// if we accepted moving into loop then set it up for the next time the user plays
 		if (do_loop == 1) {
@@ -314,7 +239,7 @@ void loop_brief_do()
 	GR_MAYBE_CLEAR_RES(Loop_brief_bitmap);
 	if (Loop_brief_bitmap >= 0) {
 		gr_set_bitmap(Loop_brief_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 	
 	// draw the window
@@ -322,6 +247,16 @@ void loop_brief_do()
 
 	// render the briefing text
 	brief_render_text(0, Loop_brief_text_coords[gr_screen.res][0], Loop_brief_text_coords[gr_screen.res][1], Loop_brief_text_coords[gr_screen.res][3], flFrametime);
+
+	if(Loop_anim.num_frames > 0) {
+		int x;
+		int y;
+
+		bm_get_info((Loop_anim.streaming) ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y, NULL, NULL, NULL);
+		x = Loop_brief_anim_center_coords[gr_screen.res][0] - x / 2;
+		y = Loop_brief_anim_center_coords[gr_screen.res][1] - y / 2;
+		generic_anim_render(&Loop_anim, frametime, x, y, true);
+	}
 
 	// render all anims
 	anim_render_all(GS_STATE_LOOP_BRIEF, flFrametime);
@@ -344,14 +279,9 @@ void loop_brief_close()
 	// destroy the window
 	Loop_brief_window.destroy();
 
-	// free up anim stuff
-	if(Loop_anim_instance != NULL){
-		anim_release_render_instance(Loop_anim_instance);
-		Loop_anim_instance = NULL;
-	}
-	if(Loop_anim != NULL){
-		anim_free(Loop_anim);
-		Loop_anim = NULL;
+	if (Loop_anim.num_frames > 0)
+	{
+		generic_anim_unload(&Loop_anim);
 	}
 
 	// stop voice

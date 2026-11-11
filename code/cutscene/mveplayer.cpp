@@ -1,37 +1,4 @@
-/*
- * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.1.2.4 $
- * $Date: 2007-02-10 00:01:53 $
- * $Author: taylor $
- *
- * MVE movie playing routines
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.1.2.3  2006/12/26 05:14:52  taylor
- * get rid of some stale vars that we don't use any longer
- * a little at-exit cleanup
- * handle rounding error on X/Y placement locations under Windows
- *
- * Revision 2.1.2.2  2006/12/07 17:55:51  taylor
- * port over some Theora player stuff:
- *  - support for GL_ARB_texture_rectangle
- *  - fix GL tear-down on movie exit
- *  - fix sound tear-down order issue on OS X
- *  - some speed increases, and get rid of the extra gr_clear() per-frame now that it's handled properly
- *  - proper support for widescreen resolutions
- *
- * Revision 2.1.2.1  2006/08/19 04:14:57  taylor
- * add decoder for 8-bit MVEs
- * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
- * little bits of cleanup for old/unused code
- * make sure MVE filenames are correct in mvelib
- *
- * Revision 2.1  2006/05/13 06:59:48  taylor
- * MVE player (audio only works with OpenAL builds!)
- *
- *
- * $NoKeywords: $
- */
+
 
 #ifdef SCP_UNIX
 #include <errno.h>
@@ -52,9 +19,8 @@
 #include "osapi/osapi.h"
 #include "io/timer.h"
 #include "sound/sound.h"
-#include "sound/ds.h"
+#include "sound/openal.h"
 #include "bmpman/bmpman.h"
-//#include "sound/audiostr.h"
 
 
 extern int Cmdline_noscalevid;
@@ -78,7 +44,6 @@ static int mve_audio_canplay = 0;
 static int mve_audio_compressed = 0;
 static int audiobuf_created;
 
-#ifdef USE_OPENAL
 // struct for the audio stream information
 typedef struct MVE_AUDIO_T {
 	ALenum format;
@@ -93,8 +58,7 @@ typedef struct MVE_AUDIO_T {
 mve_audio_t *mas;  // mve_audio_stream
 
 // audio decompressor
-extern void mveaudio_uncompress(short *buffer, unsigned char *data, int length);
-#endif // USE_OPENAL
+extern void mveaudio_uncompress(short *buffer, unsigned char *data);
 
 // video variables
 int g_width, g_height;
@@ -102,12 +66,13 @@ void *g_vBuffers = NULL;
 void *g_vBackBuf1, *g_vBackBuf2;
 ushort *pixelbuf = NULL;
 static GLuint GLtex = 0;
-static GLint gl_screenYH = 0;
-static GLint gl_screenXW = 0;
+static GLfloat gl_screenYH = 0;
+static GLfloat gl_screenXW = 0;
 static GLfloat gl_screenU = 0;
 static GLfloat gl_screenV = 0;
+static GLfloat glVertices[4][4] = {{0}};
 static int g_screenWidth, g_screenHeight;
-static int g_screenX, g_screenY;
+static float g_screenX, g_screenY;
 static int g_truecolor = 0;
 static ubyte g_palette[768];
 static ubyte *g_pCurMap = NULL;
@@ -172,8 +137,9 @@ static void mve_timer_start(void)
 
 static int mve_do_timer_wait(void)
 {
-	if (!timer_started)
+	if (!timer_started) {
 		return 0;
+	}
 
 #ifdef SCP_UNIX
 	int nsec = 0;
@@ -182,11 +148,13 @@ static int mve_do_timer_wait(void)
 
 	gettimeofday(&tv, NULL);
 
-	if (tv.tv_sec > timer_expire.tv_sec)
+	if (tv.tv_sec > timer_expire.tv_sec) {
 		goto end;
+	}
 
-	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) )
+	if ( (tv.tv_sec == timer_expire.tv_sec) && (tv.tv_usec >= timer_expire.tv_usec) ) {
 		goto end;
+	}
 
 	ts.tv_sec = timer_expire.tv_sec - tv.tv_sec;
 	ts.tv_nsec = 1000 * (timer_expire.tv_usec - tv.tv_usec);
@@ -205,25 +173,24 @@ static int mve_do_timer_wait(void)
 	}
 
 end:
-    timer_expire.tv_usec += micro_frame_delay;
+	timer_expire.tv_usec += micro_frame_delay;
 
-    if (timer_expire.tv_usec > 1000000) {
-        nsec = timer_expire.tv_usec / 1000000;
-        timer_expire.tv_sec += nsec;
-        timer_expire.tv_usec -= nsec * 1000000;
-    }
+	if (timer_expire.tv_usec > 1000000) {
+		nsec = timer_expire.tv_usec / 1000000;
+		timer_expire.tv_sec += nsec;
+		timer_expire.tv_usec -= nsec * 1000000;
+	}
 #else
 	int tv, ts, ts2;
 
 	tv = timer_get_microseconds();
 
-	if (tv > timer_expire)
+	if (tv > timer_expire) {
 		goto end;
+	}
 
 	ts = timer_expire - tv;
-
 	ts2 = ts/1000;
-
 	Sleep(ts2);
 
 end:
@@ -251,8 +218,9 @@ static void mve_timer_stop()
 // setup the audio information from the data stream
 void mve_audio_createbuf(ubyte minor, ubyte *data)
 {
-	if (audiobuf_created)
+	if (audiobuf_created) {
 		return;
+	}
 
 	// if game sound disabled don't try and play movie audio
 	if (!Sound_enabled) {
@@ -260,30 +228,29 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 		return;
 	}
 
-#ifdef USE_OPENAL
-    int flags, desired_buffer, sample_rate;
+	int flags, desired_buffer, sample_rate;
 
-    mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
+	mas = (mve_audio_t *) vm_malloc ( sizeof(mve_audio_t) );
 	memset(mas, 0, sizeof(mve_audio_t));
 
 	mas->format = AL_INVALID;
 
-    flags = mve_get_ushort(data + 2);
-    sample_rate = mve_get_ushort(data + 4);
-    desired_buffer = mve_get_int(data + 6);
+	flags = mve_get_ushort(data + 2);
+	sample_rate = mve_get_ushort(data + 4);
+	desired_buffer = mve_get_int(data + 6);
 
-    mas->channels = (flags & 0x0001) ? 2 : 1;
+	mas->channels = (flags & 0x0001) ? 2 : 1;
 	mas->bitsize = (flags & 0x0002) ? 16 : 8;
 
 	mas->sample_rate = sample_rate;
 
-    if (minor > 0) {
-    	mve_audio_compressed = flags & 0x0004 ? 1 : 0;
-    } else {
+	if (minor > 0) {
+		mve_audio_compressed = flags & 0x0004 ? 1 : 0;
+	} else {
 		mve_audio_compressed = 0;
-    }
+	}
 
-    if (mas->bitsize == 16) {
+	if (mas->bitsize == 16) {
 		if (mas->channels == 2) {
 			mas->format = AL_FORMAT_STEREO16;
 		} else if (mas->channels == 1) {
@@ -311,9 +278,8 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 	OpenAL_ErrorPrint( alSourcef(mas->source_id, AL_GAIN, 1.0f) );
 
 	memset(mas->audio_buffer, 0, MVE_AUDIO_BUFFERS * sizeof(ALuint));
-#endif // USE_OPENAL
 
-    mve_audio_buffer_tail = 0;
+	mve_audio_buffer_tail = 0;
 
 	audiobuf_created = 1;
 }
@@ -322,29 +288,27 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 void mve_audio_play()
 {
 	if (mve_audio_canplay) {
-#ifdef USE_OPENAL
 		ALint status, bqueued;
 
 		OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_SOURCE_STATE, &status), return );
-	
+
 		OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return );
-	
+
 		mve_audio_playing = 1;
 
 		if (status != AL_PLAYING && bqueued > 0) {
 			OpenAL_ErrorPrint( alSourcePlay(mas->source_id) );
 		}
-#endif // USE_OPENAL
 	}
 }
 
 // call this in shutdown to stop and close audio
 static void mve_audio_stop()
 {
-	if (!audiobuf_created)
+	if (!audiobuf_created || mas == NULL) {
 		return;
+	}
 
-#ifdef USE_OPENAL
 	ALint p = 0;
 
 	mve_audio_playing = 0;
@@ -365,7 +329,6 @@ static void mve_audio_stop()
 		vm_free(mas);
 		mas = NULL;
 	}
-#endif // USE_OPENAL
 }
 
 int mve_audio_data(ubyte major, ubyte *data)
@@ -375,7 +338,6 @@ int mve_audio_data(ubyte major, ubyte *data)
 	int nsamp;
 
 	if (mve_audio_canplay) {
-#ifdef USE_OPENAL
 		chan = mve_get_ushort(data + 2);
 		nsamp = mve_get_ushort(data + 4);
 
@@ -385,13 +347,15 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_PROCESSED, &bprocessed), return 0 );
 
-			while (bprocessed-- > 2)
+			while (bprocessed-- > 2) {
 				OpenAL_ErrorPrint( alSourceUnqueueBuffers(mas->source_id, 1, &bid) );
+			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return 0 );
-		    
-			if (bqueued == 0) 
+
+			if (bqueued == 0) {
 				mprintf(("MVE: Buffer underun (First is normal)\n"));
+			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_SOURCE_STATE, &status), return 0 );
 
@@ -404,37 +368,34 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 				/* HACK: +4 mveaudio_uncompress adds 4 more bytes */
 				if (major == 8) {
-				    if (mve_audio_compressed) {
+					if (mve_audio_compressed) {
 						nsamp += 4;
-
 						buf = (short *)vm_malloc(nsamp);
-						mveaudio_uncompress(buf, data, -1); /* XXX */
+						mveaudio_uncompress(buf, data); /* XXX */
 					} else {
 						nsamp -= 8;
 						data += 8;
-
 						buf = (short *)vm_malloc(nsamp);
 						memcpy(buf, data, nsamp);
-					}	              
+					}
 				} else {
 					buf = (short *)vm_malloc(nsamp);
-
 					memset(buf, 0, nsamp); /* XXX */
 				}
-
 
 				if (!mas->audio_buffer[mve_audio_buffer_tail]) {
 					OpenAL_ErrorCheck( alGenBuffers(1,&mas->audio_buffer[mve_audio_buffer_tail]), { vm_free(buf); return 0; } );
 				}
 
 				OpenAL_ErrorCheck( alBufferData(mas->audio_buffer[mve_audio_buffer_tail], mas->format, buf, nsamp, mas->sample_rate), { vm_free(buf); return 0; } );
-	    
+
 				OpenAL_ErrorCheck( alSourceQueueBuffers(mas->source_id, 1, &mas->audio_buffer[mve_audio_buffer_tail]), { vm_free(buf); return 0;} );
 
 				//fprintf(stderr,"Queued buffer %d(%d)\n", mve_audio_buftail, mas->audio_buffer[mve_audio_buftail]);
 
-				if (++mve_audio_buffer_tail == MVE_AUDIO_BUFFERS)
+				if (++mve_audio_buffer_tail == MVE_AUDIO_BUFFERS) {
 					mve_audio_buffer_tail = 0;
+				}
 
 				bqueued++;
 				vm_free(buf);
@@ -442,7 +403,6 @@ int mve_audio_data(ubyte major, ubyte *data)
 				mprintf(("MVE: Buffer overrun: Queue full\n"));
 			}
 		}
-#endif // USE_OPENAL
 	}
 
 	return 1;
@@ -454,8 +414,9 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 int mve_video_createbuf(ubyte minor, ubyte *data)
 {
-	if (videobuf_created)
+	if (videobuf_created) {
 		return 1;
+	}
 
 	short w, h;
 	short count, truecolor;
@@ -485,11 +446,11 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		return 0;
 	}
 
-	if (truecolor)
+	if (truecolor) {
 		g_vBackBuf2 = (ushort *)g_vBackBuf1 + (g_width * g_height);
-	else
+	} else {
 		g_vBackBuf2 = (ubyte *)g_vBackBuf1 + (g_width * g_height);
-		
+	}
 	memset(g_vBackBuf1, 0, g_width * g_height * 4);
 
 	g_truecolor = truecolor;
@@ -501,10 +462,11 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
 		float movie_ratio = (float)g_width / (float)g_height;
 
-		if (screen_ratio > movie_ratio)
+		if (screen_ratio > movie_ratio) {
 			scale_by = (float)gr_screen.max_h / (float)g_height;
-		else
+		} else {
 			scale_by = (float)gr_screen.max_w / (float)g_width;
+		}
 
 		// don't bother setting anything if we aren't going to need it
 		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
@@ -517,12 +479,12 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		}
 
 		if (mve_scale_video) {
-			g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_width) / 2);
-			g_screenY = ((fl2i(gr_screen.max_h / scale_by + 0.5f) - g_height) / 2);
+			g_screenX = ((ceil((gr_screen.max_w / scale_by) - 0.5f) - g_width) / 2);
+			g_screenY = ((ceil((gr_screen.max_h / scale_by) - 0.5f) - g_height) / 2);
 		} else {
 			// centers on 1024x768, fills on 640x480
-			g_screenX = ((gr_screen.max_w - g_width) / 2);
-			g_screenY = ((gr_screen.max_h - g_height) / 2);
+			g_screenX = ((float)(gr_screen.max_w - g_width) / 2.0f);
+			g_screenY = ((float)(gr_screen.max_h - g_height) / 2.0f);
 		}
 
 		// set additional values for screen width/height and UV coords
@@ -533,6 +495,35 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 			gl_screenU = i2fl(g_width) / i2fl(wp2);
 			gl_screenV = i2fl(g_height) / i2fl(hp2);
 		}
+
+		glVertices[0][0] = g_screenX;
+		glVertices[0][1] = g_screenY;
+		glVertices[0][2] = 0;
+		glVertices[0][3] = 0;
+
+		glVertices[1][0] = g_screenX;
+		glVertices[1][1] = gl_screenYH;
+		glVertices[1][2] = 0;
+		glVertices[1][3] = gl_screenV;
+
+		glVertices[2][0] = gl_screenXW;
+		glVertices[2][1] = g_screenY;
+		glVertices[2][2] = gl_screenU;
+		glVertices[2][3] = 0;
+
+		glVertices[3][0] = gl_screenXW;
+		glVertices[3][1] = gl_screenYH;
+		glVertices[3][2] = gl_screenU;
+		glVertices[3][3] = gl_screenV;
+
+		GL_state.Array.BindArrayBuffer(0);
+
+		GL_state.Array.EnableClientVertex();
+		GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(glVertices[0]), glVertices);
+
+		GL_state.Array.SetActiveClientUnit(0);
+		GL_state.Array.EnableClientTexture();
+		GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(glVertices[0]), &(glVertices[0][2]));
 	}
 
 	return 1;
@@ -550,26 +541,26 @@ static void mve_convert_and_draw()
 	ubyte r, g, b;
 	ushort bit_16;
 
-	if (g_truecolor)
+	if (g_truecolor) {
 		pSrcs = pixels;
-	else
+	} else {
 		pSrcs8 = pixels8;
-
+	}
 	pDests = pixelbuf;
 
 	if (gr_screen.mode != GR_OPENGL) {
-		if (g_screenWidth > g_width)
+		if (g_screenWidth > g_width) {
 			pDests += ((g_screenWidth - g_width) / 2) / 2;
-
-		if (g_screenHeight > g_height)
+		}
+		if (g_screenHeight > g_height) {
 			pDests += ((g_screenHeight - g_height) / 2) * g_screenWidth;
+		}
 	}
 
 	for (y=0; y<g_height; y++) {
 		for (x = 0; x < g_width; x++) {
 			if (g_truecolor) {
 				Assert( pSrcs != NULL );
-
 				pDests[x] = (1<<15)|*pSrcs;
 				pSrcs++;
 			} else {
@@ -618,24 +609,12 @@ void mve_video_display()
 	if (gr_screen.mode == GR_OPENGL) {
 		glTexSubImage2D(GL_state.Texture.GetTarget(), 0, 0, 0, g_width, g_height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
 
-		glBegin(GL_QUADS);
-			glTexCoord2f(0, 0);
-				glVertex2i(g_screenX, g_screenY);
-
-			glTexCoord2f(0, gl_screenV);
-				glVertex2i(g_screenX, gl_screenYH);
-
-			glTexCoord2f(gl_screenU, gl_screenV);
-				glVertex2i(gl_screenXW, gl_screenYH);
-
-			glTexCoord2f(gl_screenU, 0);
-				glVertex2i(gl_screenXW, g_screenY);
-		glEnd();
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	} else {
 		// DDOI - This is probably really fricking slow
 		int bitmap = bm_create (16, g_screenWidth, g_screenHeight, pixelbuf, 0);
 		gr_set_bitmap (bitmap);
-		gr_bitmap (g_screenX, g_screenY, true);
+		gr_bitmap ((int)g_screenX, (int)g_screenY, GR_RESIZE_FULL);
 		bm_release (bitmap);
 	}
 
@@ -664,8 +643,9 @@ void mve_video_display()
 
 int mve_video_init(ubyte *data)
 {
-	if (video_inited)
+	if (video_inited) {
 		return 1;
+	}
 
 	short width, height;
 
@@ -711,25 +691,21 @@ int mve_video_init(ubyte *data)
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
 
-		GL_state.Texture.SetWrapS(GL_CLAMP_TO_EDGE);
-		GL_state.Texture.SetWrapT(GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_state.Texture.GetTarget(), 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 
 		// set our color so that we can make sure that it's correct
-		glColor3f(1.0f, 1.0f, 1.0f);
+		GL_state.Color(255, 255, 255, 255);
 	}
-#ifndef NO_DIRECT3D
-	else if (gr_screen.mode == GR_DIRECT3D) {
-		// TODO: is there a fast way to do frames in D3D too?
-	}
-#endif
 
 	memset(g_palette, 0, 768);
-	
 	video_inited = 1;
-	
+
 	return 1;
 }
 
@@ -769,10 +745,11 @@ void mve_video_data(ubyte *data, int len)
 		g_vBackBuf2 = temp;
 	}
 
-	if (g_truecolor)
+	if (g_truecolor) {
 		decodeFrame16((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
-	else
+	} else {
 		decodeFrame8((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
+	}
 }
 
 void mve_end_chunk()
@@ -801,8 +778,9 @@ void mve_play(MVESTREAM *mve)
 	int init_timer = 0, timer_error = 0;
 	int cont = 1;
 
-	if (!timer_started)
+	if (!timer_started) {
 		mve_timer_start();
+	}
 
 	while (cont && mve_playing && !timer_error) {
 		cont = mve_play_next_chunk(mve);
@@ -819,6 +797,9 @@ void mve_play(MVESTREAM *mve)
 void mve_shutdown()
 {
 	if (gr_screen.mode == GR_OPENGL) {
+		GL_state.Array.DisableClientVertex();
+		GL_state.Array.DisableClientTexture();
+
 		if (mve_scale_video) {
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();
@@ -841,6 +822,5 @@ void mve_shutdown()
 	}
 
 	mve_audio_stop();
-
 	mve_timer_stop();
 }

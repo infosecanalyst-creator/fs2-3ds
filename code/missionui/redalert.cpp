@@ -7,243 +7,8 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.21.2.3 $
- * $Date: 2007-03-22 20:47:49 $
- * $Author: taylor $
- *
- * Module for Red Alert mission interface and code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.21.2.2  2006/10/06 09:47:10  taylor
- * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
- *
- * Revision 2.21.2.1  2006/09/13 03:11:09  taylor
- * be sure to setup/reset ship team data too when moving to a red-alert mission (Mantis bug 1042)
- *   (this will hopefully fix Mantis bug 860 as well, which is a separate but related issue)
- *
- * Revision 2.21  2005/11/16 05:46:27  taylor
- * bunch of error checking and code cleanup for the team stuff in ship/weapon select
- *
- * Revision 2.20  2005/10/10 17:21:06  taylor
- * remove NO_NETWORK
- *
- * Revision 2.19  2005/09/26 04:08:54  Goober5000
- * some more cleanup
- * --Goober5000
- *
- * Revision 2.18  2005/09/09 05:12:44  Goober5000
- * "no briefing" flag now works for red-alert missions too
- * --Goober5000
- *
- * Revision 2.17  2005/07/25 05:24:16  Goober5000
- * cleaned up some command line and mission flag stuff
- * --Goober5000
- *
- * Revision 2.16  2005/07/02 19:43:55  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.15  2005/06/03 06:39:26  taylor
- * better audio pause/unpause support when game window loses focus or is minimized
- *
- * Revision 2.14  2005/04/03 08:48:30  Goober5000
- * brought weapon loadout banks into agreement with ship info banks
- * improved error reporting on apply-to-all
- * --Goober5000
- *
- * Revision 2.13  2005/03/27 12:28:34  Goober5000
- * clarified max hull/shield strength names and added ship guardian thresholds
- * --Goober5000
- *
- * Revision 2.12  2005/03/24 23:29:33  taylor
- * (re)move some uneeded variables to fix compiler warnings
- *
- * Revision 2.11  2005/02/23 04:55:08  taylor
- * more bm_unload() -> bm_release() changes
- *
- * Revision 2.10  2004/10/31 21:53:24  taylor
- * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
- *
- * Revision 2.9  2004/07/26 20:47:40  Kazan
- * remove MCD complete
- *
- * Revision 2.8  2004/07/12 16:32:56  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.7  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.6  2004/02/04 09:02:43  Goober5000
- * got rid of unnecessary double semicolons
- * --Goober5000
- *
- * Revision 2.5  2003/09/07 18:14:54  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.4  2003/09/05 04:25:28  Goober5000
- * well, let's see here...
- *
- * * persistent variables
- * * rotating gun barrels
- * * positive/negative numbers fixed
- * * sexps to trigger whether the player is controlled by AI
- * * sexp for force a subspace jump
- *
- * I think that's it :)
- * --Goober5000
- *
- * Revision 2.3  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.2  2002/12/10 05:43:33  Goober5000
- * Full-fledged ballistic primary support added!  Try it and see! :)
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/09 23:02:59  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.2  2002/05/07 02:59:29  mharris
- * make Buttons[] static
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 16    9/11/99 12:31a Mikek
- * Bumped up max red alert status ships and status subsystems.
- * 
- * 15    9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 14    8/24/99 5:27p Andsager
- * Make subsystems with zero strength before mission blown off.  Protect
- * red alert pilot against dying between orders and jump.
- * 
- * 13    8/11/99 2:17p Jefff
- * changed a string
- * 
- * 12    7/19/99 8:56p Andsager
- * Added Ship_exited red_alert_carry flag and hull strength for RED ALERT
- * carry over of Exited_ships
- * 
- * 11    7/19/99 2:13p Dave
- * Added some new strings for Heiko.
- * 
- * 10    7/16/99 12:22p Jefff
- * Added sound FX to red alert popup
- * 
- * 9     7/09/99 10:32p Dave
- * Command brief and red alert screens.
- * 
- * 8     5/07/99 10:34a Andsager
- * Make red alert work in FS2
- * 
- * 7     2/16/99 5:07p Neilk
- * Added hires support
- * 
- * 6     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 5     1/27/99 9:56a Dave
- * Temporary checkin of beam weapons for Dan to make cool sounds.
- * 
- * 4     11/18/98 11:15a Andsager
- * Removed old version or red_alert_read_wingman_status
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 21    5/14/98 11:26a Lawrance
- * ESC will return to the main hall
- * 
- * 20    5/13/98 5:14p Allender
- * red alert support to go back to previous mission
- * 
- * 19    5/05/98 6:19p Lawrance
- * Fix problems with "retry mission" for red alerts
- * 
- * 18    5/05/98 3:14p Comet
- * AL: Fix bug with restoring secondary weapons in red alert mode
- * 
- * 17    5/04/98 10:49p Lawrance
- * Make sure old pilot files don't cause problems with the new RedAlert
- * data format
- * 
- * 16    5/04/98 6:06p Lawrance
- * Make red alert mode work!
- * 
- * 15    5/02/98 4:10p Lawrance
- * Only use first stage of briefing for red alerts
- * 
- * 14    5/01/98 9:18p Ed
- * mark all goals and events as failed when red alert moves ahead to next
- * mission
- * 
- * 13    4/22/98 10:13a John
- * added assert to trap a bug
- * 
- * 12    4/21/98 12:08a Allender
- * only make red alert move to next mission in campaign mode
- * 
- * 11    4/03/98 10:31a John
- * Made briefing and debriefing arrays be malloc'd
- * 
- * 10    3/28/98 2:53p Allender
- * added hud gauge when entering a red alert mission
- * 
- * 9     3/12/98 10:28p Lawrance
- * Deal with situation where wingman status may not have been properly
- * saved
- * 
- * 8     3/12/98 9:44p Allender
- * go to debrief in red alert when not in campaign mode
- * 
- * 6     3/09/98 9:55p Lawrance
- * improve some comments
- * 
- * 5     3/09/98 4:41p Lawrance
- * Fix up some merge problems.
- * 
- * 4     3/09/98 4:30p Allender
- * multiplayer secondary weapon changes.  red-alert and cargo-known-delay
- * sexpressions.  Add time cargo revealed to ship structure
- * 
- * 3     3/09/98 4:23p Lawrance
- * Replay mission, full save/restore of wingman status
- * 
- * 2     3/09/98 12:13a Lawrance
- * Add support for Red Alert missions
- * 
- * 1     3/08/98 4:54p Lawrance
- *
- * $NoKeywords: $
- */
 
+#define REDALERT_INTERNAL
 #include "missionui/redalert.h"
 #include "model/model.h"
 #include "gamesnd/gamesnd.h"
@@ -267,6 +32,9 @@
 #include "cfile/cfile.h"
 #include "io/mouse.h"
 #include "ai/aigoals.h"
+#include "mod_table/mod_table.h"
+
+#include <stdexcept>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -274,28 +42,11 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static int Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
-static int Red_alert_num_slots_used = 0;
+//static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
-#define RED_ALERT_WARN_TIME		4000				// time to warn user that new orders are coming
-
-#define MAX_RED_ALERT_SLOTS				32
-#define MAX_RED_ALERT_SUBSYSTEMS		64
-#define RED_ALERT_EXITED_SHIP_CLASS		-1
-
-typedef struct red_alert_ship_status
-{
-	char	name[NAME_LENGTH];
-	float	hull;
-	int	ship_class;
-	float	subsys_current_hits[MAX_RED_ALERT_SUBSYSTEMS];
-	float subsys_aggregate_current_hits[SUBSYSTEM_MAX];
-	int	wep[MAX_SHIP_WEAPONS];
-	int	wep_count[MAX_SHIP_WEAPONS];
-} red_alert_ship_status;
-
-static red_alert_ship_status Red_alert_wingman_status[MAX_RED_ALERT_SLOTS];
-static char	Red_alert_precursor_mission[MAX_FILENAME_LEN];
+SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
+SCP_string Red_alert_precursor_mission;
 
 /////////////////////////////////////////////////////////////////////////////
 // Red Alert Interface
@@ -392,7 +143,7 @@ static int Red_alert_voice;
 void red_alert_voice_load()
 {
 	Assert( Briefing != NULL );
-	if ( strnicmp(Briefing->stages[0].voice, NOX("none"), 4) && (strlen(Briefing->stages[0].voice) > 0) ) {
+	if ( strnicmp(Briefing->stages[0].voice, NOX("none"), 4) && (Briefing->stages[0].voice[0] != '\0') ) {
 		Red_alert_voice = audiostream_open( Briefing->stages[0].voice, ASF_VOICE );
 	}
 }
@@ -409,53 +160,66 @@ void red_alert_voice_unload()
 // start playback of the red alert voice
 void red_alert_voice_play()
 {
-	if ( Red_alert_voice == -1 ){
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].new_text);
-		return;	// voice file doesn't exist
-	}
-
 	if ( !Briefing_voice_enabled ) {
 		return;
 	}
 
-	if ( audiostream_is_playing(Red_alert_voice) ){
-		return;
-	}
+	if ( Red_alert_voice < 0 ) {
+		// play simulated speech?
+		if (fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+			if (fsspeech_playing()) {
+				return;
+			}
 
-	audiostream_play(Red_alert_voice, Master_voice_volume, 0);
-	Red_alert_voice_started = 1;
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Briefing->stages[0].text.c_str());
+			Red_alert_voice_started = 1;
+		}
+	} else {
+		if (audiostream_is_playing(Red_alert_voice)) {
+			return;
+		}
+
+		audiostream_play(Red_alert_voice, Master_voice_volume, 0);
+		Red_alert_voice_started = 1;
+	}
 }
 
 // stop playback of the red alert voice
 void red_alert_voice_stop()
 {
-	if ( Red_alert_voice == -1 )
+	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
+	if (Red_alert_voice < 0) {
+		fsspeech_stop();
+	} else {
+		audiostream_stop(Red_alert_voice, 1, 0);	// stream is automatically rewound
+	}
 }
 
 // pausing and unpausing of red alert voice
 void red_alert_voice_pause()
 {
-	if ( Red_alert_voice == -1 )
-		return;
-
 	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_pause(Red_alert_voice);
+	if (Red_alert_voice < 0) {
+		fsspeech_pause(true);
+	} else {
+		audiostream_pause(Red_alert_voice);
+	}
 }
 
 void red_alert_voice_unpause()
 {
-	if ( Red_alert_voice == -1 )
-		return;
-
 	if ( !Red_alert_voice_started )
 		return;
 
-	audiostream_unpause(Red_alert_voice);
+	if (Red_alert_voice < 0) {
+		fsspeech_pause(false);
+	} else {
+		audiostream_unpause(Red_alert_voice);
+	}
 }
 
 // a button was pressed, deal with it
@@ -466,17 +230,13 @@ void red_alert_button_pressed(int n)
 		// warp the mouse cursor the the middle of the screen for those who control with a mouse
 		mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
-		if(game_do_cd_mission_check(Game_current_mission_filename)){
-			if(Game_mode & GM_MULTIPLAYER){	
-				// process the initial orders now (moved from post_process_mission()in missionparse) 
-				mission_parse_fixup_players();
-				ai_post_process_mission();
-			}
-
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
-		} else {
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+		if(Game_mode & GM_MULTIPLAYER){	
+			// process the initial orders now (moved from post_process_mission()in missionparse) 
+			mission_parse_fixup_players();
+			ai_post_process_mission();
 		}
+
+		gameseq_post_event(GS_EVENT_ENTER_GAME);
 		break;
 
 	case RA_REPLAY_MISSION:
@@ -488,12 +248,7 @@ void red_alert_button_pressed(int n)
 				break;
 			}
 
-			// CD CHECK
-			if(game_do_cd_mission_check(Game_current_mission_filename)){
-				gameseq_post_event(GS_EVENT_START_GAME);
-			} else {
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
-			}
+			gameseq_post_event(GS_EVENT_START_GAME);
 		} else {
 			gamesnd_play_iface(SND_GENERAL_FAIL);
 		}
@@ -507,7 +262,7 @@ float Ra_flash_time = 0.0f;
 int Ra_flash_up = 0;
 void red_alert_blit_title()
 {
-	char *str = XSTR("Incoming Transmission", 1406);
+	const char *str = XSTR("Incoming Transmission", 1406);
 	int w, h;
 
 	// get the string size	
@@ -524,7 +279,7 @@ void red_alert_blit_title()
 
 	// draw
 	gr_set_color_fast(&flash_color);
-	gr_string(Ra_brief_text_wnd_coords[gr_screen.res][0] + ((Ra_brief_text_wnd_coords[gr_screen.res][2] - w) / 2), Ra_flash_y[gr_screen.res] - h - 5, str);
+	gr_string(Ra_brief_text_wnd_coords[gr_screen.res][0] + ((Ra_brief_text_wnd_coords[gr_screen.res][2] - w) / 2), Ra_flash_y[gr_screen.res] - h - 5, str, GR_RESIZE_MENU);
 	gr_set_color_fast(&Color_normal);	
 
 	// increment flash time
@@ -548,7 +303,6 @@ void red_alert_init()
 		return;
 	}
 
-	// common_set_interface_palette("ControlConfigPalette");  // set the interface palette
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Red_alert_mask[gr_screen.res]);
 
@@ -583,8 +337,7 @@ void red_alert_init()
 	}
 
 	if ( Briefing->num_stages > 0 ) {
-		Assert(Briefing->stages[0].new_text);
-		brief_color_text_init(Briefing->stages[0].new_text, Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], 0);
+		brief_color_text_init(Briefing->stages[0].text.c_str(), Ra_brief_text_wnd_coords[gr_screen.res][RA_W_COORD], default_redalert_briefing_color, 0);
 	}
 
 	red_alert_voice_load();
@@ -639,7 +392,7 @@ void red_alert_do_frame(float frametime)
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		if (The_mission.flags & MISSION_FLAG_NO_BRIEFING)
 		{
-			commit_pressed();
+			red_alert_button_pressed(RA_CONTINUE);
 			return;
 		}
 	}
@@ -661,7 +414,7 @@ void red_alert_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(Background_bitmap);
 	if (Background_bitmap >= 0) {
 		gr_set_bitmap(Background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	Ui_window.draw();
@@ -695,175 +448,276 @@ void red_alert_invalidate_timestamp()
 // Store a ships weapons into a wingman status structure
 void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 {
-	int i, sidx;
+	int i;
 	weapon_info *wip;
+	wep_t weapons;
+
+	// Make sure there isn't any data from the previous ship.
+	ras->primary_weapons.clear();
+	ras->secondary_weapons.clear();
 
 	if (swp == NULL) {
-		// just set defaults
-		for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
-			ras->wep[i] = -1;
-			ras->wep_count[i] = 0;
-		}
-
 		return;
 	}
 
 	// edited to accommodate ballistics - Goober5000
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		wip = &Weapon_info[swp->primary_bank_weapons[i]];
-		ras->wep[i] = swp->primary_bank_weapons[i];
+	for (i = 0; i < swp->num_primary_banks; i++) {
+		weapons.index = swp->primary_bank_weapons[i];
 
-		if (ras->wep[i] >= 0) {
-			if (wip->wi_flags2 & WIF2_BALLISTIC) {
-				// to avoid triggering the below condition: this way, minimum ammo will be 2...
-				// since the red-alert representation of a conventional primary is 0 -> not used,
-				// 1 -> used, I added the representation 2 and above -> ballistic primary
-				ras->wep_count[i] = swp->primary_bank_ammo[i] + 2;
-			} else {
-				ras->wep_count[i] = 1;
-			}
-		} else {
-			ras->wep_count[i] = -1;
+		if (weapons.index < 0) {
+			continue;
 		}
+
+		wip = &Weapon_info[weapons.index];
+
+		if (wip->wi_flags2 & WIF2_BALLISTIC) {
+			// to avoid triggering the below condition: this way, minimum ammo will be 2...
+			// since the red-alert representation of a conventional primary is 0 -> not used,
+			// 1 -> used, I added the representation 2 and above -> ballistic primary
+			weapons.count = swp->primary_bank_ammo[i] + 2;
+		} else {
+			weapons.count = 1;
+		}
+
+		ras->primary_weapons.push_back( weapons );
 	}
 
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-		sidx = i+MAX_SHIP_PRIMARY_BANKS;
-		ras->wep[sidx] = swp->secondary_bank_weapons[i];
+	for (i = 0; i < swp->num_secondary_banks; i++) {
+		weapons.index = swp->secondary_bank_weapons[i];
 
-		if (ras->wep[sidx] >= 0)
-			ras->wep_count[sidx] = swp->secondary_bank_ammo[i];
-		else
-			ras->wep_count[sidx] = -1;
+		if (weapons.index < 0) {
+			continue;
+		}
+
+		weapons.count = swp->secondary_bank_ammo[i];
+
+		ras->secondary_weapons.push_back( weapons );
 	}
 }
 
 // Take the weapons stored in a wingman_status struct, and bash them into the ship weapons struct
 void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 {
-	int i, j, sidx;
+	int i, list_size = 0;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS)
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) {
 		return;
+	}
 
 	// modified to accommodate ballistics - Goober5000
-	j = 0;
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) ) {
-			swp->primary_bank_weapons[j] = ras->wep[i];
-			
-			if (ras->wep_count[i] > 1)	// this is a ballistic primary (!!!)
-				swp->primary_bank_ammo[j] = ras->wep_count[i] - 2;	// to compensate for storage
-			else
-				swp->primary_bank_ammo[i] = 0;			
+	list_size = (int)ras->primary_weapons.size();
+	CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
+	for (i = 0; i < list_size; i++) {
+		Assert( ras->primary_weapons[i].index >= 0 );
 
-			j++;
+		swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
+		swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
+
+		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC) {
+			// adjust to correct ammo count, per red_alert_store_weapons()
+			swp->primary_bank_ammo[i] -= 2;
 		}
 	}
-	swp->num_primary_banks = j;
+	swp->num_primary_banks = list_size;
 
+	// bash secondary weapons
+	list_size = (int)ras->secondary_weapons.size();
+	CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
+	for (i = 0; i < list_size; i++) {
+		Assert( ras->secondary_weapons[i].index >= 0 );
 
-	j = 0;
-	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-		sidx = i+MAX_SHIP_PRIMARY_BANKS;
+		swp->secondary_bank_weapons[i] = ras->secondary_weapons[i].index;
+		swp->secondary_bank_ammo[i] = ras->secondary_weapons[i].count;
+	}
+	swp->num_secondary_banks = list_size;
+}
 
-		if (ras->wep[sidx] >= 0) {
-			swp->secondary_bank_weapons[j] = ras->wep[sidx];
-			swp->secondary_bank_ammo[j] = ras->wep_count[sidx];
-			j++;
+void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
+{
+	int i, list_size = 0;
+	ship_info *sip;
+	subsys_status *sssp = NULL;
+
+	// restore from ship_exited
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+		return;
+	sip = &Ship_info[ras->ship_class];
+
+	// parse objects use the "pilot" subsystem
+	for (i = 0; i < pobjp->subsys_count; i++)
+	{
+		if (!stricmp(Subsys_status[pobjp->subsys_index + i].name, "pilot"))
+		{
+			sssp = &Subsys_status[pobjp->subsys_index + i];
+			break;
 		}
 	}
-	swp->num_secondary_banks = j;
+
+	if (sssp == NULL)
+	{
+		Warning(LOCATION, "Parse object data for ship '%s' doesn't contain the 'Pilot' subsystem!", pobjp->name);
+		return;
+	}
+
+	// bash primary weapons
+	list_size = (int)ras->primary_weapons.size();
+	CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
+	for (i = 0; i < list_size; i++)
+	{
+		Assert( ras->primary_weapons[i].index >= 0 );
+		sssp->primary_banks[i] = ras->primary_weapons[i].index;
+
+		if (Weapon_info[sssp->primary_banks[i]].wi_flags2 & WIF2_BALLISTIC)
+		{
+			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
+			sssp->primary_ammo[i] = fl2i(100.0f * (ras->primary_weapons[i].count - 2) / max_count + 0.5f);
+		}
+		else
+			sssp->primary_ammo[i] = 100;
+	}
+
+	// bash secondary weapons
+	list_size = (int)ras->secondary_weapons.size();
+	CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
+	for (i = 0; i < list_size; i++)
+	{
+		Assert( ras->secondary_weapons[i].index >= 0 );
+		sssp->secondary_banks[i] = ras->secondary_weapons[i].index;
+
+		float max_count = sip->secondary_bank_ammo_capacity[i] / Weapon_info[sssp->secondary_banks[i]].cargo_size;
+		sssp->secondary_ammo[i] = fl2i(100.0f * ras->secondary_weapons[i].count / max_count + 0.5f);
+	}
 }
 
 void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
 	int i, count = 0;
+	int list_size;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS)
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) ) {
 		return;
+	}
 
 	ss = GET_FIRST(&shipp->subsys_list);
 	while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
-
-		if ( count >= MAX_RED_ALERT_SUBSYSTEMS ) {
-			Int3();	// ran out of subsystems
+		// using at() here for the bounds check, although out-of-bounds should
+		// probably never happen here
+		try {
+			ss->current_hits = ras->subsys_current_hits.at(count);
+		} catch (std::out_of_range range) {
 			break;
 		}
 
-		// NOTE: we cast to int here in order to get rid of float precision issues with the comparison
-		if ((int)ras->subsys_current_hits[count] != -1) {
-			ss->current_hits = ras->subsys_current_hits[count];
-
-			if (ss->current_hits <= 0)
-				ss->submodel_info_1.blown_off = 1;
+		if (ss->current_hits <= 0) {
+			ss->submodel_info_1.blown_off = 1;
 		}
 
 		ss = GET_NEXT( ss );
 		count++;
 	}
 
-	for (i = 0; i < SUBSYSTEM_MAX; i++) {
-		// NOTE: we cast to int here in order to get rid of float precision issues with the comparison
-		if ((int)ras->subsys_aggregate_current_hits[i] == -1)
-			continue;
-
-		shipp->subsys_info[i].current_hits = ras->subsys_aggregate_current_hits[i];
+	list_size = (int)ras->subsys_aggregate_current_hits.size();
+	CLAMP(list_size, 0, SUBSYSTEM_MAX);
+	for (i = 0; i < list_size; i++) {
+		shipp->subsys_info[i].aggregate_current_hits = ras->subsys_aggregate_current_hits[i];
 	}
 }
 
+extern int insert_subsys_status(p_object *pobjp);
+
+void red_alert_bash_subsys_status(red_alert_ship_status *ras, p_object *pobjp)
+{
+	int i, j;
+	ship_info *sip;
+	model_subsystem *psub = NULL;
+	subsys_status *sssp = NULL;
+
+	// restore from ship_exited
+	if ( (ras->ship_class == RED_ALERT_DESTROYED_SHIP_CLASS) || (ras->ship_class == RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+		return;
+	sip = &Ship_info[ras->ship_class];
+
+	// do this differently than the other bash_subsys_status... since the p_object may not contain
+	// all the subsystems, iterate on the red_alert_ship_status entries rather than the p_object's
+	// and create missing subsystems where necessary
+	for (i = 0; i < (int) ras->subsys_current_hits.size(); i++)
+	{
+		psub = &sip->subsystems[i];
+
+		// in the p_object, subsystem 0 is the pilot, and afterwards the subsystems go in order
+		j = i + 1;
+
+		// this subsystem is in the p_object
+		if (j < pobjp->subsys_count)
+		{
+			sssp = &Subsys_status[pobjp->subsys_index + j];
+		}
+		// must create subsystem (same technique as in parse_copy_damage)
+		else
+		{
+			// jam in the new subsystem at the end of the existing list for this parse object
+			int new_idx = insert_subsys_status(pobjp);
+			Assert(new_idx == pobjp->subsys_index + j);
+			sssp = &Subsys_status[new_idx];
+
+			strcpy_s(sssp->name, psub->subobj_name);
+		}
+
+		float max_hits = psub->max_subsys_strength * (pobjp->ship_max_hull_strength / sip->max_hull_strength);
+
+		float current_hits = ras->subsys_current_hits[i];
+
+		sssp->percent = 100.0f * (max_hits - current_hits) / max_hits;
+	}
+}
 
 void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
-	int i, count = 0;
-
+	int i;
+	
+	// Make sure there isn't any data from the previous ship.
+	ras->subsys_current_hits.clear();
+	ras->subsys_aggregate_current_hits.clear();
+	
 	if (shipp == NULL) {
-		// just set defaults and bail
-		// this assumes that current hits will never equal -1.0f (which it shouldn't)
-		for (i = 0; i < MAX_RED_ALERT_SUBSYSTEMS; i++)
-			ras->subsys_current_hits[i] = -1.0f;
-
-		for (i = 0; i < SUBSYSTEM_MAX; i++)
-			ras->subsys_aggregate_current_hits[i] = -1.0f;
-
 		return;
 	}
 
 	ss = GET_FIRST(&shipp->subsys_list);
 	while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
-
-		if ( count >= MAX_RED_ALERT_SUBSYSTEMS ) {
-			Int3();	// ran out of subsystems
-			break;
-		}
-
-		ras->subsys_current_hits[count] = ss->current_hits;
+		ras->subsys_current_hits.push_back( ss->current_hits );
 
 		ss = GET_NEXT( ss );
-		count++;
 	}
 
 	for (i = 0; i < SUBSYSTEM_MAX; i++)
-		ras->subsys_aggregate_current_hits[i] = shipp->subsys_info[i].current_hits;
+		// Pyro3d - Fixes AP8 Based RA crashes
+		ras->subsys_aggregate_current_hits.push_back(shipp->subsys_info[i].aggregate_current_hits);
 }
 
 
-// Record the current state of the players wingman
+/*
+ * Record the current state of the players wingman & ships with the "red-alert-carry" flag
+ * Wingmen without the red-alert-carry flag are only stored if they survive
+ * dead wingmen must still be handled in red_alert_bash_wingman_status
+ */
 void red_alert_store_wingman_status()
 {
 	ship				*shipp;
-	red_alert_ship_status	*ras;
+	red_alert_ship_status	ras;
 	ship_obj			*so;
 	object			*ship_objp;
 
-	Red_alert_num_slots_used = 0;
-
 	// store the mission filename for the red alert precursor mission
-	strcpy(Red_alert_precursor_mission, Game_current_mission_filename);
+	Red_alert_precursor_mission = Game_current_mission_filename;
+
+	// Pyro3d - Clear list of stored red alert ships 
+	// Probably not the best solution, but it prevents an assertion in change_ship_type()
+	Red_alert_wingman_status.clear();
 
 	// store status for all existing ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
@@ -875,63 +729,63 @@ void red_alert_store_wingman_status()
 			continue;
 		}
 
-		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
-			Int3();	// ran out of red alert slots
-			continue;
-		}
-
 		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
 			continue;
 		}
 
-		ras = &Red_alert_wingman_status[Red_alert_num_slots_used];
-		Red_alert_num_slots_used++;
+		ras.name = shipp->ship_name;
+		ras.hull = Objects[shipp->objnum].hull_strength;
+		ras.ship_class = shipp->ship_info_index;
+		red_alert_store_weapons(&ras, &shipp->weapons);
+		red_alert_store_subsys_status(&ras, shipp);
 
-		strcpy(ras->name, shipp->ship_name);
-		ras->hull = Objects[shipp->objnum].hull_strength;
-		ras->ship_class = shipp->ship_info_index;
-		red_alert_store_weapons(ras, &shipp->weapons);
-		red_alert_store_subsys_status(ras, shipp);
+		Red_alert_wingman_status.push_back( ras );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
 	}
 
 	// store exited ships that did not die
-	for (int idx=0; idx<MAX_EXITED_SHIPS; idx++) {
-
-		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
-			Int3();	// ran out of red alert slots
-			continue;
-		}
-
+	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
 		if (Ships_exited[idx].flags & SEF_RED_ALERT_CARRY) {
-			ras = &Red_alert_wingman_status[Red_alert_num_slots_used];
-			Red_alert_num_slots_used++;
-
-			strcpy(ras->name, Ships_exited[idx].ship_name);
-			ras->hull = float(Ships_exited[idx].hull_strength);
+			ras.name = Ships_exited[idx].ship_name;
+			ras.hull = float(Ships_exited[idx].hull_strength);
 
 			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
-			if ( (Ships_exited[idx].flags & SEF_DESTROYED) || (Ships_exited[idx].flags & SEF_PLAYER_DELETED) ) {
-				ras->ship_class = RED_ALERT_EXITED_SHIP_CLASS;
+			if ( Ships_exited[idx].flags & SEF_DESTROYED ) {
+				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+			}
+			else if (Ships_exited[idx].flags & SEF_PLAYER_DELETED) {
+				ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
 			}
 			// ... otherwise we want to make sure and carry over the ship class
 			else {
 				Assert( Ships_exited[idx].ship_class >= 0 );
-				ras->ship_class = Ships_exited[idx].ship_class;
+				ras.ship_class = Ships_exited[idx].ship_class;
 			}
 
-			red_alert_store_weapons(ras, NULL);
-			red_alert_store_subsys_status(ras, NULL);
+			red_alert_store_weapons(&ras, NULL);
+			red_alert_store_subsys_status(&ras, NULL);
+
+			Red_alert_wingman_status.push_back( ras );
+			// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+			Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
 		}
 	}
 
-	Assert(Red_alert_num_slots_used > 0);
+	Assert( !Red_alert_wingman_status.empty() );
 }
 
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)
-void red_alert_delete_ship(ship *shipp)
+void red_alert_delete_ship(ship *shipp, int ship_state)
 {
 	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
+		if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS) {
 		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else if (ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS) {
+			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else {
+			Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", shipp->ship_name, ship_state);
+		}
 	}
 
 	ship_add_exited_ship( shipp, SEF_PLAYER_DELETED );
@@ -941,227 +795,237 @@ void red_alert_delete_ship(ship *shipp)
 	}
 }
 
-// Take the stored wingman status information, and adjust the player wing ships accordingly
+// just mark the parse object as never going to arrive
+void red_alert_delete_ship(p_object *pobjp, int ship_state)
+{
+	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
+	{
+		pobjp->flags2 |= P2_RED_ALERT_DELETED;
+
+		if (pobjp->wingnum < 0)
+			pobjp->flags |= P_SF_CANNOT_ARRIVE;
+	}
+	else
+		Error(LOCATION, "Red Alert: asked to delete ship (%s) with invalid ship state (%d)", pobjp->name, ship_state);
+}
+
+/*
+ * Take the red alert status information, and adjust the red alert ships accordingly
+ * "red alert ships" are wingmen and any ship with the red-alert-carry flag
+ * Wingmen without red alert data still need to be handled / removed
+ */
 void red_alert_bash_wingman_status()
 {
-	int				i;
-	ship				*shipp;
-	red_alert_ship_status	*ras;
+	int j;
 	ship_obj			*so;
-	object			*ship_objp;
+
+	SCP_vector<red_alert_ship_status>::iterator rasii;
+	SCP_vector<p_object>::iterator poii;
+
+	SCP_hash_map<int, int> Wing_pobjects_deleted;
+	SCP_hash_map<int, int>::iterator ii;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
 		return;
 	}
 
-	if ( Red_alert_num_slots_used <= 0 ) {
+	if ( Red_alert_wingman_status.empty() ) {
 		return;
 	}
 
 	// go through all ships in the game, and see if there is red alert status data for any
 
-	int remove_list[MAX_RED_ALERT_SLOTS];
-	int remove_count = 0;
-
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		ship_objp = &Objects[so->objnum];
+	so = GET_FIRST(&Ship_obj_list);
+	for ( ; so != END_OF_LIST(&Ship_obj_list); )
+	{
+		object *ship_objp = &Objects[so->objnum];
 		Assert(ship_objp->type == OBJ_SHIP);
-		shipp = &Ships[ship_objp->instance];
+		ship *shipp = &Ships[ship_objp->instance];
 
 		if ( !(shipp->flags & SF_FROM_PLAYER_WING) && !(shipp->flags & SF_RED_ALERT_STORE_STATUS) ) {
+			so = GET_NEXT(so);
 			continue;
 		}
 
-		int found_match = 0;
+		bool ship_data_restored = false;
+		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
-		for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
-			ras = &Red_alert_wingman_status[i];
+		for ( rasii = Red_alert_wingman_status.begin(); rasii != Red_alert_wingman_status.end(); ++rasii )
+		{
+			red_alert_ship_status *ras = &(*rasii);
 
-			// we only want to restore ships which haven't been destroyed (which the RED_ALERT_EXITED_SHIP_CLASS identifies)
-			if ( !stricmp(ras->name, shipp->ship_name) && (ras->ship_class != RED_ALERT_EXITED_SHIP_CLASS) ) {
-				found_match = 1;
+			// red-alert data matches this ship!
+			if ( !stricmp(ras->name.c_str(), shipp->ship_name)  )
+			{
+				// we only want to restore ships which haven't been destroyed, or were removed by the player
+				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+				{
+					// if necessary, restore correct ship class
+					if ( ras->ship_class != shipp->ship_info_index )
+					{
+						if (ras->ship_class >= 0 && ras->ship_class < MAX_SHIP_CLASSES)
+							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
+						else
+							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+					}
 
-				// if necessary, restore correct ship class
-				if ( ras->ship_class != shipp->ship_info_index ) {
-					change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
+					// restore hull (but not shields)
+					if (ras->hull >= 0.0f && ras->hull <= ship_objp->hull_strength)
+						ship_objp->hull_strength = ras->hull;
+					else
+						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+
+					// restore weapons and subsys
+					red_alert_bash_weapons(ras, &shipp->weapons);
+					red_alert_bash_subsys_status(ras, shipp);
+
+					ship_data_restored = true;
 				}
-				// restore hull and weapons
-				ship_objp->hull_strength = ras->hull;
-				red_alert_bash_weapons(ras, &shipp->weapons);
-				red_alert_bash_subsys_status(ras, shipp);
+				// must be destroyed or deleted
+				else
+				{
+					ship_state = ras->ship_class;
+				}
+
+				// we won't have two ships with the same name, so bail
+				break;
 			}
 		}
 
-		if ( !found_match ) {
-			remove_list[remove_count++] = SHIP_INDEX(shipp);
-		}
-	}
-
-	// remove ships
-	for ( i = 0; i < remove_count; i++ ) {
-		// remove ship
-		red_alert_delete_ship(&Ships[remove_list[i]]);
-	}
-}
-
-// write wingman status out to the specified file
-void red_alert_write_wingman_status(CFILE *fp)
-{
-	int				i, j;
-	red_alert_ship_status *ras;
-
-	cfwrite_int(Red_alert_num_slots_used, fp);
-
-	if ( Red_alert_num_slots_used <= 0 ) {
-		return;
-	}
-
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
-	cfwrite_string(Red_alert_precursor_mission, fp);
-
-	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
-		ras = &Red_alert_wingman_status[i];
-		cfwrite_string(ras->name, fp);
-		cfwrite_float(ras->hull, fp);
-		cfwrite_string_len(Ship_info[ras->ship_class].name, fp);
-
-		for ( j = 0; j < MAX_RED_ALERT_SUBSYSTEMS; j++ ) {
-			cfwrite_float(ras->subsys_current_hits[j], fp);
-		}
-
-		for ( j = 0; j < SUBSYSTEM_MAX; j++ ) {
-			cfwrite_float(ras->subsys_aggregate_current_hits[j], fp);
-		}
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			cfwrite_string_len( Weapon_info[ras->wep[j]].name, fp);
-			cfwrite_int( ras->wep_count[j], fp );
-		}
-	}
-}
-
-// same basic thing as the above but for writing in the campaign file - taylor
-void red_alert_write_wingman_status_campaign(CFILE *fp)
-{
-	int				i, j;
-	red_alert_ship_status *ras;
-
-	cfwrite_int(Red_alert_num_slots_used, fp);
-
-	if ( Red_alert_num_slots_used <= 0 ) {
-		return;
-	}
-
-	Assert(strlen(Red_alert_precursor_mission) > 0 );
-	cfwrite_string(Red_alert_precursor_mission, fp);
-
-	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
-		ras = &Red_alert_wingman_status[i];
-		cfwrite_string(ras->name, fp);
-		cfwrite_float(ras->hull, fp);
-		cfwrite_int(ras->ship_class, fp);
-
-		for ( j = 0; j < MAX_RED_ALERT_SUBSYSTEMS; j++ ) {
-			cfwrite_float(ras->subsys_current_hits[j], fp);
-		}
-
-		for ( j = 0; j < SUBSYSTEM_MAX; j++ ) {
-			cfwrite_float(ras->subsys_aggregate_current_hits[j], fp);
-		}
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			cfwrite_int( ras->wep[j], fp ) ;
-			cfwrite_int( ras->wep_count[j], fp );
-		}
-	}
-}
-
-// red wingman status out of the specified file
-void red_alert_read_wingman_status(CFILE *fp, int version)
-{
-	int				i, j;
-	red_alert_ship_status *ras;
-	char tname[NAME_LENGTH];
-
-	Red_alert_num_slots_used = cfread_int(fp);
-
-	if ( Red_alert_num_slots_used <= 0 ) {
-		return;
-	}
-
-	cfread_string(Red_alert_precursor_mission, MAX_FILENAME_LEN, fp);
-
-	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
-		ras = &Red_alert_wingman_status[i];
-		cfread_string(ras->name, NAME_LENGTH, fp);
-		ras->hull = cfread_float(fp);
-		if (version >= 142) {
-			cfread_string_len( tname, NAME_LENGTH, fp );
-			ras->ship_class = ship_info_lookup(tname);
+		// remove ship if it was destroyed, or if there's no red-alert data for it
+		if ( !ship_data_restored ) {
+			// we need to be a little tricky here because deletion invalidates the ship_obj
+			ship_obj *next_so = GET_NEXT(so);
+			red_alert_delete_ship(shipp, ship_state);
+			so = next_so;
 		} else {
-			ras->ship_class = cfread_int(fp);
+			so = GET_NEXT(so);
 		}
+	}
 
-		for ( j = 0; j < MAX_RED_ALERT_SUBSYSTEMS; j++ ) {
-			ras->subsys_current_hits[j] = cfread_float(fp);
-		}
+	// NOTE: in retail, red alert data was not loaded for ships that arrived later in the mission
+	if (!Red_alert_applies_to_delayed_ships)
+		return;
 
-		for ( j = 0; j < SUBSYSTEM_MAX; j++ ) {
-			ras->subsys_aggregate_current_hits[j] = cfread_float(fp);
-		}
+	// go through all ships yet to arrive, and see if there is red alert status data for any
 
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if (version >= 142) {
-				cfread_string_len( tname, NAME_LENGTH, fp );
-				ras->wep[j] = weapon_info_lookup(tname);
-			} else {
-				ras->wep[j] = cfread_int(fp) ;
+	for ( poii = Parse_objects.begin(); poii != Parse_objects.end(); ++poii )
+	{
+		p_object *pobjp = &(*poii);
+
+		// objects that have already arrived would have been handled in the above loop
+		if ( pobjp->created_object != NULL )
+			continue;
+
+		// if we're in a wing, check whether we're in the player wing
+		bool from_player_wing = false;
+		if (pobjp->wingnum >= 0)
+		{
+			for (j = 0; j < MAX_STARTING_WINGS; j++)
+			{
+				if (!stricmp(Starting_wing_names[j], Wings[pobjp->wingnum].name))
+				{
+					from_player_wing = true;
+					break;
+				}
 			}
-			ras->wep_count[j] = cfread_int(fp);
+		}
+
+		// same condition as in ship_obj loop
+		if ( !from_player_wing && !(pobjp->flags & P_SF_RED_ALERT_STORE_STATUS) ) {
+			continue;
+		}
+
+		bool ship_data_restored = false;
+		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
+
+		for ( rasii = Red_alert_wingman_status.begin(); rasii != Red_alert_wingman_status.end(); ++rasii )
+		{
+			red_alert_ship_status *ras = &(*rasii);
+
+			// red-alert data matches this ship!
+			if ( !stricmp(ras->name.c_str(), pobjp->name)  )
+			{
+				// we only want to restore ships which haven't been destroyed, or were removed by the player
+				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+				{
+					// if necessary, restore correct ship class
+					if ( ras->ship_class != pobjp->ship_class )
+					{
+						if (ras->ship_class >= 0 && ras->ship_class < MAX_SHIP_CLASSES)
+							swap_parse_object(pobjp, ras->ship_class);
+						else
+						{
+							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
+							
+							// We will break anyway to this should work
+							break;
+						}
+					}
+
+					// restore hull (but not shields)
+					if (ras->hull >= 0.0f && ras->hull <= (pobjp->initial_hull * pobjp->ship_max_hull_strength / 100.0f))
+						pobjp->initial_hull = (int) (ras->hull * 100.0f / pobjp->ship_max_hull_strength);
+					else
+						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
+
+					// restore weapons and subsys
+					red_alert_bash_weapons(ras, pobjp);
+					red_alert_bash_subsys_status(ras, pobjp);
+
+					ship_data_restored = true;
+				}
+				// must be destroyed or deleted
+				else
+				{
+					ship_state = ras->ship_class;
+				}
+
+				// we won't have two ships with the same name, so bail
+				break;
+			}
+		}
+
+		// remove ship if it was destroyed, or if there's no red-alert data for it
+		if ( !ship_data_restored )
+		{
+			red_alert_delete_ship(pobjp, ship_state);
+
+			if (pobjp->wingnum >= 0)
+				Wing_pobjects_deleted[pobjp->wingnum]++;
 		}
 	}
-}
 
-// same basic thing as the above but for read from the campaign file - taylor
-void red_alert_read_wingman_status_campaign(CFILE *fp, char ships[][NAME_LENGTH], char weapons[][NAME_LENGTH])
-{
-	int				i, j;
-	red_alert_ship_status *ras;
-	int ras_tmp = -1;
+	// if all parse objects in a wing have been removed, decrement the count for that wing
+	for (ii = Wing_pobjects_deleted.begin(); ii != Wing_pobjects_deleted.end(); ++ii)
+	{
+		wing *wingp = &Wings[ii->first];
 
-	Red_alert_num_slots_used = cfread_int(fp);
+		if (wingp->num_waves > 0 && wingp->wave_count == ii->second)
+		{			
+			wingp->current_wave++;
+			wingp->red_alert_skipped_ships += wingp->wave_count;
 
-	if ( Red_alert_num_slots_used <= 0 ) {
-		return;
-	}
+			if (wingp->num_waves == 0)
+			{
+				wingp->flags |= WF_WING_GONE;
+				wingp->flags |= WF_NEVER_EXISTED;
+			}
 
-	Assert( (ships != NULL) && (weapons != NULL) );
-
-	if ( (ships == NULL) || (weapons == NULL) )
-		return;
-
-	cfread_string(Red_alert_precursor_mission, MAX_FILENAME_LEN, fp);
-
-	for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
-		ras = &Red_alert_wingman_status[i];
-		cfread_string(ras->name, NAME_LENGTH, fp);
-		ras->hull = cfread_float(fp);
-
-		ras_tmp = cfread_int(fp);
-		ras->ship_class = ship_info_lookup( ships[ras_tmp] );
-
-		for ( j = 0; j < MAX_RED_ALERT_SUBSYSTEMS; j++ ) {
-			ras->subsys_current_hits[j] = cfread_float(fp);
-		}
-
-		for ( j = 0; j < SUBSYSTEM_MAX; j++ ) {
-			ras->subsys_aggregate_current_hits[j] = cfread_float(fp);
-		}
-
-		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			ras_tmp = cfread_int(fp) ;
-			ras->wep[j] = weapon_info_lookup( weapons[ras_tmp] );
-			ras->wep_count[j] = cfread_int(fp);
+			// look through all ships yet to arrive...
+			for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
+			{
+				// ...and mark the ones in this wing
+				if (pobjp->wingnum == ii->first)
+				{
+					// no waves left to arrive, so mark ships accordingly
+					if (wingp->num_waves == 0)
+						pobjp->flags |= P_SF_CANNOT_ARRIVE;
+					// we skipped one complete wave, so clear the flag so the next wave creates all ships
+					else
+						pobjp->flags2 &= ~P2_RED_ALERT_DELETED;
+				}
+			}
 		}
 	}
 }
@@ -1198,32 +1062,48 @@ void red_alert_start_mission()
 	}
 }
 
-// called from main game loop to check to see if we should move to a red alert mission
-int red_alert_check_status()
+// called from HUD code to see if we're red-alerting
+int red_alert_in_progress()
+{
+	// it is specifically a question of whether the timestamp is running
+	return timestamp_valid(Red_alert_new_mission_timestamp);
+}
+
+// called from the game loop to check if we should actually do the red-alert
+void red_alert_maybe_move_to_next_mission()
 {
 	// if the timestamp is invalid, do nothing.
 	if ( !timestamp_valid(Red_alert_new_mission_timestamp) )
-		return 0;
+		return;
 
 	// return if the timestamp hasn't elapsed yet
-	if ( timestamp_elapsed(Red_alert_new_mission_timestamp) ) {
+	if ( !timestamp_elapsed(Red_alert_new_mission_timestamp) )
+		return;
 
-		// basic premise here is to stop the current mission, and then set the next mission in the campaign
-		// which better be a red alert mission
-		if ( Game_mode & GM_CAMPAIGN_MODE ) {
-			red_alert_store_wingman_status();
-			mission_goal_fail_incomplete();
-			mission_campaign_store_goals_and_events_and_variables();
-			scoring_level_close();
-			mission_campaign_eval_next_mission();
-			mission_campaign_mission_over();
+	// basic premise here is to stop the current mission, and then set the next mission in the campaign
+	// which better be a red alert mission
+	if ( Game_mode & GM_CAMPAIGN_MODE ) {
+		red_alert_store_wingman_status();
+		mission_goal_fail_incomplete();
+		mission_campaign_store_goals_and_events_and_variables();
+		scoring_level_close();
+		mission_campaign_eval_next_mission();
+		mission_campaign_mission_over();
 
-			// CD CHECK
-			gameseq_post_event(GS_EVENT_START_GAME);
-		} else {
-			gameseq_post_event(GS_EVENT_END_GAME);
-		}
+		// CD CHECK
+		gameseq_post_event(GS_EVENT_START_GAME);
+	} else {
+		gameseq_post_event(GS_EVENT_END_GAME);
 	}
+}
 
-	return 1;
+/*
+ * red_alert_clear()
+ *
+ * clear all red alert "wingman" data
+ * Allows data to be cleared from outside REDALERT_INTERNAL code
+ */
+void red_alert_clear()
+{
+	Red_alert_wingman_status.clear();
 }

@@ -3,47 +3,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/cfileextractor/cfileextractor.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-01-20 07:10:33 $
- * $Author: Goober5000 $
- *
- * Cross-platform cmdline extractor for VP files
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.8  2005/09/24 02:40:09  Goober5000
- * get rid of a whole bunch of Microsoft warnings
- * --Goober5000
- *
- * Revision 1.7  2005/09/20 02:45:47  taylor
- * bump version to 0.6
- * add a specified directory to output files to
- *
- * Revision 1.6  2005/09/08 05:04:15  taylor
- * make it actually compile under WIN32
- * bump version to 0.5 since little else is going to be done to this thing
- *
- * Revision 1.5  2005/09/08 00:09:31  taylor
- * fix building/linking of command line tools under Linux/OSX
- * add tools as targets to OSX project file
- *
- * Revision 1.4  2005/05/24 20:52:10  taylor
- * make sure that we recursively create directories for Linux/OSX
- * replace older recursive mkdir method in cfileextractor with new method
- *
- * Revision 1.3  2005/05/24 03:12:27  taylor
- * get command sanity check right, fixes lowercase on extract too
- *
- * Revision 1.2  2005/05/18 01:57:54  taylor
- * a few help text adjustments and fix some compiler warnings
- *
- * Revision 1.1  2005/05/17 21:00:57  taylor
- * Initial import of cfileextractor, still needs some work but does what it needs to
- *
- *
- * $NoKeywords: $
- */
+
 
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
@@ -137,7 +97,7 @@ typedef struct vp_fileinfo {
    ~vp_fileinfo() {}
 } vp_fileinfo;
 
-std::vector<vp_fileinfo> VP_FileInfo;
+SCP_vector<vp_fileinfo> VP_FileInfo;
 
 // just like strlwr() but without actually including it here
 void lowercase(char *s)
@@ -264,7 +224,7 @@ void read_index(int lc = 0)
 			if (lc == 1)
 				lowercase( vpinfo.file_name );
 
-			strcpy( vpinfo.file_path, path );
+			strcpy_s( vpinfo.file_path, path );
 			VP_FileInfo.push_back(vpinfo);
 		}
 	}
@@ -301,7 +261,7 @@ void extract_all_files(char *file)
 
 	printf("Extracting: %s...\n", file);
 
-	for (uint i = 0; i < VP_FileInfo.size(); i++) {
+	for (size_t i = 0; i < VP_FileInfo.size(); i++) {
 		// save the file path to a temp location and recursively make the needed directories
 		if (have_outdir) {
 			if ( (out_len + 1 + strlen(path)) > MAX_PATH-1 )
@@ -351,7 +311,7 @@ void extract_all_files(char *file)
 
 			sprintf(path2, "%s%s%s", out_dir, DIR_SEPARATOR_STR, path);
 		} else {
-			strcpy(path2, path);
+			strcpy_s(path2, path);
 		}
 
 		fp_out = fopen(path2, "wb");
@@ -405,7 +365,7 @@ void list_all_files(char *file)
 
 	printf("  Name                          Size     Offset      Date/Time         Path\n");
 	printf("-------------------------------------------------------------------------------\n");
-	for (uint i = 0; i < VP_FileInfo.size(); i++) {
+	for (size_t i = 0; i < VP_FileInfo.size(); i++) {
 		plat_time = VP_FileInfo[i].write_time;  // gets rid of some platform strangeness this way
 		strftime(out_time, 32, "%F %H:%M", localtime(&plat_time)); // YYYY-mm-dd HH:mm  (ISO 8601 date format, 24-hr time)
 
@@ -462,7 +422,7 @@ void help()
 	printf("\n");
 }
 
-// we end up #include'ing SDL.h which on Windows and Mac will redfine main() which is something
+// we end up #include'ing SDL.h which on Windows and Mac will redefine main() which is something
 // that we don't want since we don't actually link against SDL, this solves the problem...
 #ifdef main
 #undef main

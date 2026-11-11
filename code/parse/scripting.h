@@ -6,11 +6,9 @@
 #include "parse/lua.h"
 
 #include <stdio.h>
-#include <vector>
 
 //**********Scripting languages that are possible
 #define SC_LUA			(1<<0)
-#define SC_PYTHON		(1<<1)
 
 //*************************Scripting structs*************************
 #define SCRIPT_END_LIST		NULL
@@ -36,8 +34,9 @@ struct image_desc
 #define CHC_WEAPONCLASS		6
 #define CHC_OBJECTTYPE		7
 #define CHC_KEYPRESS		8
-#define CHC_VERSION			9
-#define CHC_APPLICATION		10
+#define CHC_ACTION			9
+#define CHC_VERSION			10
+#define CHC_APPLICATION		11
 
 //Actions
 #define CHA_NONE			-1
@@ -62,37 +61,66 @@ struct image_desc
 #define CHA_KEYRELEASED		18
 #define CHA_ONSTATESTART	19
 #define CHA_ONSTATEEND		20
+#define CHA_ONWEAPONDELETE	21
+#define CHA_ONWPEQUIPPED	22
+#define CHA_ONWPFIRED		23
+#define CHA_ONWPSELECTED	24
+#define CHA_ONWPDESELECTED	25
+#define CHA_GAMEPLAYSTART	26
+#define CHA_ONTURRETFIRED	27
+#define CHA_PRIMARYFIRE		28
+#define CHA_SECONDARYFIRE	29
+#define CHA_ONSHIPARRIVE	30
+#define CHA_COLLIDEBEAM		31
+#define CHA_ONACTION		32
+#define CHA_ONACTIONSTOPPED	33
+#define CHA_MSGRECEIVED		34
+#define CHA_HUDMSGRECEIVED	35
 
+// management stuff
+void scripting_state_init();
+void scripting_state_close();
+void scripting_state_do_frame(float frametime);
 
-struct script_condition
+class script_condition
 {
+public:
 	int condition_type;
 	union
 	{
-		char name[NAME_LENGTH];
+		char name[CONDITION_LENGTH];
 	} data;
 
-	script_condition(){condition_type = CHC_NONE; memset(data.name, 0, sizeof(data.name));}
+	script_condition()
+		: condition_type(CHC_NONE)
+	{
+		memset(data.name, 0, sizeof(data.name));
+	}
 };
 
-struct script_action
+class script_action
 {
+public:
 	int action_type;
 	script_hook hook;
 
-	script_action(){action_type = CHA_NONE;}
+	script_action()
+		: action_type(CHA_NONE)
+	{
+		script_hook_init(&hook);
+	}
 };
 
 class ConditionedHook
 {
 private:
-	std::vector<script_action> Actions;
+	SCP_vector<script_action> Actions;
 	script_condition Conditions[MAX_HOOK_CONDITIONS];
 public:
-	bool AddCondition(script_condition sc);
-	bool AddAction(script_action sa);
+	bool AddCondition(script_condition *sc);
+	bool AddAction(script_action *sa);
 
-	bool ConditionsValid(int action, struct object *objp=NULL);
+	bool ConditionsValid(int action, class object *objp=NULL, int more_data = 0);
 	bool IsOverride(class script_state *sys, int action);
 	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
 };
@@ -106,22 +134,17 @@ private:
 	int Langs;
 	struct lua_State *LuaState;
 	const struct script_lua_lib_list *LuaLibs;
-	struct PyObject *PyGlb;
-	struct PyObject *PyLoc;
 
 	//Utility variables
-	std::vector<image_desc> ScriptImages;
-	std::vector<ConditionedHook> ConditionalHooks;
+	SCP_vector<image_desc> ScriptImages;
+	SCP_vector<ConditionedHook> ConditionalHooks;
 
 private:
-	PyObject *GetPyLocals(){return PyLoc;}
-	PyObject *GetPyGlobals(){return PyGlb;}
 
 	void ParseChunkSub(int *out_lang, int *out_index, char* debug_str=NULL);
 	int RunBytecodeSub(int in_lang, int in_idx, char format='\0', void *data=NULL);
 
 	void SetLuaSession(struct lua_State *L);
-	void SetPySession(struct PyObject *loc, struct PyObject *glb);
 
 	void OutputLuaMeta(FILE *fp);
 	
@@ -149,7 +172,6 @@ public:
 
 	//***Init functions for langs
 	int CreateLuaState();
-	//int CreatePyState(const script_py_lib_list *libraries);
 
 	//***Get data
 	int OutputMeta(char *filename);
@@ -169,14 +191,14 @@ public:
 	void RemHookVars(unsigned int num, ...);
 
 	//***Hook creation functions
-	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
-	script_hook ParseChunk(char* debug_str=NULL);
-	bool ParseCondition(char *filename="<Unknown>");
+	bool EvalString(const char *string, const char *format=NULL, void *rtn=NULL, const char *debug_str=NULL);
+	void ParseChunk(script_hook *dest, char* debug_str=NULL);
+	bool ParseCondition(const char *filename="<Unknown>");
 
 	//***Hook running functions
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL);
+	int RunCondition(int condition, char format='\0', void *data=NULL, class object *objp = NULL, int more_data = 0);
 	bool IsConditionOverride(int action, object *objp=NULL);
 
 	//*****Other functions

@@ -7,188 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.15.2.1 $
- * $Date: 2007-12-20 01:57:40 $
- * $Author: turey $
- *
- * Routines to read the mouse.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/03/15 17:35:24  taylor
- * make sure our event state doesn't get filled with things we should poll for (was waiting for the new input code, but really needed to get at least this in)
- *
- * Revision 2.14  2006/01/12 04:18:10  wmcoolmon
- * Finished committing codebase
- *
- * Revision 2.13  2005/07/18 03:45:07  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.12  2005/06/19 02:48:13  taylor
- * remove xmouse.cpp since it's pretty much useless
- *
- * Revision 2.11  2005/03/14 03:38:54  taylor
- * fix for mouse cursor problem when running in a window
- *
- * Revision 2.10  2005/03/03 16:18:19  taylor
- * lockup fixes, and it's Linux friendly too :)
- *
- * Revision 2.9  2005/03/03 06:05:28  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.8  2005/02/04 10:12:30  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.7  2004/07/26 20:47:33  Kazan
- * remove MCD complete
- *
- * Revision 2.6  2004/07/12 16:32:51  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.5  2004/02/14 00:18:33  randomtiger
- * Please note that from now on OGL will only run with a registry set by Launcher v4. See forum for details.
- * OK, these changes effect a lot of file, I suggest everyone updates ASAP:
- * Removal of many files from project.
- * Removal of meanless Gr_bitmap_poly variable.
- * Removal of glide, directdraw, software modules all links to them, and all code specific to those paths.
- * Removal of redundant Fred paths that arent needed for Fred OGL.
- * Have seriously tidied the graphics initialisation code and added generic non standard mode functionality.
- * Fixed many D3D non standard mode bugs and brought OGL up to the same level.
- * Removed texture section support for D3D8, voodoo 2 and 3 cards will no longer run under fs2_open in D3D, same goes for any card with a maximum texture size less than 1024.
- *
- * Revision 2.4  2004/02/04 09:02:44  Goober5000
- * got rid of unnecessary double semicolons
- * --Goober5000
- *
- * Revision 2.3  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.2  2002/07/29 20:12:31  penguin
- * added #ifdef _WIN32 around windows-specific system headers
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/21 15:43:05  mharris
- * Cosmetics - removed commented-out code
- *
- * Revision 1.2  2002/05/17 03:04:09  mharris
- * Make mouse routines more portable
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 3     6/02/99 6:18p Dave
- * Fixed TNT lockup problems! Wheeeee!
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 29    6/10/98 2:52p Hoffoss
- * Made mouse code use DI by default, but fall back on normal code if that
- * fails.
- * 
- * 28    5/24/98 1:35p Hoffoss
- * Fixed bug where  mouse cursor is always recentering with a
- * mouse_flush() call in debug version.
- * 
- * 27    5/22/98 4:50p Hoffoss
- * Trying to fix mouse acceleration problem..
- * 
- * 26    5/21/98 12:26p Lawrance
- * Fixed mouse jerk at mission start while in debug build only.
- * 
- * 25    5/15/98 2:41p Hoffoss
- * Made mouse default to off (for flying ship) and fixed some new pilot
- * init bugs.
- * 
- * 24    5/08/98 4:13p Hoffoss
- * Fixed problem with mouse pointer centering causing lost keypresses.
- * 
- * 23    5/07/98 6:58p Hoffoss
- * Made changes to mouse code to fix a number of problems.
- * 
- * 22    5/05/98 8:38p Hoffoss
- * Added sensitivity adjustment to options menu and made it save to pilot
- * file.
- * 
- * 21    5/05/98 1:03p Hoffoss
- * Fixed initialization bug.
- * 
- * 20    5/01/98 5:45p Hoffoss
- * Made further improvements to the mouse code.
- * 
- * 19    5/01/98 3:35p Hoffoss
- * Made changes to release version of mouse code.
- * 
- * 18    5/01/98 1:14p Hoffoss
- * Changed mouse usage so directInput is only used for release version.
- * 
- * 17    4/30/98 5:40p Hoffoss
- * Added mouse as a supported control to fly the ship.
- * 
- * 16    4/29/98 12:13a Lawrance
- * Add function to check down count of mouse button without reseting the
- * internal count.  Added hook to reset demo trailer timer when a button
- * is pressed.
- * 
- * 15    4/02/98 5:26p John
- * 
- * 14    1/19/98 6:15p John
- * Fixed all my Optimized Build compiler warnings
- * 
- * 13    12/04/97 3:47p John
- * Made joystick move mouse cursor
- * 
- * 12    11/20/97 5:36p Dave
- * Hooked in a bunch of main hall changes (including sound). Made it
- * possible to reposition (rewind/ffwd) 
- * sound buffer pointers. Fixed animation direction change framerate
- * problem.
- * 
- * 11    5/12/97 11:41a John
- * Added range checking to mouse position
- * 
- * 10    4/22/97 5:55p Lawrance
- * let mouse.cpp decide if mouse has moved
- * 
- * 9     4/22/97 12:29p John
- * Changed mouse code so that you have to call mouse_init for the mouse
- * stuff to work.
- * 
- * 8     4/22/97 10:56a John
- * fixed some resource leaks.
- * 
- * 7     3/26/97 10:52a Lawrance
- * mouse always on in menus, disappears in gameplay after 1 second
- * 
- * 6     3/11/97 1:37p Lawrance
- * added mouse_up_count(), changed mouse_mark() to mouse_mark_button() &
- * mouse_mark_move()
- * 
- * 5     12/09/96 1:29p Lawrance
- * adding 3 button support
- * 
- * 4     12/03/96 4:19p John
- * Added some code so that holding down the mouse buttons between menus
- * doesn't select the next menu.
- *
- * $NoKeywords: $
- */
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -201,27 +20,16 @@
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
-
-#ifdef WIN32
-#define USE_DIRECTINPUT
-#endif
+#include "cmdline/cmdline.h"
 
 #define MOUSE_MODE_DI	0
 #define MOUSE_MODE_WIN	1
 
-#ifdef USE_DIRECTINPUT
-#ifdef NDEBUG
-LOCAL int Mouse_mode = MOUSE_MODE_DI;
-#else
 LOCAL int Mouse_mode = MOUSE_MODE_WIN;
-#endif
-#else // !USE_DIRECTINPUT
-LOCAL int Mouse_mode = MOUSE_MODE_WIN;
-#endif // ifdef USE_DIRECTINPUT
 
 int mouse_inited = 0;
-#ifdef USE_DIRECTINPUT
-LOCAL int Di_mouse_inited = 0;
+#ifdef WIN32
+    LOCAL int Di_mouse_inited = 0;
 #endif
 LOCAL int Mouse_x;
 LOCAL int Mouse_y;
@@ -244,13 +52,11 @@ int Use_mouse_to_fly = 0;
 int Mouse_hidden = 0;
 int Keep_mouse_centered = 0;
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 int di_init();
 void di_cleanup();
 void mouse_eval_deltas_di();
 #endif
-
-extern int Cmdline_window;
 
 void mouse_force_pos(int x, int y);
 
@@ -284,9 +90,11 @@ void mouse_close()
 	if (!mouse_inited)
 		return;
 
-#ifdef USE_DIRECTINPUT
-	di_cleanup();
+#ifdef WIN32
+	if (Mouse_mode == MOUSE_MODE_DI)
+		di_cleanup();
 #endif
+
 	mouse_inited = 0;
 
 	DELETE_CRITICAL_SECTION( mouse_lock );
@@ -306,12 +114,19 @@ void mouse_init()
 	Mouse_x = gr_screen.max_w / 2;
 	Mouse_y = gr_screen.max_h / 2;
 
-#ifdef USE_DIRECTINPUT
-	if (!di_init() || Cmdline_window)
+	#ifdef WIN32
+		if (Cmdline_no_di_mouse) {
+			Mouse_mode = MOUSE_MODE_WIN;
+		} else {
+			if (!di_init() || Cmdline_window || Cmdline_fullscreen_window)
+				Mouse_mode = MOUSE_MODE_WIN;
+			else
+				Mouse_mode = MOUSE_MODE_DI;
+		} 
+	#else
 		Mouse_mode = MOUSE_MODE_WIN;
-#else
-	Mouse_mode = MOUSE_MODE_WIN;
-#endif
+	#endif
+
 
 #ifdef SCP_UNIX
 	// we poll for mouse motion events so be sure to skip those in normal event polling
@@ -348,22 +163,6 @@ void mouse_mark_button( uint flags, int set)
 
 		if ( (flags & MOUSE_LEFT_BUTTON) && (set == 1) ) {
 			mouse_left_pressed++;
-
-////////////////////////////
-/// SOMETHING TERRIBLE IS ABOUT TO HAPPEN.  I FEEL THIS IS NECESSARY FOR THE DEMO, SINCE
-/// I DON'T WANT TO CALL CRITICAL SECTION CODE EACH FRAME TO CHECK THE LEFT MOUSE BUTTON.
-/// PLEASE SEE ALAN FOR MORE INFORMATION.
-////////////////////////////
-#ifdef FS2_DEMO
-					{
-					extern void demo_reset_trailer_timer();
-					demo_reset_trailer_timer();
-					}
-#endif
-////////////////////////////
-/// IT'S OVER.  SEE, IT WASN'T SO BAD RIGHT?  IT'S IS VERY UGLY LOOKING, I KNOW.
-////////////////////////////
-
 		}
 	}
 	else {
@@ -402,17 +201,21 @@ void mouse_mark_button( uint flags, int set)
 		mouse_flags &= ~flags;
 	}
 
-	LEAVE_CRITICAL_SECTION( mouse_lock );	
+	LEAVE_CRITICAL_SECTION(mouse_lock);
+
+	Script_system.SetHookVar("MouseButton", 'i', &flags);
 
 	//WMC - On Mouse Pressed and On Mouse Released hooks
-	if(set == 1)
+	if (set == 1)
 	{
 		Script_system.RunCondition(CHA_MOUSEPRESSED);
 	}
-	else if(set == 0)
+	else if (set == 0)
 	{
 		Script_system.RunCondition(CHA_MOUSERELEASED);
 	}
+
+	Script_system.RemHookVar("MouseButton");
 }
 
 void mouse_flush()
@@ -587,7 +390,7 @@ void mouse_eval_deltas()
 	if (!mouse_inited)
 		return;
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 	if (Mouse_mode == MOUSE_MODE_DI) {
 		mouse_eval_deltas_di();
 		return;
@@ -635,7 +438,7 @@ void mouse_eval_deltas()
 	}
 }
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 #include "directx/vdinput.h"
 
 static LPDIRECTINPUT			Di_mouse_obj = NULL;
@@ -704,8 +507,7 @@ void mouse_eval_deltas_di()
 	// JH: Dang!  This makes the mouse readings in DirectInput act screwy!
 //	mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
 }
-#endif  // ifdef USE_DIRECTINPUT
-
+#endif //#ifdef WIN32
 
 int mouse_get_pos(int *xpos, int *ypos)
 {
@@ -779,7 +581,7 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 {
 	int flags = mouse_get_pos( xpos, ypos );
 
-	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL );
+	gr_unsize_screen_pos( (xpos) ? xpos : NULL, (ypos) ? ypos : NULL, NULL, NULL, GR_RESIZE_MENU );
 
 	return flags;
 }
@@ -812,7 +614,7 @@ void mouse_set_pos(int xpos, int ypos)
 	}
 }
 
-#ifdef USE_DIRECTINPUT
+#ifdef WIN32
 int di_init()
 {
 	HRESULT hr;
@@ -900,8 +702,7 @@ void di_cleanup()
 
 	Di_mouse_inited = 0;
 }
-#endif  // ifdef USE_DIRECTINPUT
-
+#endif //ifdef WIN32
 
 // portable routine to get the mouse position, relative
 // to current window

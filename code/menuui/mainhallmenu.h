@@ -7,90 +7,165 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.h $
- * $Revision: 2.6.2.1 $
- * $Date: 2007-11-20 01:11:10 $
- * $Author: Goober5000 $
- *
- * Header file for main-hall menu code
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/12/04 19:06:01  wmcoolmon
- * Slightly better main hall error handling
- *
- * Revision 2.5  2005/07/13 03:15:50  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.4  2005/06/03 06:39:26  taylor
- * better audio pause/unpause support when game window loses focus or is minimized
- *
- * Revision 2.3  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2003/01/15 05:19:07  Goober5000
- * bumped main halls down to 10
- * --Goober5000
- *
- * Revision 2.1  2003/01/14 04:00:15  Goober5000
- * allowed for up to 256 main halls
- * --Goober5000
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     8/26/99 9:45a Dave
- * First pass at easter eggs and cheats.
- * 
- * 3     6/03/99 10:15p Dave
- * Put in temporary main hall screen.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 7     4/25/98 2:00p Dave
- * Installed a bunch of multiplayer context help screens. Reworked ingame
- * join ship select screen. Fix places where network timestamps get hosed.
- * 
- * 6     3/31/98 7:09p Dave
- * Changed around main hall code to make way for multiple different halls.
- * 
- * 5     2/05/98 7:13p Dave
- * Put in new misc animation sound triggers.
- * 
- * 4     12/06/97 1:11a Lawrance
- * make a general interface for help overlays
- * 
- * 3     12/05/97 2:39p Lawrance
- * added some different sounds to main hall, add support for looping
- * ambient sounds
- * 
- * 2     12/01/97 4:59p Dave
- * Synchronized multiplayer debris objects. Put in pilot popup in main
- * hall. Optimized simulated multiplayer lag module. Fixed a potential
- * file_xfer bug.
- * 
- * 1     11/19/97 8:30p Dave
- * 
- * $NoKeywords: $
- *
- */
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 #ifndef _MAIN_HALL_MENU_HEADER_FILE
 #define _MAIN_HALL_MENU_HEADER_FILE
 
-// the # of main halls we're supporting
-#define MAIN_HALLS_MAX			10		// Goober5000 - bumped down to 10; don't go above 256 (size of ubyte)
+// CommanderDJ - this is now dynamic
+// #define MAIN_HALLS_MAX			10
+
+class main_hall_region
+{
+public:
+	int mask;
+	char key;
+	SCP_string description;
+	int action;
+	SCP_string lua_action;
+
+	main_hall_region(int _mask, char _key, const SCP_string &_description, int _action, const SCP_string &_lua_action)
+		: mask(_mask), key(_key), description(_description), action(_action), lua_action(_lua_action)
+	{}
+
+	main_hall_region()
+		: mask(0), key(0), description(), action(0), lua_action()
+	{}
+};
+
+class main_hall_defines
+{
+public:
+	// mainhall name identifier
+	SCP_string name;
+
+	SCP_vector<SCP_string> cheat;
+	SCP_vector<SCP_string> cheat_anim_from;
+	SCP_vector<SCP_string> cheat_anim_to;
+
+	// minimum resolution and aspect ratio needed to display this main hall
+	int min_width;
+	int min_height;
+	float min_aspect_ratio;
+
+	// bitmap and mask
+	SCP_string bitmap;
+	SCP_string mask;
+
+	// music
+	SCP_string music_name;
+	SCP_string substitute_music_name;
+
+	// help overlay
+	SCP_string help_overlay_name;
+	int help_overlay_resolution_index;
+
+	// zoom area
+	int zoom_area_width;
+	int zoom_area_height;
+
+	// intercom defines -------------------
+
+	// # of intercom sounds
+	int num_random_intercom_sounds;
+
+	// random (min/max) delays between playing intercom sounds
+	SCP_vector<SCP_vector<int> > intercom_delay;
+
+	// intercom sounds themselves
+	SCP_vector<int> intercom_sounds;
+
+	// intercom sound pan values
+	SCP_vector<float> intercom_sound_pan;
+
+
+	// misc animations --------------------
+
+	// # of misc animations
+	int num_misc_animations;
+
+	// filenames of the misc animations
+	SCP_vector<SCP_string> misc_anim_name;
+
+	// Time until we will next play a given misc animation, min delay, and max delay
+	SCP_vector<SCP_vector<int> > misc_anim_delay;
+
+	// Goober5000, used in preference to the flag in generic_anim
+	SCP_vector<int> misc_anim_paused;
+
+	// Goober5000, used when we want to play one of several anims
+	SCP_vector<int> misc_anim_group;
+
+	// coords of where to play the misc anim
+	SCP_vector<SCP_vector<int> > misc_anim_coords;
+
+	// misc anim play modes (see MISC_ANIM_MODE_* above)
+	SCP_vector<int> misc_anim_modes;
+
+	// panning values for each of the misc anims
+	SCP_vector<float> misc_anim_sound_pan;
+
+	//sounds for each of the misc anims
+	SCP_vector<SCP_vector<int> > misc_anim_special_sounds;
+
+	//frame number triggers for each of the misc anims
+	SCP_vector<SCP_vector<int> > misc_anim_special_trigger;
+
+	//flags for each of the misc anim sounds
+	SCP_vector<SCP_vector<int> > misc_anim_sound_flag;
+
+	// controls the render order
+	SCP_vector<bool> misc_anim_over_doors;
+
+
+	// door animations --------------------
+
+	// # of door animations
+	int num_door_animations;
+
+	// filenames of the door animations
+	SCP_vector<SCP_string> door_anim_name;
+
+	// first pair : coords of where to play a given door anim
+	// second pair : center of a given door anim in windowed mode
+	SCP_vector<SCP_vector<int> > door_anim_coords;
+
+	// sounds for each region (open/close)
+	SCP_vector<SCP_vector<int> > door_sounds;
+
+	// pan values for the door sounds
+	SCP_vector<float> door_sound_pan;
+
+	// region descriptions ----------------
+
+	// font used for the tooltips, version number, etc.
+	int font;
+
+	// action
+	SCP_vector<main_hall_region> regions;
+	
+	bool default_readyroom;
+
+	// num pixels shader is above/below tooltip text
+	int tooltip_padding;
+
+	// y coord of where to draw tooltip text
+	int region_yval;
+
+};
+
+extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
+
 
 // initialize the main hall proper 
-void main_hall_init(int main_hall_num);
+void main_hall_init(const SCP_string &main_hall_name);
+
+// parse mainhall table files
+void main_hall_table_init();
+
+// read in mainhall tables
+void parse_main_hall_table(const char* filename);
 
 // do a frame for the main hall
 void main_hall_do(float frametime);
@@ -102,10 +177,21 @@ void main_hall_close();
 void main_hall_start_music();
 
 // stop the main hall music
-void main_hall_stop_music();
+void main_hall_stop_music(bool fade);
 
 // get the music index
 int main_hall_get_music_index(int main_hall_num);
+
+main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find);
+
+int main_hall_get_index(const SCP_string &name_to_find);
+
+int main_hall_get_resolution_index(int main_hall_num);
+
+void main_hall_get_name(SCP_string &name, unsigned int index);
+
+int main_hall_get_overlay_id();
+int main_hall_get_overlay_resolution_index();
 
 // what main hall we're on
 int main_hall_id();

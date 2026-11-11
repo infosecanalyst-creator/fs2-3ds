@@ -7,138 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.20.2.2 $
- * $Date: 2007-03-22 20:14:17 $
- * $Author: taylor $
- *
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.20.2.1  2007/02/11 09:24:08  taylor
- * remove -pcx32 and -jpgtga
- *
- * Revision 2.20  2006/04/20 06:32:30  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.19  2006/04/05 13:47:01  taylor
- * remove -tga16, it's obsolete now
- * add a temporary -no_emissive_light option to not use emission type light in OGL
- *
- * Revision 2.18  2005/12/28 22:32:37  taylor
- * properly deal with post-89 TGA images which have extra extension and developer info in the file
- *
- * Revision 2.17  2005/11/13 06:49:32  taylor
- * small big-endian fix
- *
- * Revision 2.16  2005/09/05 09:38:19  taylor
- * merge of OSX tree
- * a lot of byte swaps were still missing, will hopefully be fully network compatible now
- *
- * Revision 2.15  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.14  2005/03/15 17:10:58  taylor
- * make sure w,h,bpp are useable before trying to assign values to them
- *
- * Revision 2.13  2005/03/13 23:07:36  taylor
- * enable 32-bit to 16-bit TGA conversion with -tga16 cmdline option (experimental)
- * fix crash when upgrading from original campaign stats file to current
- *
- * Revision 2.12  2005/02/23 05:05:38  taylor
- * compiler warning fixes (for MSVC++ 6)
- * have the warp effect only load as many LODs as will get used
- * head off strange bug in release when corrupt soundtrack number gets used
- *    (will still Assert in debug)
- * don't ever try and save a campaign savefile in multi or standalone modes
- * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
- *
- * Revision 2.11  2005/02/04 10:12:33  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.10  2004/10/31 22:00:57  taylor
- * new bmpman merge support, add PreProcDefines.h a few new places
- *
- * Revision 2.9  2004/10/09 17:44:10  taylor
- * don't use DevIL to read the header, slightly more sane error checking
- *
- * Revision 2.8  2004/09/28 19:54:32  Kazan
- * | is binary or, || is boolean or - please use the right one
- * autopilot velocity ramping biasing
- * made debugged+k kill guardianed ships
- *
- * Revision 2.7  2004/09/22 03:50:13  tbird
- * Modified the image loading to accept 24 and 32 bit images
- *
- * Revision 2.6  2004/07/26 20:47:53  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/04/26 02:14:38  taylor
- * 32-bit support with DevIL
- *
- * Revision 2.3  2004/02/28 14:14:57  randomtiger
- * Removed a few uneeded if DIRECT3D's.
- * Set laser function to only render the effect one sided.
- * Added some stuff to the credits.
- * Set D3D fogging to fall back to vertex fog if table fog not supported.
- *
- * Revision 2.2  2003/03/18 10:07:06  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/11/04 03:02:29  randomtiger
- *
- * I have made some fairly drastic changes to the bumpman system. Now functionality can be engine dependant.
- * This is so D3D8 can call its own loading code that will allow good efficient loading and use of textures that it desparately needs without
- * turning bumpman.cpp into a total hook infested nightmare. Note the new bumpman code is still relying on a few of the of the old functions and all of the old bumpman arrays.
- *
- * I have done this by adding to the gr_screen list of function pointers that are set up by the engines init functions.
- * I have named the define calls the same name as the original 'bm_' functions so that I havent had to change names all through the code.
- *
- * Rolled back to an old version of bumpman and made a few changes.
- * Added new files: grd3dbumpman.cpp and .h
- * Moved the bitmap init function to after the 3D engine is initialised
- * Added includes where needed
- * Disabled (for now) the D3D8 TGA loading - RT
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 7     7/13/99 1:16p Dave
- * 32 bit support. Whee!
- * 
- * 6     3/20/99 3:46p Dave
- * Added support for model-based background nebulae. Added 3 new
- * sexpressions.
- * 
- * 5     12/03/98 9:39a Dave
- * Removed bogus tga code assert?
- * 
- * 4     12/02/98 5:47p Dave
- * Put in interface xstr code. Converted barracks screen to new format.
- * 
- * 3     12/01/98 5:54p Dave
- * Simplified the way pixel data is swizzled. Fixed tga bitmaps to work
- * properly in D3D and Glide.
- * 
- * 2     12/01/98 4:46p Dave
- * Put in targa bitmap support (16 bit).
- *  
- * $NoKeywords: $
- */
+
 
 #include <string.h>
 
@@ -172,20 +41,19 @@ const char *Xfile_ID = "TRUEVISION-XFILE.";
 // -----------------
 
 typedef struct targa_header {
-	ubyte id_length;
-	ubyte color_map_type;
-	ubyte image_type;
-	short cmap_start;
-	short cmap_length;
-	ubyte cmap_depth;
 	short xoffset;
 	short yoffset;
 	short width;
 	short height;
+	short cmap_start;
+	short cmap_length;
+	ubyte id_length;
+	ubyte color_map_type;
+	ubyte image_type;
+	ubyte cmap_depth;
 	ubyte pixel_depth;
 	ubyte image_descriptor;
 } targa_header;
-
 
 typedef struct targa_footer {
 	uint ext_offset;		// file offset to extension area (we ignore it)
@@ -490,21 +358,21 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 //
 // returns - TARGA_ERROR_NONE if successful, otherwise error code
 //
-int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
+int targa_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *palette )
 {	
 	targa_header header;
 	CFILE *targa_file = NULL;
 	char filename[MAX_FILENAME_LEN];
 
 	if (img_cfp == NULL) {
-		strcpy( filename, real_filename );
+		strcpy_s( filename, real_filename );
 
 		char *p = strchr( filename, '.' );
 
 		if ( p )
 			*p = 0;
 
-		strcat( filename, ".tga" );
+		strcat_s( filename, ".tga" );
 
 		targa_file = cfopen( filename , "rb" );
 
@@ -555,9 +423,9 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 		cfclose(targa_file);
 		targa_file = NULL;
 	}
-
+	
 	if ( (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) ) {
-		Int3();
+		Assertion( (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32), "Invalid colour depth (%d) in header of tga file %s\n", header.pixel_depth, real_filename );
 		return TARGA_ERROR_READING;
 	}
 
@@ -632,7 +500,7 @@ int targa_uncompress( ubyte *dst, ubyte *src, int bitmap_width, int bytes_per_pi
 //
 // returns - true if succesful, false otherwise
 //
-int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
+int targa_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	Assert(real_filename);
 	targa_header header;
@@ -643,10 +511,10 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	int xfile_offset = 0;
 		
 	// open the file
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
+	strcat_s( filename, ".tga" );
 
 	targa_file = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
 	if ( !targa_file ){
@@ -721,27 +589,6 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 		return TARGA_ERROR_READING;
 	}
-
-	int xo, yo;
-	if ( header.image_descriptor & 0x10 )	{
-		xo = 1;
-	} else {
-		xo = 0;
-	}
-
-	if ( header.image_descriptor & 0x20 )	{
-		yo = 1;
-	} else {
-		yo = 0;
-	}		
-
-	/*
-	char test=char(header.image_descriptor&0xF);
-	if((test!=8)&&(test!=0)) {
-		cfclose(targa_file);
-		return TARGA_ERROR_READING;
-	}
-	*/
 
 	if((header.image_type!=1)&&(header.image_type!=2)&&(header.image_type!=9)&&(header.image_type!=10)) {
 		cfclose(targa_file);
@@ -864,10 +711,10 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, 
 	int bytes_per_pixel = (bpp >> 3);
 		
 	// open the file
-	strcpy( filename, real_filename );
+	strcpy_s( filename, real_filename );
 	char *p = strchr( filename, '.' );
 	if ( p ) *p = 0;
-	strcat( filename, ".tga" );
+	strcat_s( filename, ".tga" );
 
 	f = cfopen( filename , "wb" );
 	if ( !f ){

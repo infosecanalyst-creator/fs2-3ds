@@ -4,18 +4,7 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/FictionViewer.h $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-11-21 07:27:48 $
- * $Author: Goober5000 $
- *
- * Fiction Viewer briefing screen
- *
- * $Log: not supported by cvs2svn $
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __FICTION_VIEWER_H__
 #define __FICTION_VIEWER_H__
@@ -27,8 +16,13 @@ void fiction_viewer_do_frame(float frametime);
 
 // fiction stuff
 int mission_has_fiction();
-char *fiction_file();
+const char *fiction_file();
+const char *fiction_font();
+const char *fiction_voice();
 void fiction_viewer_reset();
-void fiction_viewer_load(char *filename);
+void fiction_viewer_load(const char *filename, const char *font_filename, const char* voice_filename);
+
+void fiction_viewer_pause();
+void fiction_viewer_unpause();
 
 #endif

@@ -7,347 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.23.2.5 $
- * $Date: 2008-01-19 00:27:07 $
- * $Author: Goober5000 $
- *
- * C module to handle HUD configuration
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.23.2.4  2007/09/02 02:07:41  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 2.23.2.3  2007/08/17 03:29:48  Goober5000
- * generalize the way radar ranges are handled (inspired by Shade's fix)
- *
- * Revision 2.23.2.2  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 2.23.2.1  2006/09/08 06:14:43  taylor
- * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
- *
- * Revision 2.23  2006/01/26 03:23:29  Goober5000
- * pare down the pragmas some more
- * --Goober5000
- *
- * Revision 2.22  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.21  2005/10/10 17:21:04  taylor
- * remove NO_NETWORK
- *
- * Revision 2.20  2005/07/22 10:18:38  Goober5000
- * CVS header tweaks
- * --Goober5000
- *
- * Revision 2.19  2005/07/13 03:15:51  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.18  2005/07/02 19:42:15  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.17  2005/05/12 17:49:12  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.16  2005/04/28 01:34:33  wmcoolmon
- * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
- *
- * Revision 2.15  2005/04/11 05:42:02  taylor
- * some demo related fixes (Jens Granseuer)
- *
- * Revision 2.14  2005/03/10 08:00:06  taylor
- * change min/max to MIN/MAX to fix GCC problems
- * add lab stuff to Makefile
- * build unbreakage for everything that's not MSVC++ 6
- * lots of warning fixes
- * fix OpenGL rendering problem with ship insignias
- * no Warnings() in non-debug mode for Linux (like Windows)
- * some campaign savefile fixage to stop reverting everyones data
- *
- * Revision 2.13  2005/03/02 21:24:44  taylor
- * more network/inferno goodness for Windows, takes care of a few warnings too
- *
- * Revision 2.12  2005/02/23 13:17:05  taylor
- * few more compiler warning fixes (didn't mean to commit iostream.h change)
- * lower warning level to 3 to stop MSVC6 from complaining about C++ headers
- *
- * Revision 2.11  2005/02/23 04:51:56  taylor
- * some bm_unload() -> bm_release() changes to save bmpman slots
- *
- * Revision 2.10  2005/01/31 23:27:53  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.9  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 2.8  2004/07/12 16:32:49  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.7  2004/04/06 01:11:41  Kazan
- * make custom build work again
- *
- * Revision 2.6  2004/03/31 05:42:27  Goober5000
- * got rid of all those nasty warnings from xlocale and so forth; also added comments
- * to indicate which warnings were being disabled
- * --Goober5000
- *
- * Revision 2.5  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/03/18 10:07:03  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.3  2003/01/15 21:29:04  anonymous
- * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.
- *
- * Revision 2.2.2.1  2002/09/24 18:56:43  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.2  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/18 20:07:49  penguin
- * Fixed bug (potential access of unitialized pointer) in hud_config_render_gauges() -- thanks to DTP for finding it!
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/29 14:44:54  mharris
- * Don't use pointers to temp. auto variables in init_alphacolor(); instead
- * use pointers to global HUD_config array.
- *
- * Revision 1.2  2002/05/13 21:09:28  mharris
- * I think the last of the networking code has ifndef NO_NETWORK...
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 19    10/25/99 5:43p Jefff
- * reassigned some xstr ids
- * 
- * 18    10/14/99 2:50p Jefff
- * localization fixes
- * 
- * 17    9/02/99 5:09p Jefff
- * disabled options now draw as a dark gray color
- * 
- * 16    9/01/99 11:16a Dave
- * Reverse direction of HUD config RGB sliders.
- * 
- * 15    8/19/99 3:17p Dave
- * Fixed talking head disappearing.
- * 
- * 14    8/19/99 2:33p Dave
- * Make sure support gauge and net lag gauge are configurable.
- * 
- * 13    8/16/99 5:25p Dave
- * New hud config. Whee!
- * 
- * 12    8/16/99 4:04p Dave
- * Big honking checkin.
- * 
- * 11    7/30/99 10:31p Dave
- * Added comm menu to the configurable hud files.
- * 
- * 10    7/30/99 11:05a Jasenw
- * Fixed hud config for new text warning gauge,
- * 
- * 9     7/24/99 1:54p Dave
- * Hud text flash gauge. Reworked dead popup to use 4 buttons in red-alert
- * missions.
- * 
- * 8     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 7     6/08/99 2:33p Dave
- * Fixed release build warning. Put in hud config stuff.
- * 
- * 6     6/08/99 1:14a Dave
- * Multi colored hud test.
- * 
- * 5     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 4     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/07/98 11:28a Dave
- * Removed wacky pragma.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 72    8/25/98 1:48p Dave
- * First rev of EMP effect. Player side stuff basically done. Next comes
- * AI code.
- * 
- * 71    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 70    6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 69    5/24/98 9:01p Lawrance
- * Add commit sounds when accept is pressed
- * 
- * 68    5/23/98 3:31p Dave
- * Tweaked pxo code. Fixed observer HUD stuff.
- * 
- * 67    5/08/98 10:12a Lawrance
- * play sound for auto-target toggle, don't display HUD message
- * 
- * 66    4/29/98 6:00p Dave
- * Fixed chatbox font colors. Made observer offscreen indicators work.
- * Numerous small UI fixes. Fix rank limitations for mp games. 
- * 
- * 65    4/20/98 12:04a Lawrance
- * tweak how button light up 
- * 
- * 64    4/16/98 4:07p Hoffoss
- * Fixed bug with palette reseting when loading a new pilot.  Also made
- * barracks default to palette merging mode.
- * 
- * 63    4/16/98 10:48a Lawrance
- * reposition a couple of gauges
- * 
- * 62    4/14/98 6:16p Lawrance
- * Fix bug that was preventing non-green HUD color from getting set.
- * 
- * 61    4/12/98 5:32p Lawrance
- * don't show talking head in demo version of hud config
- * 
- * 60    4/10/98 12:07a Lawrance
- * Fix up talking head gauge.
- * 
- * 59    4/08/98 10:15a Lawrance
- * allow kills gauge to be popup
- * 
- * 58    4/08/98 1:18a Lawrance
- * Add in kills gauge art to HUD config.
- * 
- * 57    4/05/98 7:42p Lawrance
- * Add kills gauge
- * 
- * 56    4/03/98 3:13p Dave
- * More work on udp reliable transport. Fixed observer hud offset problem.
- * Made observer join and ingame join work again. Put subnet broadcasting
- * in for TCP.
- * 
- * 55    4/01/98 6:46p Lawrance
- * default damage popup to on
- * 
- * 54    3/31/98 11:47p Lawrance
- * Add popup functionality for the countermeasure gauge.
- * 
- * 53    3/30/98 4:48p Lawrance
- * Turn on offscreen indicator range by default
- * 
- * 52    3/26/98 5:45p Lawrance
- * Added new gauges to HUD config
- * 
- * 51    3/15/98 4:17p Dave
- * Fixed oberver hud problems. Put in handy netplayer macros. Reduced size
- * of network orientation matrices.
- * 
- * 50    3/12/98 5:45p Dave
- * Put in new observer HUD. Made it possible for observers to join at the
- * beginning of a game and follow it around as an observer full-time.
- * 
- * 49    3/11/98 12:13a Lawrance
- * redraw pressed buttons
- * 
- * 48    3/05/98 12:39a Lawrance
- * show comma in 10000
- * 
- * 47    2/22/98 4:30p John
- * More string externalization classification
- * 
- * 46    2/22/98 4:17p John
- * More string externalization classification... 190 left to go!
- * 
- * 45    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 44    1/23/98 6:24p Lawrance
- * Implement wingman status gauge
- * 
- * 43    1/22/98 10:45p Lawrance
- * Add coutermeasures and objective display to hud config.
- * 
- * 42    1/19/98 11:37p Lawrance
- * Fixing Optimization build warnings
- * 
- * 41    1/17/98 10:02p Lawrance
- * Fix bug with damage popup that would sometimes display with <none>.
- * 
- * 40    1/17/98 1:30a Lawrance
- * Add countermeasure gauge
- * 
- * 39    1/15/98 5:10p Allender
- * ton of interface changes.  chatbox in multiplayer now behaves
- * differently than before.  It's always active in any screen that uses
- * it.  Only non-printatble characters will get passed back out from
- * chatbox
- * 
- * 38    1/14/98 11:07p Lawrance
- * Hook in brightness slider to HUD config.
- * 
- * 37    1/14/98 6:42p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 36    1/14/98 12:25p Lawrance
- * center gauge text, use correct game palette.
- * 
- * 35    1/13/98 5:33p Lawrance
- * Tweaking HUD config.
- * 
- * 34    1/13/98 2:20p John
- * Added code to load palette based on hud color.  Added code to turn off
- * nebulas using detail.  Added code in WinMain to time out after waiting
- * too long for window creation.    
- * 
- * 33    1/13/98 10:22a Lawrance
- * Integrate new art changes.
- * 
- * 32    1/12/98 11:16p Lawrance
- * Wonderful HUD config.
- * 
- * 31    1/10/98 12:41a Lawrance
- * start work on new HUD config
- * 
- * 30    1/05/98 9:38p Lawrance
- * Implement flashing HUD gauges.
- * 
- * 29    1/02/98 9:10p Lawrance
- * Big changes to how colors get set on the HUD.
- * 
- * 28    12/16/97 9:13p Lawrance
- * Integrate new gauges into HUD config.
- * 
- * 27    12/01/97 12:27a Lawrance
- * redo default alpha color for HUD, make it easy to modify in the future
- * 
- *
- * $NoKeywords: $
- *
-*/
+
 
 
 #include "hud/hudconfig.h"
@@ -387,6 +47,48 @@ int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
+ 
+char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH] = {
+	"lead indicator",
+	"target orientation",
+	"closest attacking hostile",
+	"current target direction",
+	"mission time",
+	"reticle",
+	"throttle",
+	"radar",
+	"target monitor",
+	"center of reticle",
+	"extra target info",
+	"target shield",
+	"player shield",
+	"power management",
+	"auto-target icon",
+	"auto-speed-match icon",
+	"weapons display",
+	"monitoring view",
+	"directives view",
+	"threat gauge",
+	"afterburner energy",
+	"weapons energy",
+	"weapon linking",
+	"target hull/shield icon",
+	"offscreen indicator",
+	"comm video",
+	"damage display",
+	"message output",
+	"locked missile direction",
+	"countermeasures",
+	"objective notify",
+	"wingmen status",
+	"offscreen range",
+	"kills gauge",
+	"attacking target count",
+	"warning flash",
+	"comm menu",
+	"support gauge",
+	"lag gauge"
+};
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.
@@ -397,7 +99,7 @@ float Radar_ranges[RR_MAX_RANGES] = {
 	10000000.0f,	// infinity
 };
 
-char *Radar_range_text(int n)
+const char *Radar_range_text(int n)
 {
 	#if RR_MAX_RANGES != 3
 	#error Number of ranges is wrong!
@@ -473,13 +175,15 @@ int HUD_config_default_flags2 =
 	(1<<(HUD_KILLS_GAUGE-32)) |
 	(1<<(HUD_ATTACKING_TARGET_COUNT-32)) | 
 	(1<<(HUD_SUPPORT_GAUGE-32)) | 
-	(1<<(HUD_LAG_GAUGE-32))
+	(1<<(HUD_LAG_GAUGE-32)) |
+	(1<<(HUD_TEXT_FLASH-32)) |
+	(1<<(HUD_MESSAGE_BOX-32))
 };
 
 // bits to tell whether a given gauge should be treated as pop-up or not
 int HUD_default_popup_mask =
 {
-	0	|											// (1<<HUD_LEAD_INDICATOR) |
+	0	|											// (1<<HUD_LEAD_INDICATOR) | //-V578
 	0	|											// (1<<HUD_ORIENTATION_TEE) |
 	0	|											//	(1<<HUD_HOSTILE_TRIANGLE) |
 	0	|											// (1<<HUD_TARGET_TRIANGLE) |
@@ -514,7 +218,7 @@ int HUD_default_popup_mask =
 
 int HUD_default_popup_mask2 =
 {
-	0  |											// offscreen indicator range
+	0  |											// offscreen indicator range //-V578
 	0	|
 	0											// kills gauge
 };
@@ -655,7 +359,7 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	}
 };
 
-char *HC_gauge_descriptions(int n)
+const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
 	case 0:
@@ -985,7 +689,6 @@ void hud_config_synch_sliders(int i)
 // reset some ui components based on HUD config data
 void hud_config_synch_ui()
 {
-	// game_load_palette();
 	HUD_init_hud_color_array();
 	// HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha-3;		// convert to value from 0-10	
 
@@ -1000,7 +703,6 @@ void hud_config_init_ui()
 	struct HC_gauge_region	*hg;
 	struct ui_button_info			*hb;
 
-//	common_set_interface_palette("HUDConfigPalette");  // set the interface palette
 	hud_config_synch_ui();
 	HC_background_bitmap = bm_load(Hud_config_fname[gr_screen.res]);
 
@@ -1083,7 +785,7 @@ void hud_config_init_ui()
 
 	HC_select_all = 0;
 
-	strcpy(HC_fname, "");
+	strcpy_s(HC_fname, "");
 }
 
 int hud_config_show_flag_is_set(int i)
@@ -1187,7 +889,7 @@ void hud_config_render_gauges()
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
-			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y);
+			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, GR_RESIZE_MENU);
 		}
 		
 		/*
@@ -1211,7 +913,7 @@ void hud_config_render_gauges()
 			if ( HC_gauge_regions[i].bitmap >= 0 ) {
 				Assert(offset < HC_gauge_regions[i].nframes);
 				gr_set_bitmap(HC_gauge_regions[i].bitmap+offset);
-				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y);
+				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y, GR_RESIZE_MENU);
 			}
 		}
 		*/
@@ -1297,28 +999,26 @@ void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag)
 	}
 }
 
-void hud_config_record_color(int color)
+void hud_config_record_color(int in_color)
 {
-	HUD_config.main_color = color;
-	HUD_color_red = HC_colors[color].r;
-	HUD_color_green = HC_colors[color].g;
-	HUD_color_blue = HC_colors[color].b;
+	HUD_config.main_color = in_color;
+	HUD_color_red = HC_colors[in_color].r;
+	HUD_color_green = HC_colors[in_color].g;
+	HUD_color_blue = HC_colors[in_color].b;
 }
 
 // Set the HUD color
-void hud_config_set_color(int color)
+void hud_config_set_color(int in_color)
 {
 	int idx;	
 
-	hud_config_record_color(color);
-
-	// game_load_palette();
+	hud_config_record_color(in_color);
 
 	HUD_init_hud_color_array();
 
 	// apply the color to all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[color].r, HC_colors[color].g, HC_colors[color].b, (HUD_color_alpha+1)*16);
+		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
 	}
 }
 
@@ -1528,7 +1228,7 @@ void hud_config_button_do(int n)
 		// get the text in the input control
 		exists = 0;
 		HC_fname_input.get_text(name);
-		if(strlen(name) > 0){
+		if(name[0] != '\0'){
 			// if the filename in there already exists
 			for(idx=0; idx<HC_num_files; idx++){
 				if(!stricmp(HC_filenames[idx], name)){
@@ -1721,7 +1421,7 @@ void hud_config_render_description()
 		gr_get_string_size(&w, &h, HC_gauge_descriptions(HC_gauge_selected));
 		sx = fl2i(HC_gauge_description_coords[gr_screen.res][0] + (HC_gauge_description_coords[gr_screen.res][2] - w)/2.0f);
 		sy = HC_gauge_description_coords[gr_screen.res][1];
-		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected));
+		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected), GR_RESIZE_MENU);
 	}
 }
 
@@ -1732,7 +1432,7 @@ void hud_config_render_special_bitmaps()
 	for (i=1; i<NUM_HC_SPECIAL_BITMAPS; i++) {
 		if (HC_special_bitmaps[i].bitmap >= 0) {
 			gr_set_bitmap(HC_special_bitmaps[i].bitmap);
-			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y);
+			gr_bitmap(HC_special_bitmaps[i].x, HC_special_bitmaps[i].y, GR_RESIZE_MENU);
 		}
 	}
 	*/
@@ -1787,7 +1487,7 @@ void hud_config_do_frame(float frametime)
 	GR_MAYBE_CLEAR_RES(HC_background_bitmap);
 	if ( HC_background_bitmap > 0 ) {
 		gr_set_bitmap(HC_background_bitmap);
-		gr_bitmap(0,0);
+		gr_bitmap(0,0,GR_RESIZE_MENU);
 	}
 
 	// rgb slider/button stuff
@@ -1803,7 +1503,7 @@ void hud_config_do_frame(float frametime)
 	if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
 		hud_set_default_color();
 		gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
-		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y);
+		gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y, GR_RESIZE_MENU);
 	}
 	*/
 
@@ -1842,7 +1542,6 @@ void hud_config_close()
 {
 //	common_free_interface_palette();		// restore game palette
 	hud_config_unload_gauges();
-	hud_init_popup_timers();				// ensure no popup gauges are active
 
 	hud_config_color_close();
 
@@ -1872,6 +1571,9 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.rp_flags = RP_DEFAULT;
 	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
+
+	// load up the default colors
+	hud_config_color_load("hud_3.hcf");
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 
@@ -1953,17 +1655,26 @@ void hud_config_color_load(char *name)
 	read_file_text(fname);
 	reset_parse();
 
-	// write out all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		
-		required_string("+Gauge:");
+	// First, set all gauges to the current main color
+	for (idx=0; idx<NUM_HUD_GAUGES; idx++){
+		gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha+1)*16);
+	}
+
+	// Now read in the color values for the gauges
+	while (optional_string("+Gauge:")) {
 		stuff_string(str, F_NAME, sizeof(str));
 
-		required_string("+RGBA:");
-		stuff_ubyte(&HUD_config.clr[idx].red);
-		stuff_ubyte(&HUD_config.clr[idx].green);
-		stuff_ubyte(&HUD_config.clr[idx].blue);
-		stuff_ubyte(&HUD_config.clr[idx].alpha);
-	}	
+		for (idx=0; idx<NUM_HUD_GAUGES; idx++) {
+			if (!stricmp(str, Hud_Gauge_Names[idx])) {
+				required_string("+RGBA:");
+				stuff_ubyte(&HUD_config.clr[idx].red);
+				stuff_ubyte(&HUD_config.clr[idx].green);
+				stuff_ubyte(&HUD_config.clr[idx].blue);
+				stuff_ubyte(&HUD_config.clr[idx].alpha);
+				break;
+			}
+		}
+	}
 }
 
 void hud_config_alpha_slider_up()

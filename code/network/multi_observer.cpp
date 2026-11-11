@@ -7,121 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_observer.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.9  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.8  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.7  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.6  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.5  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.1  2002/07/07 19:55:59  penguin
- * Back-port to MSVC
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 6     9/14/99 2:21p Dave
- * Fixed observer mode joining and ingame stuff.
- * 
- * 5     8/19/99 10:59a Dave
- * Packet loss detection.
- * 
- * 4     11/17/98 11:12a Dave
- * Removed player identification by address. Now assign explicit id #'s.
- * 
- * 3     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 13    6/13/98 6:01p Hoffoss
- * Externalized all new (or forgot to be added) strings to all the code.
- * 
- * 12    6/04/98 11:04a Allender
- * object update level stuff.  Don't reset to high when becoming an
- * observer of any type.  default to low when guy is a dialup customer
- * 
- * 11    5/22/98 9:49p Allender
- * make observers Player_ship hidden from sensors so that he cannot target
- * his "ship".
- * 
- * 10    5/19/98 11:36p Allender
- * fixed very nasty mask problem with ingame joiner marking player objects
- * incorrectly.  Named ingame joiner ship and observer ship unique names
- * 
- * 9     4/18/98 5:00p Dave
- * Put in observer zoom key. Made mission sync screen more informative.
- * 
- * 8     4/03/98 3:13p Dave
- * More work on udp reliable transport. Fixed observer hud offset problem.
- * Made observer join and ingame join work again. Put subnet broadcasting
- * in for TCP.
- * 
- * 7     3/30/98 6:27p Dave
- * Put in a more official set of multiplayer options, including a system
- * for distributing netplayer and netgame settings.
- * 
- * 6     3/24/98 5:00p Dave
- * Fixed several ui bugs. Put in pre and post voice stream playback sound
- * fx. Put in error specific popups for clients getting dropped from games
- * through actions other than their own.
- * 
- * 5     3/23/98 5:42p Dave
- * Put in automatic xfer of pilot pic files. Changed multi_xfer system so
- * that it can support multiplayer sends/received between client and
- * server simultaneously.
- * 
- * 4     3/15/98 4:17p Dave
- * Fixed oberver hud problems. Put in handy netplayer macros. Reduced size
- * of network orientation matrices.
- * 
- * 3     3/14/98 2:48p Dave
- * Cleaned up observer joining code. Put in support for file xfers to
- * ingame joiners (observers or not). Revamped and reinstalled pseudo
- * lag/loss system.
- * 
- * 2     3/13/98 2:51p Dave
- * Put in support for observers to join ingame.
- * 
- * 1     3/12/98 5:44p Dave
- *  
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi_observer.h"
@@ -158,11 +44,13 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	Net_players[player_num].flags = (NETINFO_FLAG_DO_NETWORKING | NETINFO_FLAG_OBSERVER);
 	// memcpy(&Net_players[player_num].p_info.addr, addr, sizeof(net_addr));	
 	Net_players[player_num].m_player = pl;
-	
+
 	// 6/3/98 -- don't set observer to update high...let it be whatever player set it at.
 	//Net_players[player_num].p_info.options.obj_update_level = OBJ_UPDATE_HIGH;
+
 	// set up the net_player structure
-	memset(pl, 0, sizeof(player));
+	pl->reset();
+
 	stuff_netplayer_info( &Net_players[player_num], addr, 0, pl );
 	Net_players[player_num].last_heard_time = timer_get_fixed_seconds();
 	Net_players[player_num].reliable_socket = INVALID_SOCKET;
@@ -174,7 +62,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 
 	// reset the ping for this player
 	multi_ping_reset(&Net_players[player_num].s_info.ping);
-	
+
 	// timestamp his last_full_update_time
 	Net_players[player_num].s_info.last_full_update_time = timestamp(0);			
 	Net_players[player_num].m_player->objnum = -1;	
@@ -198,7 +86,7 @@ int multi_obs_create_player(int player_num,char *name,net_addr *addr,player *pl)
 	Net_players[player_num].s_info.reliable_buffer_size = 0;
 
 	// callsign and short callsign
-	strcpy(pl->callsign,name);
+	strcpy_s(pl->callsign,name);
 	pilot_set_short_callsign(pl,SHORT_CALLSIGN_PIXEL_W);
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;	
 
@@ -245,7 +133,7 @@ void multi_obs_create_observer_client()
 	Player_obj = &Objects[Net_player->m_player->objnum];
 	
 	// create the default player ship object and use that as my default virtual "ship", and make it "invisible"
-	pobj_num = parse_create_object(&Player_start_pobject);
+	pobj_num = parse_create_object(Player_start_pobject);
 	Assert(pobj_num != -1);
 	obj_set_flags(&Objects[pobj_num],OF_PLAYER_SHIP);
 	Player_ship = &Ships[Objects[pobj_num].instance];
@@ -253,7 +141,7 @@ void multi_obs_create_observer_client()
 	// make ship hidden from sensors so that this observer cannot target it.  Observers really have two ships
 	// one observer, and one "Player_ship".  Observer needs to ignore the Player_ship.
 	Player_ship->flags |= SF_HIDDEN_FROM_SENSORS;
-	strcpy(Player_ship->ship_name, XSTR("Observer Ship",688));
+	strcpy_s(Player_ship->ship_name, XSTR("Observer Ship",688));
 	Player_ai = &Ai_info[Ships[Objects[pobj_num].instance].ai_index];		
 
 	// configure the hud to be in "observer" mode

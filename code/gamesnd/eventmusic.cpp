@@ -7,294 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.40.2.8 $
- * $Date: 2008-01-20 17:16:18 $
- * $Author: karajorma $
- *
- * C module for high-level control of event driven music 
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.40.2.7  2007/11/21 07:27:47  Goober5000
- * add Wing Commander Saga's fiction viewer
- *
- * Revision 2.40.2.6  2007/09/02 02:07:41  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 2.40.2.5  2007/03/22 20:22:45  taylor
- * a little better error handling for cf_exists_full()
- * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
- * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
- * get rid of SPM hack, it's wrong (just commented out for now though)
- * fix a bunch of bugs in cf_find_file_location_ext():
- *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
- *  - load issue with finding incorrect files by mistake
- *  - prevent finding different file types in various paths/roots
- *
- * Revision 2.40.2.4  2007/02/11 09:56:25  taylor
- * support for new finding/loading of sound files
- * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
- * remove NO_SOUND
- *
- * Revision 2.40.2.3  2007/01/15 01:55:46  Goober5000
- * thanks to WMC for catching this -- it was a goof from back in 2003!
- *
- * Revision 2.40.2.2  2006/09/11 01:15:04  taylor
- * fixes for stuff_string() bounds checking
- *
- * Revision 2.40.2.1  2006/08/06 19:27:12  Goober5000
- * deprecate change-ship-model
- *
- * Revision 2.40  2006/05/30 02:13:22  Goober5000
- * add substitute music boxes to FRED, and reset music properly when mission is cleared
- * --Goober5000
- *
- * Revision 2.39  2006/05/21 22:57:30  Goober5000
- * fix for Mantis #750
- * --Goober5000
- *
- * Revision 2.38  2006/02/15 07:30:54  wmcoolmon
- * Dodge an Assert
- *
- * Revision 2.37  2006/02/13 00:20:45  Goober5000
- * more tweaks, plus clarification of checks for the existence of files
- * --Goober5000
- *
- * Revision 2.36  2006/02/12 08:39:32  Goober5000
- * whoops, forgot this
- *
- * Revision 2.35  2006/02/12 05:23:16  Goober5000
- * additional fixes and enhancements for substitute music
- * --Goober5000
- *
- * Revision 2.34  2006/02/12 01:27:47  Goober5000
- * more cool work on importing, music handling, etc.
- * --Goober5000
- *
- * Revision 2.33  2006/02/11 22:08:56  Goober5000
- * removed the FS1-specific music hack
- * --Goober5000
- *
- * Revision 2.32  2006/01/26 04:01:58  Goober5000
- * spelling
- *
- * Revision 2.31  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.30  2006/01/11 05:39:49  taylor
- * skip ourselves in hostile check, this isn't really needed since it's handled by the next check but for clarity sake it's here now
- *
- * Revision 2.29  2005/12/28 22:17:01  taylor
- * deal with cf_find_file_location() changes
- * add a central parse_modular_table() function which anything can use
- * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
- * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
- *
- * Revision 2.28  2005/12/21 08:27:37  taylor
- * add the name of the modular table about to be parsed to the debug log
- * a missing weapon_expl table should just be a note in the debug log rather than a popup warning
- *
- * Revision 2.27  2005/12/13 21:50:20  wmcoolmon
- * Grr, how did I miss this?
- *
- * Revision 2.26  2005/12/13 21:48:39  wmcoolmon
- * Music TBL to proper XMT file (-mus)
- *
- * Revision 2.25  2005/11/08 01:03:59  wmcoolmon
- * More warnings instead of Int3s/Asserts, better Lua scripting, weapons_expl.tbl is no longer needed nor read, added "$Disarmed ImpactSnd:", fire-beam fix
- *
- * Revision 2.24  2005/10/29 22:09:29  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- * Revision 2.23  2005/08/24 07:20:36  Goober5000
- * tweaky optimization based on the current version of stristr and
- * the current version of the expanded music.tbl
- * --Goober5000
- *
- * Revision 2.22  2005/07/20 02:37:32  taylor
- * move the "none.wav" init to event_music_init() so it only runs through once (fixes no mission music when modular tbls are used)
- *
- * Revision 2.21  2005/06/30 01:48:52  Goober5000
- * * NOX'd none.wav
- * * changed comparisons on none.wav to only look at the first four letters in case
- *   we don't have an extension or in case some weirdo decides to put none.ogg
- * * simulated speech pre-empts "beeps" in in-game messages
- * --Goober5000
- *
- * Revision 2.20  2005/04/25 00:22:34  wmcoolmon
- * Added parse_sound; replaced Assert() with an if() (The latter may not be a good idea, but it keeps missions from being un-debuggable)
- *
- * Revision 2.19  2005/03/27 12:28:32  Goober5000
- * clarified max hull/shield strength names and added ship guardian thresholds
- * --Goober5000
- *
- * Revision 2.18  2005/02/23 05:05:39  taylor
- * compiler warning fixes (for MSVC++ 6)
- * have the warp effect only load as many LODs as will get used
- * head off strange bug in release when corrupt soundtrack number gets used
- *    (will still Assert in debug)
- * don't ever try and save a campaign savefile in multi or standalone modes
- * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
- *
- * Revision 2.17  2005/01/18 01:14:17  wmcoolmon
- * OGG fixes, ship selection fixes
- *
- * Revision 2.16  2004/12/25 16:42:59  wmcoolmon
- * Fix to modular tables workaround with Fs2NetD
- *
- * Revision 2.15  2004/12/11 09:03:08  wmcoolmon
- * Changed music modular table ending to *-mus.tbm, in case a miscellaneous modular table is needed.
- *
- * Revision 2.14  2004/07/26 20:47:30  Kazan
- * remove MCD complete
- *
- * Revision 2.13  2004/07/17 09:26:00  taylor
- * add CF_SORT_REVERSE to real sort routine, makes CF_SORT_TIME work again
- *
- * Revision 2.12  2004/07/12 16:32:47  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.11  2004/06/18 04:59:54  wmcoolmon
- * Only used weapons paged in instead of all, fixed music box in FRED, sound quality settable with SoundSampleRate and SoundSampleBits registry values
- *
- * Revision 2.10  2004/05/28 23:37:30  wmcoolmon
- * Modular music tables
- *
- * Revision 2.9  2004/03/05 09:02:00  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.8  2004/02/08 03:35:08  Goober5000
- * fixed a small bug in FS1-compatible music
- * --Goober5000
- *
- * Revision 2.7  2004/01/30 07:39:06  Goober5000
- * whew - I just went through all the code I ever added (or at least, that I could
- * find that I commented with a Goober5000 tag) and added a bunch of Asserts
- * and error-checking
- * --Goober5000
- *
- * Revision 2.6  2003/10/14 16:47:34  Goober5000
- * tweaked a thingy with FS1-style music to make deciding the style less of a hack
- * --Goober5000
- *
- * Revision 2.5  2003/08/25 04:46:53  Goober5000
- * added extra code to enable playing of FS1 music tracks
- * --Goober5000
- *
- * Revision 2.4  2003/04/29 01:03:23  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.3  2003/03/22 06:06:22  Goober5000
- * changed event_sexp_change_music to event_change_sexp_soundtrack
- * --Goober5000
- *
- * Revision 2.2  2003/01/25 04:17:39  Goober5000
- * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:07  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 14    8/19/99 9:41a Alanl
- * don't play victory 2 music if there are no goals in the mission
- * 
- * 13    8/11/99 5:33p Jefff
- * added 3rd debrief music track
- * 
- * 12    8/01/99 2:11p Alanl
- * make hull value to play more intense battle music a constant
- * 
- * 11    8/01/99 2:06p Alanl
- * tweak battle music track switching
- * 
- * 10    7/25/99 9:57p Alanl
- * change battle music track selection after enemy arrivals to make battle
- * tracks less repetitive
- * 
- * 9     7/19/99 10:13p Andsager
- * Tie in hud_targeting to  hostile_ships_present() used to determine next
- * song.
- * 
- * 8     6/24/99 10:47p Alanl
- * loop battle between tracks 2 and 3 if hull integrity < 70%
- * 
- * 7     6/21/99 1:34p Alanl
- * event music tweaks
- * 
- * 6     6/20/99 12:06a Alanl
- * new event music changes
- * 
- * 5     11/23/98 11:55a Johnson
- * return -1 if a score isn't found
- * 
- * 4     11/20/98 4:08p Dave
- * Fixed flak effect in multiplayer.
- * 
- * 3     10/23/98 3:51p Dave
- * Full support for tstrings.tbl and foreign languages. All that remains
- * is to make it active in Fred.
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 107   6/09/98 5:15p Lawrance
- * French/German localization
- * 
- * 106   6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 105   5/24/98 5:28p Dan
- * let event_music_level_init() over-ride Event_music_enabled
- * 
- * 104   5/24/98 4:42p Dan
- * AL: Fix several bugs related to pausing and enabling/disabling event
- * music
- * 
- * 103   5/23/98 3:17a Lawrance
- * Tweak how battle music gets restarted
- * 
- * 102   5/22/98 10:43a Lawrance
- * If mission doesn't have event music, don't choose random track
- * 
- * 101   5/21/98 6:56p Lawrance
- * Tweak how victory music plays
- * 
- * 100   5/21/98 2:47a Lawrance
- * Fix some problems with event music
- * 
- * 99    5/18/98 3:21p Mike
- * Don't play arrival and goals tracks in a training mission.
- * 
- * 98    5/04/98 3:15p Duncan
- * AL: remove bogus assert in event_music_player_respawn()
- * 
- * 97    5/03/98 1:54a Lawrance
- * Fix event music problems related to respawning
- * 
- * 96    4/03/98 12:56a Lawrance
- * Fix bug with music not starting in the first mission
- * 
- * 95    4/01/98 6:46p Lawrance
- * Lower default music volume 
- *
- * $NoKeywords: $
- */
+
 
 
 #include "gamesnd/eventmusic.h"
@@ -569,22 +282,14 @@ void event_music_init()
 	event_music_reset_choices();
 
 	// Goober5000
+	// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
+	memset(Soundtracks, 0, MAX_SOUNDTRACKS * sizeof(SOUNDTRACK_INFO));
 	for (i = 0; i < MAX_SOUNDTRACKS; i++)
-	{
-		memset(&Soundtracks[i], 0, sizeof(SOUNDTRACK_INFO));
-
-		// set all the filenames to "none" so we're compatible with the extra NRMLs in FS1 music
 		for (j = 0; j < MAX_PATTERNS; j++)
-		{
-			strcpy(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
-		}
-	}
+			strcpy_s(Soundtracks[i].pattern_fnames[j], NOX("none.wav"));
 
 	// Goober5000
-	for (i = 0; i < MAX_SPOOLED_MUSIC; i++)
-	{
-		memset(&Spooled_music[i], 0, sizeof(menu_music));
-	}
+	memset(Spooled_music, 0, MAX_SPOOLED_MUSIC * sizeof(menu_music));
 
 	//Do teh parsing
 	event_music_parse_musictbl("music.tbl");
@@ -694,7 +399,7 @@ void event_music_force_switch()
 		return;	// invalid pattern
 
 	Assert(new_pattern >= 0 && new_pattern < MAX_PATTERNS);
-	audiostream_play(Patterns[new_pattern].handle, Master_event_music_volume, 0);	// no looping
+	audiostream_play(Patterns[new_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 	audiostream_set_sample_cutoff(Patterns[new_pattern].handle, fl2i(Patterns[new_pattern].num_measures * Patterns[new_pattern].samples_per_measure) );
 	Patterns[Current_pattern].next_pattern = Patterns[Current_pattern].default_next_pattern;
 	Patterns[Current_pattern].force_pattern = FALSE;
@@ -727,7 +432,7 @@ void event_music_do_frame()
 		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
 			//WMC - removed in favor of if
 			//Assert(Patterns[Current_pattern].handle >= 0 );
-			audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 		}
 	}
@@ -749,7 +454,7 @@ void event_music_do_frame()
 			audiostream_stop(pat->handle);	// stop current and rewind
 			pat->loop_for--;
 			if ( pat->loop_for > 0 ) {
-				audiostream_play(pat->handle, Master_event_music_volume, 0);	// no looping
+				audiostream_play(pat->handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 				audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 			}
 			else {
@@ -767,29 +472,6 @@ void event_music_do_frame()
 			}
 		}
 
-		// We want to go back to NRML track music if all the hostiles have been 
-		// destroyed, and we are still playing the battle music
-		if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3)
-		{
-			if (timestamp_elapsed(Battle_over_timestamp) && Event_Music_battle_started == 1)
-			{
-				if (hostile_ships_present() == FALSE)
-				{
-					if (Patterns[Current_pattern].next_pattern != SONG_VICT_2)
-					{
-						// Goober5000
-						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
-							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
-						else
-							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
-
-						Patterns[Current_pattern].force_pattern = TRUE;
-						Event_Music_battle_started = 0;
-					}
-				}
-			}
-		}
-
 		if (Event_Music_battle_started == 0) {
 			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
@@ -797,6 +479,39 @@ void event_music_do_frame()
 					if (hostile_ships_present() == TRUE) {
 						Patterns[Current_pattern].next_pattern = SONG_BTTL_1;
 						Patterns[Current_pattern].force_pattern = TRUE;
+					}
+				}
+			} else if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+					if (hostile_ships_present() == FALSE) {
+						Patterns[Current_pattern].force_pattern = TRUE;
+
+						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+						} else {
+							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+						}
+					}
+				}
+			}
+		} else {
+			// We want to go back to NRML track music if all the hostiles have been 
+			// destroyed, and we are still playing the battle music
+			if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
+				if (timestamp_elapsed(Battle_over_timestamp)) {
+					if (hostile_ships_present() == FALSE) {
+						if (Patterns[Current_pattern].next_pattern != SONG_VICT_2) {
+							// Goober5000
+							if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1) {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+							} else {
+								Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+							}
+
+							Patterns[Current_pattern].force_pattern = TRUE;
+							Event_Music_battle_started = 0;
+						}
 					}
 				}
 			}
@@ -943,7 +658,7 @@ void event_music_first_pattern()
 		event_music_level_init();
 	}
 
-	if ( Event_music_level_inited == FALSE ) {
+	if ( Event_music_level_inited == FALSE ) { //-V581
 		return;
 	}
 
@@ -1073,6 +788,9 @@ int event_music_enemy_arrival()
 	else {
 		next_pattern = SONG_EARV_1;
 	}
+    
+	if ( Current_pattern < 0 )
+		return 0;
 
 	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
@@ -1080,7 +798,7 @@ int event_music_enemy_arrival()
 	if ( Current_pattern == SONG_DEAD_1 )
 		return 0;	// death is the last song to play
 
-	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_1) )
+	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_2) )
 		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
@@ -1174,13 +892,13 @@ int event_music_friendly_arrival()
 	if ( Current_pattern == SONG_DEAD_1 )
 		return 0;	// death is the last song to play
 
-	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_1) )
+	if ( (Current_pattern == SONG_VICT_1) || (Current_pattern == SONG_VICT_2) )
 		return 0;
 
 	// Goober5000 - to avoid array out-of-bounds
 	//Assert(Current_pattern >= 0 && Current_pattern < MAX_PATTERNS);
 
-	if(Current_pattern < 0 || Current_pattern > MAX_PATTERNS)
+	if(Current_pattern < 0 || Current_pattern >= MAX_PATTERNS)
 		return 0;
 
 	if ( Patterns[Current_pattern].next_pattern != Patterns[Current_pattern].default_next_pattern )
@@ -1201,7 +919,7 @@ int event_music_friendly_arrival()
 			// Goober5000 - I didn't touch this part... for some reason, FS2 only has one
 			// arrival music pattern, and this is it
 			Assert(Patterns[SONG_AARV_1].handle >= 0 );
-			audiostream_play(Patterns[SONG_AARV_1].handle, Master_event_music_volume, 0);	// no looping
+			audiostream_play(Patterns[SONG_AARV_1].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 			audiostream_set_sample_cutoff(Patterns[SONG_AARV_1].handle, fl2i(Patterns[SONG_AARV_1].num_measures * Patterns[SONG_AARV_1].samples_per_measure) );
 		}
 		// don't overlay
@@ -1280,6 +998,7 @@ int event_music_primary_goal_failed()
 	}
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = next_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1353,6 +1072,7 @@ int event_music_player_death()
 		return 0;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = SONG_DEAD_1;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1408,7 +1128,7 @@ int event_music_player_respawn_as_observer()
 bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 {
 	char fname[MAX_FILENAME_LEN];
-	char line_buf[128];
+	char line_buf[MAX_PATH_LEN];
 	char *token;
 	int count = 0;
 
@@ -1423,7 +1143,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 
 	//We can apparently still add this pattern, so go ahead and do it.
 	token = strtok( line_buf, NOX(" ,\t"));
-	strcpy(fname, token);
+	strcpy_s(fname, token);
 	while ( token != NULL )
 	{
 		token = strtok( NULL, NOX(" ,\t") );
@@ -1444,7 +1164,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 		count++;
 	}	// end while
 
-	strcpy(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
+	strcpy_s(Soundtracks[strack_idx].pattern_fnames[pattern_idx], fname);
 	return true;
 }
 
@@ -1455,7 +1175,7 @@ void parse_soundtrack()
 	bool nocreate = false;
 
 	//Start parsing soundtrack
-	required_string("#Soundtrack Start");
+	//required_string("#Soundtrack Start");
 
 	//Get the name, and do we have this track already?
 	required_string("$SoundTrack Name:");
@@ -1471,13 +1191,11 @@ void parse_soundtrack()
 	if(strack_idx < 0 && (nocreate || Num_soundtracks >= MAX_SOUNDTRACKS))
 	{
 		if(Num_soundtracks >= MAX_SOUNDTRACKS) {
-			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[Num_soundtracks].name, MAX_SOUNDTRACKS);
+			Warning(LOCATION, "Maximum number of soundtracks reached after '%s'; max is '%d'", Soundtracks[MAX_SOUNDTRACKS-1].name, MAX_SOUNDTRACKS);
 		}
 
 		//Track doesn't exist and has nocreate, so don't create it
-		if ( !skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") && !skip_to_string("#SoundTrack End")) {
-			Int3();
-		}
+		Assertion(skip_to_start_of_string_either("#SoundTrack Start", "#Menu Music Start") || skip_to_string("#SoundTrack End"), "Couldn't find #Soundtrack Start, #Menu Music Start or #Soundtrack End. Music.tbl or -mus.tbm is invalid.\n");
 
 		return;
 	}
@@ -1486,7 +1204,7 @@ void parse_soundtrack()
 		//If we don't have this soundtrack already, create it
 		strack_idx = Num_soundtracks;
 
-		strcpy(Soundtracks[strack_idx].name, namebuf);
+		strcpy_s(Soundtracks[strack_idx].name, namebuf);
 		Soundtracks[strack_idx].num_patterns = 0;
 
 		Num_soundtracks++;
@@ -1572,7 +1290,7 @@ void parse_soundtrack()
 	}
 
 	//We're done here.
-	required_string("#SoundTrack End");
+	//required_string("#SoundTrack End");
 
 
 	// Goober5000 - set the valid flag according to whether we can load all our patterns
@@ -1610,11 +1328,11 @@ void parse_menumusic()
 	if(idx < 0 && (nocreate || Num_music_files >= MAX_SPOOLED_MUSIC))
 	{
 		if(Num_music_files >= MAX_SPOOLED_MUSIC) {
-			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files].name, MAX_SPOOLED_MUSIC);
+			Warning(LOCATION, "Could not load spooled music file after '%s' as maximum number of spooled music was reached (Max is %d)", Spooled_music[Num_music_files - 1].name, MAX_SPOOLED_MUSIC);
 		}
 
-		if(!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
-			Int3();
+		if (!skip_to_start_of_string_either("$Name:", "#Menu Music End")) {
+			Error(LOCATION, "Couldn't find $Name or #Menu Music End. Music.tbl or -mus.tbm is invalid.\n");
 		}
 
 		return;
@@ -1623,20 +1341,20 @@ void parse_menumusic()
 	{
 		idx = Num_music_files;
 
-		strcpy( Spooled_music[idx].name, spoolname );
-		strcpy( Spooled_music[idx].filename, "");
+		strcpy_s( Spooled_music[idx].name, spoolname );
+		strcpy_s( Spooled_music[idx].filename, "");
 	}
 
 	if(optional_string("$Filename:"))
 	{
 		stuff_string(fname, F_LNAME, MAX_FILENAME_LEN);
 		if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
-			strcpy( Spooled_music[idx].filename, fname );
+			strcpy_s( Spooled_music[idx].filename, fname );
 		}
 		else
 		{
 			//Clear this
-			strcpy( Spooled_music[idx].filename, "");
+			strcpy_s( Spooled_music[idx].filename, "");
 		}
 	}
 
@@ -1648,47 +1366,40 @@ void parse_menumusic()
 	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_EXT, exts) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
-	Num_music_files++;	
+	if (!nocreate)
+		Num_music_files++;	
 }
 
 // -------------------------------------------------------------------------------------------------
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl(char *filename)
+void event_music_parse_musictbl(const char *filename)
 {
 	int rval;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
-		lcl_ext_close();
 
 	} else {
-		// open localization
-		lcl_ext_open();
-
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();		
 
-		// Loop through all the sound-tracks
-		if(check_for_string("#Soundtrack Start"))
+		while ( skip_to_start_of_string_either("#Soundtrack Start", "#Menu Music Start", NULL ) )
 		{
-			while (required_string_either("#Menu Music Start","#SoundTrack Start")) {
-				parse_soundtrack();
+			if ( optional_string("#Soundtrack Start") )
+			{
+				parse_soundtrack( );
+				required_string("#Soundtrack End");
+			}
+			if ( optional_string("#Menu Music Start") )
+			{
+				while ( required_string_either("$Name", "#Menu Music End") == 0 )
+				{
+					parse_menumusic( );
+				}
 			}
 		}
-
-		// Parse the menu music section
-		if(optional_string("#Menu Music Start"))
-		{
-			while (required_string_either("#Menu Music End","$Name:")) {
-				parse_menumusic();
-			}
-			required_string("#Menu Music End");
-		}
-
-		// close localization
-		lcl_ext_close();
 	}
 }
 
@@ -1713,6 +1424,7 @@ void event_music_change_pattern(int new_pattern)
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
+		Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 		Patterns[Current_pattern].next_pattern = new_pattern;
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
@@ -1867,7 +1579,7 @@ void event_music_unpause()
 
 	Assert( Current_pattern >= 0 && Current_pattern < MAX_PATTERNS );
 	if ( audiostream_is_paused(Patterns[Current_pattern].handle) == TRUE ) {
-		audiostream_play(Patterns[Current_pattern].handle, Master_event_music_volume, 0);	// no looping
+		audiostream_play(Patterns[Current_pattern].handle, (Master_event_music_volume * aav_music_volume), 0);	// no looping
 		audiostream_set_sample_cutoff(Patterns[Current_pattern].handle, fl2i(Patterns[Current_pattern].num_measures * Patterns[Current_pattern].samples_per_measure) );
 	}
 }
@@ -1962,7 +1674,7 @@ int hostile_ships_to_arrive()
 void event_music_get_info(char *outbuf)
 {
 	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Current_pattern == -1 ) {
-		sprintf(outbuf,XSTR( "Event music is not playing", 213));
+		strcpy(outbuf,XSTR( "Event music is not playing", 213));
 	}
 	else {	
 		sprintf(outbuf,XSTR( "soundtrack: %s [%s]", 214), Soundtracks[Current_soundtrack_num].name, Pattern_info[Current_pattern].pattern_desc);
@@ -2028,7 +1740,7 @@ void event_music_get_soundtrack_name(char *outbuf)
 		strcpy(outbuf, XSTR( "Event music is not playing", 213));
 	}
 	else {
-		sprintf(outbuf, Soundtracks[Current_soundtrack_num].name);
+		strcpy(outbuf, Soundtracks[Current_soundtrack_num].name);
 	}
 }
 
@@ -2054,7 +1766,7 @@ int event_music_get_soundtrack_index(char *name)
 	return -1;
 }
 
-int event_music_get_spooled_music_index(char *name)
+int event_music_get_spooled_music_index(const char *name)
 {
 	// find the correct index for the event music
 	for ( int i = 0; i < Num_music_files; i++ ) {
@@ -2065,6 +1777,11 @@ int event_music_get_spooled_music_index(char *name)
 
 	return -1;
 }
+
+int event_music_get_spooled_music_index(const SCP_string& name)
+{
+	return event_music_get_spooled_music_index(name.c_str());
+	}
 
 // set a score based on name
 void event_music_set_score(int score_index, char *name)
@@ -2087,8 +1804,8 @@ void event_music_reset_choices()
 	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
 
 	// Goober5000
-	strcpy(The_mission.substitute_briefing_music_name, "None");
-	strcpy(The_mission.substitute_event_music_name, "None");
+	strcpy_s(The_mission.substitute_briefing_music_name, "None");
+	strcpy_s(The_mission.substitute_event_music_name, "None");
 }
 
 void event_music_hostile_ship_destroyed()

@@ -15,6 +15,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
+#ifdef SCP_SOLARIS
+#include <sys/filio.h>
+#endif
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <errno.h>
@@ -113,8 +116,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 	unsigned long argp = 1;
 	char signon_str[100];
 
-	//if(Socket_connected && ) return -2;
-
 	if(!Socket_connecting)
 	{
 		unsigned long iaddr;
@@ -132,7 +133,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 		if(NULL==p)
 		{
-			//AfxMessageBox("Invalid chat server, must be host.com:port (ie. irc.dal.net:6667)");
 			return -1;
 		}
 
@@ -142,7 +142,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 		chat_port = (short)atoi(p+1);
 		if(0==chat_port)
 		{
-			//AfxMessageBox("Invalid chat port, must be host.com:port (ie. irc.dal.net:6667)");
 			return -1;
 		}
 
@@ -150,7 +149,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 		if(INVALID_SOCKET == Chatsock)
 		{
-			//AfxMessageBox("Unable to open socket!");
 			return -1;
 		}
 
@@ -161,7 +159,6 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 		
 		if (SOCKET_ERROR==bind(Chatsock, (SOCKADDR*)&Chataddr, sizeof (sockaddr))) 
 		{
-			//AfxMessageBox("Unable to bind socket!");
 			return -1;
 		}
 
@@ -175,25 +172,11 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			if(!he)
 			{
 				return 0;
-				/*
-				//AfxMessageBox("Unable to gethostbyname.\n");
-
-				// try and resolve by address			
-				unsigned int n_order = inet_addr(chat_server);
-				he = gethostbyaddr((char*)&n_order,4,PF_INET);					
-
-				if(!he){
-					return -1;
-				}
-				*/
 			}
 			memcpy(&iaddr, he->h_addr_list[0],4);
 		}
 		
-		memcpy(&Chataddr.sin_addr.s_addr, &iaddr,4); //&iaddr, 4);				
-
-		
-		// Chataddr.sin_addr.s_addr = inet_addr(chat_server);
+		memcpy(&Chataddr.sin_addr.s_addr, &iaddr,4);			
 
 		Chataddr.sin_port = htons( chat_port );
 
@@ -273,7 +256,9 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 	return 0;
 }
 
-// Call it to close the connection. It returns immediately
+/**
+ * Call it to close the connection. It returns immediately
+ */
 void DisconnectFromChatServer()
 {
 	if(!Socket_connected) return;
@@ -314,9 +299,10 @@ char * GetChatText()
 
 }
 
-// Send a string to be sent as chat, or scanned for messages (/msg <user>
-// string)
-char * SendChatString(char *line,int raw)
+/**
+ * Send a string to be sent as chat, or scanned for messages (/msg \<user\> string)
+ */
+const char * SendChatString(const char *line,int raw)
 {
 	char szCmd[200];
 	char szTarget[50];
@@ -373,14 +359,6 @@ char * SendChatString(char *line,int raw)
 	{
 		if(szChat_channel[0])
 		{
-			/*
-			CString sndstr;
-			sndstr.Format("PRIVMSG %s :%s\n\r",szChat_channel,line);
-			send(Chatsock,LPCSTR(sndstr),sndstr.GetLength(),0);
-			sndstr = sndstr.Left(sndstr.GetLength()-2);
-			return ParseIRCMessage((char *)LPCSTR(sndstr),MSG_LOCAL);
-			*/
-
 			snprintf(szCmd, SSIZE(szCmd), NOX("PRIVMSG %s :%s\n\r"), szChat_channel, line);
 			send(Chatsock,szCmd,strlen(szCmd),0);			
 			if(strlen(szCmd) >= 2){
@@ -467,7 +445,7 @@ int SetNewChatChannel(char *channel)
 		{
 			//Error -- we got a message that the channel was invite only, or we were banned or something
 			Joining_channel = 0;
-			strcpy(szChat_channel, "");
+			strcpy_s(szChat_channel, "");
 			return -1;
 		}
 	}
@@ -530,7 +508,7 @@ char *ChatGetString(void)
 				return p;
 			}
 			Assert(strlen(Input_chat_buffer) < MAXCHATBUFFER-1);
-			strcat(Input_chat_buffer,ch);
+			strcat_s(Input_chat_buffer,ch);
 		}
 		else
 		{
@@ -544,7 +522,7 @@ char *ChatGetString(void)
 }
 
 
-char * GetWordNum(int num, char * l_String)
+char * GetWordNum(int num, const char * l_String)
 {
 	static char strreturn[600];
 	static char ptokstr[600];
@@ -717,7 +695,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 			strncpy(szNick,szPrefix,31);
          szNick[31]=0;
 		}
-		//strcpy(NewMsg.Nickname,szNick);
 		iNickLen=strlen(szNick);
 		iPrefixLen=strlen(szPrefix);
 	}
@@ -726,7 +703,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 		strncpy(szRemLine, Line, sizeof(szRemLine)-1);
 		strncpy(szNick, Nick_name, sizeof(szNick)-1);
 		strncpy(szPrefix, Nick_name, sizeof(szPrefix)-1);
-		//strcpy(NewMsg.Nickname,szNick);
 		iNickLen=-2;
 		iPrefixLen=-2;
 	}
@@ -745,7 +721,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 	//Move the szRemLine string up
 	strncpy(szRemLine, Line+iPrefixLen+strlen(szCmd)+2, sizeof(szRemLine)-1);
 	//Now parse the commands!
-	//printf("%s",szCmd);
 	if(stricmp(szCmd,NOX("PRIVMSG"))==0)
 	{
 		pszTempStr=GetWordNum(0,szRemLine);
@@ -788,9 +763,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 			}
 			if(stricmp(szCTCPCmd+1,NOX("VERSION"))==0)
 			{
-				//reply with a notice version & copyright
-				//sprintf(szTempLine,"NOTICE %s :\001VERSION Copyright(c)\001\n",szNick);
-
 				return NULL;
 			}
 			strncpy(szRemLine, 1 + GetWordNum(0,Line+iPrefixLen+strlen(szCmd)+strlen(szTarget)+4), sizeof(szRemLine)-1);
@@ -853,8 +825,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 			szRemLine[strlen(szRemLine)-1] = '\0';//null out the ending 0x01
 			if(stricmp(szCTCPCmd+1,NOX("PING"))==0)
 			{
-				//This is a ping response, figure out time and print
-				//sprintf(NewMsg.Message,"** Ping Response from %s: %ums",szNick,ulping);
 				return NULL;
 			}
 			
@@ -873,27 +843,17 @@ char * ParseIRCMessage(char *Line, int iMode)
 		//see if it is me!
 		if(stricmp(Nick_name,szNick)==0)
 		{
-			//Yup, it's me!
-			//if(stricmp(szChat_channel,GetWordNum(0,szRemLine))==0)
-			//{
-				Joined_channel = 1;
-				if(stricmp(szChat_channel,NOX("#autoselect"))==0)
-				{
-					strncpy(szChat_channel, GetWordNum(0,szRemLine), sizeof(szChat_channel)-1);
-					AddChatCommandToQueue(CC_YOURCHANNEL,szChat_channel,strlen(szChat_channel)+1);
+			Joined_channel = 1;
+			if(stricmp(szChat_channel,NOX("#autoselect"))==0)
+			{
+				strncpy(szChat_channel, GetWordNum(0,szRemLine), sizeof(szChat_channel)-1);
+				AddChatCommandToQueue(CC_YOURCHANNEL,szChat_channel,strlen(szChat_channel)+1);
 
-				}
-				//CC_YOURCHANNEL
-			//}
+			}
 		}
-		//		AddChatUser(szNick);
-
 		
 		pszTempStr=GetWordNum(0,szRemLine);
 		strncpy(szTarget, pszTempStr, sizeof(szTarget)-1);
-		//strcpy(szRemLine,Line+iPrefixLen+strlen(szCmd)+strlen(szTarget)+3);
-
-		//strcpy(NewMsg.Channel,szTarget);
 
 		AddChatUser(szNick);
 		snprintf(szResponse, SSIZE(szResponse), XSTR("** %s has joined %s", 636), szNick, szTarget);
@@ -908,8 +868,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 		//see if it is me!
 		if(stricmp(Nick_name,szNick)==0)
 		{
-			//Yup, it's me!
-			//szChat_channel[0]=NULL;
 			RemoveAllChatUsers();
 		}
 		
@@ -929,7 +887,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 		{
 			//Yup, it's me!
 			szChat_channel[0] = '\0';
-			//bNewStatus=1;
 			AddChatCommandToQueue(CC_KICKED,NULL,0);			
 			RemoveAllChatUsers();
 		}
@@ -995,10 +952,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 		memset(szWhoisUser, 0, sizeof(szWhoisUser));
 		strncpy(szWhoisUser, GetWordNum(1,szRemLine), sizeof(szWhoisUser)-1);
 		//This is whois user info, we can get their tracker info from here.  -5
-		//if(stricmp(Getting_user_tracker_info_for,szWhoisUser)==0)
-		//{
-			strncpy(User_req_tracker_id, GetWordNum(5,szRemLine), sizeof(User_req_tracker_id)-1);
-		//}
+		strncpy(User_req_tracker_id, GetWordNum(5,szRemLine), sizeof(User_req_tracker_id)-1);
 		return NULL;
 	}
 	if(stricmp(szCmd,"319")==0)
@@ -1007,10 +961,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 		memset(szWhoisUser, 0, sizeof(szWhoisUser));
 		strncpy(szWhoisUser, GetWordNum(1,szRemLine), sizeof(szWhoisUser)-1);
 		//This is whois channel info -- what channel they are on		-2
-		//if(stricmp(Getting_user_channel_info_for,szWhoisUser)==0)
-		//{
-			strncpy(User_req_channel, GetWordNum(2,szRemLine), sizeof(User_req_channel)-1);
-		//}
+		strncpy(User_req_channel, GetWordNum(2,szRemLine), sizeof(User_req_channel)-1);
 		return NULL;
 	}
 	
@@ -1097,10 +1048,7 @@ char * ParseIRCMessage(char *Line, int iMode)
 		return szResponse;
 	}
 	if((stricmp(szCmd,"377")==0)||
-		(stricmp(szCmd,"372")==0)||
-		(stricmp(szCmd,"372")==0)
-		
-		)
+		(stricmp(szCmd,"372")==0))
 	{
 		//Stip the message, and display it.
 		pszTempStr=GetWordNum(3,Line);		
@@ -1111,16 +1059,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 	if(((stricmp(szCmd,"366")==0))||
 	    (stricmp(szCmd,"333")==0) || //Who set the topic
 		 (stricmp(szCmd,"329")==0))    //Time Channel created
-		 /*
-		 (stricmp(szCmd,"305")==0) ||
-		 (stricmp(szCmd,"306")==0) ||
-		 (stricmp(szCmd,"311")==0) || //WHOIS stuff
-		 (stricmp(szCmd,"312")==0) ||
-		 (stricmp(szCmd,"313")==0) ||
-		 (stricmp(szCmd,"317")==0) ||
-		 (stricmp(szCmd,"318")==0) ||
-		 (stricmp(szCmd,"319")==0) ||
-		 */
 
 	{
 		return NULL;
@@ -1160,22 +1098,17 @@ char * ParseIRCMessage(char *Line, int iMode)
 	   (stricmp(szCmd,"254")==0)||
 	   (stricmp(szCmd,"255")==0)||
 	   (stricmp(szCmd,"265")==0)||
-	   (stricmp(szCmd,"375")==0)||
-	   (stricmp(szCmd,"372")==0)|| 
+	   (stricmp(szCmd,"372")==0)||
 	   (stricmp(szCmd,"375")==0)
 	   )
 	{
-		// Stip the message, and display it.
-		// pszTempStr = GetWordNum(3, Line);
-		// strcpy(szResponse, PXO_CHAT_MOTD_PREFIX);
-		// strcat(szResponse, pszTempStr);
 		return NULL;
 		// return szResponse;
 	}
 	if(stricmp(szCmd,"432")==0)
 	{
 		//Channel Mode info
-		snprintf(szResponse, SSIZE(szResponse), XSTR("Your nickname contains invalid characters", 640));
+		snprintf(szResponse, SSIZE(szResponse), "%s", XSTR("Your nickname contains invalid characters", 640));
 		AddChatCommandToQueue(CC_DISCONNECTED,NULL,0);
 		return szResponse;
 	}
@@ -1192,7 +1125,6 @@ char * ParseIRCMessage(char *Line, int iMode)
 	}
 	//Default print
 	strncpy(szResponse, Line, sizeof(szResponse)-1);
-	//return szResponse;
 	return NULL;
 
 }

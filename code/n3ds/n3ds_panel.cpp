@@ -225,7 +225,7 @@ void n3ds_panel_draw(void)
 		/* ---- own ship: two bars per row */
 		ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 		float smax = sip->max_shield_strength, s = 0.0f;
-		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++) s += Player_obj->shield_quadrant[i];
+		for (int i = 0; i < Player_obj->n_quadrants; i++) s += Player_obj->shield_quadrant[i];
 		gr_set_color(200, 200, 200);
 		gr_string(4, 34, "HULL", false);
 		panel_bar(44, 35, 72, 7, get_hull_pct(Player_obj), 80, 220, 80);

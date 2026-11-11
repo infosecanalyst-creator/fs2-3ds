@@ -7,53 +7,14 @@
  *
  */
 
-/*
- * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.25.2.1 $
- * $Date: 2006-11-15 00:40:59 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.25  2006/03/22 18:11:28  taylor
- * GCC 4.1 barfed on this
- *
- * Revision 1.24  2006/01/20 07:10:34  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 1.23  2005/12/04 19:07:48  wmcoolmon
- * Final commit of codebase
- *
- * Revision 1.21  2005/10/23 05:01:49  wmcoolmon
- * *Fix*
- *
- * Revision 1.20  2005/10/22 20:17:18  wmcoolmon
- * mission-set-nebula fixage; remainder of python code
- *
- * Revision 1.19  2005/10/09 00:43:08  wmcoolmon
- * Extendable modular tables (XMTs); added weapon dialogs to the Lab
- *
- * Revision 1.18  2005/09/25 07:27:33  Goober5000
- * and again
- * --Goober5000
- *
- * Revision 1.17  2005/09/25 07:26:05  Goober5000
- * try to fix the headers
- * --Goober5000
- *
- */
+
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "io/mouse.h"
 #include "globalincs/pstypes.h"
 
-#ifdef USE_PYTHON
-#include "parse/python.h"
-#endif
-
 #include <string>
-#include <vector>
 #include <limits.h>
 
 //*****************************Low-level abstraction*******************************
@@ -69,7 +30,7 @@
 #define IMG_UNLOAD(a)				bm_unload(a)
 #define IMG_SET(h)					gr_set_bitmap(h)
 #define IMG_SET_FRAME(h, f)			gr_set_bitmap(h + f)
-#define IMG_DRAW(x,y)				gr_bitmap(x,y,false)
+#define IMG_DRAW(x,y)				gr_bitmap(x,y,GR_RESIZE_NONE)
 #define IMG_INFO(ha,w,h)			bm_get_info(ha,w,h)
 #endif
 
@@ -180,18 +141,18 @@ class ObjectClassInfoEntry
 	friend class GUIScreen;
 private:
 	int Object;
-	std::string Name;	//Do we want this to only apply to a specific object?
+	SCP_string Name;	//Do we want this to only apply to a specific object?
 						//If so, set name
 	int Coords[4];
 
-	std::vector<ObjectClassInfoEntry> Subentries;
-	std::vector<ClassInfoEntry> Entries;
+	SCP_vector<ObjectClassInfoEntry> Subentries;
+	SCP_vector<ClassInfoEntry> Entries;
 public:
 	ObjectClassInfoEntry(){Object=-1;Coords[0]=Coords[1]=Coords[2]=Coords[3]=INT_MAX;}
 	bool Parse();
 	int GetImageHandle(int id, int handle_num);
 	int GetCoords(int id, int *x, int *y);
-	
+
 	int GetObjectCoords(int *x, int *y, int *w, int *h);
 };
 
@@ -200,12 +161,12 @@ class ScreenClassInfoEntry : public LinkedList
 {
 	friend class GUIScreen;
 private:
-	std::string Name;
-	std::vector<ObjectClassInfoEntry> Entries;
+	SCP_string Name;
+	SCP_vector<ObjectClassInfoEntry> Entries;
 public:
 	bool Parse();
 
-	std::string GetName(){return Name;}
+	SCP_string GetName(){return Name;}
 };
 
 //*****************************GUIObject*******************************
@@ -265,10 +226,10 @@ private:
 
 	int Coords[4];					//Upper left corner (x, y) and lower right corner (x, y)
 	int	ChildCoords[4];				//Coordinates where children may frolick
-	
+
 	int Type;
-	std::string Name;
-	
+	SCP_string Name;
+
 	int LastStatus;
 	int Status;
 	int Style;
@@ -299,7 +260,7 @@ protected:
 	virtual void DoRefreshSkin(){}
 	virtual void DoMove(int dx, int dy){}
 	virtual int DoMouseOver(float frametime){return OF_FALSE;}
- 	virtual int DoMouseDown(float frametime){return OF_FALSE;} 
+	virtual int DoMouseDown(float frametime){return OF_FALSE;}
 	virtual int DoMouseUp(float frametime){return OF_FALSE;}	//In other words, a click
 	virtual int DoMouseOut(float frametime){return OF_FALSE;}
 	virtual int DoKeyState(float frametime){return OF_FALSE;}
@@ -316,7 +277,7 @@ protected:
 public:
 	//CONSTRUCTION/DESTRUCTION
 	//Derive your class's constructer from the GUIObject one
-	GUIObject(std::string in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
+	GUIObject(const SCP_string &in_Name="", int x_coord = 0, int y_coord = 0, int x_width = -1, int y_height = -1, int in_style = 0);
 	~GUIObject();
 	void Delete();
 
@@ -341,17 +302,15 @@ class GUIScreen : public LinkedList
 {
 	friend class GUISystem;
 private:
-	std::string Name;
+	SCP_string Name;
 
 	GUISystem* OwnerSystem;
 
-	bool Active;	//Is this screen active?
-
 	ScreenClassInfoEntry* ScreenClassInfo;
 	GUIObject Guiobjects;
-	std::vector<GUIObject*> DeletionCache;
+	SCP_vector<GUIObject*> DeletionCache;
 public:
-	GUIScreen(std::string in_Name="");
+	GUIScreen(const SCP_string &in_Name="");
 	~GUIScreen();
 
 	ObjectClassInfoEntry *GetObjectClassInfo(GUIObject *cgp);
@@ -397,7 +356,7 @@ public:
 	GUIScreen* PushScreen(GUIScreen *csp);
 	void PullScreen(GUIScreen *in_screen);
 	ScreenClassInfoEntry *GetClassInfo(){return &ScreenClassInfo;}
-	ScreenClassInfoEntry *GetScreenClassInfo(const std::string & screen_name);
+	ScreenClassInfoEntry *GetScreenClassInfo(const SCP_string & screen_name);
 	//-----
 
 	//Set stuff
@@ -435,7 +394,7 @@ public:
 
 class Window : public GUIObject
 {
-	std::string Caption;
+	SCP_string Caption;
 
 	//Close
 	bool CloseHighlight;
@@ -470,8 +429,8 @@ protected:
 	bool HasChildren(){return NOT_EMPTY(&Children);}
 
 public:
-	Window(std::string in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
-	void SetCaption(std::string in_caption){Caption = in_caption;}
+	Window(const SCP_string &in_caption, int x_coord, int y_coord, int x_width = -1, int y_height = -1, int in_style = 0);
+	void SetCaption(const SCP_string &in_caption){Caption = in_caption;}
 	void ClearContent();
 };
 
@@ -489,7 +448,7 @@ public:
 
 class Button : public GUIObject
 {
-	std::string Caption;
+	SCP_string Caption;
 	void (*function)(Button *caller);
 
 	bool IsDown;	//Does it look pressed?
@@ -501,7 +460,7 @@ protected:
 	int DoMouseUp(float frametime);
 	int DoMouseOut(float frametime);
 public:
-	Button(std::string in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
+	Button(const SCP_string &in_caption, int x_coord, int y_coord, void (*in_function)(Button *caller) = NULL, int x_width = -1, int y_height = -1, int in_style = 0);
 
 	void SetPressed(bool in_isdown){IsDown = in_isdown;}
 };
@@ -523,7 +482,7 @@ struct TreeItem : public LinkedList
 {
 	friend class Tree;
 private:
-	std::string Name;
+	SCP_string Name;
 	void (*Function)(Tree *caller);
 	int Data;
 
@@ -537,11 +496,11 @@ private:
 	LinkedList Children;
 public:
 	//Get
-	TreeItem *	GetParentItem(){return Parent;}
-	int			GetData(){return Data;}
-	bool		HasChildren(){return NOT_EMPTY(&Children);}
+	TreeItem * GetParentItem(){return Parent;}
+	int GetData(){return Data;}
+	bool HasChildren(){return NOT_EMPTY(&Children);}
 	
-	void 		ClearAllItems();
+	void ClearAllItems();
 	
 	TreeItem();
 	~TreeItem();
@@ -552,7 +511,6 @@ class Tree : public GUIObject
 	TreeItem Items;
 	void *AssociatedItem;
 
-	int StartLine;
 	TreeItem *SelectedItem;
 	TreeItem *HighlightedItem;
 
@@ -569,10 +527,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoMouseUp(float frametime);
 public:
-	Tree(std::string in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
+	Tree(const SCP_string &in_name, int x_coord, int y_coord, void* in_associateditem = NULL, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//void LoadItemList(TreeItem *in_list, unsigned int count);
-	TreeItem* AddItem(TreeItem *parent, std::string in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
+	TreeItem* AddItem(TreeItem *parent, const SCP_string &in_name, int in_data = 0, bool in_delete_data = true, void (*in_function)(Tree *caller) = NULL);
 	void ClearItems();
 
 	TreeItem* GetSelectedItem(){return SelectedItem;}
@@ -601,19 +559,19 @@ public:
 
 class Text : public GUIObject
 {
-	std::string Content;
+	SCP_string Content;
 
 	//Used to display stuff; change only from calculate func
 	int NumLines;
 	int LineLengths[MAX_TEXT_LINES];
-	char *LineStartPoints[MAX_TEXT_LINES];
+	const char *LineStartPoints[MAX_TEXT_LINES];
 
 	//Used for editing
 	int CursorPos;	//Line #, then position in line
 	int SaveType;
 	union
 	{
-		short int *siSavePointer;
+		short *siSavePointer;
 		int *iSavePointer;
 		ubyte *ubSavePointer;
 		float *flSavePointer;
@@ -629,10 +587,10 @@ protected:
 	int DoMouseDown(float frametime);
 	int DoKeyPress(float frametime);
 public:
-	Text(std::string in_name, std::string in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	Text(const SCP_string &in_name, const SCP_string &in_content, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
 	//Set
-	void SetText(std::string in_content);
+	void SetText(const SCP_string &in_content);
 	void SetText(int the_int);
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
@@ -641,7 +599,7 @@ public:
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
 	void SetSaveStringAlloc(char **ptr, int save_method, int mem_flags, uint max_len=UINT_MAX, uint min_len = 0);
-	void AddLine(std::string in_line);
+	void AddLine(const SCP_string &in_line);
 
 	//Get?
 	bool Save();
@@ -653,7 +611,7 @@ public:
 
 class Checkbox : public GUIObject
 {
-	std::string Label;
+	SCP_string Label;
 	void (*function)(Checkbox *caller);
 
 	//For toggling flags with this thing
@@ -676,13 +634,13 @@ protected:
 	int DoMouseOut(float frametime);
 
 public:
-	Checkbox(std::string in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
+	Checkbox(const SCP_string &in_label, int x_coord, int y_coord, void (*in_function)(Checkbox *caller) = NULL, int x_width = -1, int y_height = DEFAULT_BUTTON_HEIGHT, int in_style = 0);
 
 	bool GetChecked() {
 		return IsChecked;
 	}
 
-	void SetLabel(std::string in_label) {
+	void SetLabel(const SCP_string &in_label) {
 		Label = in_label;
 	}
 
@@ -694,8 +652,9 @@ public:
 		FlagPtr = in_flag_ptr;
 		Flag = in_flag;
 
-		if ( (FlagPtr != NULL) && (*FlagPtr & Flag) )
+		if ( (FlagPtr != NULL) && (*FlagPtr & Flag) ) {
 			IsChecked = true;
+		}
 	}
 
 	void SetFlag(uint* in_flag_ptr, int in_flag) {
@@ -720,7 +679,7 @@ public:
 
 class ImageAnim : public GUIObject
 {
-	std::string ImageAnimName;
+	SCP_string ImageAnimName;
 
 	IMG_HANDLE ImageHandle;
 	int TotalFrames;
@@ -738,40 +697,13 @@ protected:
 	void DoDraw(float frametime);
 	int DoRefreshSize();
 public:
-	ImageAnim(std::string in_name, std::string in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
+	ImageAnim(const SCP_string &in_name, const SCP_string &in_imagename, int x_coord, int y_coord, int x_width = -1, int y_width = -1, int in_style = 0);
 
-	void SetImage(std::string in_imagename);
+	void SetImage(const SCP_string &in_imagename);
 	void Play(bool in_isreversed);
 	void Pause();
 	void Stop();
 };
-#ifdef USE_PYTHON
-//*****************************Button*******************************
-//#define DEFAULT_BUTTON_WIDTH	50
-#define B_BORDERWIDTH			1
-#define B_BORDERHEIGHT			1
-#define DEFAULT_BUTTON_HEIGHT	15
-
-#define BS_STICKY			(1<<31)	//Button stays pressed
-
-#define BCI_COORDS			0
-#define BCI_BUTTON			1
-#define BCI_NUM_ENTRIES		2
-
-class HUDGauge : public GUIObject
-{
-	std::string Name;
-
-	PyBytecode DrawFunc;
-
-protected:
-	void DoDraw(float frametime);
-	//int DoRefreshSize();
-public:
-	HUDGauge(std::string in_name, int x_coord, int y_coord, PyBytecode DrawFunc, int x_width = -1, int y_height = -1, int in_style = 0);
-	~HUDGauge();
-};
-#endif //USE_PYTHON
 
 //*****************************GLOBALS*******************************
 extern GUISystem GUI_system;

@@ -8,13 +8,15 @@
 */
 
 
-#include "network/multi_oo.h"
+#include "network/multi_obj.h"
 #include "globalincs/globals.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
+#include "io/key.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
+#include "network/multi_options.h"
 #include "network/multi_rate.h"
 #include "network/multi.h"
 #include "object/object.h"
@@ -24,6 +26,7 @@
 #include "physics/physics.h"
 #include "ship/afterburner.h"
 #include "cfile/cfile.h"
+#include "debugconsole/console.h"
 
 
 // ---------------------------------------------------------------------------------------------------
@@ -378,7 +381,6 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// no flags -> do nothing
 	if(oo_flags == 0){
-		// Int3();
 		return 0;
 	}
 
@@ -454,25 +456,12 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 		float quad = get_max_shield_quad(objp);
 
-		// pack 2 shield values into each byte
-
-		// pack quadrant 1
-		temp = (objp->shield_quadrant[0] / quad);
-		PACK_PERCENT(temp);
+		for (int i = 0; i < objp->n_quadrants; i++) {
+			temp = (objp->shield_quadrant[i] / quad);
+			PACK_PERCENT(temp);
+		}
 				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[1] / quad);
-		PACK_PERCENT(temp);				
-
-		// pack quadrant 3
-		temp = (objp->shield_quadrant[2] / quad);
-		PACK_PERCENT(temp);
-				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[3] / quad);
-		PACK_PERCENT(temp);				
-				
-		multi_rate_add(NET_PLAYER_NUM(pl), "shl", 4);	
+		multi_rate_add(NET_PLAYER_NUM(pl), "shl", objp->n_quadrants);	
 	}	
 
 	// subsystem info
@@ -555,8 +544,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	}			
 
 	// make sure we have a valid chunk of data
-	Assert(packet_size < 255);
-	if(packet_size >= 255){
+	// Clients: must be able to accomodate the data_size and shipp->np_updates[NET_PLAYER_NUM(pl)].seq before the data itself
+	// Server: TODO
+	Assert(packet_size < 255-1);
+	if(packet_size >= 255-1){
 		return 0;
 	}
 	data_size = (ubyte)packet_size;
@@ -593,6 +584,9 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 	ship *shipp = NULL;
 	object *objp = NULL;
 	int offset = 0;
+
+	if (pl == NULL)
+		Error(LOCATION, "Invalid net_player pointer passed to multi_oo_unpack_client\n");
 	
 	memcpy(&in_flags, data, sizeof(ubyte));	
 	offset++;
@@ -870,20 +864,12 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		UNPACK_PERCENT(fpct);
 		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;		
 
-		float shield_0, shield_1, shield_2, shield_3;
-		
-		// unpack the 4 quadrants
-		UNPACK_PERCENT(shield_0);
-		UNPACK_PERCENT(shield_1);
-		UNPACK_PERCENT(shield_2);
-		UNPACK_PERCENT(shield_3);
-
 		float quad = get_max_shield_quad(pobjp);
 
-		pobjp->shield_quadrant[0] = (shield_0 * quad);
-		pobjp->shield_quadrant[1] = (shield_1 * quad);
-		pobjp->shield_quadrant[2] = (shield_2 * quad);
-		pobjp->shield_quadrant[3] = (shield_3 * quad);
+		for (int i = 0; i < pobjp->n_quadrants; i++) {
+			UNPACK_PERCENT(fpct);
+			pobjp->shield_quadrant[i] = fpct * quad;
+		}
 	}	
 
 	if ( oo_flags & OO_SUBSYSTEMS_AND_AI_NEW ) {
@@ -910,7 +896,9 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			// add the value just generated (it was zero'ed above) into the array of generic system types
 			subsys_type = subsysp->system_info->type;					// this is the generic type of subsystem
 			Assert ( subsys_type < SUBSYSTEM_MAX );
-			shipp->subsys_info[subsys_type].current_hits += val;
+			if (!(subsysp->flags & SSF_NO_AGGREGATE)) {
+				shipp->subsys_info[subsys_type].aggregate_current_hits += val;
+			}
 			subsys_count++;
 
 			// if we've reached max subsystems for some reason, bail out
@@ -1102,7 +1090,6 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	float eye_dot, dist;
 	int in_cone;
 	int range;
-	int ship_index;
 	ship *shipp;
 	ship_info *sip;
 	ushort cur_pos_chksum = 0;
@@ -1117,7 +1104,6 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	// determine what the timestamp is for this object
 	if(obj->type == OBJ_SHIP){
 		stamp = Ships[obj->instance].np_updates[NET_PLAYER_NUM(pl)].update_stamp;
-		ship_index = &Ships[obj->instance] - Ships;
 	} else {
 		return 0;
 	}
@@ -1141,9 +1127,12 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	// check dot products		
 	player_eye = pl->s_info.eye_orient.vec.fvec;
 	vm_vec_sub(&obj_dot, &obj->pos, &pl->s_info.eye_pos);
-	vm_vec_normalize(&obj_dot);
-	eye_dot = vm_vec_dot(&obj_dot, &player_eye);		
-	in_cone = (eye_dot >= OO_VIEW_CONE_DOT) ? 1 : 0;		
+	in_cone = 0;
+	if (!(IS_VEC_NULL(&obj_dot))) {
+		vm_vec_normalize(&obj_dot);
+		eye_dot = vm_vec_dot(&obj_dot, &player_eye);		
+		in_cone = (eye_dot >= OO_VIEW_CONE_DOT) ? 1 : 0;
+	}
 							
 	// determine distance (near, medium, far)
 	vm_vec_sub(&obj_dot, &obj->pos, &pl->s_info.eye_pos);
@@ -1254,16 +1243,12 @@ void multi_oo_process_all(net_player *pl)
 	int packet_size = 0;
 	int idx;
 		
-	object *moveup;
-	object *pobj;	
+	object *moveup;	
 
 	// if the player has an invalid objnum..
 	if(pl->m_player->objnum < 0){
 		return;
 	}
-
-	// get the player's object
-	pobj = &Objects[pl->m_player->objnum];
 
 	object *targ_obj;	
 
@@ -1296,7 +1281,8 @@ void multi_oo_process_all(net_player *pl)
 	}
 		
 	idx = 0;
-	while((OO_ship_index[idx] >= 0) && (idx < MAX_SHIPS)){
+	// rely on logical-AND shortcut evaluation to prevent array out-of-bounds read of OO_ship_index[idx]
+	while((idx < MAX_SHIPS) && (OO_ship_index[idx] >= 0)){
 		// if this guy is over his datarate limit, do nothing
 		if(multi_oo_rate_exceeded(pl)){
 			nprintf(("Network","Capping client\n"));
@@ -1378,16 +1364,10 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	net_player *pl = NULL;	
 
-	// if this is processed on the server, its a client object update packet
-	player_index = -1;
-//	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-		// determine what player this came from 
-		player_index = find_player_id(hinfo->id);
-		if(player_index != -1){						
-			pl = &Net_players[player_index];
-//		} else {			
-//			pl = NULL;
-//		}
+	// determine what player this came from 
+	player_index = find_player_id(hinfo->id);
+	if(player_index != -1){						
+		pl = &Net_players[player_index];
 	}
 	// otherwise its a "regular" object update packet on a client from the server. use "myself" as the reference player
 	else {						
@@ -1516,7 +1496,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Attempting to affect player object.\n"));
 #endif
-	for (; idx < 12; idx++)
+	for (; idx < MAX_PLAYERS; idx++)
 	{
 		if( changedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
 			break;
@@ -1525,7 +1505,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #ifndef NDEBUG
 	nprintf(("Network","Index for changed object found: [%d].\n",idx));
 #endif
-	if( idx >= 12 ) {
+	if( idx >= MAX_PLAYERS ) {
 		return;
 	}
 	// build the header
@@ -1592,10 +1572,21 @@ int OO_server_rate_stamp = -1;
 
 // bandwidth granularity
 int OO_gran = 1;
-DCF(oog, "")
+DCF(oog, "Sets bandwidth granularity (Multiplayer)")
 {
-	dc_get_arg(ARG_INT);
-	OO_gran = Dc_arg_int;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: oog <OO_gran>\n");
+		dc_printf("Sets bandwidth granularity\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Current Granularity is '%i' (default is 1)", OO_gran);
+		return;
+	}
+
+	dc_stuff_int(&OO_gran);
+	dc_printf("Ganularity set to %i", OO_gran);
 }
 
 // process datarate limiting stuff for the server
@@ -1962,20 +1953,29 @@ void multi_oo_interp(object *objp)
 }
 
 float oo_error = 0.8f;
-DCF(oo_error, "")
+DCF(oo_error, "Sets error factor for flight path prediction physics (Multiplayer)")
 {
-	dc_get_arg(ARG_FLOAT);
-	oo_error = Dc_arg_float;
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: oo_error <value>\n");
+		return;
+	}
+
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("oo_error is currently %f", oo_error);
+		return;
+	}
+
+	dc_stuff_float(&oo_error);
+	
+	dc_printf("oo_error set to %f", oo_error);
 }
 
 void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info)
 {
 	vec3d a, b, c;
-	// vec3d da, db, dc;
 	matrix m_copy;
 	physics_info p_copy;
 	vec3d *pts[3] = {&a, &b, &c};	
-	// vec3d *d_pts[3] = {&da, &db, &dc};
 	
 	// average time between packets
 	float avg_diff = oo_arrive_time_avg_diff[ship_index];	
@@ -1984,7 +1984,7 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	vec3d v_norm = cur_phys_info->vel;	
 	vec3d v_dir;
 	vm_vec_sub(&v_dir, new_pos, cur_pos);	
-	if(!IS_VEC_NULL(&v_norm) && !IS_VEC_NULL(&v_dir)){
+	if(!IS_VEC_NULL_SQ_SAFE(&v_norm) && !IS_VEC_NULL_SQ_SAFE(&v_dir)){
 		vm_vec_normalize(&v_dir);
 		vm_vec_normalize(&v_norm);	
 		if(vm_vec_dotprod(&v_dir, &v_norm) < 0.0f){
@@ -2002,29 +2002,13 @@ void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_or
 	oo_interp_splines[ship_index][0].bez_set_points(3, pts);
 
 	// get the spline representing where this new point tells us we'd be heading
-	a = oo_interp_points[ship_index][0];
-	b = oo_interp_points[ship_index][1];
+	a = oo_interp_points[ship_index][0]; //-V519
+	b = oo_interp_points[ship_index][1]; //-V519
 	c = oo_interp_points[ship_index][1];
 	m_copy = *new_orient;
 	p_copy = *new_phys_info;
 	physics_sim(&c, &m_copy, &p_copy, avg_diff);			// next point, given this new info
 	oo_interp_splines[ship_index][1].bez_set_points(3, pts);	
-
-	// get the spline for our "bad" movement
-	/*
-	a = oo_interp_points[ship_index][0];
-	b = *cur_pos;
-	da = oo_interp_vel[ship_index][0];
-	db = cur_phys_info->vel;
-	oo_interp_splines[ship_index][0].herm_set_points(2, pts, d_pts);
-
-	// get the spline for our "good" movement
-	a = oo_interp_points[ship_index][0];
-	b = oo_interp_points[ship_index][1];
-	da = oo_interp_vel[ship_index][0];
-	db = oo_interp_vel[ship_index][1];
-	oo_interp_splines[ship_index][1].herm_set_points(2, pts, d_pts);
-	*/
 
 	// now we've got a spline representing our "new" path and where we would've gone had we been perfect before
 	// we'll modify our velocity to move along a blend of these splines.
@@ -2035,14 +2019,16 @@ void oo_update_time()
 }
 
 int display_oo_bez = 0;
-DCF(bez, "")
+DCF(bez, "Toggles rendering of player ship trajectory interpolation splines (Multiplayer) *disabled*")
 {
-	display_oo_bez = !display_oo_bez;
-	if(display_oo_bez){
-		dc_printf("Showing interp splines");
-	} else {
-		dc_printf("Not showing interp splines");
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Rendering of interpolation splines is '%s'", display_oo_bez ? "ON" : "OFF");
+		return;
 	}
+
+	display_oo_bez = !display_oo_bez;
+
+	dc_printf("%showing interp splines", display_oo_bez ? "S" : "Not s");
 }
 
 void oo_display()

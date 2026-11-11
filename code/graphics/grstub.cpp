@@ -1,41 +1,17 @@
-/*
- * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 1.1.2.4 $
- * $Date: 2007-02-12 00:19:48 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.1.2.3  2007/02/11 09:58:20  taylor
- * remove -pcx32 and -jpgtga
- * support for a couple of recent bmpman changes
- *
- * Revision 1.1.2.2  2006/09/24 22:53:22  taylor
- * more standalone server fixes:
- *  - add some basic bmpman functionality to grstub, since it needs to do something at least
- *  - add missing gr_* function ptrs to grstrub
- *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
- *  - deal with default pilot file properly (also caused a bmpman headache)
- *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
- *
- * Revision 1.1.2.1  2006/08/22 05:41:36  taylor
- * clean up the grstub mess (for work on standalone server, and just for sanity sake)
- * move color and shader functions to 2d.cpp since they are exactly the same everywhere
- * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
- *
- *
- * $NoKeywords: $
- */
+
 
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
+#include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "model/model.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
@@ -46,9 +22,22 @@ uint gr_stub_lock()
 	return 1;
 }
 
-int gr_stub_make_buffer(poly_list *list, uint flags)
+// NOTE: should return a failure
+int gr_stub_create_buffer()
 {
-	return 0;
+	return -1;
+}
+
+// NOTE: should return a failure
+bool gr_stub_pack_buffer(const int buffer_id, vertex_buffer *vb)
+{
+	return false;
+}
+
+// NOTE: should return a failure
+bool gr_stub_config_buffer(const int buffer_id, vertex_buffer *vb)
+{
+	return false;
 }
 
 int	gr_stub_make_light(light *light, int idx, int priority)
@@ -85,11 +74,11 @@ void gr_set_fill_mode_stub(int mode)
 {
 }
 
-void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize,bool mirror)
+void gr_stub_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,int resize_mode,bool mirror)
 {
 }
 
-void gr_stub_aabitmap(int x, int y,bool resize, bool mirror)
+void gr_stub_aabitmap(int x, int y,int resize_mode, bool mirror)
 {
 }
 
@@ -101,7 +90,7 @@ void gr_stub_activate(int active)
 {
 }
 
-void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize)
+void gr_stub_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode)
 {
 }
 
@@ -113,7 +102,11 @@ void gr_stub_center_alpha( int type)
 {
 }
 
-void gr_stub_circle( int xc, int yc, int d, bool resize )
+void gr_stub_circle( int xc, int yc, int d, int resize_mode )
+{
+}
+
+void gr_stub_unfilled_circle( int xc, int yc, int d, int resize_mode )
 {
 }
 
@@ -125,11 +118,11 @@ void gr_stub_clear()
 {
 }
 
-void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct)
+void gr_stub_cross_fade(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct, int resize_mode)
 {
 }
 
-void gr_stub_curve(int xc, int yc, int r, int direction)
+void gr_stub_curve(int xc, int yc, int r, int direction, int resize_mode)
 {
 }
 
@@ -202,11 +195,11 @@ void gr_stub_get_region(int front, int w, int h, ubyte *data)
 	data = NULL;
 }
 
-void gr_stub_gradient(int x1,int y1,int x2,int y2, bool resize)
+void gr_stub_gradient(int x1,int y1,int x2,int y2, int resize_mode)
 {
 }
 
-void gr_stub_line(int x1,int y1,int x2,int y2, bool resize = false)
+void gr_stub_line(int x1,int y1,int x2,int y2, int resize_mode = GR_RESIZE_NONE)
 {
 }
 
@@ -214,7 +207,7 @@ void gr_stub_modify_light(light* light, int idx, int priority)
 {
 }
 
-void gr_stub_pixel(int x, int y, bool resize)
+void gr_stub_pixel(int x, int y, int resize_mode)
 {
 }
 
@@ -230,7 +223,7 @@ void gr_stub_preload_init()
 {
 }
 
-void gr_stub_print_screen(char *filename)
+void gr_stub_print_screen(const char *filename)
 {
 }
 
@@ -242,11 +235,11 @@ void gr_stub_push_texture_matrix(int unit)
 {
 }
 
-void gr_stub_rect(int x, int y, int w, int h, bool resize)
+void gr_stub_rect(int x, int y, int w, int h, int resize_mode)
 {
 }
 
-void gr_stub_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
+void gr_stub_render_buffer(int start, const vertex_buffer *bufferp, int texi, int flags)
 {
 }
 
@@ -266,7 +259,7 @@ void gr_stub_save_mouse_area(int x, int y, int w, int h)
 {
 }
 
-void gr_stub_scaler(vertex *va, vertex *vb )
+void gr_stub_scaler(vertex *va, vertex *vb, bool bw_bitmap )
 {
 }
 
@@ -278,15 +271,41 @@ void gr_stub_set_buffer(int idx)
 {
 }
 
+int gr_stub_create_stream_buffer()
+{
+	return -1;
+}
+
+void gr_stub_update_stream_buffer(int buffer, effect_vertex *buffer_data, uint size)
+{
+}
+
+void gr_stub_render_stream_buffer(int offset, int n_verts, int flags)
+{
+}
+
+void gr_stub_render_stream_buffer_start(int buffer_id)
+{
+}
+
+void gr_stub_render_stream_buffer_end()
+{
+}
+
 void gr_stub_set_clear_color(int r, int g, int b)
 {
 }
 
-void gr_stub_set_clip(int x, int y, int w, int h, bool resize)
+void gr_stub_set_clip(int x, int y, int w, int h, int resize_mode)
 {
 }
 
 int gr_stub_set_cull(int cull)
+{
+	return 0;
+}
+
+int gr_stub_set_color_buffer(int mode)
 {
 	return 0;
 }
@@ -335,7 +354,7 @@ void gr_stub_start_instance_matrix(vec3d *offset, matrix* rotation)
 {
 }
 
-void gr_stub_string( int sx, int sy, char *s, bool resize = false)
+void gr_stub_string( int sx, int sy, const char *s, int resize_mode = GR_RESIZE_NONE)
 {
 }
 
@@ -351,6 +370,14 @@ void gr_stub_tmapper( int nverts, vertex **verts, uint flags )
 {
 }
 
+void gr_stub_render( int nverts, vertex *verts, uint flags )
+{
+}
+
+void gr_stub_render_effect( int nverts, vertex *verts, float *radius_list, uint flag)
+{
+}
+
 void gr_stub_translate_texture_matrix(int unit, vec3d *shift)
 {
 }
@@ -363,9 +390,51 @@ void gr_stub_zbuffer_clear(int mode)
 {
 }
 
+int gr_stub_stencil_set(int mode)
+{
+	return 0;
+}
+
+void gr_stub_stencil_clear()
+{
+}
+
+int gr_stub_alpha_mask_set(int mode, float alpha)
+{
+	return 0;
+}
+
 /*void gr_stub_shade(int x,int y,int w,int h)
 {
 }*/
+
+void gr_stub_post_process_set_effect(const char *name, int x)
+{
+}
+
+void gr_stub_post_process_set_defaults()
+{
+}
+
+void gr_stub_post_process_save_zbuffer()
+{
+}
+
+void gr_stub_post_process_begin()
+{
+}
+
+void gr_stub_post_process_end()
+{
+}
+
+void gr_stub_scene_texture_begin()
+{
+}
+
+void gr_stub_scene_texture_end()
+{
+}
 
 void gr_stub_set_ambient_light(int red, int green, int blue)
 {
@@ -409,8 +478,16 @@ void gr_stub_draw_line_list(colored_vector *lines, int num)
 {
 }
 
+void gr_stub_flush_data_states()
+{
+}
+
+void gr_stub_update_texture(int bitmap_handle, int bpp, ubyte* data, int width, int height)
+{
+}
+
 // bitmap functions
-int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_stub_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -467,6 +544,14 @@ int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, i
 			return -1;
 		}
 	}
+ 	// if its a png file
+ 	else if (type == BM_TYPE_PNG) {
+ 		int png_error=png_read_header( filename, img_cfp, w, h, bpp, NULL );
+ 		if ( png_error != PNG_ERROR_NONE ) {
+ 			mprintf(( "png: Couldn't open '%s'\n", filename ));
+ 			return -1;
+ 		}
+ 	}
 	// if its a jpg file
 	else if (type == BM_TYPE_JPG) {
 		int jpg_error=jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
@@ -491,7 +576,7 @@ int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, i
 	return 0;
 }
 
-int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags)
+int gr_stub_bm_lock(const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
@@ -502,7 +587,7 @@ int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte 
 	true_bpp = 8;
 
 	// don't do a bpp check here since it could be different in OGL - taylor
-	if ( (bmp->data == 0) ) {
+	if ( bmp->data == 0 ) {
 		Assert(be->ref_count == 1);
 
 		if ( be->type != BM_TYPE_USER ) {
@@ -545,6 +630,10 @@ int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte 
 			case BM_TYPE_TGA:
 				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
+
+ 			case BM_TYPE_PNG:
+ 				bm_lock_png( handle, bitmapnum, be, bmp, bmp->true_bpp, flags );
+ 				break;
 
 			case BM_TYPE_JPG:
 				bm_lock_jpg( handle, bitmapnum, be, bmp, bmp->true_bpp, flags );
@@ -608,6 +697,18 @@ void gr_stub_bm_page_in_start()
 {
 }
 
+int gr_stub_maybe_create_shader(int flags) {
+	return -1;
+}
+
+void gr_stub_set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime) {
+}
+
+void gr_stub_enable_team_color() {
+}
+
+void gr_stub_disable_team_color() {
+}
 
 bool gr_stub_init() 
 {
@@ -650,6 +751,7 @@ bool gr_stub_init()
 //	gr_screen.gf_shade				= gr_stub_shade;
 	gr_screen.gf_string				= gr_stub_string;
 	gr_screen.gf_circle				= gr_stub_circle;
+	gr_screen.gf_unfilled_circle	= gr_stub_unfilled_circle;
 	gr_screen.gf_curve				= gr_stub_curve;
 
 	gr_screen.gf_line				= gr_stub_line;
@@ -657,6 +759,8 @@ bool gr_stub_init()
 	gr_screen.gf_pixel				= gr_stub_pixel;
 	gr_screen.gf_scaler				= gr_stub_scaler;
 	gr_screen.gf_tmapper			= gr_stub_tmapper;
+	gr_screen.gf_render				= gr_stub_render;
+	gr_screen.gf_render_effect		= gr_stub_render_effect;
 
 	gr_screen.gf_gradient			= gr_stub_gradient;
 
@@ -671,6 +775,11 @@ bool gr_stub_init()
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
 	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
+
+	gr_screen.gf_stencil_set		= gr_stub_stencil_set;
+	gr_screen.gf_stencil_clear		= gr_stub_stencil_clear;
+
+	gr_screen.gf_alpha_mask_set		= gr_stub_alpha_mask_set;
 	
 	gr_screen.gf_save_screen		= gr_stub_save_screen;
 	gr_screen.gf_restore_screen		= gr_stub_restore_screen;
@@ -698,6 +807,7 @@ bool gr_stub_init()
 	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
+	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;
 
 	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
 
@@ -716,10 +826,18 @@ bool gr_stub_init()
 	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
 	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
-	gr_screen.gf_make_buffer		= gr_stub_make_buffer;
+	gr_screen.gf_create_buffer		= gr_stub_create_buffer;
+	gr_screen.gf_config_buffer		= gr_stub_config_buffer;
+	gr_screen.gf_pack_buffer		= gr_stub_pack_buffer;
 	gr_screen.gf_destroy_buffer		= gr_stub_destroy_buffer;
 	gr_screen.gf_render_buffer		= gr_stub_render_buffer;
 	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
+
+	gr_screen.gf_create_stream_buffer		= gr_stub_create_stream_buffer;
+	gr_screen.gf_update_stream_buffer		= gr_stub_update_stream_buffer;
+	gr_screen.gf_render_stream_buffer		= gr_stub_render_stream_buffer;
+	gr_screen.gf_render_stream_buffer_start	= gr_stub_render_stream_buffer_start;
+	gr_screen.gf_render_stream_buffer_end	= gr_stub_render_stream_buffer_end;
 
 	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
 	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
@@ -731,6 +849,16 @@ bool gr_stub_init()
 	gr_screen.gf_set_light			= gr_stub_set_light;
 	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
 	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
+
+	gr_screen.gf_post_process_set_effect	= gr_stub_post_process_set_effect;
+	gr_screen.gf_post_process_set_defaults	= gr_stub_post_process_set_defaults;
+
+	gr_screen.gf_post_process_begin		= gr_stub_post_process_begin;
+	gr_screen.gf_post_process_end		= gr_stub_post_process_end;
+	gr_screen.gf_post_process_save_zbuffer	= gr_stub_post_process_save_zbuffer;
+
+	gr_screen.gf_scene_texture_begin = gr_stub_scene_texture_begin;
+	gr_screen.gf_scene_texture_end = gr_stub_scene_texture_end;
 
 	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
 	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
@@ -760,5 +888,14 @@ bool gr_stub_init()
 	gr_screen.gf_line_htl			= gr_stub_draw_htl_line;
 	gr_screen.gf_sphere_htl			= gr_stub_draw_htl_sphere;
 
+	gr_screen.gf_maybe_create_shader = gr_stub_maybe_create_shader;
+
+	gr_screen.gf_flush_data_states	= gr_stub_flush_data_states;
+
+	gr_screen.gf_set_team_color		= gr_stub_set_team_color;
+	gr_screen.gf_enable_team_color  = gr_stub_enable_team_color;
+	gr_screen.gf_disable_team_color = gr_stub_disable_team_color;
+
+	gr_screen.gf_update_texture = gr_stub_update_texture;
 	return true;
 }

@@ -7,82 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.9 $
- * $Date: 2006-04-12 01:03:00 $
- * $Author: taylor $
- *
- * Nebula effect
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/10/09 08:03:20  wmcoolmon
- * New SEXP stuff
- *
- * Revision 2.7  2005/07/13 03:26:00  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.6  2005/06/21 00:20:24  taylor
- * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
- *   and this makes it so much easier to realize that
- * properly deal with the fact that objnum can be -1 in  model_really_render()
- * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
- * small compiler warning fix for neb code
- *
- * Revision 2.5  2005/04/05 05:53:20  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.4  2004/08/11 05:06:29  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.3  2004/03/05 09:02:07  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/10/14 17:39:16  randomtiger
- * Implemented hardware fog for the HT&L code path.
- * It doesn't use the backgrounds anymore but it's still an improvement.
- * Currently it fogs to a brighter colour than it should because of Bob specular code.
- * I will fix this after discussing it with Bob.
- *
- * Also tided up some D3D stuff, a cmdline variable name and changed a small bit of
- * the htl code to use the existing D3D engine instead of work around it.
- * And added extra information in version number on bottom left of frontend screen.
- *
- * Revision 2.1  2003/09/26 14:37:15  bobboau
- * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
- * still needs a lot of work, ubt the frame rates were getting with it are incredable
- * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
- * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
- * and weapons, I think these should be modifyed to be sent through hardware,
- * it would be slightly faster and it would likely fix the problem
- *
- * also the thruster glow/particle stuff I did is now in.
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- * 
- * 
- * 16    8/30/99 5:01p Dave
- * Made d3d do less state changing in the nebula. Use new chat server for
- * PXO.
- * 
- * 15    7/29/99 12:05a Dave
- * Nebula speed optimizations.
- * 
- * 14    7/26/99 10:12a Dave
- * Upped the max # of nebula backgrounds.
- * 
- * 13    5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * $NoKeywords: $
- */
+
 
 #ifndef _FS2_NEB2_EFFECT_HEADER_FILE
 #define _FS2_NEB2_EFFECT_HEADER_FILE
@@ -94,8 +19,8 @@
 #include "globalincs/globals.h"
 #include "camera/camera.h"
 
-struct ship;
-struct object;
+class ship;
+class object;
 
 extern bool Nebula_sexp_used;
 // fog near and far values for rendering the background nebula
@@ -112,6 +37,10 @@ extern int Neb2_render_mode;
 
 // the AWACS suppresion level for the nebula
 extern float Neb2_awacs;
+
+// The visual render distance multipliers for the nebula
+extern float Neb2_fog_near_mult;
+extern float Neb2_fog_far_mult;
 
 #define MAX_NEB2_POOFS				6
 
@@ -140,6 +69,19 @@ typedef struct cube_poof {
 } cube_poof;
 #define MAX_CPTS		5		// should always be <= slices
 extern cube_poof Neb2_cubes[MAX_CPTS][MAX_CPTS][MAX_CPTS];
+
+// nebula detail level
+typedef struct neb2_detail {
+	float max_alpha_glide;		// max alpha for this detail level in Glide
+	float max_alpha_d3d;		// max alpha for this detail level in D3d
+	float break_alpha;			// break alpha (below which, poofs don't draw). this affects the speed and visual quality a lot
+	float break_x, break_y;		// x and y alpha fade/break values. adjust alpha on the polys as they move offscreen
+	float cube_dim;				// total dimension of player poof cube
+	float cube_inner;			// inner radius of the player poof cube
+	float cube_outer;			// outer radius of the player pood cube
+	float prad;					// radius of the poofs
+	float wj, hj, dj;			// width, height, depth jittering. best left at 1.0
+} neb2_detail;
 
 
 // --------------------------------------------------------------------------------------------------------
@@ -192,6 +134,9 @@ void neb2_eye_changed();
 // get near and far fog values based upon object type and rendering mode
 void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
 
+// get adjusted near and far fog values (allows mission-specific fog adjustments)
+void neb2_get_adjusted_fog_values(float *fnear, float *ffar, object *obj = NULL);
+
 // given a position in space, return a value from 0.0 to 1.0 representing the fog level 
 float neb2_get_fog_intensity(object *obj);
 float neb2_get_fog_intensity(vec3d *pos);
@@ -214,6 +159,5 @@ void neb2_set_backg_color(int r, int g, int b);
 void neb2_get_backg_color(int *r, int *g, int *b);
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
-
 
 #endif

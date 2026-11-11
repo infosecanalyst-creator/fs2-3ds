@@ -7,196 +7,13 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.17.2.1 $
- * $Date: 2006-08-27 18:04:24 $
- * $Author: taylor $
- *
- * header file for squadmate messaging
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.17  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.16  2006/03/18 22:00:43  Goober5000
- * fix comm order initialization bug
- * --Goober5000
- *
- * Revision 2.15  2006/03/01 04:01:37  Goober5000
- * fix comm message localization
- *
- * Revision 2.14  2006/02/02 07:00:29  Goober5000
- * consolidated comm order stuff
- * --Goober5000
- *
- * Revision 2.13  2006/02/02 06:22:58  Goober5000
- * replaced Fred_comm_orders with proper Comm_orders, just for WMC ;)
- * --Goober5000
- *
- * Revision 2.12  2006/02/02 06:04:02  Goober5000
- * restore retail compatibility with comm orders: one logic bugfix, one cosmetic bugfix
- * --Goober5000
- *
- * Revision 2.11  2006/01/13 11:09:45  taylor
- * fix hud comm message screwups (missing support ship, no coverme, etc) that was part :V: bug and (bigger) part Ship_types related bug
- *
- * Revision 2.10  2006/01/10 18:37:46  randomtiger
- * Improvements to voice recognition system.
- * Also function put on -voicer launcher option.
- *
- * Revision 2.9  2006/01/03 17:07:10  randomtiger
- * Added voice recognition functionality for Visual C6 project only.
- * Currently still a work in progress.
- *
- * Revision 2.8  2005/12/29 08:08:34  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.7  2005/07/13 03:15:52  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.6  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.5  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/09/13 08:27:29  Goober5000
- * added some minor things, such as code cleanup and the following:
- * --turrets will not fire at cargo
- * --MAX_SHIELD_SECTIONS substituted for the number 4 in many places
- * --supercaps have their own default message bitfields (distinguished from capships)
- * --turrets are allowed on fighters
- * --jump speed capped at 65m/s, to avoid ship travelling too far
- * --non-huge weapons now scale their damage, instead of arbitrarily cutting off
- * ----Goober5000
- *
- * Revision 2.3  2003/09/13 06:02:05  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     3/30/99 5:40p Dave
- * Fixed reinforcements for TvT in multiplayer.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 26    9/11/98 2:05p Allender
- * make reinforcements work correctly in multiplayer games.  There still
- * may be a team vs team issue that I haven't thought of yet :-(
- * 
- * 25    5/19/98 12:19p Mike
- * Cheat codes!
- * 
- * 24    5/13/98 5:09p Allender
- * Make send_command functions return whether message was sent or not
- * 
- * 23    5/04/98 8:58a Allender
- * new key saving routine
- * 
- * 22    4/22/98 4:59p Allender
- * new multiplayer dead popup.  big changes to the comm menu system for
- * team vs. team.  Start of debriefing stuff for team vs. team  Make form
- * on my wing work with individual ships who have high priority orders
- * 
- * 21    4/13/98 12:51p Allender
- * made countermeasure succeed indicator work in multiplayer.  Make rearm
- * shortcut work more appropriately.
- * 
- * 20    2/26/98 4:21p John
- * Changed comm_orders around so I could externalize the strings
- * 
- * 19    2/20/98 8:34p Lawrance
- * added hud_squadmsg_reinforcements_available(), since this information
- * is required outside of hudsquadmsg
- * 
- * 18    2/11/98 9:44p Allender
- * rearm repair code fixes.  hud support view shows abort status.  New
- * support ship killed message.  More network stats
- * 
- * 17    11/20/97 12:08a Allender
- * added 'all fighters' option at top level menu.  cleaned up messaging to
- * player a little bit
- * 
- * 16    11/07/97 4:35p Dave
- * Fixed multiplayer support ship bug. Put in player kill/assists client
- * side stats update.
- * 
- * 15    11/03/97 10:09a Allender
- * fixed up graying out of comm menu options
- * 
- * 14    10/31/97 4:59p Allender
- * remove protect_ship from list of filtered orders
- * 
- * 13    10/31/97 4:33p Allender
- * fix bogus repair message.  gray out messages based on players target
- * 
- * 12    9/30/97 5:07p Dave
- * Adapted messaging to correctly work with client-server situations in
- * multiplayer.
- * 
- * 11    9/23/97 4:34p Allender
- * made squadmessaging use main keyboard reading loop instead of separate
- * key_inkey()
- * 
- * 10    9/18/97 5:21p Hoffoss
- * Added column breaks for message list in sexp trees, and added code for
- * orders sexp.
- * 
- * 9     7/25/97 9:52a Allender
- * added order dialog to Fred for designer to choose which orders for ship
- * to accept/ignore.  Code in ship_create to set up variables for Fred use
- * instead of FreeSpace use (for destroying ships before mission starts)
- * 
- * 8     6/16/97 2:58p Allender
- * added ignore my target order to player's comm menu.  Fixed a couple of
- * problem when trying to message wings
- * 
- * 7     4/30/97 2:32p Allender
- * add ability to message enemies as debug tool
- * 
- * 6     4/07/97 3:50p Allender
- * ability to assign > 1 ship to a hotkey.  Enabled use of hotkeys in
- * squadmate messaging
- * 
- * 5     4/05/97 3:46p Allender
- * lots 'o messaging stuff.  Make shortcut keys for squadmate messaging
- * work.  Make menus a little more dynamic
- * 
- * 4     2/06/97 1:49p Allender
- * more messaging stuff -- most menus printout out stuff -- nothing
- * functional in terms of action
- * 
- * 3     2/03/97 4:50p Allender
- * saving/restoring of keys used for messaging mode
- * 
- * 2     1/31/97 9:38a Allender
- * checkpoint for sqaudmate messaging
- * 
- * 1     1/24/97 2:18p Allender
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _HUD_SQUADMSG
 #define _HUD_SQUADMSG
 
 #include "network/multi.h"
-#include <vector>
+#include "hud/hud.h"
 
 #define SM_MODE_TYPE_SELECT			1		//am I going to message a ship or a wing
 #define SM_MODE_SHIP_SELECT			2		//choosing actual ship
@@ -211,7 +28,7 @@
 // define for trapping messages send to "all fighters"
 #define MESSAGE_ALL_FIGHTERS		-999
 
-struct object;
+class object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis
@@ -241,6 +58,8 @@ struct object;
 // out of order, but it was this way in the original source
 #define DISABLE_SUBSYSTEM_ITEM		(1<<15)
 
+// used for Message box gauge
+#define NUM_MBOX_FRAMES		3
 
 // data structure to hold character string of commands for comm menu
 typedef struct comm_order {
@@ -248,7 +67,14 @@ typedef struct comm_order {
 	int item;
 } comm_order;
 
+typedef struct sexp_com_order{ 
+	char *name; 
+	int xstring; 
+	int item; 
+}sexp_com_order;
+
 extern comm_order Comm_orders[];
+extern sexp_com_order Sexp_comm_orders[];
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
@@ -286,10 +112,10 @@ typedef struct squadmsg_history {
 	int order_from;			// ship that sent the order
 	int special_index;		// any extra data the order might need (subsystem names for instance)
 	fix order_time;			// when this order was sent (or received by the server in multiplayer)
-	squadmsg_history(): order_to(-1), order(-1), target(-1), order_from(-1), special_index(-1), order_time(0) {};
+	squadmsg_history(): order_to(-1), order(-1), target(-1), order_from(-1), special_index(-1), order_time(0) {}
 } squadmsg_history;
 
-extern std::vector<squadmsg_history> Squadmsg_history; 
+extern SCP_vector<squadmsg_history> Squadmsg_history; 
 
 /*
 #define SQUADMSG_HISTORY_MAX 160
@@ -336,11 +162,46 @@ extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_nu
 
 extern int hud_squadmsg_reinforcements_available(int team);
 
-//#ifndef NDEBUG
 void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
-//#endif
 
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );
+
+class HudGaugeSquadMessage: public HudGauge
+{
+protected:
+	hud_frames Mbox_gauge[NUM_MBOX_FRAMES];
+
+	int Header_offsets[2];
+	int Item_start_offsets[2];
+	int Middle_frame_start_offset_y;
+	int bottom_bg_offset;
+	int Item_h;
+	int Item_offset_x;
+
+	int Pgup_offsets[2];
+	int Pgdn_offsets[2];
+
+	int flash_timer[2];
+	bool flash_flag;
+public:
+	HudGaugeSquadMessage();
+	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
+	void initHeaderOffsets(int x, int y);
+	void initItemStartOffsets(int x, int y);
+	void initMiddleFrameStartOffsetY(int y);
+	void initBottomBgOffset(int offset);
+	void initItemHeight(int h);
+	void initItemOffsetX(int x);
+	void initPgUpOffsets(int x, int y);
+	void initPgDnOffsets(int x, int y);
+
+	void render(float frametime);
+	bool canRender();
+	void pageIn();
+	void initialize();
+	void startFlashPageScroll(int duration = 1400);
+	bool maybeFlashPageScroll(bool flash_fast = false);
+};
 
 #endif

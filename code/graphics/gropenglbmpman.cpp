@@ -7,139 +7,13 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.7 $
- * $Date: 2007-02-11 09:51:21 $
- * $Author: taylor $
- *
- * OpenGL specific bmpman routines
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.18.2.6  2006/08/27 18:03:29  taylor
- * forgot an extension check (was this the background corruption bug???)
- *
- * Revision 1.18.2.5  2006/06/18 23:38:06  taylor
- * yeah, I'm not at the top of my game today  ;)
- *
- * Revision 1.18.2.4  2006/06/18 23:34:55  taylor
- * address a strange resize error that triggers an Assert() in the texture code with mipmaps
- *
- * Revision 1.18.2.3  2006/06/18 17:21:49  taylor
- * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
- *
- * Revision 1.18.2.2  2006/06/18 16:49:40  taylor
- * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
- *
- * Revision 1.18.2.1  2006/06/15 00:15:17  taylor
- * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
- *
- * Revision 1.18  2006/05/27 17:07:48  taylor
- * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
- * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
- * clean up TMAP flags
- * fix a couple of minor OpenGL state change issues with spec and env map rendering
- * make sure we build again for OS X (OGL extension functions work a little different there)
- * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
- * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
- * re-fix screenshots
- * add true alpha blending support (with cmdline for now since the artwork has the catch up)
- * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
- * don't load cubemaps from file for D3D, not sure how to do it anyway
- * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
- *
- * Revision 1.17  2006/05/13 07:29:52  taylor
- * OpenGL envmap support
- * newer OpenGL extension support
- * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
- * add cubemap reading and writing support to DDS loader
- * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
- * add support for a default envmap named "cubemap.dds"
- * new mission flag "$Environment Map:" to use a pre-existing envmap
- * minor cleanup of compiler warning messages
- * get rid of wasteful math from gr_set_proj_matrix()
- * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
- * clean up bmpman flags in reguards to cubemaps and render targets
- * disable D3D envmap code until it can be upgraded to current level of code
- * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
- * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
- *
- * Revision 1.16  2006/04/06 23:23:56  taylor
- * bits of cleanup
- * minor fixes for -img2dds
- *
- * Revision 1.15  2006/03/22 18:14:52  taylor
- * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
- * use nicest hints for texture compression, should improve quality a little
- * when reporting compressed sizes to debug log make ani size be total, not per frame
- *
- * Revision 1.14  2006/03/12 07:34:39  taylor
- * when I forget that I'm an idiot little things like this slip through (me == moron)
- *
- * Revision 1.13  2006/02/16 05:00:01  taylor
- * various bmpman related fixes
- *  - some new error checking (and fixes related to that) and cleanup
- *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
- *  - minor fixes for bm_release() to produce a more properly cleaned slot
- *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
- *    and to make sure that we free the memory usage regardless of load count
- *
- * Revision 1.12  2005/11/13 06:44:18  taylor
- * small bit of EFF cleanup
- * add -img2dds support
- * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
- * some minor OGL cleanup and small performance changes
- * converge the various pcx_read_bitmap* functions into one
- * cleanup/rename/remove some cmdline options
- *
- * Revision 1.11  2005/08/20 20:34:51  taylor
- * some bmpman and render_target function name changes so that they make sense
- * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
- * save the original gamma ramp on OGL init so that it can be restored on exit
- *
- * Revision 1.10  2005/03/24 23:42:21  taylor
- * s/gr_ogl_/gr_opengl_/g
- * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
- * make gr_opengl_draw_htl_sphere() just use GLU so we don't need yet another friggin API
- *
- * Revision 1.9  2005/03/19 20:35:45  wmcoolmon
- * small bool fix
- *
- * Revision 1.8  2005/03/11 14:11:53  taylor
- * apparently this change never got in
- *
- * Revision 1.7  2005/03/07 13:10:21  bobboau
- * commit of render target code, d3d should be totaly functional,
- * OGL still needs implementation.
- *
- * Revision 1.6  2005/02/04 20:06:04  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 1.5  2005/02/04 10:12:29  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 1.4  2005/01/21 08:54:53  taylor
- * slightly better memory management
- *
- * Revision 1.3  2004/12/05 01:28:39  taylor
- * support uncompressed DDS images
- * use TexSubImage2D for video anis
- *
- * Revision 1.2  2004/11/23 00:10:06  taylor
- * try and protect the bitmap_entry stuff a bit better
- * fix the transparent support ship, again, but correctly this time
- *
- * Revision 1.1  2004/10/31 21:21:11  taylor
- * initial import from bmpman merge
- *
- *
- * $NoKeywords: $
- */
+
 
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "tgautils/tgautils.h"
+#include "pngutils/pngutils.h"
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "graphics/gropengltexture.h"
@@ -179,7 +53,9 @@ int get_num_mipmap_levels(int w, int h)
 	return (levels > 1) ? levels : 1;
 }
 
-// anything API specific to freeing bm data
+/**
+ * Anything API specific to freeing bm data
+ */
 void gr_opengl_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
@@ -194,7 +70,9 @@ void gr_opengl_bm_free_data(int n, bool release)
 		opengl_kill_render_target( n );
 }
 
-// API specifics for creating a user bitmap
+/**
+ * API specifics for creating a user bitmap
+ */
 void gr_opengl_bm_create(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
@@ -212,7 +90,7 @@ void gr_opengl_bm_create(int n)
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
+int gr_opengl_bm_load(ubyte type, int n, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
 	int dds_ct;
 
@@ -270,6 +148,14 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 			return -1;
 		}
 	}
+	// if its a png file
+ 	else if (type == BM_TYPE_PNG) {
+ 		int png_error=png_read_header( filename, img_cfp, w, h, bpp, NULL );
+ 		if ( png_error != PNG_ERROR_NONE ) {
+ 			mprintf(( "png: Couldn't open '%s'\n", filename ));
+ 			return -1;
+ 		}
+ 	}
 	// if its a jpg file
 	else if (type == BM_TYPE_JPG) {
 		int jpg_error=jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
@@ -294,13 +180,17 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 	return 0;
 }
 
-// API specific init instructions
+/**
+ * API specific init instructions
+ */
 void gr_opengl_bm_init(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 }
 
-// specific instructions for setting up the start of a page-in session
+/**
+ * Specific instructions for setting up the start of a page-in session
+ */
 void gr_opengl_bm_page_in_start()
 {
 	opengl_preload_init();
@@ -331,12 +221,14 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	alpha = (bpp == 32);
 
 	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
+		return 1;
 	}
 
 	if ( (the_anim_instance = init_anim_instance(the_anim, bpp)) == NULL ) {
-		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
+		nprintf(("BMPMAN", "Error opening %s in bm_lock\n", be->filename));
 		anim_free(the_anim);
+		return 1;
 	}
 
 	int can_drop_frames = 0;
@@ -422,7 +314,6 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	int alpha = 1;
 	int num_mipmaps = 1;
 
-
 	// don't use for EFFs, if they were wanting to be DDS then they should already be that way
 	if ( be->type == BM_TYPE_EFF ) {
 		return 1;
@@ -430,6 +321,7 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 	Assert( (be->type == BM_TYPE_PCX) ||
 			(be->type == BM_TYPE_TGA) ||
+			(be->type == BM_TYPE_PNG) ||
 			(be->type == BM_TYPE_JPG) );
 
 	Assert( !(flags & BMP_AABITMAP) );
@@ -457,6 +349,8 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 		error_code = pcx_read_bitmap( be->filename, data, NULL, byte_size );
 	} else if (be->type == BM_TYPE_TGA) {
 		error_code = targa_read_bitmap( be->filename, data, NULL, byte_size );
+ 	} else if (be->type == BM_TYPE_PNG) {
+ 		error_code = png_read_bitmap( be->filename, data, NULL, byte_size );
 	} else if (be->type == BM_TYPE_JPG) {
 		error_code = jpeg_read_bitmap( be->filename, data, NULL, byte_size );
 	} else {
@@ -521,8 +415,10 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 extern bool opengl_texture_slot_valid(int n, int handle);
 
-// Lock an image files data into memory
-int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags )
+/**
+ * Lock an image files data into memory
+ */
+int gr_opengl_bm_lock( const char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags, bool nodebug)
 {
 	ubyte c_type = BM_TYPE_NONE;
 	ubyte true_bpp;
@@ -542,13 +438,13 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	if ( (bmp->data == 0) && !opengl_texture_slot_valid(bitmapnum, handle) ) {
 		Assert(be->ref_count == 1);
 
-		if (be->type != BM_TYPE_USER) {
+		if (be->type != BM_TYPE_USER && !nodebug) {
 			if (bmp->data == 0)
 				nprintf (("BmpMan", "Loading %s for the first time.\n", be->filename));
 		}
 
 		if ( !Bm_paging )	{
-			if (be->type != BM_TYPE_USER)						
+			if (be->type != BM_TYPE_USER && !nodebug)						
 				nprintf(("Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp));
 		}
 
@@ -600,6 +496,11 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 
 				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
+
+ 			case BM_TYPE_PNG:
+ 				//libpng handles compression with zlib
+ 				bm_lock_png( handle, bitmapnum, be, bmp, true_bpp, flags );
+ 				break;
 
 			case BM_TYPE_JPG:
 				if (try_compress) {
@@ -681,7 +582,11 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 		MIN(*width, *height) = MAX(*width, *height);
 	}
 
-	Assert( is_power_of_two(*width, *height) );
+	// Only enforce power of two size if not supported
+	if (!(Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO)))
+	{
+		Assert( is_power_of_two(*width, *height) );
+	}
 
 	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) ) {
 		return 1;

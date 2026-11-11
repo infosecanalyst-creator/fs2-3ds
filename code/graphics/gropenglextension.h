@@ -7,121 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.14.2.3 $
- * $Date: 2007-04-13 00:31:24 $
- * $Author: taylor $
- *
- * header file to contain the defenitions for the OpenGL exetension
- * functions used in fs2_open
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.14.2.2  2006/12/26 05:18:14  taylor
- * comment out some extensions that we either don't use or don't need to use
- *
- * Revision 1.14.2.1  2006/08/09 14:40:43  taylor
- * fix for setting of texture lod bias
- *
- * Revision 1.14  2006/05/27 17:07:48  taylor
- * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
- * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
- * clean up TMAP flags
- * fix a couple of minor OpenGL state change issues with spec and env map rendering
- * make sure we build again for OS X (OGL extension functions work a little different there)
- * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
- * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
- * re-fix screenshots
- * add true alpha blending support (with cmdline for now since the artwork has the catch up)
- * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
- * don't load cubemaps from file for D3D, not sure how to do it anyway
- * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
- *
- * Revision 1.13  2006/05/13 07:29:52  taylor
- * OpenGL envmap support
- * newer OpenGL extension support
- * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
- * add cubemap reading and writing support to DDS loader
- * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
- * add support for a default envmap named "cubemap.dds"
- * new mission flag "$Environment Map:" to use a pre-existing envmap
- * minor cleanup of compiler warning messages
- * get rid of wasteful math from gr_set_proj_matrix()
- * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
- * clean up bmpman flags in reguards to cubemaps and render targets
- * disable D3D envmap code until it can be upgraded to current level of code
- * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
- * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
- *
- * Revision 1.12  2006/04/12 01:10:35  taylor
- * some cleanup and slight reorg
- *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
- *  - avoid some costly math where possible in the drawing functions
- *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
- *  - minor cleanup to Win32 extension defines
- *  - make opengl_lights[] allocate only when using OGL
- *  - cleanup some costly per-frame lighting stuff
- *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
- *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
- *
- * Revision 1.11  2006/03/22 18:14:52  taylor
- * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
- * use nicest hints for texture compression, should improve quality a little
- * when reporting compressed sizes to debug log make ani size be total, not per frame
- *
- * Revision 1.10  2006/02/24 07:35:48  taylor
- * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
- *
- * Revision 1.9  2005/12/28 22:28:44  taylor
- * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
- * better support for mipmaps and mipmap filtering
- * add reg option "TextureFilter" to set bilinear or trilinear filter
- * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
- * small fix for using 24-bit images on 16-bit bpp visual (untested)
- *
- * Revision 1.8  2005/12/08 15:10:07  taylor
- * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
- *
- * Revision 1.7  2005/12/06 02:50:41  taylor
- * clean up some init stuff and fix a minor SDL annoyance
- * make debug messages a bit more readable
- * clean up the debug console commands for minimize and anisotropic filter setting
- * make anisotropic filter actually work correctly and have it settable with a reg option
- * give opengl_set_arb() the ability to disable all features on all arbs at once so I don't have to everywhere
- *
- * Revision 1.6  2005/11/13 06:44:18  taylor
- * small bit of EFF cleanup
- * add -img2dds support
- * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
- * some minor OGL cleanup and small performance changes
- * converge the various pcx_read_bitmap* functions into one
- * cleanup/rename/remove some cmdline options
- *
- * Revision 1.5  2005/07/13 03:15:51  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.4  2005/01/21 08:25:14  taylor
- * fill in gr_opengl_set_texture_addressing()
- * add support for non-power-of-two textures for cards that have it
- * temporary crash fix from multiple mipmap levels in uncompressed formats
- *
- * Revision 1.3  2004/10/31 21:45:13  taylor
- * Linux tree merge, single array for VBOs/HTL
- *
- * Revision 1.2  2004/08/11 05:06:24  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 1.1  2004/05/24 07:25:32  taylor
- * filename case change
- *
- * Revision 2.3  2004/04/13 01:55:41  phreak
- * put in the correct fields for the CVS comments to register
- * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
- *
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _GROPENGLEXT_H
 #define _GROPENGLEXT_H
@@ -161,21 +47,20 @@ extern ogl_function GL_EXT_Special[];
 // Extensions
 #define OGL_EXT_FOG_COORD					0
 #define OGL_ARB_MULTITEXTURE				1
-#define OGL_ARB_TEXTURE_ENV_ADD				2
-#define OGL_ARB_TEXTURE_COMPRESSION			3
+#define OGL_ARB_TEXTURE_ENV_ADD			2
+#define OGL_ARB_TEXTURE_COMPRESSION		3
 #define OGL_EXT_TEXTURE_COMPRESSION_S3TC	4
 #define OGL_EXT_TEXTURE_FILTER_ANISOTROPIC	5
 //#define OGL_NV_FOG_DISTANCE				6
 //#define OGL_EXT_SECONDARY_COLOR			7
-#define OGL_ARB_TEXTURE_ENV_COMBINE			6
+#define OGL_ARB_TEXTURE_ENV_COMBINE		6
 #define OGL_EXT_COMPILED_VERTEX_ARRAY		7
-//#define OGL_ARB_TRANSPOSE_MATRIX			10
-#define OGL_EXT_DRAW_RANGE_ELEMENTS			8
-#define OGL_ARB_TEXTURE_MIRRORED_REPEAT		9
+//#define OGL_ARB_TRANSPOSE_MATRIX		10
+#define OGL_EXT_DRAW_RANGE_ELEMENTS		8
+#define OGL_ARB_TEXTURE_MIRRORED_REPEAT	9
 #define OGL_ARB_TEXTURE_NON_POWER_OF_TWO	10
 #define OGL_ARB_VERTEX_BUFFER_OBJECT		11
-#define OGL_ARB_PIXEL_BUFFER_OBJECT			12
-//#define OGL_APPLE_CLIENT_STORAGE			13
+#define OGL_ARB_PIXEL_BUFFER_OBJECT		12
 #define OGL_SGIS_GENERATE_MIPMAP			13
 #define OGL_EXT_FRAMEBUFFER_OBJECT			14
 #define OGL_ARB_TEXTURE_RECTANGLE			15
@@ -188,8 +73,10 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_ARB_VERTEX_SHADER				22
 #define OGL_ARB_FRAGMENT_SHADER				23
 #define OGL_SM30							24
+#define OGL_ARB_FLOATING_POINT_TEXTURES		25
+#define OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX	26
 
-#define NUM_OGL_EXTENSIONS					25
+#define NUM_OGL_EXTENSIONS					27
 
 
 // Functions
@@ -248,13 +135,20 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_GET_UNIFORM_LOCATION			48
 #define OGL_GET_UNIFORMIV					49
 #define OGL_UNIFORM1F						50
-#define OGL_UNIFORM3F						51
-#define OGL_UNIFORM3FV						52
-#define OGL_UNIFORM4FV						53
-#define OGL_UNIFORM1I						54
-#define OGL_UNIFORM_MATRIX4FV				55
+#define OGL_UNIFORM2F						51
+#define OGL_UNIFORM3F						52
+#define OGL_UNIFORM4F						53
+#define OGL_UNIFORM3FV						54
+#define OGL_UNIFORM4FV						55
+#define OGL_UNIFORM1I						56
+#define OGL_UNIFORM_MATRIX4FV				57
+#define OGL_DRAWBUFFERS						58
+#define OGL_DRAW_ELEMENTS_BASE_VERTEX				59
+#define OGL_DRAW_RANGE_ELEMENTS_BASE_VERTEX			60
+#define OGL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX		61
+#define OGL_MULTI_DRAW_ELEMENTS_BASE_VERTEX			62
 
-#define NUM_OGL_FUNCTIONS					56
+#define NUM_OGL_FUNCTIONS					63
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -340,11 +234,18 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define PFNGLGETUNIFORMLOCATIONARBPROC			glGetUniformLocationARBProcPtr
 #define PFNGLGETUNIFORMIVARBPROC				glGetUniformivARBProcPtr
 #define PFNGLUNIFORM1FARBPROC					glUniform1fARBProcPtr
+#define PFNGLUNIFORM2FARBPROC					glUniform2fARBProcPtr
 #define PFNGLUNIFORM3FARBPROC					glUniform3fARBProcPtr
+#define PFNGLUNIFORM4FARBPROC					glUnifrom4fARBProcPtr
 #define PFNGLUNIFORM3FVARBPROC					glUniform3fvARBProcPtr
 #define PFNGLUNIFORM4FVARBPROC					glUnifrom4fvARBProcPtr
 #define PFNGLUNIFORM1IARBPROC					glUniform1iARBProcPtr
 #define PFNGLUNIFORMMATRIX4FVARBPROC			glUniformMatrix4fvARBProcPtr
+#define PFNGLDRAWBUFFERSPROC					glDrawBuffersARBProcPtr
+#define PFNGLDRAWELEMENTSBASEVERTEXPROC         glDrawElementsBaseVertexProcPtr
+#define PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC    glDrawRangeElementsBaseVertexProcPtr
+#define PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC glDrawElementsInstancedBaseVertexProcPtr
+#define PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC    glMultiDrawElementsBaseVertexProcPtr
 #endif	// __APPLE__
 
 #define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
@@ -402,12 +303,18 @@ typedef void (* glDrawRangeElementsProcPtr) (GLenum mode, GLuint start, GLuint e
 #define vglGetUniformLocationARB		GLEXT_CALL2( OGL_GET_UNIFORM_LOCATION, PFNGLGETUNIFORMLOCATIONARBPROC )
 #define vglGetUniformivARB				GLEXT_CALL( OGL_GET_UNIFORMIV, PFNGLGETUNIFORMIVARBPROC )
 #define vglUniform1fARB					GLEXT_CALL( OGL_UNIFORM1F, PFNGLUNIFORM1FARBPROC )
+#define vglUniform2fARB					GLEXT_CALL( OGL_UNIFORM2F, PFNGLUNIFORM2FARBPROC )
 #define vglUniform3fARB					GLEXT_CALL( OGL_UNIFORM3F, PFNGLUNIFORM3FARBPROC )
+#define vglUniform4fARB					GLEXT_CALL( OGL_UNIFORM4F, PFNGLUNIFORM4FARBPROC )
 #define vglUniform3fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM3FVARBPROC )
-#define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM3FV, PFNGLUNIFORM4FVARBPROC )
+#define vglUniform4fvARB				GLEXT_CALL( OGL_UNIFORM4FV, PFNGLUNIFORM4FVARBPROC )
 #define vglUniform1iARB					GLEXT_CALL( OGL_UNIFORM1I, PFNGLUNIFORM1IARBPROC )
 #define vglUniformMatrix4fvARB			GLEXT_CALL( OGL_UNIFORM_MATRIX4FV, PFNGLUNIFORMMATRIX4FVARBPROC )
-
+#define vglDrawBuffers					GLEXT_CALL( OGL_DRAWBUFFERS, PFNGLDRAWBUFFERSPROC )
+#define vglDrawElementsBaseVertex		GLEXT_CALL( OGL_DRAW_ELEMENTS_BASE_VERTEX, PFNGLDRAWELEMENTSBASEVERTEXPROC )
+#define vglDrawRangeElementsBaseVertex	GLEXT_CALL( OGL_DRAW_RANGE_ELEMENTS_BASE_VERTEX, PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC )
+#define vglDrawElementsInstancedBaseVertex		GLEXT_CALL( OGL_DRAW_ELEMENTS_INSTANCED_BASE_VERTEX, PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC )
+#define vglMultiDrawElementsBaseVertex	GLEXT_CALL( OGL_MULTI_DRAW_ELEMENTS_BASE_VERTEX, PFNGLMULTIDRAWELEMENTSBASEVERTEXPROC )
 
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )

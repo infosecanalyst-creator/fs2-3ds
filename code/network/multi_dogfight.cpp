@@ -7,113 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.14.2.3 $
- * $Date: 2007-10-15 06:43:16 $
- * $Author: taylor $
- * 
- * $Log: not supported by cvs2svn $
- * Revision 2.14.2.2  2007/07/23 16:08:29  Kazan
- * Autopilot updates, minor misc fixes, working MSVC2005 project files
- *
- * Revision 2.14.2.1  2006/09/20 05:01:36  taylor
- * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
- *
- * Revision 2.14  2006/01/16 11:02:23  wmcoolmon
- * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
- *
- * Revision 2.13  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 2.12  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.11  2005/08/27 00:21:27  Kazan
- * potential fix for mantis bug 237
- *
- * Revision 2.10  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.9  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.8  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.7  2005/02/04 10:12:31  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.6  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/08 15:06:24  Kazan
- * Did, undo
- *
- * Revision 2.3  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 11    8/18/99 11:31a Jefff
- * mission title on kill matrix
- * 
- * 10    8/17/99 9:55a Dave
- * Fixed dogfight scoring problem.
- * 
- * 9     8/06/99 12:29a Dave
- * Multiple bug fixes.
- * 
- * 8     5/03/99 8:32p Dave
- * New version of multi host options screen.
- * 
- * 7     4/12/99 10:07p Dave
- * Made network startup more forgiving. Added checkmarks to dogfight
- * screen for players who hit commit.
- * 
- * 6     4/12/99 2:22p Dave
- * More checks for dogfight stats.
- * 
- * 5     2/24/99 3:40p Dave
- * Fixed problem where ships were becoming traitor all the time.
- * 
- * 4     2/24/99 2:25p Dave
- * Fixed up chatbox bugs. Made squad war reporting better. Fixed a respawn
- * bug for dogfight more.
- * 
- * 3     2/23/99 8:11p Dave
- * Tidied up dogfight mode. Fixed TvT ship type problems for alpha wing.
- * Small pass over todolist items.
- * 
- * 2     2/23/99 2:29p Dave
- * First run of oldschool dogfight mode. 
- *   
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi_dogfight.h"
@@ -136,7 +30,7 @@
 #include "stats/scoring.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
-
+#include "pilotfile/pilotfile.h"
 #include "fs2netd/fs2netd_client.h"
 #include "cfile/cfile.h"
 
@@ -376,7 +270,7 @@ void multi_df_debrief_do()
 	GR_MAYBE_CLEAR_RES(Multi_df_background_bitmap);
 	if (Multi_df_background_bitmap >= 0) {
 		gr_set_bitmap(Multi_df_background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
 	// draw the window
@@ -389,10 +283,10 @@ void multi_df_debrief_do()
 	chatbox_render();
 
 	// draw the mission title
-	strcpy(buf, The_mission.name);
+	strcpy_s(buf, The_mission.name);
 	gr_force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
 	gr_set_color_fast(&Color_bright_white);
-	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf);
+	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
 
 	// flip
 	gr_flip();
@@ -402,6 +296,7 @@ void multi_df_debrief_do()
 void multi_df_debrief_close()
 {
 	int idx;
+	scoring_struct *sc;
 
 	// shutdown the chatbox
 	chatbox_close();
@@ -413,11 +308,17 @@ void multi_df_debrief_close()
 			if(MULTIPLAYER_MASTER){
 				for(idx=0; idx<MAX_PLAYERS; idx++){
 					if(MULTI_CONNECTED(Net_players[idx]) && !MULTI_STANDALONE(Net_players[idx]) && !MULTI_PERM_OBSERVER(Net_players[idx]) && (Net_players[idx].m_player != NULL)){
-						scoring_backout_accept(&Net_players[idx].m_player->stats);
+						sc = &Net_players[idx].m_player->stats;
+						scoring_backout_accept(sc);
+
+						if (Net_player == &Net_players[idx]) {
+							Pilot.update_stats_backout( sc );
+						}
 					}
 				}
 			} else {
 				scoring_backout_accept( &Player->stats );
+				Pilot.update_stats_backout( &Player->stats );
 			}
 		}
 	}
@@ -474,7 +375,7 @@ void multi_df_setup_kill_matrix()
 			}
 
 			s->stats = Net_players[idx].m_player->stats;
-			strcpy(s->callsign, Net_players[idx].m_player->callsign);			
+			strcpy_s(s->callsign, Net_players[idx].m_player->callsign);			
 			s->np_index = idx;
 		}
 	}
@@ -486,6 +387,7 @@ void multi_df_blit_kill_matrix()
 	int idx, s_idx, str_len;
 	int cx, cy;
 	char squashed_string[CALLSIGN_LEN+1] = "";
+	int dy = gr_get_font_height() + 1;
 
 	// max width of an individual item, and the text that can be in that item
 	float max_item_width = ((float)Multi_df_display_coords[gr_screen.res][2] - 40.0f) / (float)(Multi_df_score_count + 1);
@@ -497,14 +399,14 @@ void multi_df_blit_kill_matrix()
 
 	// start x for the side bar
 	int side_x_start = Multi_df_display_coords[gr_screen.res][0];
-	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + 10;
+	int side_y_start = Multi_df_display_coords[gr_screen.res][1] + dy;
 
 	// draw the top bar
 	cx = top_x_start;
 	cy = top_y_start;
 	for(idx=0; idx<Multi_df_score_count; idx++){		
 		// force the string to fit nicely
-		strcpy(squashed_string, Multi_df_score[idx].callsign);
+		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
 		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);
 
@@ -513,7 +415,7 @@ void multi_df_blit_kill_matrix()
 		if(Multi_df_score[idx].np_index >= 0){
 			gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		}
-		gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string);
+		gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string, GR_RESIZE_MENU);
 
 		// next spot
 		cx += (int)max_item_width;
@@ -528,27 +430,27 @@ void multi_df_blit_kill_matrix()
 		if(!MULTI_CONNECTED(Net_players[Multi_df_score[idx].np_index]) || (Net_players[Multi_df_score[idx].np_index].state == NETPLAYER_STATE_DEBRIEF_ACCEPT) || (Net_players[Multi_df_score[idx].np_index].state == NETPLAYER_STATE_DEBRIEF_REPLAY)){
 			if(Multi_common_icons[MICON_VALID] != -1){
 				gr_set_bitmap(Multi_common_icons[MICON_VALID]);
-				gr_bitmap(Multi_df_check_coords[gr_screen.res], cy);
+				gr_bitmap(Multi_df_check_coords[gr_screen.res], cy, GR_RESIZE_MENU);
 			}
 		}
 
 		// draw the name
 		cx = Multi_df_display_coords[gr_screen.res][0];
-		strcpy(squashed_string, Multi_df_score[idx].callsign);
+		strcpy_s(squashed_string, Multi_df_score[idx].callsign);
 		gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 		gr_get_string_size(&str_len, NULL, squashed_string);		
 		Assert(Multi_df_score[idx].np_index >= 0);
 		if(Multi_df_score[idx].np_index >= 0){
 			gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		}
-		gr_string(cx, cy, squashed_string);
+		gr_string(cx, cy, squashed_string, GR_RESIZE_MENU);
 
 		cx = top_x_start;
 		row_total = 0;
 		for(s_idx=0; s_idx<Multi_df_score_count; s_idx++){
 			// stuff the string to be displayed and select the proper display color
 			if(s_idx == idx){
-				strcpy(squashed_string, "-");
+				strcpy_s(squashed_string, "-");
 				gr_set_color_fast(&Color_grey);
 			} else {
 				row_total += multi_df_stuff_kills(squashed_string, idx, s_idx);
@@ -561,7 +463,7 @@ void multi_df_blit_kill_matrix()
 			// draw the string
 			gr_force_fit_string(squashed_string, CALLSIGN_LEN, (int)max_text_width);
 			gr_get_string_size(&str_len, NULL, squashed_string);
-			gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string);
+			gr_string(cx + (int)((max_item_width - (float)str_len)/2.0f), cy, squashed_string, GR_RESIZE_MENU);
 
 			// next spot
 			cx += (int)max_item_width;
@@ -571,33 +473,10 @@ void multi_df_blit_kill_matrix()
 		gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
 		sprintf(squashed_string, "(%d)", row_total);
 		gr_get_string_size(&str_len, NULL, squashed_string);
-		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string);
+		gr_string(Multi_df_display_coords[gr_screen.res][0] + Multi_df_display_coords[gr_screen.res][2] - (MULTI_DF_TOTAL_ADJUST + str_len), cy, squashed_string, GR_RESIZE_MENU);
 
-		cy += 10;
+		cy += dy;
 	}
-
-	/*
-	// blit totals
-	int column_total;
-	cx = top_x_start;
-	cy += 3;
-	for(idx=0; idx<Multi_df_score_count; idx++){
-		// add up this column
-		column_total = 0;
-		for(s_idx=0; s_idx<Multi_df_score_count; s_idx++){
-			// add			
-			column_total += Multi_df_score[idx].stats.m_dogfight_kills[s_idx];
-		}
-
-		// draw
-		sprintf(squashed_string, "%d", column_total);
-		gr_set_color_fast(Color_netplayer[Multi_df_score[idx].np_index]);
-		gr_string(cx, cy, squashed_string);
-
-		// next item
-		cx += (int)max_item_width;
-	}
-	*/
 }
 
 // stuff a string representing the # of kills, player X had on player Y (where X and Y are indices into Multi_df_score)

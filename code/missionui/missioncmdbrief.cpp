@@ -7,331 +7,26 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.19.2.2 $
- * $Date: 2007-11-19 20:24:37 $
- * $Author: Goober5000 $
- *
- * Mission Command Briefing Screen
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.19.2.1  2007/02/11 09:07:33  taylor
- * little bit of debug message cleanup
- * don't bother dealing with message wav file if sound is disabled
- *
- * Revision 2.19  2006/02/19 00:32:47  Goober5000
- * additional error checking
- * --Goober5000
- *
- * Revision 2.18  2006/02/19 00:29:39  Goober5000
- * center cbanis
- * --Goober5000
- *
- * Revision 2.17  2006/01/26 03:58:14  Goober5000
- * added variable replacement to command briefings, briefings, and debriefings
- * --Goober5000
- *
- * Revision 2.16  2005/07/02 19:43:54  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.15  2005/06/03 06:39:26  taylor
- * better audio pause/unpause support when game window loses focus or is minimized
- *
- * Revision 2.14  2005/03/10 08:00:08  taylor
- * change min/max to MIN/MAX to fix GCC problems
- * add lab stuff to Makefile
- * build unbreakage for everything that's not MSVC++ 6
- * lots of warning fixes
- * fix OpenGL rendering problem with ship insignias
- * no Warnings() in non-debug mode for Linux (like Windows)
- * some campaign savefile fixage to stop reverting everyones data
- *
- * Revision 2.13  2005/02/23 05:05:38  taylor
- * compiler warning fixes (for MSVC++ 6)
- * have the warp effect only load as many LODs as will get used
- * head off strange bug in release when corrupt soundtrack number gets used
- *    (will still Assert in debug)
- * don't ever try and save a campaign savefile in multi or standalone modes
- * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
- *
- * Revision 2.12  2005/01/31 23:27:54  taylor
- * merge with Linux/OSX tree - p0131-2
- *
- * Revision 2.11  2004/07/26 20:47:38  Kazan
- * remove MCD complete
- *
- * Revision 2.10  2004/07/12 16:32:54  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.9  2004/03/05 09:01:55  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.8  2003/11/16 04:08:47  Goober5000
- * fixed briefing scroll and display of "more"
- * --Goober5000
- *
- * Revision 2.7  2003/09/07 18:14:54  randomtiger
- * Checked in new speech code and calls from relevent modules to make it play.
- * Should all work now if setup properly with version 2.4 of the launcher.
- * FS2_SPEECH can be used to make the speech code compile if you have SAPI 5.1 SDK installed.
- * Otherwise the compile flag should not be set and it should all compile OK.
- *
- * - RT
- *
- * Revision 2.6  2003/04/05 11:09:22  Goober5000
- * fixed some fiddly bits with scrolling and ui stuff
- * --Goober5000
- *
- * Revision 2.5  2003/04/05 08:51:04  Goober5000
- * arg - forgot something
- * --Goober5000
- *
- * Revision 2.4  2003/04/05 08:46:51  Goober5000
- * command briefing scroll buttons implemented :)
- * --Goober5000
- *
- * Revision 2.3  2003/03/30 21:08:42  Goober5000
- * preliminary work on adding scroll buttons to command briefings
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/09 23:02:59  mharris
- * Not using default values for audiostream functions, since they may
- * be macros (if NO_SOUND is defined)
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 14    10/06/99 10:28a Jefff
- * for OEM: cmd brief anim defaults to the default anim if load failure
- * 
- * 13    9/03/99 1:32a Dave
- * CD checking by act. Added support to play 2 cutscenes in a row
- * seamlessly. Fixed super low level cfile bug related to files in the
- * root directory of a CD. Added cheat code to set campaign mission # in
- * main hall.
- * 
- * 12    8/27/99 12:04a Dave
- * Campaign loop screen.
- * 
- * 11    8/19/99 6:28p Jefff
- * move animation in 640 a bit
- * 
- * 10    7/15/99 4:11p Andsager
- * Leave command briefs in DEMO
- * 
- * 9     7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 8     7/09/99 10:32p Dave
- * Command brief and red alert screens.
- * 
- * 7     2/08/99 5:06p Johnson
- * Removed reference to a now non-existent palette.
- * 
- * 6     1/30/99 5:08p Dave
- * More new hi-res stuff.Support for nice D3D textures.
- * 
- * 5     1/14/99 5:15p Neilk
- * changed credits, command debrief interfaces to high resolution support
- * 
- * 4     10/16/98 9:40a Andsager
- * Remove ".h" files from model.h
- * 
- * 3     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 42    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 41    6/05/98 9:54a Lawrance
- * OEM changes
- * 
- * 40    6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 39    5/26/98 11:10a Lawrance
- * Fix bug where window controls get disabled when F1 pressed twice
- * 
- * 38    5/23/98 10:38p Lawrance
- * Avoid doing a cfile refresh when running debug
- * 
- * 37    5/23/98 6:49p Lawrance
- * Fix problems with refreshing the file list when a CD is inserted
- * 
- * 36    5/22/98 11:15a Lawrance
- * Tweak how CD gets asked for
- * 
- * 35    5/21/98 6:57p Lawrance
- * Only ask for the CD once
- * 
- * 34    5/20/98 9:46p John
- * added code so the places in code that change half the palette don't
- * have to clear the screen.
- * 
- * 33    5/20/98 6:41p Lawrance
- * Add hook for command brief stage changes
- * 
- * 32    5/18/98 5:59p Hoffoss
- * Made command briefing advanced now once the speech stops and animation
- * has fully played once, whichever is longer.
- * 
- * 31    5/14/98 3:34p Hoffoss
- * Made command brief screen wait until animation finishes before
- * auto-advancing to the next state (in addition to the wait that was
- * already implemented).
- * 
- * 30    5/08/98 5:32p Lawrance
- * prompt for CD if can't load animations or voice
- * 
- * 29    5/06/98 11:49p Lawrance
- * Add help overlay for command brief
- * 
- * 28    5/05/98 2:44p Hoffoss
- * Fixed bug where not having a valid command brief ani would crash the
- * cmd brief screen.
- * 
- * 27    4/28/98 4:16p Hoffoss
- * Implemented auto-advancing functionality to command briefings.
- * 
- * 26    4/27/98 11:01a Hoffoss
- * Changed code to utilize proper palette.
- * 
- * 25    4/26/98 5:11p Hoffoss
- * Fixed bug where going to options screen and then returning to the cmd
- * brief screen didn't start ani back up.
- * 
- * 24    4/13/98 11:00a Hoffoss
- * Made the ani in a cmd brief continue playing if it's the same as the
- * new stage.
- * 
- * 23    4/06/98 8:37p Hoffoss
- * Fixed a few bugs with command brief screen.  Now the voice starts after
- * the text has printed, and options screen doesn't reset cmd brief.
- * 
- * 22    4/06/98 11:24a Lawrance
- * stop command brief music if returning to main menu
- * 
- * 21    4/02/98 11:40a Lawrance
- * check for #ifdef DEMO instead of #ifdef DEMO_RELEASE
- * 
- * 20    3/31/98 5:18p John
- * Removed demo/save/restore.  Made NDEBUG defined compile.  Removed a
- * bunch of debug stuff out of player file.  Made model code be able to
- * unload models and malloc out only however many models are needed.
- *  
- * 
- * 19    3/31/98 12:00p Hoffoss
- * Fixed bug with setting palette using <default> as filename.
- * 
- * 18    3/30/98 3:22p Hoffoss
- * Changed Command Brief screen to merge current ani's palette with
- * interface palette for better overall color.
- * 
- * 17    3/30/98 12:18a Lawrance
- * change some DEMO_RELEASE code to not compile code rather than return
- * early
- * 
- * 16    3/29/98 12:55a Lawrance
- * Get demo build working with limited set of data.
- * 
- * 15    3/27/98 9:49a Lawrance
- * AL: Ensure anim stops playing when leaving the command brief
- * 
- * 14    3/26/98 5:24p Hoffoss
- * Changed Command Brief to use memory mapped ani files instead, so we
- * avoid the huge pauses for huge anis that play!
- * 
- * 13    3/24/98 8:52a Jasen
- * Updated coords for new button.
- * 
- * 12    3/23/98 4:21p Hoffoss
- * Fixed bug where command brief screen couldn't be re-entered unless
- * mission was reloaded.
- * 
- * 11    3/19/98 5:59p Hoffoss
- * Added reset to cmd brief shutdown.
- * 
- * 10    3/19/98 5:32p Lawrance
- * Added music to the background of command brief screen.
- * 
- * 9     3/19/98 4:25p Hoffoss
- * Added remaining support for command brief screen (ANI and WAVE file
- * playing).
- * 
- * 8     3/18/98 12:03p John
- * Marked all the new strings as externalized or not.
- * 
- * 7     3/17/98 6:24p Hoffoss
- * Added ani playing to command brief screen, which defaults to
- * CB_default.ani.
- * 
- * 6     3/13/98 6:12p Frank
- * AL: Fix bug caused by conflict with command brief and red alert
- * missions
- * 
- * 5     3/13/98 3:44p Hoffoss
- * Added stage indication to Mission Command Briefing screen.
- * 
- * 4     3/12/98 4:02p Hoffoss
- * Added commit sound
- * 
- * 3     3/05/98 9:38p Hoffoss
- * Finished up command brief screen.
- * 
- * 2     3/05/98 3:59p Hoffoss
- * Added a bunch of new command brief stuff, and asteroid initialization
- * to Fred.
- * 
- * 1     3/02/98 6:13p Hoffoss
- *
- * $NoKeywords: $
- */
 
+
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
+#include "gamehelp/contexthelp.h"
+#include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "graphics/font.h"
+#include "io/key.h"
+#include "io/timer.h"
+#include "mission/missionbriefcommon.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
-#include "ui/uidefs.h"
-#include "gamesnd/gamesnd.h"
-#include "gamesequence/gamesequence.h"
-#include "io/key.h"
-#include "graphics/font.h"
-#include "mission/missionbriefcommon.h"
 #include "missionui/redalert.h"
-#include "sound/audiostr.h"
-#include "io/timer.h"
-#include "gamesnd/eventmusic.h"
 #include "playerman/player.h"
-#include "gamehelp/contexthelp.h"
-#include "globalincs/alphacolors.h"
-#include "anim/packunpack.h"
-#include "anim/animplay.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
+#include "ui/uidefs.h"
 
 
 
@@ -397,18 +92,6 @@ int Cmd_stage_y[GR_NUM_RESOLUTIONS] =
 	145		// GR_1024
 };
 
-/*
-int Cmd_image_wnd_coords[GR_NUM_RESOLUTIONS][4] =
-{
-	{
-		26, 258, 441, 204		// GR_640
-	},
-	{
-		155, 475, 706, 327		// GR_1024
-	}
-};
-*/
-
 // Goober5000 - center coordinates only
 int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
 {
@@ -421,10 +104,8 @@ int Cmd_image_center_coords[GR_NUM_RESOLUTIONS][2] =
 };
 
 int Top_cmd_brief_text_line;
-int Cmd_brief_text_max_lines[GR_NUM_RESOLUTIONS] =
-{
-	10, 17
-};
+
+int Max_cmdbrief_Lines; // Maximum number of lines to be displayed
 
 #define MAX_CMD_BRIEF_BUTTONS	10
 #define MIN_CMD_BRIEF_BUTTONS	8
@@ -480,9 +161,9 @@ UI_XSTR Cmd_brief_text[GR_NUM_RESOLUTIONS][CMD_BRIEF_NUM_TEXT] =
 		{ "Continue",	1069,	564,	413,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[0][CMD_BRIEF_BUTTON_ACCEPT].button },
 	},
 	{ // GR_1024
-		{ "Help",		928,	800,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_HELP].button },
+		{ "Help",		928,	820,	704,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_HELP].button },
 		{ "Options",	1036,	797,	743,	UI_XSTR_COLOR_GREEN,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_OPTIONS].button },
-		{ "Continue",	1069,	917,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_ACCEPT].button },
+		{ "Continue",	1069,	936,	661,	UI_XSTR_COLOR_PINK,	-1,	&Cmd_brief_buttons[1][CMD_BRIEF_BUTTON_ACCEPT].button },
 	}
 };
 
@@ -490,21 +171,19 @@ static UI_WINDOW Ui_window;
 static int Cmd_brief_background_bitmap;					// bitmap for the background of the cmd_briefing
 static int Cur_stage;
 static int Cmd_brief_inited = 0;
-// static int Cmd_brief_ask_for_cd;
 static int Voice_good_to_go = 0;
 static int Voice_started_time = 0;
 static int Voice_ended_time;
-static int Anim_playing_id = -1;
-static anim_instance *Cur_anim_instance = NULL;
-static int Last_anim_frame_num;
+static generic_anim Cur_Anim;
+static char *Cur_anim_filename = "~~~~";
 
 static int Cmd_brief_last_voice;
+static int Cmd_brief_last_stage;
 static int Cmd_brief_paused = 0;
-//static int Palette_bmp = -1;
-static ubyte Palette[768];
-//static char Palette_name[128];
 
 static int Uses_scroll_buttons = 0;
+
+int Cmd_brief_overlay_id;
 
 void cmd_brief_init_voice()
 {
@@ -522,6 +201,7 @@ void cmd_brief_init_voice()
 	}
 
 	Cmd_brief_last_voice = -1;
+	Cmd_brief_last_stage = -1;
 }
 
 int cmd_brief_check_stage_done()
@@ -535,12 +215,26 @@ int cmd_brief_check_stage_done()
 	if (Voice_ended_time && (timer_get_milliseconds() - Voice_ended_time >= 1000))
 		return 1;
 
+	// check normal speech
 	if (Briefing_voice_enabled && (Cmd_brief_last_voice >= 0)) {
-		if (audiostream_is_playing(Cmd_brief_last_voice)){
+		if (audiostream_is_playing(Cmd_brief_last_voice)) {
 			return 0;
 		}
 
-		if (!Voice_ended_time){
+		if (!Voice_ended_time) {
+			Voice_ended_time = timer_get_milliseconds();
+		}
+
+		return 0;
+	}
+
+	// check simulated speech
+	if (Briefing_voice_enabled && (Cmd_brief_last_stage >= 0)) {
+		if (fsspeech_playing()) {
+			return 0;
+		}
+
+		if (!Voice_ended_time) {
 			Voice_ended_time = timer_get_milliseconds();
 		}
 
@@ -554,10 +248,14 @@ int cmd_brief_check_stage_done()
 	return 0;
 }
 
-// start playback of the voice for a particular briefing stage
+/**
+ * Start playback of the voice for a particular briefing stage
+ * @param stage_num Particular briefing stage
+ */
 void cmd_brief_voice_play(int stage_num)
 {
 	int voice = -1;
+	int stage = -1;
 
 	if (!Voice_good_to_go) {
 		Voice_started_time = 0;
@@ -575,27 +273,50 @@ void cmd_brief_voice_play(int stage_num)
 
 	if (Cur_stage >= 0 && Cur_stage < Cur_cmd_brief->num_stages){
 		voice = Cur_cmd_brief->stage[stage_num].wave;
+		stage = stage_num;
 	}
 
-	// are we still on same voice that is currently playing/played?
-	if (Cmd_brief_last_voice == voice){
-		return;  // no changes, nothing to do.
-	}
+	// do we need to play simulated speech?
+	if (voice < 0 && fsspeech_play_from(FSSPEECH_FROM_BRIEFING)) {
+		// are we still on the same stage?
+		if (Cmd_brief_last_stage == stage) {
+			return;  // no changes, nothing to do.
+		}
 
-	// if previous wave is still playing, stop it first.
-	if (Cmd_brief_last_voice >= 0) {
-		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
-		Cmd_brief_last_voice = -1;
-	}
+		// if previous stage is still playing, stop it first.
+		if (Cmd_brief_last_stage >= 0) {
+			fsspeech_stop();
+			Cmd_brief_last_stage = -1;
+		}
 
-	// ok, new wave needs playing, so we can start playing it now (and it becomes the current wave)
-	Cmd_brief_last_voice = voice;
-	if (voice >= 0){
-		audiostream_play(voice, Master_voice_volume, 0);
+		// ok, new text needs speaking
+		Cmd_brief_last_stage = stage;
+		if (stage >= 0) {
+			fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage_num].text.c_str());
+		}
+	} else {
+		// are we still on same voice that is currently playing/played?
+		if (Cmd_brief_last_voice == voice) {
+			return;  // no changes, nothing to do.
+		}
+
+		// if previous wave is still playing, stop it first.
+		if (Cmd_brief_last_voice >= 0) {
+			audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
+			Cmd_brief_last_voice = -1;
+		}
+
+		// ok, new wave needs playing, so we can start playing it now (and it becomes the current wave)
+		Cmd_brief_last_voice = voice;
+		if (voice >= 0) {
+			audiostream_play(voice, Master_voice_volume, 0);
+		}
 	}
 }
 
-// called to leave the command briefing screen
+/**
+ * called to leave the command briefing screen
+ */
 void cmd_brief_exit()
 {
 	// I know, going to red alert from cmd brief is stupid, but we have stupid fredders
@@ -606,74 +327,64 @@ void cmd_brief_exit()
 	}
 }
 
-void cmd_brief_stop_anim(int id)
+/**
+ * Doesn't actually stop playing ANIs any more, just stops audio
+ */
+void cmd_brief_stop_anim()
 {
-	if (Cur_anim_instance && (id != Anim_playing_id)) {
-		anim_stop_playing(Cur_anim_instance);
-		Cur_anim_instance = NULL;
-	}
-
 	Voice_good_to_go = 0;
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_stop(Cmd_brief_last_voice, 1, 0);  // stream is automatically rewound
 		Cmd_brief_last_voice = -1;
 	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_stop();
+		Cmd_brief_last_stage = -1;
+	}
 }
 
 void cmd_brief_new_stage(int stage)
 {
-	int i;
-	anim_play_struct aps;
-
 	if (stage < 0) {
-		cmd_brief_stop_anim(-1);
+		cmd_brief_stop_anim();
 		Cur_stage = -1;
-		Anim_playing_id = -1;
-	}
-
-	// If the briefing has no wave to play use simulated speach
-	if(Cur_cmd_brief->stage[stage].wave <= 0) {
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, Cur_cmd_brief->stage[stage].text);
 	}
 
 	Cur_stage = stage;
-	brief_color_text_init(Cur_cmd_brief->stage[stage].text, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]);
+	brief_color_text_init(Cur_cmd_brief->stage[stage].text.c_str(), Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD], default_command_briefing_color);
 
-	i = Cur_cmd_brief->stage[Cur_stage].anim_ref;
-	if (i < 0)
-		i = Cur_stage;
-
-	cmd_brief_stop_anim(i);
-
-	if (i != Anim_playing_id)
-	{
-		if (Cur_cmd_brief->stage[i].cmd_anim)
-		{
-			// Goober5000
-			int x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - Cur_cmd_brief->stage[i].cmd_anim->width / 2;
-			int y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - Cur_cmd_brief->stage[i].cmd_anim->height / 2;
-
-			anim_play_init(&aps, Cur_cmd_brief->stage[i].cmd_anim, x, y);
-			aps.looped = 1;
-			Cur_anim_instance = anim_play(&aps);
-			Last_anim_frame_num = 0;
+	// load a new animation if it's different to what's already playing
+	if (strcmp(Cur_anim_filename, Cur_cmd_brief->stage[stage].ani_filename) != 0) {
+		// unload the previous anim
+		if(Cur_Anim.num_frames > 0) {
+			generic_anim_unload(&Cur_Anim);
 		}
 
-		Anim_playing_id = i;
+		// save new filename
+		Cur_anim_filename = Cur_cmd_brief->stage[stage].ani_filename;
+
+		// try to load the new anim in either high or low res
+		int stream_result = generic_anim_init_and_stream(&Cur_Anim, Cur_anim_filename, bm_get_type(Cmd_brief_background_bitmap), true);
+
+		// we've failed to load any animation
+		if (stream_result < 0) {
+			// load an image and treat it like a 1 frame animation
+			Cur_Anim.first_frame = bm_load(Cur_cmd_brief->stage[stage].ani_filename);	//if we fail here, the value is still -1
+			if(Cur_Anim.first_frame != -1) {
+				Cur_Anim.num_frames = 1;
+			}
+		}
 	}
 
-	if (Cur_cmd_brief->stage[i].cmd_anim) {
-		memcpy(Palette, Cur_cmd_brief->stage[i].cmd_anim->palette, 384);
-		gr_set_palette(Cur_cmd_brief->stage[i].ani_filename, Palette, 1);
-	}
+	//resetting the audio here
+	cmd_brief_stop_anim();
 
 	Top_cmd_brief_text_line = 0;
 }
 
 void cmd_brief_hold()
 {
-	cmd_brief_stop_anim(-1);
-	Anim_playing_id = -1;
+	cmd_brief_stop_anim();
 }
 
 void cmd_brief_unhold()
@@ -690,19 +401,16 @@ void cmd_brief_pause()
 
 	Cmd_brief_paused = 1;
 
-	if (Cur_anim_instance != NULL) {
-		anim_pause(Cur_anim_instance);
-	}
-
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_pause(Cmd_brief_last_voice);
+	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_pause(true);
 	}
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_pause(Briefing_music_handle);
 	}
-
-	fsspeech_pause(true);
 }
 
 void cmd_brief_unpause()
@@ -712,19 +420,16 @@ void cmd_brief_unpause()
 
 	Cmd_brief_paused = 0;
 
-	if (Cur_anim_instance != NULL) {
-		anim_unpause(Cur_anim_instance);
-	}
-
 	if (Cmd_brief_last_voice >= 0) {
 		audiostream_unpause(Cmd_brief_last_voice);
+	}
+	if (Cmd_brief_last_stage >= 0) {
+		fsspeech_pause(false);
 	}
 
 	if (Briefing_music_handle >= 0) {
 		audiostream_unpause(Briefing_music_handle);
 	}
-
-	fsspeech_pause(false);
 }
 
 void cmd_brief_button_pressed(int n)
@@ -741,17 +446,28 @@ void cmd_brief_button_pressed(int n)
 			break;
 
 		case CMD_BRIEF_BUTTON_FIRST_STAGE:
-			if (Cur_stage) {
+			if (common_num_cutscenes_valid(MOVIE_PRE_CMD_BRIEF)) {
+				audiostream_stop(Cmd_brief_last_voice);
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF, true, SCORE_BRIEFING);
+				cmd_brief_new_stage(0);
+			}
+			else if (Cur_stage) {
 				cmd_brief_new_stage(0);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
-			} else {
+			} 
+			else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
 
 			break;
 
 		case CMD_BRIEF_BUTTON_PREV_STAGE:
-			if (Cur_stage) {
+			if (!Cur_stage && common_num_cutscenes_valid(MOVIE_PRE_CMD_BRIEF)) {
+				audiostream_stop(Cmd_brief_last_voice);
+				common_maybe_play_cutscene(MOVIE_PRE_CMD_BRIEF, true, SCORE_BRIEFING);
+				cmd_brief_new_stage(0);
+			}
+			else if (Cur_stage) {
 				cmd_brief_new_stage(Cur_stage - 1);
 				gamesnd_play_iface(SND_BRIEF_STAGE_CHG);
 			} else {
@@ -802,7 +518,7 @@ void cmd_brief_button_pressed(int n)
 
 		case CMD_BRIEF_BUTTON_SCROLL_DOWN:
 			Top_cmd_brief_text_line++;
-			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Cmd_brief_text_max_lines[gr_screen.res]) {
+			if ( (Num_brief_text_lines[0] - Top_cmd_brief_text_line) < Max_cmdbrief_Lines) {
 				Top_cmd_brief_text_line--;
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			} else {
@@ -815,60 +531,18 @@ void cmd_brief_button_pressed(int n)
 void cmd_brief_ani_wave_init(int index)
 {
 	char *name;
-	int i;
-
-	// first, search and see if anim is already used in another stage
-	for (i=0; i<index; i++) {
-		if (!stricmp(Cur_cmd_brief->stage[i].ani_filename, Cur_cmd_brief->stage[index].ani_filename)) {
-			if (Cur_cmd_brief->stage[i].anim_ref >= 0)
-				Cur_cmd_brief->stage[index].anim_ref = Cur_cmd_brief->stage[i].anim_ref;
-			else
-				Cur_cmd_brief->stage[index].anim_ref = i;
-
-			return;
-		}
-	}
 
 	// this is the first instance of the given anim filename
-	Cur_cmd_brief->stage[index].anim_ref = -1;
 	name = Cur_cmd_brief->stage[index].ani_filename;
 	if (!name[0] || !stricmp(name, NOX("<default>")) || !stricmp(name, NOX("none.ani"))) {
 		name = NOX("CB_default");
-		strcpy(Cur_cmd_brief->stage[index].ani_filename, name);
-	}
-
-	int load_attempts = 0;
-	while (1) {
-
-		if ( load_attempts++ > 5 ) {
-			break;
-		}
-
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(name, CF_TYPE_ANY, 1);
-		if ( Cur_cmd_brief->stage[index].cmd_anim ) {
-			break;
-		}
-
-		// couldn't load animation, ask user to insert CD (if necessary)
-		// if ( Cmd_brief_ask_for_cd ) {
-			// if ( game_do_cd_check() == 0 ) {
-				// Cmd_brief_ask_for_cd = 0;
-				// break;
-			// }
-		// }
-	}
-
-	// check to see if cb anim loaded, if not, try the default one
-	if ( !Cur_cmd_brief->stage[index].cmd_anim ) {
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(NOX("CB_default"), CF_TYPE_ANY, 1);
+		strcpy_s(Cur_cmd_brief->stage[index].ani_filename, name);
 	}
 }
 
 void cmd_brief_init(int team)
 {
 	common_music_init(SCORE_BRIEFING);
-
-//#ifndef FS2_DEMO
 
 	int i;
 	ui_button_info *b;
@@ -878,10 +552,7 @@ void cmd_brief_init(int team)
 
 	// Goober5000 - replace any variables (probably persistent variables) with their values
 	for (i = 0; i < Cur_cmd_brief->num_stages; i++)
-	{
-		if (Cur_cmd_brief->stage[i].text)
-			sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
-	}
+		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
 
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
@@ -891,13 +562,6 @@ void cmd_brief_init(int team)
 	Mouse_hidden++;
 	gr_flip();
 	Mouse_hidden--;
-
-	/*
-	Palette_bmp = bm_load("BarracksPalette");	//CommandBriefPalette");
-	Assert(Palette_bmp);
-	bm_get_palette(Palette_bmp, Palette, Palette_name);  // get the palette for this bitmap
-	gr_set_palette(Palette_name, Palette, 1);
-	*/
 
 	// first determine which layout to use
 	Uses_scroll_buttons = 1;	// assume true
@@ -910,8 +574,6 @@ void cmd_brief_init(int team)
 
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Cmd_brief_mask[Uses_scroll_buttons][gr_screen.res]);
-
-	// Cmd_brief_ask_for_cd = 1;
 
 	for (i=0; i<NUM_CMD_BRIEF_BUTTONS; i++) {
 		b = &Cmd_brief_buttons[gr_screen.res][i];
@@ -945,19 +607,16 @@ void cmd_brief_init(int team)
 	}
 
 	// load in help overlay bitmap	
-	help_overlay_load(CMD_BRIEF_OVERLAY);
-	help_overlay_set_state(CMD_BRIEF_OVERLAY,0);
+	Cmd_brief_overlay_id = help_overlay_get_index(CMD_BRIEF_OVERLAY);
+	help_overlay_set_state(Cmd_brief_overlay_id,gr_screen.res,0);
 
 	for (i=0; i<Cur_cmd_brief->num_stages; i++)
 		cmd_brief_ani_wave_init(i);
 
 	cmd_brief_init_voice();
-	Cur_anim_instance = NULL;
 	cmd_brief_new_stage(0);
 	Cmd_brief_paused = 0;
 	Cmd_brief_inited = 1;
-
-//#endif
 }
 
 void cmd_brief_close()
@@ -965,29 +624,21 @@ void cmd_brief_close()
 	int i;
 
 	if (Cmd_brief_inited) {
-		cmd_brief_stop_anim(-1);
-		Anim_playing_id = -1;
+		cmd_brief_stop_anim();
+		generic_anim_unload(&Cur_Anim);
 		for (i=0; i<Cur_cmd_brief->num_stages; i++) {
 			if (Cur_cmd_brief->stage[i].wave >= 0)
 				audiostream_close_file(Cur_cmd_brief->stage[i].wave, 0);
 
-			if (Cur_cmd_brief->stage[i].anim_ref < 0)
-				if (Cur_cmd_brief->stage[i].cmd_anim)
-					anim_free(Cur_cmd_brief->stage[i].cmd_anim);
 		}
+
+		// so that the same ani will reload properly upon return
+		Cur_anim_filename = "~~~~";
 
 		if (Cmd_brief_background_bitmap >= 0)
 			bm_release(Cmd_brief_background_bitmap);
 
-		// unload the overlay bitmap
-		help_overlay_unload(CMD_BRIEF_OVERLAY);
-
 		Ui_window.destroy();
-		/*
-		if (Palette_bmp){
-			bm_unload(Palette_bmp);
-		}
-		*/
 
 		game_flush();
 		Cmd_brief_inited = 0;
@@ -1000,7 +651,7 @@ void cmd_brief_close()
 void cmd_brief_do_frame(float frametime)
 {
 	char buf[40];
-	int i, k, w, h;		
+	int i, k, w, h, x, y;
 
 	// if no command briefing exists, skip this screen.
 	if (!Cmd_brief_inited) {
@@ -1008,7 +659,7 @@ void cmd_brief_do_frame(float frametime)
 		return;
 	}
 
-	if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( help_overlay_active(Cmd_brief_overlay_id) ) {
 		Cmd_brief_buttons[gr_screen.res][CMD_BRIEF_BUTTON_HELP].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
@@ -1016,14 +667,14 @@ void cmd_brief_do_frame(float frametime)
 	k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
-		if ( help_overlay_active(CMD_BRIEF_OVERLAY) ) {
-			help_overlay_set_state(CMD_BRIEF_OVERLAY, 0);
+		if ( help_overlay_active(Cmd_brief_overlay_id) ) {
+			help_overlay_set_state(Cmd_brief_overlay_id, gr_screen.res, 0);
 			Ui_window.set_ignore_gadgets(0);
 			k = 0;
 		}
 	}
 
-	if ( !help_overlay_active(CMD_BRIEF_OVERLAY) ) {
+	if ( !help_overlay_active(Cmd_brief_overlay_id) ) {
 		Ui_window.set_ignore_gadgets(0);
 	}
 
@@ -1044,29 +695,24 @@ void cmd_brief_do_frame(float frametime)
 	common_music_do();
 
 	if (cmd_brief_check_stage_done() && Player->auto_advance && (Cur_stage < Cur_cmd_brief->num_stages - 1)){
-//		if (!Cur_anim_instance || (Cur_anim_instance->frame_num < Last_anim_frame_num))
-		if (!Cur_anim_instance || Cur_anim_instance->loop_count){
+		if((Cur_Anim.num_frames <= 1) || Cur_Anim.done_playing) {
 			cmd_brief_new_stage(Cur_stage + 1);
 		}
-	}
-
-	if (Cur_anim_instance){
-		Last_anim_frame_num = Cur_anim_instance->frame_num;
 	}
 
 	GR_MAYBE_CLEAR_RES(Cmd_brief_background_bitmap);
 	if (Cmd_brief_background_bitmap >= 0) {
 		gr_set_bitmap(Cmd_brief_background_bitmap);
-		gr_bitmap(0, 0);
+		gr_bitmap(0, 0, GR_RESIZE_MENU);
 	} 
 
-	{
-		// JAS: This code is hacked to allow the animation to use all 256 colors
-		extern int Palman_allow_any_color;
-		Palman_allow_any_color = 1;
-		anim_render_all(0, frametime);
-		Palman_allow_any_color = 0;
+	if(Cur_Anim.num_frames > 0) {
+		bm_get_info((Cur_Anim.streaming) ? Cur_Anim.bitmap_id : Cur_Anim.first_frame, &x, &y, NULL, NULL, NULL);
+		x = Cmd_image_center_coords[gr_screen.res][CMD_X_COORD] - x / 2;
+		y = Cmd_image_center_coords[gr_screen.res][CMD_Y_COORD] - y / 2;
+		generic_anim_render(&Cur_Anim, (Cmd_brief_paused) ? 0 : frametime, x, y, true);
 	}
+
 	Ui_window.draw();
 
 	if (!Player->auto_advance){
@@ -1078,27 +724,29 @@ void cmd_brief_do_frame(float frametime)
 
 	sprintf(buf, XSTR( "Stage %d of %d", 464), Cur_stage + 1, Cur_cmd_brief->num_stages);
 	gr_get_string_size(&w, NULL, buf);
-	gr_string(Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD] - w, Cmd_stage_y[gr_screen.res], buf);
+	gr_string(Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD] - w, Cmd_stage_y[gr_screen.res], buf, GR_RESIZE_MENU);
 
 	if (brief_render_text(Top_cmd_brief_text_line, Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD], Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD], Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD], frametime, 0, 1)){
 		Voice_good_to_go = 1;
 	}
 
+	Max_cmdbrief_Lines = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD]/(gr_get_font_height() + 1); //Make the max number of lines dependent on the font height, keeping in mind that we have an extra pixel between lines.
+
 	// maybe output the "more" indicator
-	if ( (Cmd_brief_text_max_lines[gr_screen.res] + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
+	if ( (Max_cmdbrief_Lines + Top_cmd_brief_text_line) < Num_brief_text_lines[0] ) {
 		// can be scrolled down
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
 
 		gr_get_string_size(&w, &h, XSTR("more", 1469), strlen(XSTR("more", 1469)));
 		gr_set_color_fast(&Color_black);
-		gr_rect(more_txt_x-2, more_txt_y, w+3, h);
-		gr_set_color_fast(&Color_red);
-		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469));  // base location on the input x and y?
+		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
+		gr_set_color_fast(&Color_more_indicator);
+		gr_string(more_txt_x, more_txt_y, XSTR("more", 1469), GR_RESIZE_MENU);  // base location on the input x and y?
 	}
 
 	// blit help overlay if active
-	help_overlay_maybe_blit(CMD_BRIEF_OVERLAY);
+	help_overlay_maybe_blit(Cmd_brief_overlay_id, gr_screen.res);
 
 	gr_flip();
 }

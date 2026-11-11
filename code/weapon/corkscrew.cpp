@@ -7,16 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Weapon/Corkscrew.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
- *
- * C module for managing corkscrew missiles
- * 
- * $NoKeywords: $
- */
+
 
 #include "weapon/corkscrew.h"
 #include "weapon/weapon.h"
@@ -24,6 +15,7 @@
 #include "io/timer.h"
 #include "freespace2/freespace.h"	// for Missiontime
 #include "object/object.h"
+#include "debugconsole/console.h"
 
 
 
@@ -55,7 +47,7 @@ typedef struct cscrew_info {
 	vec3d last_corkscrew_pos;							// last position along the corkscrew
 } cscrew_info;
 
-#define MAX_CORKSCREW_MISSILES	100
+#define MAX_CORKSCREW_MISSILES	200
 cscrew_info	Corkscrew_missiles[MAX_CORKSCREW_MISSILES];
 
 // ------------------------------------------------------------------
@@ -87,22 +79,24 @@ void cscrew_maybe_fire_missile(int shipnum)
 
 	// make sure we're supposed to be firing some missiles
 	if ( sp->num_corkscrew_to_fire <= 0 ){
+		sp->corkscrew_missile_bank = -1;
 		return;
 	}
 
-	// make sure we have a valid weapon band
+	// make sure we have a valid weapon bank
 	swp = &sp->weapons;
-	if ( swp->current_secondary_bank == -1 ) {
+	if ( sp->corkscrew_missile_bank == -1 ) {
 		sp->num_corkscrew_to_fire = 0;
 		return;
 	}
 
-	weapon_info_index = swp->secondary_bank_weapons[swp->current_secondary_bank];
+	weapon_info_index = swp->secondary_bank_weapons[sp->corkscrew_missile_bank];
 	Assert( weapon_info_index >= 0 && weapon_info_index < MAX_WEAPON_TYPES );
 
 	// if current secondary bank is not a corkscrew missile, return
 	if ( !(Weapon_info[weapon_info_index].wi_flags & WIF_CORKSCREW) ) {
 		sp->num_corkscrew_to_fire = 0;
+		sp->corkscrew_missile_bank = -1;
 		return;
 	}
 
@@ -300,41 +294,25 @@ DCF(cscrew, "Listing of corkscrew missile debug console functions")
 
 DCF(cscrew_delay, "Change the delay between corkscrew firing")
 {	
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		Corkscrew_missile_delay = Dc_arg_int;		
-	}
-
+	dc_stuff_int(&Corkscrew_missile_delay);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_count, "Change the # of corkscrew missiles fired")
 {	
-	dc_get_arg(ARG_INT);
-	if(Dc_arg_type & ARG_INT){
-		Corkscrew_num_missiles_fired = Dc_arg_int;		
-	}
-
+	dc_stuff_int(&Corkscrew_num_missiles_fired);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_radius, "Change the radius of corkscrew missiles")
 {	
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Corkscrew_radius = Dc_arg_float;
-	}
-
+	dc_stuff_float(&Corkscrew_radius);
 	cscrew_display_dcf();
 }
 
 DCF(cscrew_twist, "Change the rate of the corkscrew twist")
 {
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Corkscrew_twist = Dc_arg_float;
-	}
-
+	dc_stuff_float(&Corkscrew_twist);
 	cscrew_display_dcf();
 }
 
@@ -361,11 +339,7 @@ DCF(cscrew_shrink, "Shrink the radius of every other missile")
 
 DCF(cscrew_shrinkval, "Change the rate at which the radii shrink")
 {
-	dc_get_arg(ARG_FLOAT);
-	if(Dc_arg_type & ARG_FLOAT){
-		Corkscrew_shrink_val = Dc_arg_float;
-	}
-
+	dc_stuff_float(&Corkscrew_shrink_val);
 	cscrew_display_dcf();
 }
 

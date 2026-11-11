@@ -4,36 +4,6 @@
  * create based on the source.
  */
 
-/*
- * $Logfile: /Freespace2/code/iff_defs/iff_defs.h $
- * $Revision: 1.5.2.2 $
- * $Date: 2007-02-08 07:39:34 $
- * $Author: Goober5000 $
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.5.2.1  2006/07/08 19:36:04  Goober5000
- * iff defs should allow specification of both flag fields
- * --Goober5000
- *
- * Revision 1.5  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.4  2006/01/28 04:33:06  Goober5000
- * fix all teams at war IFF behavior
- * --Goober5000
- *
- * Revision 1.3  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
- *
- * Revision 1.2  2005/09/30 03:40:40  Goober5000
- * hooray for more work on the iff code
- * --Goober5000
- *
- * Revision 1.1  2005/09/27 05:25:18  Goober5000
- * initial commit of basic IFF code
- * --Goober5000
- *
- */
 
 
 #ifndef _IFF_DEFS_H_
@@ -43,14 +13,13 @@
 #include "globalincs/globals.h"
 #include "graphics/2d.h"
 
-
+class object;
 
 // Goober5000 - new IFF color system
 #define IFF_COLOR_SELECTION			0
 #define IFF_COLOR_MESSAGE			1
 #define IFF_COLOR_TAGGED			2
 #define MAX_IFF_COLORS				(MAX_IFFS + 3)
-
 
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
@@ -80,31 +49,25 @@ typedef struct iff_info {
 	// used internally, not parsed
 	int ai_rearm_timestamp;
 
-	// constructor to initialize everything to 0
-	iff_info()
-	{
-		memset(this, 0, sizeof(iff_info));
-	}
-
 } iff_info;
-
 
 extern int Num_iffs;
 extern iff_info Iff_info[MAX_IFFS];
 
 extern int Iff_traitor;
 
+// radar blip stuff
+extern int radar_iff_color[5][2][4];
+
+// color stuff
+extern int iff_get_alpha_value(bool is_bright);
+extern int iff_init_color(int r, int g, int b);
 
 // load the iff table
 extern void iff_init();
 
 // search for iff
 extern int iff_lookup(char *iff_name);
-
-// color stuff
-extern int iff_get_alpha_value(bool is_bright);
-extern color *iff_get_color(int color_index, int is_bright);
-extern color *iff_get_color_by_team(int team, int seen_from_team, int is_bright);
 
 // attack stuff
 // NB: As far as the differences between I attack him and he attacks me, think of a hidden traitor on your own team.
@@ -117,5 +80,9 @@ extern int iff_x_attacks_y(int team_x, int team_y);
 extern int iff_get_mask(int team);
 extern int iff_matches_mask(int team, int mask);
 
+// get color stuff
+extern color *iff_get_color(int color_index, int is_bright);
+extern color *iff_get_color_by_team(int team, int seen_from_team, int is_bright);
+extern color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp);
 
 #endif

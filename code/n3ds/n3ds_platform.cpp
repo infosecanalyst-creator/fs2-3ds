@@ -28,6 +28,7 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
 #include "graphics/2d.h"
+#include "pilotfile/pilotfile.h"
 #include "gamesnd/gamesnd.h"
 #include "sound/sound.h"
 #include "popup/popup.h"
@@ -341,7 +342,7 @@ extern "C" void n3ds_audio_shutdown(void);
 /* quiet click for touch buttons */
 extern "C" void n3ds_click(void)
 {
-	if (Snds_iface && Num_iface_sounds > SND_IFACE_MOUSE_CLICK)
+	if ((int)Snds_iface.size() > SND_IFACE_MOUSE_CLICK)
 		snd_play(&Snds_iface[SND_IFACE_MOUSE_CLICK], 0.0f, 0.15f);
 }
 
@@ -360,7 +361,7 @@ extern "C" void n3ds_input_poll(void)
 		n3ds_quit = 1;
 		n3ds_log("close requested - saving pilot and exiting\n");
 		if (Player && Player->callsign[0])
-			write_pilot_file(Player);
+			Pilot.save_player(Player);
 		n3ds_audio_shutdown();
 		n3ds_log("bye\n");
 		if (n3ds_logfile) { fclose(n3ds_logfile); n3ds_logfile = NULL; }

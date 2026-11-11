@@ -7,676 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.80.2.16 $
- * $Date: 2007-02-21 01:43:32 $
- * $Author: Goober5000 $
- *
- * header file for information about polygon models
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.80.2.15  2007/02/12 00:19:48  taylor
- * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
- *
- * Revision 2.80.2.14  2006/12/28 22:47:15  Goober5000
- * fix spelling... *twitch*
- *
- * Revision 2.80.2.13  2006/11/28 05:48:21  Goober5000
- * the grammar nazi strikes again!
- * (and sneaks an extra #define in there while he's at it!)
- *
- * Revision 2.80.2.12  2006/11/01 18:35:57  taylor
- * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
- *
- * Revision 2.80.2.11  2006/10/28 04:00:09  taylor
- * ok, so apparently that did actually do something ;)
- *
- * Revision 2.80.2.10  2006/10/27 21:39:27  taylor
- * updated/fixed modelanim code
- *
- * Revision 2.80.2.9  2006/10/27 06:42:29  taylor
- * rename set_warp_globals() to model_set_warp_globals()
- * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
- * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
- * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
- * minor bits of cleanup
- * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
- *
- * Revision 2.80.2.8  2006/10/24 13:24:11  taylor
- * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
- * deal with a index_buffer memory leak that Valgrind has always complained about
- * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
- * get rid of MAX_BUFFERS
- * make D3D vertex buffers dynamic, like OGL has already done
- *
- * Revision 2.80.2.7  2006/07/17 01:09:45  taylor
- * make glow point banks dynamic
- *
- * Revision 2.80.2.6  2006/07/17 00:10:05  Goober5000
- * stage 2 of animation fix (add base frame time to each ship)
- * --Goober5000
- *
- * Revision 2.80.2.5  2006/07/13 22:11:36  taylor
- * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
- *
- * Revision 2.80.2.4  2006/07/06 21:53:58  taylor
- * rest of the map/glow changes
- *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
- *  - same for glowpoints, back on a per-ship basis
- *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
- *  - fix glowmaps for shockwaves again
- *  - add support for animated specmaps (mainly for TBP and Starfox mods)
- * some minor code cleanup and compiler warning fixes
- *
- * Revision 2.80.2.3  2006/07/06 04:06:01  Goober5000
- * 1) complete (almost) changeover to reorganized texture mapping system
- * 2) finally fix texture animation; textures now animate at the correct speed
- * --Goober5000
- *
- * Revision 2.80.2.2  2006/07/05 23:36:56  Goober5000
- * cvs comment tweaks
- *
- * Revision 2.80.2.1  2006/07/04 07:42:09  Goober5000
- * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
- * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
- * --Goober5000
- *
- * Revision 2.80  2006/05/31 03:05:42  Goober5000
- * some cosmetic changes in preparation for bay arrival/departure code
- * --Goober5000
- *
- * Revision 2.79  2006/05/27 16:57:12  taylor
- * comment out the model cache stuff, it's old and not actually used anyway
- * minor cleanup of some modelinterp.cpp code, to make it more readable
- * fix tertiary thruster batcher which had the radius value swapped
- * comment out a couple places where we were doing a D3D or OGL check (it's always true so why bother)
- * add more support for NO_DIRECT3D so that it can be used on Windows to build without D3D
- *
- * Revision 2.78  2006/04/20 06:32:15  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.77  2006/04/18 00:56:28  bobboau
- * bugfix for the animation system
- *
- * Revision 2.76  2006/03/24 07:38:35  wmcoolmon
- * New subobject animation stuff and Lua functions.
- *
- * Revision 2.75  2006/03/18 07:12:07  Goober5000
- * add ship-subsys-targetable and ship-subsys-untargetable
- * --Goober5000
- *
- * Revision 2.74  2006/02/27 00:51:03  wmcoolmon
- * Bump MAX_TFP to 10
- *
- * Revision 2.73  2006/02/25 21:47:07  Goober5000
- * spelling
- *
- * Revision 2.72  2006/01/18 16:14:04  taylor
- * allow gr_render_buffer() to take TMAP flags
- * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
- * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
- * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
- *
- * Revision 2.71  2006/01/11 21:23:43  wmcoolmon
- * Made turret handling code more descriptive
- *
- * Revision 2.70  2006/01/04 08:19:22  taylor
- * fixes for regular texture replacement
- *
- * Revision 2.69  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.68  2005/12/15 04:31:05  phreak
- * [V] can't spell 'turret'
- *
- * Revision 2.67  2005/12/04 19:07:48  wmcoolmon
- * Final commit of codebase
- *
- * Revision 2.66  2005/10/24 07:13:04  Goober5000
- * merge Bobboau's thruster code back in; hopefully this covers everything
- * --Goober5000
- *
- * Revision 2.65  2005/09/24 07:45:31  Goober5000
- * cleaned up some more thruster stuff; honestly, the thruster code is such a
- * mess that it should probably be reverted to the retail version
- * --Goober5000
- *
- * Revision 2.64  2005/07/13 03:26:00  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.63  2005/07/12 22:14:40  Goober5000
- * removed DECALS_ENABLED
- * --Goober5000
- *
- * Revision 2.62  2005/06/21 00:20:24  taylor
- * in the model _render functions change "light_ignore_id" to "objnum" since that's what it really is
- *   and this makes it so much easier to realize that
- * properly deal with the fact that objnum can be -1 in  model_really_render()
- * add NULL check to neb2_get_fog_values() so that it can just send back defaults if objp is NULL
- * small compiler warning fix for neb code
- *
- * Revision 2.61  2005/04/25 00:26:53  wmcoolmon
- * Dynamically allocated engine washes; subsystem sounds
- *
- * Revision 2.60  2005/04/21 15:49:20  taylor
- * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
- *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
- *  - a little "stupid" fix for dds bitmap reading
- *  - fix it so that memory is released properly on bitmap read errors
- *  - some cleanup to model texture loading
- *  - allow model textures to get released rather than just unloaded, saves bitmap slots
- *  - bump MAX_BITMAPS to 4750, should be able to decrease after public testing of new code
- *
- * Revision 2.59  2005/04/05 05:53:20  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.58  2005/03/25 06:57:36  wmcoolmon
- * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
- *
- * Revision 2.57  2005/03/03 06:05:30  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.56  2005/03/01 06:55:41  bobboau
- * oh, hey look I've commited something :D
- * animation system, weapon models detail box alt-tab bug, probly other stuff
- *
- * Revision 2.55  2005/02/23 05:05:38  taylor
- * compiler warning fixes (for MSVC++ 6)
- * have the warp effect only load as many LODs as will get used
- * head off strange bug in release when corrupt soundtrack number gets used
- *    (will still Assert in debug)
- * don't ever try and save a campaign savefile in multi or standalone modes
- * first try at 32bit->16bit color conversion for TGA code (for TGA only ship textures)
- *
- * Revision 2.54  2005/02/15 00:06:27  taylor
- * clean up some model related globals
- * code to disable individual thruster glows
- * fix issue where 1 extra OGL light pass didn't render
- *
- * Revision 2.53  2005/02/08 23:49:59  taylor
- * update/add .cvsignore files for project file changes
- * silence warning about deprecated strings.h stuff for MSVC 2005
- * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
- * remove really old project files
- *
- * Revision 2.52  2005/02/04 23:29:32  taylor
- * merge with Linux/OSX tree - p0204-3
- *
- * Revision 2.51  2005/01/28 11:57:36  Goober5000
- * fixed Bobboau's spelling of 'relative'
- * --Goober5000
- *
- * Revision 2.50  2005/01/28 09:56:44  taylor
- * add model_page_out_textures() for use in techroom
- * make model_page_in_textures() load more textures
- *
- * Revision 2.49  2005/01/27 11:26:23  Goober5000
- * dock points on rotating submodels is *almost* working
- * --Goober5000
- *
- * Revision 2.48  2005/01/11 21:38:50  Goober5000
- * multiple ship docking :)
- * don't tell anyone yet... check the SCP internal
- * --Goober500
- *
- * Revision 2.47  2005/01/01 19:45:32  taylor
- * add MR_NO_FOGGING flag to easily render models without fog (warp model, targetbox models)
- *
- * Revision 2.46  2004/12/05 22:01:11  bobboau
- * sevral feature additions that WCS wanted,
- * and the foundations of a submodel animation system,
- * the calls to the animation triggering code (exept the procesing code,
- * wich shouldn't do anything without the triggering code)
- * have been commented out.
- *
- * Revision 2.45  2004/10/09 17:45:08  taylor
- * da simple IBX code
- *
- * Revision 2.44  2004/08/11 05:06:28  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.43  2004/07/11 03:22:50  bobboau
- * added the working decal code
- *
- * Revision 2.42  2004/07/01 01:12:32  bobboau
- * implemented index buffered background bitmaps,
- * OGL people you realy should get this implemented
- *
- * Revision 2.41  2004/06/28 02:13:08  bobboau
- * high level index buffer suport and d3d implementation,
- * OGL people need to get this working on your end as it's broke now
- *
- * Revision 2.40  2004/05/10 10:51:52  Goober5000
- * made primary and secondary banks quite a bit more friendly... added error-checking
- * and reorganized a bunch of code
- * --Goober5000
- *
- * Revision 2.39  2004/03/20 21:17:13  bobboau
- * fixed -spec comand line option,
- * probly some other stuf
- *
- * Revision 2.38  2004/03/05 09:02:07  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.37  2004/01/21 17:37:48  phreak
- * bumped MAX_POLYGON_MODELS to 300 if INF_BUILD is defined.
- *
- * Revision 2.36  2003/12/17 23:24:24  phreak
- * added a MAX_BUFFERS_PER_SUBMODEL define so it can be easily changed if we ever want to change the 16 texture limit
- *
- * Revision 2.35  2003/11/17 04:25:57  bobboau
- * made the poly list dynamicly alocated,
- * started work on fixing the node model not rendering,
- * but most of that got commented out so I wouldn't have to deal with it
- * while mucking about with the polylist
- *
- * Revision 2.34  2003/11/11 02:15:45  Goober5000
- * ubercommit - basically spelling and language fixes with some additional
- * warnings disabled
- * --Goober5000
- *
- * Revision 2.33  2003/10/10 03:59:41  matt
- * Added -nohtl command line param to disable HT&L, nothing is IFDEFd
- * out now. -Sticks
- *
- * Revision 2.32  2003/09/26 14:37:15  bobboau
- * commiting Hardware T&L code, everything is ifdefed out with the compile flag HTL
- * still needs a lot of work, ubt the frame rates were getting with it are incredable
- * the biggest problem it still has is a bad lightmanegment system, and the zbuffer
- * doesn't work well with things still getting rendered useing the sofware pipeline, like thrusters,
- * and weapons, I think these should be modifyed to be sent through hardware,
- * it would be slightly faster and it would likely fix the problem
- *
- * also the thruster glow/particle stuff I did is now in.
- *
- * Revision 2.31  2003/09/13 06:02:06  Goober5000
- * clean rollback of all of argv's stuff
- * --Goober5000
- *
- * Revision 2.28  2003/08/28 20:42:18  Goober5000
- * implemented rotating barrels for firing primary weapons
- * --Goober5000
- *
- * Revision 2.27  2003/08/22 07:35:09  bobboau
- * specular code should be bugless now,
- * cell shadeing has been added activated via the comand line '-cell',
- * 3D shockwave models, and a transparency method I'm calling edge and center alpha that could be usefull for other things, ask for details
- *
- * Revision 2.26  2003/08/12 03:18:33  bobboau
- * Specular 'shine' mapping;
- * useing a phong lighting model I have made specular highlights
- * that are mapped to the model,
- * rendering them is still slow, but they look real purdy
- *
- * also 4 new (untested) comand lines, the XX is a floating point value
- * -spec_exp XX
- * the n value, you can set this from 0 to 200 (actualy more than that, but this is the recomended range), it will make the highlights bigger or smaller, defalt is 16.0 so start playing around there
- * -spec_point XX
- * -spec_static XX
- * -spec_tube XX
- * these are factors for the three diferent types of lights that FS uses, defalt is 1.0,
- * static is the local stars,
- * point is weapons/explosions/warp in/outs,
- * tube is beam weapons,
- * for thouse of you who think any of these lights are too bright you can configure them you're self for personal satisfaction
- *
- * Revision 2.25  2003/07/15 02:36:54  phreak
- * changed the model_setup_cloak() function to allow an alpha value
- *
- * Revision 2.24  2003/07/04 02:28:37  phreak
- * changes for cloaking implemented
- *
- * Revision 2.23  2003/04/29 01:03:23  Goober5000
- * implemented the custom hitpoints mod
- * --Goober5000
- *
- * Revision 2.22  2003/03/18 01:44:31  Goober5000
- * fixed some misspellings
- * --Goober5000
- *
- * Revision 2.21  2003/03/02 05:54:23  penguin
- * ANSI C++ - namespace clash on ai_rotation; renamed type to ai_rotation_t
- *  - penguin
- *
- * Revision 2.20  2003/01/20 05:40:49  bobboau
- * added several sExps for turning glow points and glow maps on and off
- *
- * Revision 2.19  2003/01/19 06:44:39  Goober5000
- * got rid of nameplate stuff (superceded by texture replacement)
- * --Goober5000
- *
- * Revision 2.18  2003/01/19 01:07:41  bobboau
- * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
- * fixed a few other misc bugs too
- *
- * Revision 2.17  2003/01/17 04:57:17  Goober5000
- * Allowed selection of either $Texture Replace, which keeps track of individual
- * replacement textures for a ship, or $Duplicate Model Texture Replace, which
- * duplicates a model and reskins it.  Use $Duplicate Model Texture Replace
- * if you want to substitute an animated texture or a transparent texture.
- * --Goober5000
- *
- * Revision 2.16  2003/01/17 01:48:49  Goober5000
- * added capability to the $Texture replace code to substitute the textures
- * without needing and extra model, however, this way you can't substitute
- * transparent or animated textures
- * --Goober5000
- *
- * Revision 2.15  2003/01/16 06:49:11  Goober5000
- * yay! got texture replacement to work!!!
- * --Goober5000
- *
- * Revision 2.14  2003/01/15 08:57:23  Goober5000
- * assigning duplicate models to ships now works; committing so I have a base
- * to fall back to as I work on texture replacement
- * --Goober5000
- *
- * Revision 2.13  2003/01/15 05:18:13  Goober5000
- * moved texture loading around a bit; added Texture_replace in preparation
- * for some cool stuff
- * --Goober5000
- *
- * Revision 2.12  2003/01/06 19:33:22  Goober5000
- * cleaned up some stuff with model_set_thrust and a commented Assert that
- * shouldn't have been
- * --Goober5000
- *
- * Revision 2.11  2002/12/10 05:43:34  Goober5000
- * Full-fledged ballistic primary support added!  Try it and see! :)
- *
- * Revision 2.10  2002/12/07 01:37:42  bobboau
- * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
- * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
- * it needs a better renderer, but is in prety good shape for now,
- * I also (think) I squashed a bug in the warpmodel code
- *
- * Revision 2.9  2002/12/04 09:44:34  DTP
- * lowered MAX_POLYGON_MODELS FROM 198 to 128 for safety reasons since we bumped back MAX_SHIP_CLASSES to 130
- *
- * Revision 2.8  2002/12/02 23:55:31  Goober5000
- * fixed misspelling
- *
- * Revision 2.7  2002/12/02 23:14:17  Goober5000
- * fixed misspelling of "category" as "catagory"
- *
- * Revision 2.6  2002/11/14 04:18:16  bobboau
- * added warp model and type 1 glow points
- * and well as made the new glow file type,
- * some general improvement to fighter beams,
- *
- * Revision 2.5  2002/10/19 19:29:27  bobboau
- * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
- *
- * Revision 2.4  2002/08/01 01:41:07  penguin
- * The big include file move
- *
- * Revision 2.3  2002/07/29 08:31:52  DTP
- * Forgot to Bump MAX_MODEL_SUBSYSTEMS from 128 to 200
- *
- * Revision 2.2  2002/07/29 08:28:00  DTP
- * BUMPED MAX_POLYGON_MODELS TO 198 , MAX_SHIP_CLASSES - 2 = 198
- *
- * Revision 2.1  2002/07/10 18:42:14  wmcoolmon
- * Added  Bobboau's glow code; all comments include "-Bobboau"
- *
- * Revision 2.0  2002/06/03 04:02:25  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/03 22:07:09  mharris
- * got some stuff to compile
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 38    9/13/99 10:09a Andsager
- * Add debug console commands to lower model render detail and fireball
- * LOD for big ship explosiosns.
- * 
- * 37    9/01/99 10:09a Dave
- * Pirate bob.
- * 
- * 36    8/24/99 8:55p Dave
- * Make sure nondimming pixels work properly in tech menu.
- * 
- * 35    7/19/99 12:02p Andsager
- * Allow AWACS on any ship subsystem. Fix sexp_set_subsystem_strength to
- * only blow up subsystem if its strength is > 0
- * 
- * 34    7/15/99 2:13p Dave
- * Added 32 bit detection.
- * 
- * 33    7/06/99 10:45a Andsager
- * Modify engine wash to work on any ship that is not small.  Add AWACS
- * ask for help.
- * 
- * 32    6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 31    5/26/99 11:46a Dave
- * Added ship-blasting lighting and made the randomization of lighting
- * much more customizable.
- * 
- * 30    5/26/99 9:09a Andsager
- * Increase number of live debris and MAX_MODEL_TEXTURES (for rebel base)
- * 
- * 29    5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * 28    5/11/99 10:16p Andsager
- * First pass on engine wash effect.  Rotation (control input), damage,
- * shake.  
- * 
- * 27    4/26/99 8:49p Dave
- * Made all pof based nebula stuff full customizable through fred.
- * 
- * 26    4/23/99 5:53p Dave
- * Started putting in new pof nebula support into Fred.
- * 
- * 25    4/19/99 12:51p Andsager
- * Add function to find the nearest point on extneded bounding box and
- * check if inside bounding box.
- * 
- * 24    4/06/99 9:50a Enricco
- * Bump up max live_debris from 4 to 5
- * 
- * 23    3/31/99 8:24p Dave
- * Beefed up all kinds of stuff, incluging beam weapons, nebula effects
- * and background nebulae. Added per-ship non-dimming pixel colors.
- * 
- * 22    3/23/99 5:17p Dave
- * Changed model file format somewhat to account for LOD's on insignias
- * 
- * 21    3/19/99 9:51a Dave
- * Checkin to repair massive source safe crash. Also added support for
- * pof-style nebulae, and some new weapons code.
- * 
- * 20    3/08/99 7:03p Dave
- * First run of new object update system. Looks very promising.
- * 
- * 19    3/02/99 9:25p Dave
- * Added a bunch of model rendering debug code. Started work on fixing
- * beam weapon wacky firing.
- * 
- * 18    2/19/99 11:42a Dave
- * Put in model rendering autocentering.
- * 
- * 17    2/19/99 11:09a Jasen
- * Upped MAX_MODEL_SUBSYSTEMS to 128 (for the souper cap
- * 
- * 16    1/25/99 5:03a Dave
- * First run of stealth, AWACS and TAG missile support. New mission type
- * :)
- * 
- * 15    1/14/99 6:06p Dave
- * 100% full squad logo support for single player and multiplayer.
- * 
- * 14    1/12/99 12:53a Dave
- * More work on beam weapons - made collision detection very efficient -
- * collide against all object types properly - made 3 movement types
- * smooth. Put in test code to check for possible non-darkening pixels on
- * object textures.
- * 
- * 13    1/11/99 12:56p Andsager
- * stupid merge error
- * 
- * 12    1/11/99 12:42p Andsager
- * Add live debris - debris which is created from a destroyed subsystem,
- * when the ship is still alive
- * 
- * 11    1/08/99 2:08p Dave
- * Fixed software rendering for pofview. Super early support for AWACS and
- * beam weapons.
- * 
- * 10    12/23/98 2:53p Andsager
- * Added stepped rotation support
- * 
- * 9     12/09/98 7:34p Dave
- * Cleanup up nebula effect. Tweaked many values.
- * 
- * 8     12/04/98 3:34p Andsager
- * Handle norotating submodels
- * 
- * 7     12/03/98 3:14p Andsager
- * Check in code that checks rotating submodel actually has ship subsystem
- * 
- * 6     11/19/98 11:07p Andsager
- * Check in of physics and collision detection of rotating submodels
- * 
- * 5     11/11/98 5:37p Dave
- * Checkin for multiplayer testing.
- * 
- * 4     10/23/98 3:03p Andsager
- * Initial support for changing rotation rate.
- * 
- * 3     10/16/98 9:40a Andsager
- * Remove ".h" files from model.h
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 159   8/28/98 3:29p Dave
- * EMP effect done. AI effects may need some tweaking as required.
- * 
- * 158   5/19/98 8:31p Andsager
- * Added split planes (for big ship explosions)
- * 
- * 157   5/07/98 5:39p Andsager
- * Changes to model to hold cross section info
- * 
- * 156   4/22/98 9:58p John
- * Added code to view invisible faces.
- * 
- * 155   4/22/98 9:43p John
- * Added code to allow checking of invisible faces, flagged by any texture
- * name with invisible in it.
- * 
- * 154   4/01/98 5:34p John
- * Made only the used POFs page in for a level.   Reduced some interp
- * arrays.    Made custom detail level work differently.
- * 
- * 153   3/31/98 5:18p John
- * Removed demo/save/restore.  Made NDEBUG defined compile.  Removed a
- * bunch of debug stuff out of player file.  Made model code be able to
- * unload models and malloc out only however many models are needed.
- *  
- * 
- * 152   3/31/98 11:19a Allender
- * upped MAX_MODEL_SUBSYSTEMS to a resonable value
- * 
- * 151   3/31/98 11:02a Adam
- * upped MAX_MODEL_SUBSYSTEMS to 33
- * 
- * 150   3/25/98 11:23a Mike
- * Fix stack overwrite due to async between MAX_SECONDARY_WEAPONS and
- * MAX_WL_SECONDARY.
- * 
- * 149   3/24/98 10:11p Sandeep
- * 
- * 148   3/24/98 4:03p Lawrance
- * JOHN: Fix up outline drawing code to support different colors
- * 
- * 147   3/22/98 10:19a Adam
- * upped subsystem & secondary weapon constants for Frank's new capital
- * ship.
- * 
- * 146   3/21/98 3:33p Lawrance
- * Allow model outline color to be set directly
- * 
- * 145   3/19/98 5:24p John
- * Added code to find the closest point on a model to another point.  Used
- * this for detail levels and for targetting info.
- * 
- * 144   3/16/98 4:51p John
- * Added low-level code to clip all polygons against an arbritary plane.
- * Took out all old model_interp_zclip and used this new method instead.  
- * 
- * 143   3/13/98 9:06a John
- * Made missile thrusters use a different min dist for scaling.   Made
- * missilies not use lighting.
- * 
- * 142   3/02/98 5:42p John
- * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
- * afterburner.  Made gr_set_clip work good with negative x &y.  Made
- * model_caching be on by default.  Made each cached model have it's own
- * bitmap id.  Made asteroids not rotate when model_caching is on.  
- * 
- * 141   2/24/98 5:04p Allender
- * allow different ship classes to use the same model.  Lot's of subsystem
- * stuff to deal with
- * 
- * 140   2/24/98 1:58p John
- * Made asteroids use model_caching.  Made asteroids darken with distance.
- * 
- * 139   1/29/98 5:50p John
- * Made electrical arcing on debris pieces be persistent from frame to
- * frame
- * 
- * 138   1/27/98 11:02a John
- * Added first rev of sparks.   Made all code that calls model_render call
- * clear_instance first.   Made debris pieces not render by default when
- * clear_instance is called.
- * 
- * 137   1/23/98 5:08p John
- * Took L out of vertex structure used B (blue) instead.   Took all small
- * fireballs out of fireball types and used particles instead.  Fixed some
- * debris explosion things.  Restructured fireball code.   Restructured
- * some lighting code.   Made dynamic lighting on by default. Made groups
- * of lasers only cast one light.  Made fireballs not cast light.
- * 
- * 136   1/15/98 3:28p John
- * Took out the unused ptnorms array.  Saved a measly 8MB of RAM,  so it
- * might not have been worth ripping out.  :-)
- * 
- * 135   1/09/98 11:25a John
- * Took the thruster animation stuff out of the model.
- * 
- * 134   12/31/97 2:35p John
- * Added code for core_radius
- * 
- * 133   12/22/97 8:55a John
- * added parameters for checking models.
- * 
- * 132   12/17/97 5:11p John
- * Added brightening back into fade table.  Added code for doing the fast
- * dynamic gun flashes and thruster flashes.
- * 
- * 131   12/17/97 9:54a John
- * added code for precalculated weapon flash lighting.
- * 
- * 130   12/05/97 3:46p John
- * made ship thruster glow scale instead of being an animation.
- * 
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MODEL_H
 #define _MODEL_H
@@ -684,12 +15,12 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
-#include "decals/decals.h"
+#include "object/object.h"
 
-#include <vector>
+class object;
 
-struct object;
-
+extern flag_def_list model_render_flags[];
+extern int model_render_flags_size;
 
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_DETAIL_LEVELS	8
@@ -700,8 +31,9 @@ struct object;
 #define MOVEMENT_TYPE_NONE				-1
 #define MOVEMENT_TYPE_POS				0
 #define MOVEMENT_TYPE_ROT				1
-#define MOVEMENT_TYPE_ROT_SPECIAL	2		// for turrets only
+#define MOVEMENT_TYPE_ROT_SPECIAL		2	// for turrets only
 #define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
+#define MOVEMENT_TYPE_LOOK_AT			4	// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -709,8 +41,6 @@ struct object;
 #define MOVEMENT_AXIS_X		0
 #define MOVEMENT_AXIS_Y		2
 #define MOVEMENT_AXIS_Z		1
-
-#define MAX_ROTATING_SUBMODELS 50
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -729,12 +59,14 @@ struct object;
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
 #define SUBSYSTEM_UNKNOWN			11
-
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
+
+// Goober5000
+extern char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
-#define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
+#define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
@@ -749,6 +81,22 @@ typedef struct submodel_instance_info {
 	int		axis_set;
 	int		step_zero_timestamp;		// timestamp determines when next step is to begin (for stepped rotation)
 } submodel_instance_info;
+
+typedef struct submodel_instance {
+	angles angs;
+	angles prev_angs;
+	vec3d mc_base;
+	matrix mc_orient;
+	bool collision_checked;
+	bool blown_off;
+} submodel_instance;
+
+// Data specific to a particular instance of a model.
+typedef struct polymodel_instance {
+	int model_num;					// global model num index, same as polymodel->id
+	int root_submodel_num;			// unused?
+	submodel_instance *submodel;	// array of submodel instances; mirrors the polymodel->submodel array
+} polymodel_instance;
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
@@ -766,6 +114,37 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
 #define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
 #define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
+#define MSS_FLAG_TURRET_FIXED_FP	(1 << 13)		// forces turret (when defined with multiple weapons) to prevent the firepoints from alternating
+#define MSS_FLAG_TURRET_SALVO		(1 << 14)		// forces turret to fire salvos (all guns simultaneously) - independent targeting
+#define MSS_FLAG_FIRE_ON_TARGET		(1 << 15)		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
+#define MSS_FLAG_NO_SS_TARGETING	(1 << 16)		// toggles the subsystem targeting for the turret
+#define MSS_FLAG_TURRET_RESET_IDLE	(1 << 17)		// makes turret reset to their initial position if the target is out of field of view
+#define MSS_FLAG_TURRET_ALT_MATH	(1 << 18)		// tells the game to use additional calculations should turret have a defined y fov
+#define MSS_FLAG_DUM_ROTATES		(1 << 19)		// Bobboau
+#define MSS_FLAG_CARRY_SHOCKWAVE	(1 << 20)		// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
+#define MSS_FLAG_ALLOW_LANDING		(1 << 21)		// This subsystem can be landed on
+#define MSS_FLAG_FOV_EDGE_CHECK		(1 << 22)		// Tells the game to use better FOV edge checking with this turret
+#define MSS_FLAG_FOV_REQUIRED		(1 << 23)		// Tells game not to allow this turret to attempt targeting objects out of FOV
+#define MSS_FLAG_NO_REPLACE			(1 << 24)		// set the subsys not to draw replacement ('destroyed') model
+#define MSS_FLAG_NO_LIVE_DEBRIS		(1 << 25)		// sets the subsys not to release live debris
+#define MSS_FLAG_IGNORE_IF_DEAD		(1 << 26)		// tells homing missiles to ignore the subsys if its dead and home on to hull instead of earlier subsys pos
+#define MSS_FLAG_ALLOW_VANISHING	(1 << 27)		// allows subsystem to vanish (prevents explosions & sounds effects from being played)
+#define MSS_FLAG_DAMAGE_AS_HULL		(1 << 28)		// applies armor damage to subsystem instead of subsystem damage - FUBAR
+#define MSS_FLAG_TURRET_LOCKED      (1 << 29)       // Turret starts locked by default - Sushi
+#define MSS_FLAG_NO_AGGREGATE		(1 << 30)		// Don't include with aggregate subsystem types - Goober5000
+#define MSS_FLAG_TURRET_ANIM_WAIT   (1 << 31)		// Turret won't fire until animation is complete - Sushi
+
+#define MSS_FLAG2_PLAYER_TURRET_SOUND			 (1 << 0)
+#define MSS_FLAG2_TURRET_ONLY_TARGET_IF_CAN_FIRE (1 << 1)	// Turrets only target things they're allowed to shoot at (e.g. if check-hull fails, won't keep targeting)
+#define MSS_FLAG2_NO_DISAPPEAR					 (1 << 2)	// Submodel won't disappear when subsystem destroyed
+#define MSS_FLAG2_COLLIDE_SUBMODEL				 (1 << 3)	// subsystem takes damage only from hits which impact the associated submodel
+#define MSS_FLAG2_DESTROYED_ROTATION			 (1 << 4)   // allows subobjects to continue to rotate even if they have been destroyed
+
+#define NUM_SUBSYSTEM_FLAGS			33
+
+// all subsys flags set in model file, used to copy only these flags for different table entries using the same model
+#define MSS_MODEL_FLAG_MASK				(MSS_FLAG_CREWPOINT | MSS_FLAG_ROTATES | MSS_FLAG_TRIGGERED | MSS_FLAG_ARTILLERY | MSS_FLAG_STEPPED_ROTATE)
+#define MSS_MODEL_FLAG2_MASK			0
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -777,30 +156,24 @@ typedef struct stepped_rotation {
 	float max_turn_accel;	// max accel going between steps
 } stepped_rotation_t;
 
-/*typedef struct ai_rotation {
-//	void *p_rotation;
-	uint type;			//flags for what animation type
-	float max;
-	float min;
-	int time;
-} ai_rotation_t;*/
-
 struct queued_animation;
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
 
-	uint		flags;									// See MSS_FLAG_* defines above
-	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
-	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
-	char		alt_sub_name[NAME_LENGTH];					//Karajorma - Name that overrides name of original
-	int		subobj_num;								// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries
-	int		model_num;								// Which model this is attached to (i.e. the polymodel[] index)
-	int		type;										// type. see SUBSYSTEM_* types above.  A generic type thing
-	vec3d	pnt;										// center point of this subsystem
-	float		radius;									// the extent of the subsystem
-	float		max_subsys_strength;					// maximum hits of this subsystem
-	int armor_type_idx;								//Armor type on teh subsystem -C
+	uint	flags;								// See MSS_FLAG_* defines above
+	uint	flags2;
+	char	name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
+	char	subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
+	char	alt_sub_name[NAME_LENGTH];			// Karajorma - Name that overrides name of original
+	char	alt_dmg_sub_name[NAME_LENGTH];		// Name for the damage popup subsystems, allows for translation
+	int		subobj_num;							// subobject number (from bspgen) -- used to match subobjects of subsystems to these entries; index to polymodel->submodel
+	int		model_num;							// Which model this is attached to (i.e. the polymodel[] index); same as polymodel->id
+	int		type;								// type. see SUBSYSTEM_* types above.  A generic type thing
+	vec3d	pnt;								// center point of this subsystem
+	float	radius;								// the extent of the subsystem
+	float	max_subsys_strength;				// maximum hits of this subsystem
+	int		armor_type_idx;						// Armor type on teh subsystem -C
 
 	//	The following items are specific to turrets and will probably be moved to
 	//	a separate struct so they don't take up space for all subsystem types.
@@ -808,11 +181,17 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
+	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
+	float	turret_y_fov;						//  turret's base's fov
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
 	float	turret_turning_rate;				// How fast the turret turns. Read from ships.tbl
-	int		turret_rotation_snd;				// Sound to make when the turret moves
+	int		turret_base_rotation_snd;				// Sound to make when the turret moves
+	float	turret_base_rotation_snd_mult;			// Volume multiplier for the turret sounds
+	int		turret_gun_rotation_snd;				// Sound to make when the turret moves
+	float	turret_gun_rotation_snd_mult;			// Volume multiplier for the turret sounds
+
 
 	//Sound stuff
 	int		alive_snd;		//Sound to make while the subsystem is not-dead
@@ -826,7 +205,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	float		turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
 	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
-//	ai_rotation_t		ai_rotation;				// ai controlled rotation struct - by Bobboau
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -838,11 +216,23 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int		secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];	// capacity of a bank -hoffoss
 	int		path_num;								// path index into polymodel .paths array.  -2 if none exists, -1 if not defined
 
-	decal_system model_decal_system;
-
 	int n_triggers;
-	queued_animation *triggers;		//all the triggered animations assosiated with this object
+	queued_animation *triggers;		//all the triggered animations associated with this object
 
+	int		turret_reset_delay;
+
+	// target priority setting for turrets
+	int      target_priority[32];
+	int      num_target_priorities;
+
+	float	optimum_range;
+	float	favor_current_facing;
+
+	float	turret_rof_scaler;
+
+	//Per-turret ownage settings - SUSHI
+	int turret_max_bomb_ownage; 
+	int turret_max_target_ownage; 
 } model_subsystem;
 
 typedef struct model_special {
@@ -859,26 +249,6 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
-struct index_list {
-	uint *ibuffer;
-	ushort *sbuffer;
-
-	index_list(): ibuffer(NULL), sbuffer(NULL) { }
-	// the destuctor body is commented out so that we can use this dynamically without a clone()
-	// we kill it off with release() instead
-	~index_list() { }
-
-	void allocate(int size, bool large_buf);
-	void release();
-};
-
-struct buffer_data {
-	int texture;		// this is the texture the vertex buffer will use
-	int n_prim;
-	index_list index_buffer;
-
-	buffer_data(): texture(-1), n_prim(0) {}
-};
 
 // IBX stuff
 typedef struct IBX {
@@ -887,26 +257,87 @@ typedef struct IBX {
 	int size;			// file size used to make sure an IBX contains enough data for the whole model
 	int version;		// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
-
-	// tangent space data
-	CFILE *tsb_read;	// reads tangent space data (TSB), if it already exists
-	CFILE *tsb_write;	// writes tangent space data, for new file
-	int tsb_size;
-	char tsb_name[MAX_FILENAME_LEN];	// filename of the tsb (tangent space model data)
 } IBX;
 
+typedef struct model_tmap_vert {
+	ushort vertnum;
+	ushort normnum;
+	float u,v;
+} model_tmap_vert;
 
+struct bsp_collision_node {
+	vec3d min;
+	vec3d max;
 
-typedef struct bsp_info {
+	int back;
+	int front;
+
+	int leaf;
+};
+
+struct bsp_collision_leaf {
+	vec3d plane_pnt;
+	vec3d plane_norm;
+	float face_rad;
+	int vert_start;
+	ubyte num_verts;
+	ubyte tmap_num;
+
+	int next;
+};
+
+struct bsp_collision_tree {
+	bsp_collision_node *node_list;
+	int n_nodes;
+
+	bsp_collision_leaf *leaf_list;
+	int n_leaves;
+
+	model_tmap_vert *vert_list;
+	vec3d *point_list;
+
+	int n_verts;
+	bool used;
+};
+
+class bsp_info
+{
+public:
+	bsp_info()
+		: movement_type(-1), movement_axis(0), can_move(false), bsp_data_size(0), bsp_data(NULL), collision_tree_index(-1),
+		rad(0.0f), blown_off(0), my_replacement(-1), i_replace(-1), is_live_debris(0), num_live_debris(0), sii(NULL),
+		is_thruster(0), is_damaged(0), parent(-1), num_children(0), first_child(-1), next_sibling(-1), num_details(0),
+		num_arcs(0), render_sphere_radius(0.0f), use_render_box(0), use_render_box_offset(false), use_render_sphere(0), use_render_sphere_offset(false), gun_rotation(false), no_collisions(false),
+		nocollide_this_only(false), collide_invisible(false), force_turret_normal(false), attach_thrusters(false), dumb_turn_rate(0.0f),
+		look_at_num(-1)
+	{
+		name[0] = 0;
+		lod_name[0] = 0;
+		look_at[0] = 0;
+
+		offset = geometric_center = min = max = render_box_min = render_box_max = render_box_offset = render_sphere_offset = vmd_zero_vector;
+		orientation = vmd_identity_matrix;
+
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&angs, 0, sizeof(angles));
+		memset(&live_debris, 0, MAX_LIVE_DEBRIS * sizeof(int));
+		memset(&details, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
+	}
+
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.
+	bool	can_move;				// If true, the position and/or orientation of this submodel can change due to rotation of itself OR a parent
 
 	vec3d	offset;					// 3d offset from parent object
 	matrix	orientation;			// 3d orientation relative to parent object
 
 	int		bsp_data_size;
 	ubyte		*bsp_data;
+
+	int collision_tree_index;
 
 	vec3d	geometric_center;		// geometric center of this subobject.  In the same Frame Of 
 	                              //  Reference as all other vertices in this submodel. (Relative to pivot point)
@@ -946,18 +377,29 @@ typedef struct bsp_info {
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 	
 	// buffers used by HT&L
-	int indexed_vertex_buffer;
-	std::vector<buffer_data> buffer;
-//	int flat_buffer;
-//	int flat_line_buffer;
+	vertex_buffer buffer;
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;
-	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
-	bool	gun_rotation;//for animated weapon models
-	bool	no_collisions; // for $no_collisions property - kazan
-
-} bsp_info;
+	vec3d	render_box_offset;
+	float	render_sphere_radius;
+	vec3d	render_sphere_offset;
+	int		use_render_box;			// 0==do nothing, 1==only render this object if you are inside the box, -1==only if you're outside
+	bool	use_render_box_offset;		// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
+	int		use_render_sphere;		// 0==do nothing, 1==only render this object if you are inside the sphere, -1==only if you're outside
+	bool 	use_render_sphere_offset;// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
+	bool	gun_rotation;			// for animated weapon models
+	bool	no_collisions;			// for $no_collisions property - kazan
+	bool	nocollide_this_only;	//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
+	bool	collide_invisible;		//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
+	bool	force_turret_normal;	//Wanderer: Sets the turret uvec to override any input of for turret normal.
+	char	lod_name[MAX_NAME_LEN];	//FUBAR:  Name to be used for LOD naming comparison to preserve compatibility with older tables.  Only used on LOD0 
+	bool	attach_thrusters;		//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
+	float	dumb_turn_rate;			//Bobboau
+	//int	look_at;				//Bobboau
+	int		look_at_num;			//VA - number of the submodel to be looked at by this submodel (-1 if none)
+	char	look_at[MAX_NAME_LEN];	//VA - name of submodel to be looked at by this submodel
+};
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
 
@@ -984,12 +426,6 @@ typedef struct model_path {
 									// For MP_TYPE_SUBSYS, this is the subsystem number this path takes you to.
 } model_path;
 
-typedef struct model_tmap_vert {
-	short vertnum;
-	short normnum;
-	float u,v;
-} model_tmap_vert;
-
 // info for gun and missile banks.  Also used for docking points.  There should always
 // only be two slots for each docking bay
 
@@ -1013,9 +449,9 @@ typedef struct thruster_bank {
 	glow_point *points;
 
 	// Engine wash info
-	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
-
-	int		obj_num;		// what subsystem number this thruster is on
+	struct engine_wash_info	*wash_info_pointer;		// index into Engine_wash_info
+	int		obj_num;		// what subsystem number this bank is on; index to ship_info->subsystems
+	int		submodel_num;	// what submodel number this bank is on; index to polymodel->submodel/polymodel_instance->submodel
 } thruster_bank;
 
 typedef struct glow_point_bank {  // glow bank structure -Bobboau
@@ -1024,8 +460,7 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			on_time; 
 	int			off_time; 
 	int			disp_time; 
-	int			is_on; 
-	int			is_active; 
+	bool		is_on;
 	int			submodel_parent; 
 	int			LOD; 
 	int			num_points; 
@@ -1059,7 +494,8 @@ typedef struct dock_bay {
 // struct that holds the indicies into path information associated with a fighter bay on a capital ship
 // NOTE: Fighter bay paths are identified by the path_name $bayN (where N is numbered from 1).
 //			Capital ships only have ONE fighter bay on the entire ship
-#define MAX_SHIP_BAY_PATHS		10
+// NOTE: MAX_SHIP_BAY_PATHS cannot be bumped higher than 31 without rewriting the arrival/departure flag logic.
+#define MAX_SHIP_BAY_PATHS		31
 typedef struct ship_bay {
 	int	num_paths;							// how many paths are associated with the model's fighter bay
 	int	path_indexes[MAX_SHIP_BAY_PATHS];	// index into polymodel->paths[] array
@@ -1128,8 +564,8 @@ typedef struct cross_section {
 
 #define MAX_MODEL_INSIGNIAS		6
 #define MAX_INS_FACE_VECS			3
-#define MAX_INS_VECS					20
-#define MAX_INS_FACES				10
+#define MAX_INS_VECS					81
+#define MAX_INS_FACES				128
 typedef struct insignia {
 	int detail_level;
 	int num_faces;					
@@ -1145,7 +581,8 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
 // Goober5000
-class texture_info {
+class texture_info
+{
 private:
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
@@ -1154,6 +591,7 @@ private:
 	//If num_frames is < 2, it doesn't need to be treated like an animation.
 	int num_frames;
 	float total_time;		// in seconds
+
 public:
 	texture_info();
 	texture_info(int bm_handle);
@@ -1178,31 +616,76 @@ public:
 #define TM_SPECULAR_TYPE	2		// optional specular map
 #define TM_NORMAL_TYPE		3		// optional normal map
 #define TM_HEIGHT_TYPE		4		// optional height map (for parallax mapping)
-#define TM_NUM_TYPES		5		//WMC - Number of texture_info objects in texture_map
+#define TM_MISC_TYPE		5		// optional utility map
+#define TM_NUM_TYPES		6		//WMC - Number of texture_info objects in texture_map
 									//Used by scripting - if you change this, do a search
 									//to update switch() statement in lua.cpp
 // taylor
 //WMC - OOPified
-class texture_map {
+class texture_map
+{
 public:
 	texture_info textures[TM_NUM_TYPES];
 
 	bool is_ambient;
 	bool is_transparent;
-public:
+
 	int FindTexture(int bm_handle);
 	int FindTexture(char *name);
 
 	void PageIn();
 	void PageOut(bool release);
 
-	void Reset();
+	void Clear();
+	void ResetToOriginal();
+
+	texture_map()
+		: is_ambient(false), is_transparent(false)
+	{}
 };
 
 #define MAX_REPLACEMENT_TEXTURES MAX_MODEL_TEXTURES * TM_NUM_TYPES
 
+// Goober5000 - since we need something < 0
+#define REPLACE_WITH_INVISIBLE	-47
+
 //used to describe a polygon model
-typedef struct polymodel {
+// NOTE: Because WMC OOPified the textures, this must now be treated as a class, rather than a struct.
+//       Additionally, a lot of model initialization and de-initialization is currently done in model_load or model_unload.
+class polymodel
+{
+public:
+	// initialize to 0 and NULL because previously a memset was used
+	polymodel()
+		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
+		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
+		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL),
+		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
+		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(NULL), gun_submodel_rotation(0),
+		vertex_buffer_id(-1)
+	{
+		filename[0] = 0;
+		mins = maxs = autocenter = center_of_mass = vmd_zero_vector;
+		moment_of_inertia = vmd_identity_matrix;
+
+		memset(&detail, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(int));
+		memset(&detail_depth, 0, MAX_MODEL_DETAIL_LEVELS * sizeof(float));
+		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
+		memset(&bounding_box, 0, 8 * sizeof(vec3d));
+		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
+		memset(&shield, 0, sizeof(shield_info));
+		memset(&octants, 0, 8 * sizeof(model_octant));
+		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
+		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
+
+#ifndef NDEBUG
+		ram_used = 0;
+		debug_info_size = 0;
+		debug_info = NULL;
+#endif
+	}
+
+
 	int			id;				// what the polygon model number is.  (Index in Polygon_models)
 	int			version;
 	char			filename[FILESPEC_LENGTH];
@@ -1252,6 +735,7 @@ typedef struct polymodel {
 	shield_info	shield;								// new shield information
 	ubyte	*shield_collision_tree;
 	int		sldc_size;
+	SCP_vector<vec3d>		shield_points;
 
 	int			n_paths;
 	model_path	*paths;
@@ -1285,31 +769,32 @@ typedef struct polymodel {
 
 	float gun_submodel_rotation;
 
-} polymodel;
+	int vertex_buffer_id;			// HTL vertex buffer id
+};
 
 // Call once to initialize the model system
 void model_init();
-
-// call at the beginning of a level. after the level has been loaded
-void model_level_post_init();
 
 // call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
 void model_unload(int modelnum, int force = 0);
 
 // Call to free all existing models
 void model_free_all();
+void model_instance_free_all();
 
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
+int model_create_instance(int model_num, int submodel_num = -1);
+void model_delete_instance(int model_instance_num);
+
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
 
-// notify the model system that a ship has died
-void model_notify_dead_ship(int objnum);
-
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
+
+polymodel_instance* model_get_instance(int model_instance_num);
 
 // routine to copy susbsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
@@ -1355,14 +840,13 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE_HTL			(1<<26)		// Show outlines (wireframe view) using HTL method
 #define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
-
-// old/obsolete flags
-//#define MR_SHOW_DAMAGE			(1<<4)		// Show the "destroyed" subobjects
-//#define MR_ALWAYS_REDRAW			(1<<13)		// Don't do any model caching; redraw this model each frame!
+#define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
+#define MR_ANIMATED_SHADER			(1<<30)		// Use a animated Shader - Valathil
+#define MR_ATTACHED_MODEL			(1<<31)		// Used for attached weapon model lodding
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
-void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL);
+void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int lighting_skip = -1, int *replacement_textures = NULL, const bool is_skybox = false);
 
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
@@ -1416,7 +900,10 @@ extern int modelstats_num_sortnorms;
 
 // Tries to move joints so that the turret points to the point dst.
 // turret1 is the angles of the turret, turret2 is the angles of the gun from turret
-extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst);
+extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, angles *base_angles, angles *gun_angles, vec3d *pos, vec3d *dst, int obj_idx, bool reset = false);
+
+// Gets and sets turret rotation matrix
+extern void model_make_turret_matrix(int model_num, model_subsystem * turret );
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
@@ -1434,14 +921,22 @@ extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_mod
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+void model_instance_find_world_point(vec3d * outpnt, vec3d *mpnt, int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos );
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
 // NOTE - this code ASSUMES submodel is 1 level down from hull (detail[0])
 void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int submodel_num, matrix *orient, vec3d *pos);
 
+void world_find_model_instance_point(vec3d *out, vec3d *world_pt, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d *pos);
+
+extern void find_submodel_instance_point(vec3d *outpnt, object *ship_obj, int submodel_num);
+extern void find_submodel_instance_point_normal(vec3d *outpnt, vec3d *outnorm, object *ship_obj, int submodel_num, vec3d *submodel_pnt, vec3d *submodel_norm);
+extern void find_submodel_instance_point_orient(vec3d *outpnt, matrix *outorient, object *ship_obj, int submodel_num, vec3d *submodel_pnt, matrix *submodel_orient);
+extern void find_submodel_instance_world_point(vec3d *outpnt, object *ship_obj, int submodel_num);
+
 // Given a polygon model index, find a list of rotating submodels to be used for collision
-void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_submodesl, object *objp);
+void model_get_rotating_submodel_list(SCP_vector<int> *submodel_vector, object *objp);
 
 // For a rotating submodel, find a point on the axis
 void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int submodel_num);
@@ -1450,9 +945,13 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
 extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
+extern void model_instance_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int model_instance_num, int sub_model_num, matrix * objorient, vec3d * objpos);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
+
+void model_clear_submodel_instance( submodel_instance *sm_instance );
+void model_clear_submodel_instances( int model_instance_num );
 
 // Sets rotating submodel turn info to that stored in model
 void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float turn_accel);
@@ -1461,7 +960,11 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii);
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii, int flags = 0 );
+extern void model_set_instance_techroom(int model_num, int sub_model_num, float angle_1, float angle_2 );
+
+void model_update_instance(int model_instance_num, int sub_model_num, submodel_instance_info *sii);
+void model_instance_dumb_rotation(int model_instance_num);
 
 // Adds an electrical arcing effect to a submodel
 void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
@@ -1472,7 +975,7 @@ extern int submodel_get_points(int model_num, int submodel_num, int max_num, vec
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
-
+extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2);
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
@@ -1503,6 +1006,7 @@ int submodel_get_num_polys(int model_num, int submodel_num);
 // reference, and given the object's orient and position,
 // return the vector in the model's frame of reference.
 void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
+void model_instance_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_model_num);
 
 
 // This is the interface to model_check_collision.  Rather than passing all these
@@ -1510,6 +1014,7 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 // the input values and call model_check_collision
 typedef struct mc_info {
 	// Input values
+	int		model_instance_num;
 	int		model_num;			// What model to check
 	int		submodel_num;		// What submodel to check if MC_SUBMODEL is set
 	matrix	*orient;				// The orient of the model
@@ -1532,10 +1037,15 @@ typedef struct mc_info {
 	int		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
 	ubyte		*f_poly;				// pointer to flat poly where we intersected
 	ubyte		*t_poly;				// pointer to tmap poly where we intersected
-		
+	bsp_collision_leaf *bsp_leaf;
+
 										// flags can be changed for the case of sphere check finds an edge hit
 } mc_info;
 
+inline void mc_info_init(mc_info *mc)
+{
+	memset(mc, -1, sizeof(mc_info));
+}
 
 
 //======== MODEL_COLLIDE ============
@@ -1603,6 +1113,13 @@ typedef struct mc_info {
 */
 
 int model_collide(mc_info * mc_info);
+void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version);
+
+bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
+void model_remove_bsp_collision_tree(int tree_index);
+int model_create_bsp_collision_tree();
+
+void model_collide_preprocess(matrix *orient, int model_instance_num);
 
 // Sets the submodel instance data in a submodel
 // If show_damaged is true it shows only damaged submodels.
@@ -1660,6 +1177,7 @@ typedef struct mst_info {
 	int primary_glow_bitmap;
 	int secondary_glow_bitmap;
 	int tertiary_glow_bitmap;
+	int distortion_bitmap;
 
 	bool use_ab;
 	float glow_noise;
@@ -1670,28 +1188,44 @@ typedef struct mst_info {
 	float secondary_glow_rad_factor;
 	float tertiary_glow_rad_factor;
 	float glow_length_factor;
+	float distortion_rad_factor;
+	float distortion_length_factor;
+	bool draw_distortion;
 
-	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1),
+	mst_info() : primary_bitmap(-1), primary_glow_bitmap(-1), secondary_glow_bitmap(-1), tertiary_glow_bitmap(-1), distortion_bitmap(-1),
 					use_ab(false), glow_noise(1.0f), rotvel(NULL), length(vmd_zero_vector), glow_rad_factor(1.0f),
-					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f)
+					secondary_glow_rad_factor(1.0f), tertiary_glow_rad_factor(1.0f), glow_length_factor(1.0f), distortion_rad_factor(1.0f), distortion_length_factor(1.0f),
+					draw_distortion(true)
 				{}
 } mst_info;
 
+
+//Valathil - Buffer struct for transparent object sorting
+typedef struct transparent_object {
+	int blend_filter;
+	float alpha;
+	int texture;
+	int glow_map;
+	int spec_map;
+	int norm_map;
+	int height_map;
+	int misc_map;
+	vertex_buffer *buffer;
+	unsigned int tmap_flags;
+	int i;
+	vec3d scale;
+} transparent_object;
+
+typedef struct transparent_submodel {
+	bsp_info *model;
+	matrix orient;
+	bool is_submodel;
+	bool pop_matrix;
+	SCP_vector<transparent_object> transparent_objects;
+} transparent_submodel;
 // scale the engines thrusters by this much
 // Only enabled if MR_SHOW_THRUSTERS is on
 void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
-
-//=========================================================
-// model caching
-
-// Call once to init the model caching stuff
-//void model_cache_init();
-
-// Call before every level to clean up the model caching stuff
-//void model_cache_reset();
-
-// If TRUE, then model caching is enabled
-//extern int Model_caching;
 
 
 //=======================================================================================
@@ -1738,9 +1272,10 @@ void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float sc
 
 void model_set_replacement_textures(int *replacement_textures);
 
-int decal_make_model(polymodel * pm);
-
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);
 
+void model_do_look_at(int model_num); //Bobboau
+
+void model_do_dumb_rotation(int modelnum); //Bobboau
 #endif // _MODEL_H

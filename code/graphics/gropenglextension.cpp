@@ -8,109 +8,7 @@
 */
 
 
-/*
- * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.15.2.3 $
- * $Date: 2007-04-13 00:31:24 $
- * $Author: taylor $
- *
- * source for extension implementation in OpenGL
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.15.2.2  2006/12/26 05:18:14  taylor
- * comment out some extensions that we either don't use or don't need to use
- *
- * Revision 1.15.2.1  2006/08/09 14:40:43  taylor
- * fix for setting of texture lod bias
- *
- * Revision 1.15  2006/05/13 07:29:52  taylor
- * OpenGL envmap support
- * newer OpenGL extension support
- * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
- * add cubemap reading and writing support to DDS loader
- * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
- * add support for a default envmap named "cubemap.dds"
- * new mission flag "$Environment Map:" to use a pre-existing envmap
- * minor cleanup of compiler warning messages
- * get rid of wasteful math from gr_set_proj_matrix()
- * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
- * clean up bmpman flags in reguards to cubemaps and render targets
- * disable D3D envmap code until it can be upgraded to current level of code
- * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
- * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
- *
- * Revision 1.14  2006/03/22 18:14:52  taylor
- * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
- * use nicest hints for texture compression, should improve quality a little
- * when reporting compressed sizes to debug log make ani size be total, not per frame
- *
- * Revision 1.13  2006/02/24 07:35:48  taylor
- * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
- *
- * Revision 1.12  2005/12/28 22:28:44  taylor
- * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
- * better support for mipmaps and mipmap filtering
- * add reg option "TextureFilter" to set bilinear or trilinear filter
- * clean up bitmap_id/bitmap_handle/texture_handle madness that made things difficult to understand
- * small fix for using 24-bit images on 16-bit bpp visual (untested)
- *
- * Revision 1.11  2005/12/08 15:10:07  taylor
- * add APPLE_client_storage support to improve texture performance and reduce memory usage a tiny bit on OS X
- *
- * Revision 1.10  2005/11/13 06:44:18  taylor
- * small bit of EFF cleanup
- * add -img2dds support
- * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
- * some minor OGL cleanup and small performance changes
- * converge the various pcx_read_bitmap* functions into one
- * cleanup/rename/remove some cmdline options
- *
- * Revision 1.9  2005/06/19 02:37:02  taylor
- * general cleanup, remove some old code
- * speed up gr_opengl_flip() just a tad
- * inverted gamma slider fix that Sticks made to D3D
- * possible fix for ATI green screens
- * move opengl_check_for_errors() out of gropentnl so we can use it everywhere
- * fix logged OGL info from debug builds to be a little more readable
- * if an extension is found but required function is not then fail
- * try to optimize glDrawRangeElements so we are not rendering more than the card is optimized for
- * some 2d matrix usage checks
- *
- * Revision 1.8  2005/05/12 17:49:12  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 1.7  2005/04/13 23:24:21  phreak
- * Updated the message of a required extension that hasn't been found.
- * It was referencing the old Glide engine.
- *
- * Revision 1.6  2005/02/04 23:29:31  taylor
- * merge with Linux/OSX tree - p0204-3
- *
- * Revision 1.5  2005/01/21 08:25:14  taylor
- * fill in gr_opengl_set_texture_addressing()
- * add support for non-power-of-two textures for cards that have it
- * temporary crash fix from multiple mipmap levels in uncompressed formats
- *
- * Revision 1.4  2004/10/31 21:45:13  taylor
- * Linux tree merge, single array for VBOs/HTL
- *
- * Revision 1.3  2004/07/26 20:47:32  Kazan
- * remove MCD complete
- *
- * Revision 1.2  2004/07/12 16:32:48  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 1.1  2004/05/24 07:25:32  taylor
- * filename case change
- *
- * Revision 2.3  2004/04/13 01:55:41  phreak
- * put in the correct fields for the CVS comments to register
- * fixed a glowmap problem that occured when rendering glowmapped and non-glowmapped ships
- *
- *
- * $NoKeywords: $
- */
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -122,6 +20,7 @@
 #include "graphics/gropengltexture.h"
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
+#include "popup/popup.h"
 
 #include "osapi/outwnd.h"
 
@@ -200,18 +99,15 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glBufferSubDataARB", "glMapBufferARB", "glUnmapBufferARB" } },
 
-	// Mac-only extension that allows use of system copy of texture to avoid an additional API copy
-//	{ false, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
-
 	// make me some mipmaps!
 	{ false, false, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
 
 	// framebuffer object gives us render-to-texture support, among other things
-	{ false, false, 1, { "GL_EXT_framebuffer_object" }, 15, { 
+	{ false, false, 1, { "GL_EXT_framebuffer_object" }, 16, { 
 		"glIsRenderbufferEXT", "glBindRenderbufferEXT", "glDeleteRenderbuffersEXT", "glGenRenderbuffersEXT",
 		"glRenderbufferStorageEXT", "glGetRenderbufferParameterivEXT", "glIsFramebufferEXT", "glBindFramebufferEXT",
 		"glDeleteFramebuffersEXT", "glGenFramebuffersEXT", "glCheckFramebufferStatusEXT", "glFramebufferTexture2DEXT",
-		"glFramebufferRenderbufferEXT", "glGetFramebufferAttachmentParameterivEXT", "glGenerateMipmapEXT" } },
+		"glFramebufferRenderbufferEXT", "glGetFramebufferAttachmentParameterivEXT", "glGenerateMipmapEXT", "glDrawBuffers" } },
 
 	// these next three are almost exactly the same, just different stages of naming.
 	// allows for non-power-of-textures, but at a cost of functionality
@@ -235,10 +131,10 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_shading_language_100" }, 0, { NULL } },
 
 	// shader objects and program object management
-	{ false, false, 1, { "GL_ARB_shader_objects" }, 17, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
+	{ false, false, 1, { "GL_ARB_shader_objects" }, 18, { "glDeleteObjectARB", "glCreateShaderObjectARB", "glShaderSourceARB",
 		"glCompileShaderARB", "glGetObjectParameterivARB", "glGetInfoLogARB", "glCreateProgramObjectARB",
 		"glAttachObjectARB", "glLinkProgramARB", "glUseProgramObjectARB", "glValidateProgramARB", "glGetUniformLocationARB",
-		"glGetUniformivARB", "glUniform1fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
+		"glGetUniformivARB", "glUniform1fARB", "glUniform2fARB", "glUniform3fARB", "glUniform1iARB", "glUniformMatrix4fvARB" } },
 
 	// programmable vertex level processing
 	// some of functions are provided by GL_ARB_vertex_program
@@ -249,7 +145,12 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ false, false, 1, { "GL_ARB_fragment_shader" }, 0, { NULL } },
 
 	// shader version 3.0 detection extensions (if any of these extensions exist then we should have a SM3.0 compatible card, hopefully)
-	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } }
+	{ false, false, 3, { "GL_ARB_shader_texture_lod", "GL_NV_vertex_program3", "GL_ATI_shader_texture_lod" }, 0, { NULL } },
+
+	{ false, false, 1, { "GL_ARB_texture_float" }, 0, { NULL } },
+
+	{ false, false, 1, { "GL_ARB_draw_elements_base_vertex" }, 4, { "glDrawElementsBaseVertex", "glDrawRangeElementsBaseVertex", 
+		"glDrawElementsInstancedBaseVertex", "glMultiDrawElementsBaseVertex" } }
 };
 
 // ogl_funcion is:
@@ -314,11 +215,18 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glGetUniformLocationARB", 0 },
 	{ "glGetUniformivARB", 0 },
 	{ "glUniform1fARB", 0 },
+	{ "glUniform2fARB", 0 },
 	{ "glUniform3fARB", 0 },
+	{ "glUniform4fARB", 0 },
 	{ "glUniform3fvARB", 0 },
 	{ "glUniform4fvARB", 0 },
 	{ "glUniform1iARB", 0 },
-	{ "glUniformMatrix4fvARB", 0 }
+	{ "glUniformMatrix4fvARB", 0 },
+	{ "glDrawBuffers", 0 },
+	{ "glDrawElementsBaseVertex", 0	},
+	{ "glDrawRangeElementsBaseVertex", 0 }, 
+	{ "glDrawElementsInstancedBaseVertex", 0 },
+	{ "glMultiDrawElementsBaseVertex", 0 }
 };
 
 // special extensions (only special functions are supported at the moment)
@@ -461,20 +369,16 @@ void opengl_extensions_init()
 	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
 	Use_compressed_textures = Is_Extension_Enabled(OGL_EXT_TEXTURE_COMPRESSION_S3TC);
 	Texture_compression_available = Is_Extension_Enabled(OGL_ARB_TEXTURE_COMPRESSION);
+	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
+	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
 	//allow VBOs to be used
 	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) ) {
 		Use_VBOs = 1;
 	}
 
-//	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
-//		Use_PBOs = 1;
-//	}
-
-	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
-			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) && Is_Extension_Enabled(OGL_SM30) )
-	{
-		Use_GLSL = 1;
+	if ( !Cmdline_no_pbo && Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) ) {
+		Use_PBOs = 1;
 	}
 
 	// setup the best fog function found
@@ -491,10 +395,41 @@ void opengl_extensions_init()
 		Cmdline_env = 0;
 	}
 
+	if ( !Cmdline_noglsl && Is_Extension_Enabled(OGL_ARB_SHADER_OBJECTS) && Is_Extension_Enabled(OGL_ARB_FRAGMENT_SHADER)
+			&& Is_Extension_Enabled(OGL_ARB_VERTEX_SHADER) ) {
+		int ver = 0, major = 0, minor = 0;
+		const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION_ARB);
+
+		sscanf(glsl_ver, "%d.%d", &major, &minor);
+		ver = (major * 100) + minor;
+
+		// SM 4.0 compatible or better
+		if (ver >= 400) {
+			Use_GLSL = 4;
+		}
+		// SM 3.0 compatible
+		else if ( ver >= 130 ) {
+			Use_GLSL = 3;
+		}
+		// SM 2.0 compatible
+		else if (ver >= 120) {
+			Use_GLSL = 2;
+		}
+		// we require GLSL 1.20 or higher
+		else if (ver < 110) {
+			Use_GLSL = 0;
+			mprintf(("  OpenGL Shading Language version %s is not sufficient to use GLSL mode in FSO. Defaulting to fixed-function renderer.\n", glGetString(GL_SHADING_LANGUAGE_VERSION_ARB) ));
+#ifdef NDEBUG
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "GLSL support not available on this GPU. Disabling shader support and defaulting to fixed-function rendering.\n");
+#endif
+		}
+	}
+
 	// can't have this stuff without GLSL support
 	if ( !Use_GLSL ) {
 		Cmdline_normal = 0;
 		Cmdline_height = 0;
+		Cmdline_postprocess = 0;
 	}
 
 	if (Use_GLSL) {
@@ -502,19 +437,17 @@ void opengl_extensions_init()
 		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS_ARB, &max_texture_units);
 
 		// we need enough texture slots for this stuff to work
-
-		if (max_texture_units < 4) {
-			Int3();
-			Use_GLSL = 0;
-		}
-
-		if (max_texture_units < 5) {
+		
+		if (max_texture_units < 6) {
+			mprintf(( "Not enough texture units for height map support. We need at least 6, we found %d.\n", max_texture_units ));
+			Cmdline_height = 0;
+		} else if (max_texture_units < 5) {
+			mprintf(( "Not enough texture units for height and normal map support. We need at least 5, we found %d.\n", max_texture_units ));
 			Cmdline_normal = 0;
 			Cmdline_height = 0;
-		}
-
-		if (max_texture_units < 6) {
-			Cmdline_height = 0;
+		} else if (max_texture_units < 4) {
+			mprintf(( "Not enough texture units found for GLSL support. We need at least 4, we found %d.\n", max_texture_units ));
+			Use_GLSL = 0;
 		}
 	}
 }

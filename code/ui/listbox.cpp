@@ -7,125 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.7.2.1 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
- *
- * Code to implement a listbox gadget.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/07/18 03:45:10  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.6  2005/07/02 19:45:02  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.5  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.4  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2004/03/10 18:45:09  Kazan
- * partially complete IRC - so i can work on it on my laptop
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     12/02/98 5:47p Dave
- * Put in interface xstr code. Converted barracks screen to new format.
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 20    3/23/98 5:48p Hoffoss
- * Improved listbox handling.  Most notibly the scrollbar arrows work now.
- * 
- * 19    2/03/98 4:21p Hoffoss
- * Made UI controls draw white text when disabled.
- * 
- * 18    1/20/98 10:36a Hoffoss
- * Fixed optimized warnings.
- * 
- * 17    1/14/98 6:43p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 16    9/18/97 10:31p Lawrance
- * allow listbox to change text
- * 
- * 15    9/09/97 4:32p Dave
- * Added sel_changed() function to UI_LISTBOX to check is the selection
- * has changed.
- * 
- * 14    9/09/97 3:39p Sandeep
- * warning level 4 bugs
- * 
- * 13    8/19/97 1:27p Dave
- * Made it possible to create an empty list box and summarily add items.
- * 
- * 12    8/14/97 5:23p Dave
- * Added clear_all_items() to the UI_LISTBOX
- * 
- * 11    6/26/97 5:53p Lawrance
- * change code slightly, so current_item is not forced to 0 when was -1
- * 
- * 10    6/12/97 12:39p John
- * made ui use freespace colors
- * 
- * 9     6/11/97 1:13p John
- * Started fixing all the text colors in the game.
- * 
- * 8     5/26/97 10:26a Lawrance
- * get slider control working 100%
- * 
- * 7     4/22/97 10:11a John
- * Added checkbox lists to listboxes
- * 
- * 6     4/15/97 3:47p Allender
- * moved type selection of list box items into actual UI code.  Made it
- * behave more like windows listboxes do
- * 
- * 5     12/23/96 2:42p Lawrance
- * allowing keys to select list box items in the mission load screen
- * 
- * 4     12/02/96 2:17p John
- * Made right button drag UI gadgets around and
- * Ctrl+Shift+Alt+F12 dumps out where they are.
- * 
- * 3     12/01/96 3:48a Lawrance
- * added function set_current to UI_LISTBOX
- * 
- * 2     11/15/96 11:43a John
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"
@@ -136,8 +18,6 @@
 
 #define KEY_BUFFER_TIMEOUT		1000		// time to clear buffer in milliseconds
 
-// bumped up by kazan
-//#define DEFAULT_LISTBOX_ITEM_LENGTH 40
 #define DEFAULT_LISTBOX_ITEM_LENGTH 128
 
 // --------------------------------------------------------------------
@@ -230,19 +110,19 @@ void UI_LISTBOX::draw()
 		if (disabled_flag) {
 			if ( bmap_ids[LBOX_DISABLED] >= 0 ) {
 				gr_set_bitmap(bmap_ids[LBOX_DISABLED]);
-				gr_bitmap(x, y);
+				gr_bitmap(x, y, GR_RESIZE_MENU);
 			}
 
 		} else {
 			if ( bmap_ids[LBOX_NORMAL] >= 0 ) {
 				gr_set_bitmap(bmap_ids[LBOX_NORMAL]);
-				gr_bitmap(x, y);
+				gr_bitmap(x, y, GR_RESIZE_MENU);
 			}
 		}
 
 	} else {
 		gr_set_color_fast(&CBLACK);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 		ui_rect( 0, 0, w-1, h-1 );
 		gr_reset_clip();	
 		if (draw_frame)
@@ -260,7 +140,7 @@ void UI_LISTBOX::draw()
 	if (stop>num_items) stop = num_items;
 
 	x1 = y1 = 0;
-	gr_set_clip( x, y, w, h );
+	gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 	for ( i=first_item; i<stop; i++ ) {
 		gr_get_string_size( &w1, &h1,list[i] );
@@ -273,21 +153,21 @@ void UI_LISTBOX::draw()
 			if ((current_item == -1) && (my_wnd->selected_gadget == this ) && (i == first_item)  )	{
 				if ( !uses_bmaps ) {
 					gr_set_color_fast( &CBLACK );
-					gr_rect( x1, y1, w1+2, h1 );
+					gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				}
 				current_item = first_item;
 				gr_set_color_fast( &CBRIGHT_GREEN );
 			} else {
 				if ( !uses_bmaps ) {
 					gr_set_color_fast( &CBLACK );
-					gr_rect( x1, y1, w1+2, h1 );
+					gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				}
 				gr_set_color_fast( &CWHITE );
 			}
 */
 			if (!uses_bmaps) {
 				gr_set_color_fast( &CBLACK );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 			}
 
 			gr_set_color_fast(&CWHITE);
@@ -295,25 +175,25 @@ void UI_LISTBOX::draw()
 		} else {
 			if (my_wnd->selected_gadget == this) {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				gr_set_color_fast( &CBRIGHT_GREEN );
 
 			} else {
 				gr_set_color_fast( &CGRAY );
-				gr_rect( x1, y1, w1+2, h1 );
+				gr_rect( x1, y1, w1+2, h1, GR_RESIZE_MENU_NO_OFFSET );
 				gr_set_color_fast( &CBLACK );
 			}
 		}
 
 		if ( check_list )	{
 			if ( check_list[i] )	{
-				gr_string( x1+2, y1, "X" );
+				gr_string( x1+2, y1, "X", GR_RESIZE_MENU );
 			}
 
-			gr_string( x1+16, y1, list[i] );
+			gr_string( x1+16, y1, list[i], GR_RESIZE_MENU );
 
 		} else
-			gr_string( x1+2, y1, list[i] );
+			gr_string( x1+2, y1, list[i], GR_RESIZE_MENU );
 
 		if (i==current_item)
 			gr_set_color_fast( &CGRAY );
@@ -336,7 +216,7 @@ void UI_LISTBOX::draw()
 
 void UI_LISTBOX::process(int focus)
 {
-	int OnMe, mitem, oldbarpos, kf = 0;
+	int OnMe, mitem, kf = 0;
 	int i, j;
 
 	selected_item = -1;
@@ -488,7 +368,6 @@ void UI_LISTBOX::process(int focus)
 
 			} else {
 				if (has_scrollbar) {
-					oldbarpos = scrollbar.position;
 					scrollbar.position = first_item;
 
 					scrollbar.bar_position = scrollbar.position - scrollbar.start;
@@ -545,7 +424,6 @@ void UI_LISTBOX::process(int focus)
 				first_item = 0;
 
 			} else if (has_scrollbar) {
-				oldbarpos = scrollbar.position;
 				scrollbar.position = first_item;
 
 				scrollbar.bar_position = scrollbar.position - scrollbar.start;

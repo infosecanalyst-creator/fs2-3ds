@@ -7,315 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.11.2.3 $
- * $Date: 2006-10-01 19:27:28 $
- * $Author: taylor $
- *
- * header file for dealing with campaigns
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.11.2.2  2006/08/27 18:11:37  taylor
- * quite a few fixes to handle missing campaigns better
- * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
- * clean up the getting of a list of available campaigns
- * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
- * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
- * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
- *
- * Revision 2.11.2.1  2006/06/10 18:35:05  Goober5000
- * fix parsing/handling of debriefing persona indexes
- * --Goober5000
- *
- * Revision 2.11  2006/04/20 06:32:07  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.10  2006/02/12 10:42:25  Goober5000
- * allow specification of debriefing personas
- * --Goober5000
- *
- * Revision 2.9  2005/12/29 08:08:36  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
- * Revision 2.8  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.7  2004/10/31 21:53:24  taylor
- * new pilot code support, no-multiplayer and compiler warning fixes, center mouse cursor for redalert missions
- *
- * Revision 2.6  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.5  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.4  2003/09/05 04:25:29  Goober5000
- * well, let's see here...
- *
- * * persistent variables
- * * rotating gun barrels
- * * positive/negative numbers fixed
- * * sexps to trigger whether the player is controlled by AI
- * * sexp for force a subspace jump
- *
- * I think that's it :)
- * --Goober5000
- *
- * Revision 2.3  2003/03/03 04:28:36  Goober5000
- * fixed the tech room bug!  yay!
- * --Goober5000
- *
- * Revision 2.2  2003/01/14 04:00:16  Goober5000
- * allowed for up to 256 main halls
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 16    9/30/99 6:02p Jefff
- * Changes for OEM
- * 
- * 15    9/09/99 11:40p Dave
- * Handle an Assert() in beam code. Added supernova sounds. Play the right
- * 2 end movies properly, based upon what the player did in the mission.
- * 
- * 14    9/07/99 6:55p Jefff
- * functionality to break out of a loop.  hacked functionality to jump to
- * a specific mission in a campaign -- doesn't grant ships/weapons from
- * skipped missions tho.
- * 
- * 13    9/06/99 9:45p Jefff
- * break out of loop and skip mission support
- * 
- * 12    9/06/99 6:38p Dave
- * Improved CD detection code.
- * 
- * 11    8/27/99 12:04a Dave
- * Campaign loop screen.
- * 
- * 10    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 9     4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 8     2/25/99 4:19p Dave
- * Added multiplayer_beta defines. Added cd_check define. Fixed a few
- * release build warnings. Added more data to the squad war request and
- * response packets.
- * 
- * 7     12/12/98 3:17p Andsager
- * Clean up mission eval, goal, event and mission scoring.
- * 
- * 6     12/10/98 9:59a Andsager
- * Fix some bugs with mission loops
- * 
- * 5     12/09/98 1:56p Andsager
- * Initial checkin of mission loop
- * 
- * 4     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 47    9/10/98 1:17p Dave
- * Put in code to flag missions and campaigns as being MD or not in Fred
- * and FreeSpace. Put in multiplayer support for filtering out MD
- * missions. Put in multiplayer popups for warning of non-valid missions.
- * 
- * 46    6/05/98 9:54a Lawrance
- * OEM changes
- * 
- * 45    5/21/98 9:25p Allender
- * endgame movie always viewable at end of campaign
- * 
- * 44    5/13/98 5:14p Allender
- * red alert support to go back to previous mission
- * 
- * 43    5/12/98 4:16p Hoffoss
- * Fixed bug where not all missions in all campaigns were being filtered
- * out of stand alone mission listing in simulator room.
- * 
- * 42    4/28/98 5:25p Sandeep
- * 
- * 41    4/27/98 7:30p Hoffoss
- * Added campaign descriptions to campaign files and changed campaign room
- * to display them.
- * 
- * 40    4/25/98 7:40p Allender
- * fixd some small hotkey stuff.  Worked on turret orientation being
- * correct for multiplayer.  new sexpression called end-campaign will will
- * end the main campaign
- * 
- * 39    4/13/98 10:25p Hoffoss
- * Added a flag for subspace missions, and for aboard the Galatea or
- * Bastion.
- * 
- * 38    4/08/98 6:16p Hoffoss
- * Added a description field to campaign structure, since the campaign
- * room has a window for this.  We'll need to add this in sometime.
- * 
- * 37    4/06/98 6:37p Dave
- * Put in max_observers netgame server option. Make sure host is always
- * defaulted to alpha 1 or zeta 1. Changed create game so that MAX_PLAYERS
- * can always join but need to be kicked before commit can happen. Put in
- * support for server ending a game and notifying clients of a special
- * condition.
- * 
- * 36    4/02/98 11:40a Lawrance
- * check for #ifdef DEMO instead of #ifdef DEMO_RELEASE
- * 
- * 35    3/31/98 12:23a Allender
- * changed macro names of campaign types to be more descriptive.  Added
- * "team" to objectives dialog for team v. team missions.  Added two
- * distinct multiplayer campaign types
- * 
- * 34    3/30/98 10:37p Allender
- * added demo.fsc as default campaign for demo.  Delete obsolete pilots
- * (including their campaign save games)
- * 
- * 33    3/26/98 5:24p Allender
- * put in respawn edit box into mission notes dialog.  Made loading of
- * missions/campaign happen when first entering the game setup screen.
- * 
- * 32    3/17/98 4:17p Allender
- * made Fred/FreeSpace use the same campaign loading code
- * 
- * 31    3/02/98 5:22p Hoffoss
- * Removed ready room and added campaign room.
- * 
- * 30    2/26/98 10:07p Hoffoss
- * Rewrote state saving and restoring to fix bugs and simplify the code.
- * 
- * 29    2/23/98 11:08p Dave
- * Finished up multiplayer campaign support. Seems bug-free.
- * 
- * 28    2/10/98 5:51p Hoffoss
- * Changed campaign stuff so new pilots start out with no active campaign
- * (will get set in readyroom before user can move beyond the readyroom).
- * 
- * 27    2/05/98 10:14p Lawrance
- * Implement Save and Quit
- * 
- * 26    12/19/97 2:59p Allender
- * more stuff to get persistent ships/weapons across campaign missions
- * 
- * 25    12/19/97 12:03p Allender
- * Added GM_CAMPAIGN_MODE to indicate when player is in a campaign or not.
- * Started adding FreeSpace support for carrying of ship/weapon types
- * across missions in a campaign.
- * 
- * 24    12/18/97 5:12p Allender
- * initial support for ship/weapon persistence
- * 
- * 23    12/05/97 1:55p Allender
- * delete campaign save files when pilot is deleted
- * 
- * 22    11/20/97 7:19p Hoffoss
- * Renamed mission_campaign_do_new() to mission_campaign_load().  Changed
- * readyroom to not lose campaign savefile until commiting to a different
- * comapaign.
- * 
- * 21    11/20/97 5:36p Dave
- * Hooked in a bunch of main hall changes (including sound). Made it
- * possible to reposition (rewind/ffwd) 
- * sound buffer pointers. Fixed animation direction change framerate
- * problem.
- * 
- * 20    11/16/97 1:11p Hoffoss
- * Coded up readyroom screen, first pass.
- * 
- * 19    11/15/97 2:37p Dave
- * More multiplayer campaign support.
- * 
- * 18    11/13/97 5:03p Sandeep
- * added CSFE support
- * 
- * 17    11/12/97 4:40p Dave
- * Put in multiplayer campaign support parsing, loading and saving. Made
- * command-line variables better named. Changed some things on the initial
- * pilot select screen.
- * 
- * 16    11/11/97 4:57p Dave
- * Put in support for single vs. multiplayer pilots. Began work on
- * multiplayer campaign saving. Put in initial player select screen
- * 
- * 15    11/06/97 4:36p Allender
- * campaign work to add a briefing cutscene to play before the briefing.
- * 
- * 14    10/21/97 4:50p Allender
- * goal/event sexpression support.  Fixed campaign save file, sexpressions
- * handling, sexpression editing, etc
- * 
- * 13    10/20/97 5:13p Allender
- * new subsystem sabotage/repair/set sexpressions.  Added new event/goal
- * status checking sexpressions (not fully implemented yet).  Change
- * campaign save files to save all events as well as goals
- * 
- * 12    9/18/97 10:18p Lawrance
- * add function to extract the mission names from a campaign file
- * 
- * 11    8/21/97 10:58p Hoffoss
- * Fixed bug in mission scanning for campaign editor, and added mission
- * notes to sexp help window in campaign editor when mission is selected.
- * 
- * 10    8/13/97 5:49p Hoffoss
- * Fixed bugs, made additions.
- * 
- * 9     8/08/97 5:18p Jasen
- * Fixed bug with current campaign in pilot file has been deleted.  Now it
- * defaults back to default if current doesn't exist.
- * 
- * 8     5/09/97 9:49a Hoffoss
- * Added campaign loading for Fred and 2 new tokens to campaign file
- * format.
- * 
- * 7     4/25/97 1:55p Allender
- * added close() routine to free memory at game shutdown
- * 
- * 6     4/25/97 11:31a Allender
- * Campaign state now saved in campaign save file in player directory.
- * Made some global variables follow naming convention.  Solidified
- * continuing campaigns based on new structure
- * 
- * 5     4/23/97 3:21p Allender
- * more campaign stuff -- mission branching through campaign file now
- * works!!!!
- * 
- * 4     4/22/97 10:44a Allender
- * more campaign stuff.  Info about multiple campaigns now stored in
- * player file -- not saving some player information in save games.
- * 
- * 3     4/18/97 9:59a Allender
- * more campaign stuff.  All campaign related varaibles now stored in
- * campaign structure
- * 
- * 2     4/17/97 9:02p Allender
- * campaign stuff.  All campaign material stored in external file.
- * Continuing campaign won't work at this point
- * 
- * 1     4/15/97 2:11p Allender
- *
- * $NoKeywords: $
- */
+
 
 #ifndef _MISSION_CAMPAIGN_H
 #define _MISSION_CAMPAIGN_H
@@ -325,32 +17,22 @@
 struct sexp_variable;
 
 // name of the builtin campaign.
-#if defined(FS2_DEMO)
-	#define BUILTIN_CAMPAIGN		"demo"
-	#define BUILTIN_CAMPAIGN_NAME	"DEMO Campaign"
-#elif defined(OEM_BUILD)
-	#define BUILTIN_CAMPAIGN		"FreeSpace2OEM"
-	#define BUILTIN_CAMPAIGN_NAME	"OEM Campaign"
-#elif defined(E3_BUILD)
-	#define BUILTIN_CAMPAIGN		"E3"
-	#define BUILTIN_CAMPAIGN_NAME	"E3 Campaign"
-#else
-	#define BUILTIN_CAMPAIGN		"FreeSpace2"
-	#define BUILTIN_CAMPAIGN_NAME	"The Main FreeSpace2 Campaign"
-#endif
+#define BUILTIN_CAMPAIGN		"FreeSpace2"
 
 #define MAX_CAMPAIGN_MISSIONS	100			// maximum number of missions in a campaign
 
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
 #define CAMPAIGN_ERROR_MISSING			-3
+#define CAMPAIGN_ERROR_SAVEFILE			-4
+#define CAMPAIGN_ERROR_IGNORED			-5
 
 // types of campaigns -- these defines match the string literals listed below which
 // are found in the campaign files.  I don't think that we need campaigns for furball
 // missions.
 #define CAMPAIGN_TYPE_SINGLE			0
 #define CAMPAIGN_TYPE_MULTI_COOP		1
-#define CAMPAIGN_TYPE_MULTI_TEAMS	2
+#define CAMPAIGN_TYPE_MULTI_TEAMS		2
 
 #define MAX_CAMPAIGN_TYPES				3
 
@@ -370,6 +52,8 @@ struct sexp_variable;
 #define CMISSION_FLAG_BASTION	(1<<0)	// set if stationed on Bastion, else Galatea
 
 #define CMISSION_FLAG_SKIPPED	(1<<1)	// set if skipped, else not
+#define CMISSION_FLAG_HAS_LOOP	(1<<2)	// mission loop, e.g. FS2 SOC loops
+#define CMISSION_FLAG_HAS_FORK	(1<<3)	// campaign fork, e.g. Scroll or BWO (mutually exclusive with loop)
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
 
@@ -393,7 +77,9 @@ typedef struct mevent {
 	char	status;
 } mevent;
 
-typedef struct cmission {
+class cmission
+{
+public:
 	char				*name;					// name of the mission
 	char				*notes;					// mission notes for mission (used by Fred)
 	char				briefing_cutscene[NAME_LENGTH];	// name of the cutscene to be played before this mission
@@ -403,55 +89,67 @@ typedef struct cmission {
 	mgoal			*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
 	int				num_events;				// number of events this mission had
 	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
-	int				num_saved_variables;	// number of variables this mission had - Goober5000
-	sexp_variable	*saved_variables;		// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
-	int				has_mission_loop;		// whether current mission has side loop
-	int				mission_loop_formula;// formula to determine whether to allow a side loop
-	char			*mission_loop_desc;	// message in popup
-	char			*mission_loop_brief_anim;
-	char			*mission_loop_brief_sound;
+	int				num_variables;			// number of variables this mission had - Goober5000
+	sexp_variable	*variables;				// malloced array of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
+	int				mission_loop_formula;	// formula to determine whether to allow a side loop
+	char			*mission_branch_desc;	// message in popup
+	char			*mission_branch_brief_anim;
+	char			*mission_branch_brief_sound;
 	int				level;					// what level of the tree it's on (Fred)
-	int				pos;						// what x position on level it's on (Fred)
+	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
-	ubyte			main_hall;				// which main hall the player is in - Goober5000
+	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
-} cmission;
+};
 
-typedef struct campaign {
-	char		name[NAME_LENGTH];						// name of the campaign
-	char		filename[MAX_FILENAME_LEN];			// filename the campaign info is in
-	char		*desc;										// description of campaign
-	int		type;											// type of campaign
-	int		flags;										// flags - Goober5000
-	int		num_missions;								// number of missions in the campaign
+class campaign
+{
+public:
+	char	name[NAME_LENGTH];						// name of the campaign
+	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
+	char	*desc;									// description of campaign
+	int		type;									// type of campaign
+	int		flags;									// flags - Goober5000
+	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
-	int		current_mission;							// the current mission that the player is playing.  Only valid during the mission
-	int		next_mission;								// number of the next mission to fly when comtinuing the campaign.  Always valid
-	int		prev_mission;								// mission that we just came from.  Always valid
-	int		loop_enabled;								// whether mission loop is chosen - true during a loop, false otherwise
-	int		loop_mission;								// mission number of misssion loop (if any)
-	int		loop_reentry;								// mission number to return to after loop is finished
-	int		realign_required;							// are any missions missing alignment info? (Fred)
-	int		num_players;								// valid in multiplayer campaigns -- number of players campaign supports.
-	ubyte		ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
-	ubyte		weapons_allowed[MAX_WEAPON_TYPES];	// which weapons the player can use
-	cmission	missions[MAX_CAMPAIGN_MISSIONS];		// decription of the missions
-} campaign;
+	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
+	int		next_mission;							// number of the next mission to fly when comtinuing the campaign.  Always valid
+	int		prev_mission;							// mission that we just came from.  Always valid
+	int		loop_enabled;							// whether mission loop is chosen - true during a loop, false otherwise
+	int		loop_mission;							// mission number of misssion loop (if any)
+	int		loop_reentry;							// mission number to return to after loop is finished
+	int		realign_required;						// are any missions missing alignment info? (Fred)
+	int		num_players;							// valid in multiplayer campaigns -- number of players campaign supports.
+	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
+	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
+	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
+	int				num_variables;					// number of variables this campaign had - Goober5000
+	sexp_variable	*variables;						// malloced array of sexp_variables (of num_variables size) containing campaign-persistent variables - Goober5000
+	int				redalert_num_variables;			// These two variables hold the previous state of the above for restoration
+	sexp_variable	*redalert_variables;			// if you replay the previous mission in a Red Alert scenario. -MageKing17
+
+	campaign()
+		: desc(NULL), num_missions(0), variables(NULL)
+	{
+		name[0] = 0;
+		filename[0] = 0;
+	}
+};
 
 extern campaign Campaign;
 
 // campaign wasn't ended
-extern int Campaign_ended_in_mission;
+extern int Campaign_ending_via_supernova;
 
 // structure for players.  Holds the campaign name, number of missions flown in the campaign, and result
 // of the missions flown.  This structure is stored in the player file and thus is persistent across
 // games
 typedef struct campaign_info
 {
-	char		filename[NAME_LENGTH];
 	int		num_missions_completed;
-	ubyte		missions_completed[MAX_CAMPAIGN_MISSIONS];
+	char	filename[NAME_LENGTH];
+	ubyte	missions_completed[MAX_CAMPAIGN_MISSIONS];
 } campaign_info;
 
 // extern'ed so the mission loading can get a list of campains.  Only use this
@@ -462,9 +160,17 @@ extern char *Campaign_file_names[MAX_CAMPAIGNS];
 extern char *Campaign_descs[MAX_CAMPAIGNS];
 extern int	Num_campaigns;
 extern int	Campaign_names_inited;
+extern SCP_vector<SCP_string> Ignored_campaigns;
+
+extern char Default_campaign_file_name[MAX_FILENAME_LEN - 4];
 
 // if the campaign file is missing this will get set for us to check against
 extern int Campaign_file_missing;
+
+/*
+ * initialise Player_loadout with default values
+ */
+void player_loadout_init();
 
 // called at game startup time to load the default single player campaign
 void mission_campaign_init( void );
@@ -475,15 +181,14 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign );
 
 
 // load up and initialize a new campaign
-int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1 );
+int mission_campaign_load( char *filename, player *pl = NULL, int load_savefile = 1, bool reset_stats = true );
 
 // function to save the state of the campaign between missions or to load a campaign save file
 extern int mission_campaign_save( void );
 
 // declaration for local campaign save game load function
-extern int mission_campaign_savefile_load( char *cfilename, player *pl = NULL );
-extern void mission_campaign_savefile_delete( char *cfilename, int is_multi = -1 );
-extern void mission_campaign_delete_all_savefiles( char *pilot_name, int is_multi );
+extern void mission_campaign_savefile_delete( char *cfilename );
+extern void mission_campaign_delete_all_savefiles( char *pilot_name );
 
 // if a given campaign is a multiplayer campaign, we can load and save the multiplayer info portion with these functions
 extern int mission_campaign_parse_is_multi(char *filename, char *name);
@@ -495,7 +200,7 @@ extern int mission_campaign_next_mission( void );
 extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
-extern void mission_campaign_close( void );
+extern void mission_campaign_clear( void );
 
 // read in a campaign file.  Used by Fred.
 int mission_campaign_load_fred(char *filename, char *name_verify = NULL);
@@ -530,15 +235,21 @@ void campaign_delete_save( char *cfn, char *pname);
 void campaign_savefile_load(char *fname, char *pname);
 
 // get name and type of specified campaign file
-int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc = NULL);
+int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc = NULL);
 
 // get a listing of missions in a campaign
-int mission_campaign_get_mission_list(char *filename, char **list, int max);
+int mission_campaign_get_mission_list(const char *filename, char **list, int max);
 
 // load up a campaign for the current player.
 int mission_load_up_campaign( player *p = NULL );
 
 // stores mission goals and events in Campaign struct
+void mission_campaign_store_goals_and_events();
+
+// stores campaign-persistent variables
+void mission_campaign_store_variables();
+
+// does both of the above
 void mission_campaign_store_goals_and_events_and_variables();
 
 // evaluates next mission and possible loop mission
@@ -563,6 +274,8 @@ void mission_campaign_end_do();
 
 // Goober5000 - save persistent variables
 extern void mission_campaign_save_player_persistent_variables();
+
+extern void mission_campaign_load_failure_popup();
 
 // End CSFE stuff
 #endif

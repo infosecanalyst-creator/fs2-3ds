@@ -7,234 +7,8 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.11.2.2 $
- * $Date: 2008-01-17 07:43:23 $
- * $Author: Goober5000 $
- *
- * Variables and constants common to FreeSpace and Fred.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.11.2.1  2006/09/11 01:00:27  taylor
- * various small compiler warning and strict compiling fixes
- *
- * Revision 2.11  2006/04/20 06:32:01  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.10  2006/01/27 20:29:30  Goober5000
- * some tweaks for insertion sort
- * --Goober5000
- *
- * Revision 2.9  2006/01/27 06:03:41  Goober5000
- * add an insertion sort function for small or almost-sorted arrays; it has the same prototype as stdlib's quick sort
- * --Goober5000
- *
- * Revision 2.8  2005/05/26 04:27:10  taylor
- * timer changes to fix game_busy() on the loading screen and 100% incorrect values on some machines,
- *   don't know if this is going to work that great but it's more like the Linux SDL code now which
- *   has worked for years without major problems
- *
- * Revision 2.7  2005/03/03 06:05:27  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.6  2005/02/04 10:12:29  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.5  2004/10/31 21:33:05  taylor
- * rename OGL_inited to OGL_enabled to match D3D version
- *
- * Revision 2.4  2004/07/26 20:47:31  Kazan
- * remove MCD complete
- *
- * Revision 2.3  2004/07/12 16:32:47  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.2  2002/11/22 20:56:15  phreak
- * added OGL_inited global.  Sets to 0 even if OGL isn't defined by preproccessor
- * -phreak
- *
- * Revision 2.1  2002/08/01 01:41:04  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:22  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:07  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 12    9/09/99 8:53p Dave
- * Fixed multiplayer degenerate orientation case problem. Make sure warp
- * effect never goes lower than LOD 1. 
- * 
- * 11    9/06/99 11:25a Mikek
- * Decrease some settings for High detail level.
- * 
- * 10    8/05/99 2:05a Dave
- * Whee.
- * 
- * 9     7/29/99 10:47p Dave
- * Standardized D3D fogging using vertex fog. Shook out Savage 4 bugs.
- * 
- * 8     7/29/99 12:05a Dave
- * Nebula speed optimizations.
- * 
- * 7     6/22/99 7:03p Dave
- * New detail options screen.
- * 
- * 6     6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 5     5/24/99 5:45p Dave
- * Added detail levels to the nebula, with a decent speedup. Split nebula
- * lightning into its own section.
- * 
- * 4     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 3     10/07/98 6:27p Dave
- * Globalized mission and campaign file extensions. Removed Silent Threat
- * special code. Moved \cache \players and \multidata into the \data
- * directory.
- * 
- * 2     10/07/98 10:52a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:48a Dave
- * 
- * 38    9/21/98 8:46p Dave
- * Put in special check in fred for identifying unknown ships.
- * 
- * 37    8/17/98 5:07p Dave
- * First rev of corkscrewing missiles.
- * 
- * 36    5/13/98 11:34p Mike
- * Model caching system.
- * 
- * 35    4/25/98 4:06p John
- * Made defaults make a little more sense
- * 
- * 34    4/20/98 8:41p John
- * Made debris culling actually reduce Glide texture resolution.
- * 
- * 33    4/12/98 9:56a John
- * Made lighting detail flags work.   Made explosions cast light on
- * highest.
- * 
- * 32    4/08/98 8:34p Lawrance
- * Fix up how custom button works on the detail tab.
- * 
- * 31    4/01/98 5:34p John
- * Made only the used POFs page in for a level.   Reduced some interp
- * arrays.    Made custom detail level work differently.
- * 
- * 30    3/31/98 5:18p John
- * Removed demo/save/restore.  Made NDEBUG defined compile.  Removed a
- * bunch of debug stuff out of player file.  Made model code be able to
- * unload models and malloc out only however many models are needed.
- *  
- * 
- * 29    3/30/98 2:38p Mike
- * Add asteroid_density to detail level support.
- * No force explosion damage in training missions.
- * Make cargo deathrolls shorter.
- * 
- * 28    3/24/98 8:16a John
- * made highest detail different than next one down
- * 
- * 27    3/23/98 5:19p John
- * Upped number of default detail levels to 4
- * 
- * 26    3/22/98 4:11p Andsager
- * Remove global FreeSpace_running
- * 
- * 25    3/22/98 3:28p John
- * Added in stippled alpha for lower details.  Made medium detail use
- * engine glow.
- * 
- * 24    3/22/98 2:41p John
- * Added lighting into the detail structure.
- * 
- * 23    3/22/98 11:06a John
- * Changed default detail levels
- * 
- * 22    3/22/98 11:02a John
- * Made a bunch of the detail levels actually do something
- * 
- * 21    3/22/98 9:53a John
- * Added in first stage of new detail level stuff
- * 
- * 20    3/09/98 12:13a Andsager
- * Add code to help find jumps in position.
- * 
- * 19    2/28/98 7:03p Lawrance
- * get slew working in any view
- * 
- * 18    2/16/98 4:16p John
- * Added loading animation
- * 
- * 17    2/10/98 9:06a John
- * Added variables for restoring
- * 
- * 16    2/05/98 9:27p John
- * took out ending min/max etc on monitor
- * 
- * 15    2/05/98 9:21p John
- * Some new Direct3D code.   Added code to monitor a ton of stuff in the
- * game.
- * 
- * 14    2/03/98 9:25p John
- * Upgraded Direct3D code to new version 5.0 code.  Separated the D3D code
- * more.  Added a global variable D3D_enabled flag.
- * 
- * 13    1/17/98 12:17p John
- * fixed erroneous print
- * 
- * 12    1/17/98 12:14p John
- * Added loading... bar to freespace.
- * 
- * 11    1/11/98 2:15p John
- * Changed a lot of stuff that had to do with bitmap loading.   Made cfile
- * not do callbacks, I put that in global code.   Made only bitmaps that
- * need to load for a level load.
- * 
- * 10    12/16/97 6:20p Hoffoss
- * Added more debugging code for demos, and fixed a bug in demo
- * recording/playback.
- * 
- * 9     12/05/97 3:46p John
- * made ship thruster glow scale instead of being an animation.
- * 
- * 8     8/05/97 10:18a Lawrance
- * my_rand() being used temporarily instead of rand()
- * 
- * 7     8/04/97 10:21a Dave
- * Added Is_standalone global var
- * 
- * 6     6/24/97 6:21p John
- * added detail flags.
- * sped up motion debris system a bit.
- * 
- * 5     4/15/97 11:28p Mike
- * External view system
- * 
- * 4     4/15/97 4:00p Mike
- * Intermediate checkin caused by getting other files.  Working on camera
- * slewing system.
- * 
- * 3     4/08/97 8:47a John
- * Added a global varible for detail level
- * 
- * 2     4/01/97 11:07p Mike
- * Clean up game sequencing functions.  Get rid of Multiplayer and add
- * Game_mode.  Add SystemVars.cpp
- * 
- * 1     4/01/97 10:59p Mike
- *
- * $NoKeywords: $
- */
 
+#include "debugconsole/console.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "io/timer.h"
@@ -243,6 +17,7 @@
 
 
 fix Missiontime;
+fix Skybox_timestamp;
 fix Frametime;
 int	Framecount=0;
 
@@ -262,8 +37,9 @@ float Cutscene_bars_progress = 1.0f;
 
 //FADEIN STUFF
 shader Viewer_shader;
-int Fade_type = FI_NONE;
-float Fade_delta_time = 1.0f;
+FadeType Fade_type = FI_NONE;
+int Fade_start_timestamp = 0;
+int Fade_end_timestamp = 0;
 
 // The detail level.  Anything below zero draws simple models earlier than it
 // should.   Anything above zero draws higher detail models longer than it should.
@@ -297,7 +73,10 @@ bool Specmap_override = false;
 bool Normalmap_override = false;
 bool Heightmap_override = false;
 bool Glowpoint_override = false;
+bool Glowpoint_use_depth_buffer = true;
 bool GLSL_override = false;
+bool PostProcessing_override = false;
+bool Teamcolor_override = false;
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
@@ -328,7 +107,7 @@ int myrand()
 	return rval;
 }
 
-// returns a random number between 0 and 0x7fffffff
+// returns a random number between 0 and 0x7fffffff, or something close to it.
 int rand32()
 {
 	if (RAND_MAX == 0x7fff) {
@@ -341,8 +120,6 @@ int rand32()
 		return random32;
 	}
 	else {
-		// karajorma - can't imagine what RAND_MAX could be if it's not 0x7fffffff but let's be careful
-		Assert(RAND_MAX == 0x7fffffff);
 		return rand();
 	}
 }
@@ -395,7 +172,7 @@ int game_busy_callback( void (*callback)(int count), int delta_step )
 #ifdef SCP_3DS
 extern "C" void n3ds_log(const char *fmt, ...);
 #endif
-void game_busy(char *filename)
+void game_busy(const char *filename)
 {
 #ifdef SCP_3DS
 	{
@@ -414,7 +191,7 @@ void game_busy(char *filename)
 
 #ifndef NDEBUG
 	if (filename != NULL) 
-		strncpy(Processing_filename, filename, MAX_PATH_LEN);
+		strcpy_s(Processing_filename, filename);
 #endif
 
 	int t1 = timer_get_milliseconds();
@@ -432,17 +209,17 @@ void game_busy(char *filename)
 
 #ifndef NDEBUG
 
-#define MAX_MONITORS 64
+#define MAX_VARIABLE_MONITORS 64
 
 static int Num_monitors = 0;
-static monitor *Monitor[MAX_MONITORS];
+static monitor *Monitor[MAX_VARIABLE_MONITORS];
 
 monitor::monitor( char *_name )
 {
 	int i;
 
-	if ( Num_monitors >= MAX_MONITORS )	{
-		Int3();			// Too many monitor variables!! Increase MAX_MONITORS!!
+	if ( Num_monitors >= MAX_VARIABLE_MONITORS )	{
+		Int3();			// Too many monitor variables!! Increase MAX_VARIABLE_MONITORS!!
 		return;
 	}
 
@@ -479,76 +256,79 @@ monitor::monitor( char *_name )
 
 
 int Monitor_inited = 0;
-char Monitor_filename[128];
+char Monitor_filename[MAX_PATH_LEN];
 fix monitor_last_time = -1;
 
-DCF(monitor,"Monitors game performace")
+DCF(monitor,"Monitors game performace by saving to file")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-			if ( Monitor_inited )	{
-				Monitor_inited = 0;
+	SCP_string filename;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: monitor [filename]\n");
+		dc_printf("Outputs monitoring info to [filename]. No filename turns it off\n" );
+		return;
+	}
+
+	if (dc_maybe_stuff_string_white(filename)) {
+		if ( Monitor_inited )	{
+				dc_printf( "Monitor already on\n" );
+		} else {
+			Monitor_inited = 1;
+
+			strcpy_s(Monitor_filename, filename.c_str());
+
+			// Reset them all
+			int i;
+			for (i=0; i<Num_monitors; i++ )	{
+				Monitor[i]->value = 0;
+				Monitor[i]->sum = 0;
+				Monitor[i]->cnt = 0;
+				Monitor[i]->min = 0;
+				Monitor[i]->max = 0;
+			}
+
+			FILE *fp = fopen( Monitor_filename, "wt" );
+			if ( fp )	{
+				for (i=0; i<Num_monitors; i++ )	{
+					if ( i > 0 )	{
+						fprintf( fp, "\t" );
+					}
+					fprintf( fp, "%s", Monitor[i]->name );
+
+				}
+				fprintf( fp, "\n" );
+				fclose(fp);
+			}
+			dc_printf( "Monitor outputting to file '%s'\n", Monitor_filename );
+			monitor_last_time = -1;
+		}
+
+	} else {
+		// Turn off monitoring
+		if ( Monitor_inited )	{
+			Monitor_inited = 0;
 
 /*
-				FILE *fp = fopen( Monitor_filename, "at" );
-				if ( fp )	{
-					fprintf( fp, "\n\n" );
-					fprintf( fp, "Name\tMin\tMax\tAvg\n" );
-					for (int i=0; i<Num_monitors; i++ )	{
-						if ( Monitor[i]->cnt > 0 )	{
-							fprintf( fp, "%s\t%d\t%d\t%d\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max, Monitor[i]->sum / Monitor[i]->cnt  );
-						} else {
-							fprintf( fp, "%s\t%d\t%d\t?\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max );
-						}
+			FILE *fp = fopen( Monitor_filename, "at" );
+			if ( fp )	{
+				fprintf( fp, "\n\n" );
+				fprintf( fp, "Name\tMin\tMax\tAvg\n" );
+				for (int i=0; i<Num_monitors; i++ )	{
+					if ( Monitor[i]->cnt > 0 )	{
+						fprintf( fp, "%s\t%d\t%d\t%d\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max, Monitor[i]->sum / Monitor[i]->cnt  );
+					} else {
+						fprintf( fp, "%s\t%d\t%d\t?\n", Monitor[i]->name, Monitor[i]->min, Monitor[i]->max );
 					}
-					fclose(fp);
 				}
+				fclose(fp);
+			}
 */
 
-				dc_printf( "Monitor to file '%s' turned off\n", Monitor_filename );
-			} else {
-				dc_printf( "Monitor isn't on\n" );
-			}
+			dc_printf( "Monitor to file '%s' turned off\n", Monitor_filename );
 		} else {
-			if ( Monitor_inited )	{
-				dc_printf( "Monitor already on\n" );
-			} else {
-				Monitor_inited = 1;
-
-				strcpy( Monitor_filename, Dc_arg );
-
-				// Reset them all
-				int i;
-				for (i=0; i<Num_monitors; i++ )	{
-					Monitor[i]->value = 0;
-					Monitor[i]->sum = 0;
-					Monitor[i]->cnt = 0;
-					Monitor[i]->min = 0;
-					Monitor[i]->max = 0;
-				}
-
-				FILE *fp = fopen( Monitor_filename, "wt" );
-				if ( fp )	{
-					for (i=0; i<Num_monitors; i++ )	{
-						if ( i > 0 )	{
-							fprintf( fp, "\t" );
-						}
-						fprintf( fp, "%s", Monitor[i]->name );
-					
-					}
-					fprintf( fp, "\n" );
-					fclose(fp);
-				}
-				dc_printf( "Monitor outputting to file '%s'\n", Monitor_filename );
-				monitor_last_time = -1;
-			}
+			dc_printf( "Monitor isn't on\n" );
 		}
 	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: monitor filename\nOutputs monitoring info to filename. No filename turns it off\n" );
-	}
-	
 }
 
 
@@ -652,13 +432,13 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 	{				// Medium
 		1,			// setting
 					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		1,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		1,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		1,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
+		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
+		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
+		2,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		2,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 		2,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
 		2,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		1,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
+		2,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
 		3,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
 
 		// ====  Booleans ====
@@ -670,7 +450,7 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 		2,			// setting
 					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
 		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		3,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
+		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
 		3,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		3,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
 		3,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
@@ -690,7 +470,7 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 		3,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
 		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
 		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		3,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
+		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
 		4,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
 		4,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
 		4,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
@@ -742,44 +522,41 @@ int current_detail_level()
 #ifndef NDEBUG
 DCF(detail_level,"Change the detail level")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_INT|ARG_NONE);
-		if ( Dc_arg_type & ARG_NONE )	{
-			Game_detail_level = 0;
-			dc_printf( "Detail level reset\n" );
-		}
-		if ( Dc_arg_type & ARG_INT )	{
-			Game_detail_level = Dc_arg_int;
-		}
+	int value;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: detail_level [n]\n");
+		dc_printf("[n]  -- is detail level.\n");
+			dc_printf("\t0 is 'normal' detail,\n");
+			dc_printf("\tnegative values are lower, and\n");
+			dc_printf("\tpositive values are higher.\n\n");
+		
+		dc_printf("No parameter resets it to default.\n");
+		return;
 	}
 
-	if ( Dc_help )	
-		dc_printf( "Usage: detail_level [n]\nn is detail level. 0 normal, - lower, + higher, -2 to 2 usually\nNo parameter resets it to default.\n" );
-
-	if ( Dc_status )				
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf("Detail level set to %d\n", Game_detail_level);
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&value)) {
+		Game_detail_level = value;
+		dc_printf("Detail level set to %i\n", Game_detail_level);
+
+	} else {
+		Game_detail_level = 0;
+		dc_printf("Detail level reset\n");
+	}
 }
 
 DCF(detail, "Turns on/off parts of the game for speed testing" )
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_INT|ARG_NONE);
-		if ( Dc_arg_type & ARG_NONE )	{
-			if ( Game_detail_flags == DETAIL_DEFAULT )	{
-				Game_detail_flags = DETAIL_FLAG_CLEAR;
-				dc_printf( "Detail flags set lowest (except has screen clear)\n" );
-			} else {
-				Game_detail_flags = DETAIL_DEFAULT;
-				dc_printf( "Detail flags set highest\n" );
-			}
-		}
-		if ( Dc_arg_type & ARG_INT )	{
-			Game_detail_flags ^= Dc_arg_int;
-		}
-	}
+	int value;
 
-	if ( Dc_help )	{
-		dc_printf( "Usage: detail [n]\nn is detail bit to toggle.\n" );
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: detail [n]\n");
+		dc_printf("[n] is detail bit to toggle:\n" );
 		dc_printf( "   1: draw the stars\n" );
 		dc_printf( "   2: draw the nebulas\n" );
 		dc_printf( "   4: draw the motion debris\n" );
@@ -789,27 +566,45 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 		dc_printf( "  64: clear screen background after each frame\n" );
 		dc_printf( " 128: draw hud stuff\n" );
 		dc_printf( " 256: draw fireballs\n" );
-		dc_printf( " 512: do collision detection\n" );
+		dc_printf( " 512: do collision detection\n\n" );
+
+		dc_printf("No argument will toggle between highest/lowest detail settings\n");
+		return;
 	}
 
-	if ( Dc_status )	{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
 		dc_printf("Detail flags set to 0x%08x\n", Game_detail_flags);
-		dc_printf( "   1: draw the stars: %s\n", (Game_detail_flags&1?"on":"off") );
-		dc_printf( "   2: draw the nebulas: %s\n", (Game_detail_flags&2?"on":"off") );
-		dc_printf( "   4: draw the motion debris: %s\n", (Game_detail_flags&4?"on":"off")  );
-		dc_printf( "   8: draw planets: %s\n", (Game_detail_flags&8?"on":"off")  );
-		dc_printf( "  16: draw models not as blobs: %s\n", (Game_detail_flags&16?"on":"off")  );
-		dc_printf( "  32: draw lasers not as pixels: %s\n", (Game_detail_flags&32?"on":"off")  );
-		dc_printf( "  64: clear screen background after each frame: %s\n", (Game_detail_flags&64?"on":"off")  );
-		dc_printf( " 128: draw hud stuff: %s\n", (Game_detail_flags&128?"on":"off")  );
-		dc_printf( " 256: draw fireballs: %s\n", (Game_detail_flags&256?"on":"off")  );
-		dc_printf( " 512: do collision detection: %s\n", (Game_detail_flags&512?"on":"off")  );
+		dc_printf( "   1: draw the stars: %s\n", ((Game_detail_flags & 1) ? "on" : "off"));
+		dc_printf( "   2: draw the nebulas: %s\n", ((Game_detail_flags & 2)?"on" : "off"));
+		dc_printf( "   4: draw the motion debris: %s\n", ((Game_detail_flags & 4) ? "on" : "off"));
+		dc_printf( "   8: draw planets: %s\n", ((Game_detail_flags & 8) ? "on" : "off"));
+		dc_printf( "  16: draw models not as blobs: %s\n", ((Game_detail_flags & 16) ? "on" : "off"));
+		dc_printf( "  32: draw lasers not as pixels: %s\n", ((Game_detail_flags & 32) ? "on" : "off"));
+		dc_printf( "  64: clear screen background after each frame: %s\n", ((Game_detail_flags & 64) ? "on" : "off"));
+		dc_printf( " 128: draw hud stuff: %s\n", ((Game_detail_flags & 128) ? "on" : "off"));
+		dc_printf( " 256: draw fireballs: %s\n", ((Game_detail_flags & 256) ? "on" : "off"));
+		dc_printf( " 512: do collision detection: %s\n", ((Game_detail_flags & 512) ? "on" : "off"));
+		return;
+	}
+
+	if (dc_maybe_stuff_int(&value)) {
+		Game_detail_flags ^= value;
+	
+	} else {
+		if (Game_detail_flags == DETAIL_DEFAULT) {
+			Game_detail_flags = DETAIL_FLAG_CLEAR;
+			dc_printf( "Detail flags set lowest (except has screen clear)\n" );
+		} else {
+			Game_detail_flags = DETAIL_DEFAULT;
+			dc_printf( "Detail flags set highest\n" );
+		}
 	}
 }
 #endif
 
 // Goober5000
 // (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+// NOTE: Because this uses memcpy, it should only be used to sort POD elements!
 void insertion_sort(void *array_base, size_t array_size, size_t element_size, int (*fncompare)(const void *, const void *))
 {
 	int i, j;

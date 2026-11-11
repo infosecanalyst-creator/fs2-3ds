@@ -6,43 +6,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
- *
- * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.19  2006/01/20 07:10:33  Goober5000
- * reordered #include files to quash Microsoft warnings
- * --Goober5000
- *
- * Revision 1.18  2005/07/13 03:35:29  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 1.17  2005/06/30 02:35:00  Goober5000
- * added functions to check if speech is playing
- * --Goober5000
- *
- * Revision 1.16  2005/06/30 01:35:52  Goober5000
- * tweaked the stubs and added a function
- * --Goober5000
- *
- * Revision 1.15  2005/06/24 19:36:49  taylor
- * we only want to have m_data_offset be 0 for oggs since the seeking callback will account for the true offset
- * only extern the one int we need for the -nosound speech fix rather than including the entire header
- *
- * Revision 1.14  2005/06/20 15:54:58  phreak
- * added cmdline.h include so the compiler would see the no sound command line option
- * also added CVS header information.
- *
- *
- *
- * $NoKeywords: $
- */
+
 
 
 
@@ -56,7 +20,6 @@
 #include "sound/fsspeech.h"
 #include "sound/speech.h"
 #include "osapi/osregistry.h"
-#include "debugconsole/dbugfile.h"
 #include "globalincs/pstypes.h"
 
 
@@ -120,7 +83,7 @@ void fsspeech_deinit()
 	speech_inited = 0;
 }
 
-void fsspeech_play(int type, char *text)
+void fsspeech_play(int type, const char *text)
 {
 	if (!speech_inited)
 		return;
@@ -158,7 +121,7 @@ void fsspeech_start_buffer()
 	Speech_buffer[0] = '\0';
 }
 
-void fsspeech_stuff_buffer(char *text)
+void fsspeech_stuff_buffer(const char *text)
 {
 	if (!speech_inited)
 		return;
@@ -166,7 +129,7 @@ void fsspeech_stuff_buffer(char *text)
 	int len = strlen(text);
 
 	if(Speech_buffer_len + len < MAX_SPEECH_BUFFER_LEN) {
-		strcat(Speech_buffer, text);
+		strcat_s(Speech_buffer, text);
 	}
 
 	Speech_buffer_len += len;

@@ -7,149 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:25 $
- * $Author: taylor $
- *
- * Code to load & display nebulas
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/01/31 10:34:39  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 2.6  2004/07/26 20:47:53  Kazan
- * remove MCD complete
- *
- * Revision 2.5  2004/07/12 16:33:07  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.4  2004/03/05 09:02:07  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.3  2004/02/15 06:02:32  bobboau
- * fixed sevral asorted matrix errors,
- * OGL people make sure I didn't break anything,
- * most of what I did was replaceing falses with (if graphicts_mode == D3D)
- *
- * Revision 2.2  2003/11/11 17:59:27  phreak
- * made some g3_start_instance_matrix calls not affect any of the HT&L graphics
- * calls since they were called for internal calculations for 2D stuff
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 14    9/01/99 11:26p Dave
- * Fixed release build warnings.
- * 
- * 13    8/30/99 5:01p Dave
- * Made d3d do less state changing in the nebula. Use new chat server for
- * PXO.
- * 
- * 12    7/29/99 10:47p Dave
- * Standardized D3D fogging using vertex fog. Shook out Savage 4 bugs.
- * 
- * 11    7/14/99 9:42a Dave
- * Put in clear_color debug function. Put in base for 3dnow stuff / P3
- * stuff
- * 
- * 10    6/22/99 7:03p Dave
- * New detail options screen.
- * 
- * 9     3/31/99 8:24p Dave
- * Beefed up all kinds of stuff, incluging beam weapons, nebula effects
- * and background nebulae. Added per-ship non-dimming pixel colors.
- * 
- * 8     12/09/98 7:34p Dave
- * Cleanup up nebula effect. Tweaked many values.
- * 
- * 7     12/08/98 9:36a Dave
- * Almost done nebula effect for D3D. Looks 85% as good as Glide.
- * 
- * 6     12/07/98 5:51p Dave
- * Finally got d3d fog working! Now we just need to tweak values.
- * 
- * 5     12/06/98 2:36p Dave
- * Drastically improved nebula fogging.
- * 
- * 4     11/14/98 5:33p Dave
- * Lots of nebula work. Put in ship contrails.
- * 
- * 3     11/11/98 5:37p Dave
- * Checkin for multiplayer testing.
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 15    5/13/98 2:53p John
- * Made subspace effect work under software.  Had to add new inner loop to
- * tmapper.  Added glows to end of subspace effect.  Made subspace effect
- * levels use gamepalette-subspace palette.
- * 
- * 14    4/10/98 5:20p John
- * Changed RGB in lighting structure to be ubytes.  Removed old
- * not-necessary 24 bpp software stuff.
- * 
- * 13    3/22/98 11:02a John
- * Made a bunch of the detail levels actually do something
- * 
- * 12    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 11    1/23/98 5:08p John
- * Took L out of vertex structure used B (blue) instead.   Took all small
- * fireballs out of fireball types and used particles instead.  Fixed some
- * debris explosion things.  Restructured fireball code.   Restructured
- * some lighting code.   Made dynamic lighting on by default. Made groups
- * of lasers only cast one light.  Made fireballs not cast light.
- * 
- * 10    1/10/98 1:14p John
- * Added explanation to debug console commands
- * 
- * 9     12/21/97 4:33p John
- * Made debug console functions a class that registers itself
- * automatically, so you don't need to add the function to
- * debugfunctions.cpp.  
- * 
- * 8     11/25/97 11:40a Hoffoss
- * Added support for nebula placement editing.
- * 
- * 7     11/24/97 12:04p John
- * 
- * 6     11/21/97 2:55p Hoffoss
- * Added Nebula support to Fred.  Implemented loading and saving nebula
- * info to/from mission files.
- * 
- * 5     11/21/97 11:32a John
- * Added nebulas.   Fixed some warpout bugs.
- * 
- * 4     11/19/97 10:47p Adam
- * upped MAX_TRIS to 200.  Whaddya think this is, I-War?
- * 
- * 3     11/16/97 2:41p John
- * added a debug function to load a nebula into the game.
- * 
- * 2     11/16/97 2:29p John
- * added versioning to nebulas; put nebula code into freespace.
- * 
- * 1     11/16/97 1:14p John
- *
- * $NoKeywords: $
- */
+
 
 #include "starfield/nebula.h"
 #include "math/vecmat.h"
@@ -157,15 +15,12 @@
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "cfile/cfile.h"
-
+#include "debugconsole/console.h"
 
 
 #define MAX_TRIS 200
 #define MAX_POINTS 300
 
-//static int neb_w = 0, neb_h = 0;
-
-//static int nebula_inited = 0;
 static int num_pts = 0;
 
 static vec3d nebula_vecs[MAX_POINTS];
@@ -222,7 +77,7 @@ int load_nebula_sub(char *filename)
 {
 	CFILE *fp;
 	char id[16];
-	int version, major, minor;
+	int version, major;
 
 	fp = cfopen(filename, "rb");
 
@@ -238,7 +93,6 @@ int load_nebula_sub(char *filename)
 	} 
 	cfread( &version, sizeof(int), 1, fp );
 	major = version / 100;
-	minor = version % 100;
 
 	if ( major != NEBULA_MAJOR_VERSION )	{
 		mprintf(( "An out of date nebula file.\n" ));
@@ -276,7 +130,7 @@ int load_nebula_sub(char *filename)
 	return 1;
 }
 
-void nebula_init( char *filename, int pitch, int bank, int heading )
+void nebula_init( const char *filename, int pitch, int bank, int heading )
 {
 	angles a;
 
@@ -286,7 +140,7 @@ void nebula_init( char *filename, int pitch, int bank, int heading )
 	nebula_init(filename, &a);
 }
 
-void nebula_init( char *filename, angles * pbh )
+void nebula_init( const char *filename, angles * pbh )
 {
 	if ( Nebula_loaded )	{
 		nebula_close();
@@ -313,8 +167,10 @@ void nebula_render()
 	int i;
 	// int r, g, b;
 
+	if (Fred_running) {
 	// no nebula for you!
 	return;
+	}
 
 	if ( !Nebula_loaded ) {
 		return;
@@ -325,14 +181,14 @@ void nebula_render()
 	}	
 
 	// Rotate the nebula.
-	g3_start_instance_matrix( NULL, &Nebula_orient, (gr_screen.mode == GR_DIRECT3D));
+	g3_start_instance_matrix( NULL, &Nebula_orient, false);
 
 	for (i=0; i<num_pts; i++ )	{
 		g3_rotate_faraway_vertex( &nebula_verts[i], &nebula_vecs[i] );
 		g3_project_vertex( &nebula_verts[i] );
 	}
 
-	int saved_gr_zbuffering = 	gr_zbuffer_get();
+	int saved_gr_zbuffering = gr_zbuffer_get();
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
@@ -347,7 +203,7 @@ void nebula_render()
 		g3_draw_poly(3, verts, TMAP_FLAG_RAMP | TMAP_FLAG_GOURAUD | TMAP_FLAG_NEBULA );
 	}		
 
-	g3_done_instance((gr_screen.mode == GR_DIRECT3D));
+	g3_done_instance(false);
 
 	gr_zbuffer_set(saved_gr_zbuffering);
 
@@ -359,17 +215,19 @@ void nebula_render()
 
 DCF(nebula,"Loads a different nebula")
 {
-	if ( Dc_command )	{
-		dc_get_arg(ARG_STRING|ARG_NONE);
-		if ( Dc_arg_type == ARG_NONE )	{
-			nebula_close();
-		} else {
-			nebula_init( Dc_arg );
-		}
+	SCP_string filename;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Usage: nebula [filename]\n");
+		dc_printf("Loads the nebula file (without filename extension). No filename takes away nebula\n" );
+		return;
 	}
-	if ( Dc_help )	{
-		dc_printf( "Usage: nebula filename\nLoads the nebula file. No filename takes away nebula\n" );
-	}	
+
+	if (dc_maybe_stuff_string_white(filename)) {
+			nebula_init(filename.c_str());
+	} else {
+		nebula_close();
+	}
 }
 
 

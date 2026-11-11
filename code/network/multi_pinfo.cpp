@@ -7,140 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Network/multi_pinfo.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.13  2005/10/10 17:21:07  taylor
- * remove NO_NETWORK
- *
- * Revision 2.12  2005/07/18 03:45:08  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.11  2005/07/13 03:35:32  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.10  2005/07/02 19:45:00  taylor
- * ton of non-standard resolution fixes
- *
- * Revision 2.9  2005/05/12 17:49:15  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.8  2005/04/24 12:56:43  taylor
- * really are too many changes here:
- *  - remove all bitmap section support and fix problems with previous attempt
- *  ( code/bmpman/bmpman.cpp, code/bmpman/bmpman.h, code/globalincs/pstypes.h,
- *    code/graphics/2d.cpp, code/graphics/2d.h code/graphics/grd3dbmpman.cpp,
- *    code/graphics/grd3dinternal.h, code/graphics/grd3drender.cpp, code/graphics/grd3dtexture.cpp,
- *    code/graphics/grinternal.h, code/graphics/gropengl.cpp, code/graphics/gropengl.h,
- *    code/graphics/gropengllight.cpp, code/graphics/gropengltexture.cpp, code/graphics/gropengltexture.h,
- *    code/graphics/tmapper.h, code/network/multi_pinfo.cpp, code/radar/radarorb.cpp
- *    code/render/3ddraw.cpp )
- *  - use CLAMP() define in gropengl.h for gropengllight instead of single clamp() function
- *  - remove some old/outdated code from gropengl.cpp and gropengltexture.cpp
- *
- * Revision 2.7  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.6  2005/02/04 20:06:05  taylor
- * merge with Linux/OSX tree - p0204-2
- *
- * Revision 2.5  2004/07/26 20:47:42  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:57  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:02  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:04  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:44  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:08  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:26  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:11  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 15    9/10/99 9:44p Dave
- * Bumped version # up. Make server reliable connects not have such a huge
- * timeout. 
- * 
- * 14    8/30/99 5:01p Dave
- * Made d3d do less state changing in the nebula. Use new chat server for
- * PXO.
- * 
- * 13    8/22/99 5:53p Dave
- * Scoring fixes. Added self destruct key. Put callsigns in the logfile
- * instead of ship designations for multiplayer players.
- * 
- * 12    8/03/99 11:43a Dave
- * Don't allow medals button in demo.
- * 
- * 11    7/26/99 11:14a Andsager
- * Disable medals in demo multiplayer
- * 
- * 10    6/16/99 4:06p Dave
- * New pilot info popup. Added new draw-bitmap-as-poly function.
- * 
- * 9     1/30/99 1:29a Dave
- * Fixed nebula thumbnail problem. Full support for 1024x768 choose pilot
- * screen.  Fixed beam weapon death messages.
- * 
- * 8     1/14/99 6:06p Dave
- * 100% full squad logo support for single player and multiplayer.
- * 
- * 7     1/12/99 4:07a Dave
- * Put in barracks code support for selecting squad logos. Properly
- * distribute squad logos in a multiplayer game.
- * 
- * 6     12/14/98 12:13p Dave
- * Spiffed up xfer system a bit. Put in support for squad logo file xfer.
- * Need to test now.
- * 
- * 5     11/30/98 1:07p Dave
- * 16 bit conversion, first run.
- * 
- * 4     11/05/98 4:18p Dave
- * First run nebula support. Beefed up localization a bit. Removed all
- * conditional compiles for foreign versions. Modified mission file
- * format.
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:50a Dave
- * 
- * 
- * $NoKeywords: $
- */
+
 
 
 #include "network/multi_pinfo.h"
@@ -452,9 +319,9 @@ void multi_pinfo_popup_init(net_player *np)
 
 	// zero bitmap info
 	Mp_pilot.bitmap = -1;
-	strcpy(Mp_pilot.filename, "");
+	strcpy_s(Mp_pilot.filename, "");
 	Mp_squad.bitmap = -1;
-	strcpy(Mp_squad.filename, "");
+	strcpy_s(Mp_squad.filename, "");
 
 	// set the player status
 	multi_pinfo_reset_player(np);	
@@ -478,12 +345,6 @@ void multi_pinfo_popup_init(net_player *np)
 	for(idx=0; idx<MULTI_PINFO_NUM_TEXT; idx++){
 		Multi_pinfo_window.add_XSTR(&Multi_pinfo_text[gr_screen.res][idx]);
 	}
-
-	// disable medals button for the demo
-#ifdef FS2_DEMO
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.hide();
-	Multi_pinfo_buttons[gr_screen.res][MPI_MEDALS].button.disable();
-#endif
 
 	// initialize strings	
 	Multi_pinfo_stats_labels[0] = vm_strdup(XSTR("Rank", 1007));
@@ -534,11 +395,11 @@ void multi_pinfo_popup_do()
 
 		// grey the screen
 		gr_set_shader(&Grey_shader);
-		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
+		gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, GR_RESIZE_NONE);
 		
 		// draw the background bitmap
 		gr_set_bitmap(Multi_pinfo_bitmap);
-		gr_bitmap(0,0);		
+		gr_bitmap(0,0,GR_RESIZE_MENU);		
 
 		// blit the selected pilot image
 		multi_pinfo_blit_pilot_image();
@@ -611,24 +472,24 @@ void multi_pinfo_blit_pilot_image()
 
 		// if there is no image
 		if(strlen(Mp_pilot.filename) <= 0){
-			strcpy(place_text,XSTR("No/Invalid Image", 1053));
+			strcpy_s(place_text,XSTR("No/Invalid Image", 1053));
 		} 
 		// if the image is xferring
 		else if(multi_xfer_lookup(Mp_pilot.filename)){
-			strcpy(place_text,XSTR("Image Transferring", 691));
+			strcpy_s(place_text,XSTR("Image Transferring", 691));
 		}
 		// if we're not accepting images
 		else if(!(Net_player->p_info.options.flags & MLO_FLAG_ACCEPT_PIX) || !(Netgame.options.flags & MSO_FLAG_ACCEPT_PIX)){
-			strcpy(place_text,XSTR("No Image", 692));
+			strcpy_s(place_text,XSTR("No Image", 692));
 		}
 		// otherwise we wait
 		else {
-			strcpy(place_text,XSTR("Waiting", 690));
+			strcpy_s(place_text,XSTR("Waiting", 690));
 		}		
 
 		// center the text
 		gr_get_string_size(&w,NULL,place_text);
-		gr_string(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - w)/2), Multi_pinfo_pilot_coords[gr_screen.res][1], place_text);
+		gr_string(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - w)/2), Multi_pinfo_pilot_coords[gr_screen.res][1], place_text, GR_RESIZE_MENU);
 	} 
 	// otherwise blit the bitmap
 	else {
@@ -639,7 +500,8 @@ void multi_pinfo_blit_pilot_image()
 		bm_get_info(Mp_pilot.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0] + ((Multi_pinfo_pilot_coords[gr_screen.res][2] - bm_w)/2), 
-					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2));
+					 Multi_pinfo_pilot_coords[gr_screen.res][1] + ((Multi_pinfo_pilot_coords[gr_screen.res][3] - bm_h)/2),
+					 GR_RESIZE_MENU);
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_pilot_coords[gr_screen.res][0], Multi_pinfo_pilot_coords[gr_screen.res][1], Multi_pinfo_pilot_coords[gr_screen.res][2], Multi_pinfo_pilot_coords[gr_screen.res][3]);
 	}
 }
@@ -656,37 +518,38 @@ void multi_pinfo_blit_squadron_logo()
 		gr_set_color_fast(&Color_normal);		
 
 		// if there is no image
-		if(strlen(p->squad_filename) <= 0){
-			strcpy(place_text,XSTR("No/Invalid Image", 1053));
+		if(strlen(p->m_squad_filename) <= 0){
+			strcpy_s(place_text,XSTR("No/Invalid Image", 1053));
 		} 
 		// if the image is xferring
-		else if(multi_xfer_lookup(p->squad_filename)){
-			strcpy(place_text,XSTR("Image Transferring", 691));
+		else if(multi_xfer_lookup(p->m_squad_filename)){
+			strcpy_s(place_text,XSTR("Image Transferring", 691));
 		}
 		// if we're not accepting images
 		else if(!(Net_player->p_info.options.flags & MLO_FLAG_ACCEPT_PIX) || !(Netgame.options.flags & MSO_FLAG_ACCEPT_PIX)){
-			strcpy(place_text,XSTR("No Image", 692));
+			strcpy_s(place_text,XSTR("No Image", 692));
 		}
 		// otherwise we wait
 		else {
-			strcpy(place_text,XSTR("Waiting", 690));
+			strcpy_s(place_text,XSTR("Waiting", 690));
 		}				
 
 		// center the text
 		gr_get_string_size(&w, NULL, place_text);
-		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text);
+		gr_string(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - w)/2), Multi_pinfo_squad_coords[gr_screen.res][1], place_text, GR_RESIZE_MENU);
 	} 
 	// otherwise blit the bitmap
 	else {
 		gr_set_bitmap(Mp_squad.bitmap);
-		// gr_bitmap(MPI_SQUAD_X, MPI_SQUAD_Y);
+		// gr_bitmap(MPI_SQUAD_X, MPI_SQUAD_Y, GR_RESIZE_MENU);
 
 		// get width and heigh
 		int bm_w, bm_h;
 		bm_get_info(Mp_squad.bitmap, &bm_w, &bm_h, NULL, NULL, NULL);
 
 		gr_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0] + ((Multi_pinfo_squad_coords[gr_screen.res][2] - bm_w)/2), 
-					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2));
+					 Multi_pinfo_squad_coords[gr_screen.res][1] + ((Multi_pinfo_squad_coords[gr_screen.res][3] - bm_h)/2),
+					 GR_RESIZE_MENU);
 		// g3_draw_2d_poly_bitmap(Multi_pinfo_squad_coords[gr_screen.res][0], Multi_pinfo_squad_coords[gr_screen.res][1], Multi_pinfo_squad_coords[gr_screen.res][2], Multi_pinfo_squad_coords[gr_screen.res][3]);
 	}
 }
@@ -698,22 +561,22 @@ void multi_pinfo_blit_player_stats()
 
 	// blit the player's callsign and "all time stats"
 	gr_set_color_fast(&Color_bright);
-	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->m_player->callsign);
-	gr_string(Multi_pinfo_stats_x[gr_screen.res], Multi_pinfo_stats_area_coords[gr_screen.res][1], XSTR("All Time Stats", 128));
+	gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], Multi_pinfo_stats_area_coords[gr_screen.res][1], Multi_pinfo_popup_player->m_player->callsign, GR_RESIZE_MENU);
+	gr_string(Multi_pinfo_stats_x[gr_screen.res], Multi_pinfo_stats_area_coords[gr_screen.res][1], XSTR("All Time Stats", 128), GR_RESIZE_MENU);
 	
 	gr_set_color_fast(&Color_normal);
 
 	// blit all the labels
 	y_start = Multi_pinfo_stats_area_coords[gr_screen.res][1] + 15;
 	for(idx=0;idx<MULTI_PINFO_NUM_STATS_LABELS;idx++){
-		gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], y_start, Multi_pinfo_stats_labels[idx]);
+		gr_string(Multi_pinfo_stats_area_coords[gr_screen.res][0], y_start, Multi_pinfo_stats_labels[idx], GR_RESIZE_MENU);
 		y_start += Multi_pinfo_stats_label_offsets[idx];
 	}	
 
 	// blit all the stats values themselves
 	y_start = Multi_pinfo_stats_area_coords[gr_screen.res][1] + 15;
 	for(idx=0;idx<MULTI_PINFO_NUM_STATS_LABELS;idx++){
-		gr_string(Multi_pinfo_stats_x[gr_screen.res], y_start, Multi_pinfo_stats_vals[idx]);
+		gr_string(Multi_pinfo_stats_x[gr_screen.res], y_start, Multi_pinfo_stats_vals[idx], GR_RESIZE_MENU);
 		y_start += Multi_pinfo_stats_label_offsets[idx];
 	}	
 }
@@ -776,9 +639,6 @@ void multi_pinfo_popup_button_pressed(int n)
 // display the medals screen for this player
 void multi_pinfo_do_medals()
 {
-#ifdef FS2DEMO
-	game_feature_not_in_demo_popup();
-#else
 	int ret_code;
 
 	// initialize the medals screen
@@ -799,7 +659,6 @@ void multi_pinfo_do_medals()
 
 	// restore the proper palette
 	multi_pinfo_set_palette();
-#endif
 }
 
 // load up and use the proper palette
@@ -813,27 +672,10 @@ void multi_pinfo_set_palette()
 // build the stats value strings for this player
 void multi_pinfo_build_stats()
 {
-	// int idx;
-	// int fighter_kills,other_kills;
 	scoring_struct *sc = &Multi_pinfo_popup_player->m_player->stats;
 
 	// build alltime fighter and non-fighter kills
-	/*
-	fighter_kills = 0;
-	other_kills = 0;
-	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
-		if(sc->kills[idx] > 0){
-			if(Ship_info[idx].flags & SIF_FIGHTER){
-				fighter_kills += sc->kills[idx];
-			} else {
-				other_kills += sc->kills[idx];
-			}
-		}
-	}	
-	*/
 	sprintf(Multi_pinfo_stats_vals[MPI_FIGHTER_KILLS], "%d", sc->kill_count);
-	
-	// sprintf(Multi_pinfo_stats_vals[MPI_OTHER_KILLS],"%d",other_kills);
 
 	// missions flown
 	sprintf(Multi_pinfo_stats_vals[MPI_MISSIONS_FLOWN],"%d",(int)sc->missions_flown);
@@ -843,25 +685,22 @@ void multi_pinfo_build_stats()
 
 	// last flown	
 	if(sc->last_flown == 0){
-		strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
+		strcpy_s(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],XSTR("No missions flown",693));
 	} else {
 		time_t last_flown_tmp = sc->last_flown;
 		tm *tmr = gmtime(&last_flown_tmp);
 		if(tmr != NULL){
 			strftime(Multi_pinfo_stats_vals[MPI_LAST_FLOWN],MAX_LABEL_TEXT,"%m/%d/%y %H:%M",tmr);
 		} else {
-			strcpy(Multi_pinfo_stats_vals[MPI_LAST_FLOWN], "");			
+			strcpy_s(Multi_pinfo_stats_vals[MPI_LAST_FLOWN], "");			
 		}
 	}	
 
 	// rank
-	strcpy(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
+	strcpy_s(Multi_pinfo_stats_vals[MPI_RANK],Ranks[sc->rank].name);
 
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%d",sc->p_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
+	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_FIRED],"%u",sc->p_shots_fired);
 	
 	// primary hit pct
 	if (sc->p_shots_fired > 0) {
@@ -870,10 +709,7 @@ void multi_pinfo_build_stats()
 		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", 0);
 	}
 	// primary shots fired
-	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%d",sc->s_shots_fired);
-
-	// primary shots hit
-	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
+	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%u",sc->s_shots_fired);
 	
 	// primary hit pct
 	if (sc->s_shots_fired > 0) {
@@ -951,24 +787,24 @@ void multi_pinfo_reset_player(net_player *np)
 	Multi_pinfo_popup_player = np;
 
 	// unload any old image data if necessary
-	strcpy(Mp_pilot.filename, "");
+	strcpy_s(Mp_pilot.filename, "");
 	if(Mp_pilot.bitmap != -1){
 		bm_release(Mp_pilot.bitmap);
 		Mp_pilot.bitmap = -1;
 	}
-	strcpy(Mp_squad.filename, "");
+	strcpy_s(Mp_squad.filename, "");
 	if(Mp_squad.bitmap != -1){
 		bm_release(Mp_squad.bitmap);
 		Mp_squad.bitmap = -1;
 	}	
 	
 	// try and load pilot pic/squad logo
-	if(strlen(np->m_player->image_filename) > 0){
-		strcpy(Mp_pilot.filename, np->m_player->image_filename);
+	if(np->m_player->image_filename[0] != '\0'){
+		strcpy_s(Mp_pilot.filename, np->m_player->image_filename);
 		Mp_pilot.bitmap = bm_load_duplicate(Mp_pilot.filename);
 	}
-	if(strlen(np->m_player->squad_filename) > 0){
-		strcpy(Mp_squad.filename, np->m_player->squad_filename);
+	if(np->m_player->m_squad_filename[0] != '\0'){
+		strcpy_s(Mp_squad.filename, np->m_player->m_squad_filename);
 		Mp_squad.bitmap = bm_load_duplicate(Mp_squad.filename);
 	}
 

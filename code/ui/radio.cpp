@@ -7,80 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/UI/RADIO.cpp $
- * $Revision: 2.4.2.1 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
- *
- * Code to handle radio buttons.
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.4  2005/05/12 17:49:17  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.3  2004/07/26 20:47:55  Kazan
- * remove MCD complete
- *
- * Revision 2.2  2004/07/12 16:33:08  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.1  2002/08/01 01:41:10  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:29  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:13  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 4     12/02/98 5:47p Dave
- * Put in interface xstr code. Converted barracks screen to new format.
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:54a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 9     3/10/98 4:19p John
- * Cleaned up graphics lib.  Took out most unused gr functions.   Made D3D
- * & Glide have popups and print screen.  Took out all >8bpp software
- * support.  Made Fred zbuffer.  Made zbuffer allocate dynamically to
- * support Fred.  Made zbuffering key off of functions rather than one
- * global variable.
- * 
- * 8     2/03/98 4:21p Hoffoss
- * Made UI controls draw white text when disabled.
- * 
- * 7     1/14/98 6:44p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 6     6/12/97 12:39p John
- * made ui use freespace colors
- * 
- * 5     6/11/97 1:13p John
- * Started fixing all the text colors in the game.
- * 
- * 4     5/26/97 10:26a Lawrance
- * get slider control working 100%
- * 
- * 3     1/01/97 6:46p Lawrance
- * changed text color of radio button to green from black
- * 
- * 2     11/15/96 11:43a John
- * 
- * 1     11/14/96 6:55p John
- *
- * $NoKeywords: $
- */
+
 
 #include "ui/uidefs.h"
 #include "ui/ui.h"
@@ -92,7 +19,6 @@ void UI_RADIO::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state, i
 {
 	int _w, _h;
 
-//	gr_get_string_size( &_w, &_h, "X" );
 	_w = 18;
 	_h = 18;
 
@@ -128,13 +54,13 @@ void UI_RADIO::draw()
 			if ( flag ) {
 				if ( bmap_ids[RADIO_DISABLED_MARKED] != -1 ) {
 					gr_set_bitmap(bmap_ids[RADIO_DISABLED_MARKED]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 			else {
 				if ( bmap_ids[RADIO_DISABLED_CLEAR] != -1 ) {
 					gr_set_bitmap(bmap_ids[RADIO_DISABLED_CLEAR]);
-					gr_bitmap(x,y);
+					gr_bitmap(x,y,GR_RESIZE_MENU);
 				}
 			}
 		}
@@ -143,13 +69,13 @@ void UI_RADIO::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[RADIO_UP_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[RADIO_UP_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[RADIO_UP_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[RADIO_UP_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -157,13 +83,13 @@ void UI_RADIO::draw()
 				if ( flag ) {			// marked
 					if ( bmap_ids[RADIO_DOWN_MARKED] != -1 ) {
 						gr_set_bitmap(bmap_ids[RADIO_DOWN_MARKED]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 				else {					// not marked
 					if ( bmap_ids[RADIO_DOWN_CLEAR] != -1 ) {
 						gr_set_bitmap(bmap_ids[RADIO_DOWN_CLEAR]);
-						gr_bitmap(x,y);
+						gr_bitmap(x,y,GR_RESIZE_MENU);
 					}
 				}
 			}
@@ -171,7 +97,7 @@ void UI_RADIO::draw()
 	}
 	else {
 		gr_set_font(my_wnd->f_id);
-		gr_set_clip( x, y, w, h );
+		gr_set_clip( x, y, w, h, GR_RESIZE_MENU );
 
 		if (position == 0 )	{
 			ui_draw_box_out( 0, 0, w-1, h-1 );
@@ -188,16 +114,12 @@ void UI_RADIO::draw()
 		else 
 			gr_set_color_fast(&CGREEN);
 
-	//	if (flag)
-	//		ui_string_centered(  Middle(w)+offset, Middle(h)+offset, "*" );
-	//	else
-	//		ui_string_centered(  Middle(w)+offset, Middle(h)+offset, "o" );
 		if (flag)	{
-			gr_circle( Middle(w)+offset, Middle(h)+offset, 8 );
+			gr_circle( Middle(w)+offset, Middle(h)+offset, 8, GR_RESIZE_MENU );
 		} else {
-			gr_circle( Middle(w)+offset, Middle(h)+offset, 8 );
+			gr_circle( Middle(w)+offset, Middle(h)+offset, 8, GR_RESIZE_MENU );
 			gr_set_color_fast( &CWHITE );
-			gr_circle( Middle(w)+offset, Middle(h)+offset, 4 );
+			gr_circle( Middle(w)+offset, Middle(h)+offset, 4, GR_RESIZE_MENU );
 		}
 
 		if (disabled_flag)
@@ -209,7 +131,7 @@ void UI_RADIO::draw()
 
 		if ( text )	{
 			gr_reset_clip();
-			gr_string( x+w+4, y+2, text );
+			gr_string( x+w+4, y+2, text, GR_RESIZE_MENU );
 		}
 	}
 }

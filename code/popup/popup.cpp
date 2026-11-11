@@ -7,210 +7,7 @@
  *
 */
 
-/*
- * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-03-25 10:41:44 $
- * $Author: taylor $
- *
- * Code for displaying pop-up dialog boxes
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/05/12 17:49:16  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.6  2005/01/31 10:34:39  taylor
- * merge with Linux/OSX tree - p0131
- *
- * Revision 2.5  2004/07/26 20:47:49  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:33:03  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:02:11  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/03/18 10:07:05  unknownplayer
- * The big DX/main line merge. This has been uploaded to the main CVS since I can't manage to get it to upload to the DX branch. Apologies to all who may be affected adversely, but I'll work to debug it as fast as I can.
- *
- * Revision 2.1.2.1  2002/09/24 18:56:45  randomtiger
- * DX8 branch commit
- *
- * This is the scub of UP's previous code with the more up to date RT code.
- * For full details check previous dev e-mails
- *
- * Revision 2.1  2002/08/01 01:41:09  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:27  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:12  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 12    10/14/99 2:00p Jefff
- * added include for os_poll to fix build error
- * 
- * 11    10/14/99 10:18a Daveb
- * Fixed incorrect CD checking problem on standalone server.
- * 
- * 10    8/16/99 9:50a Jefff
- * added mouseover webcursor options to user-defined popup buttons.
- * 
- * 9     8/11/99 5:47p Jefff
- * fixed button bitmap loading
- * 
- * 8     8/04/99 10:53a Dave
- * Added title to the user tips popup.
- * 
- * 7     8/02/99 9:13p Dave
- * Added popup tips.
- * 
- * 6     6/18/99 5:16p Dave
- * Added real beam weapon lighting. Fixed beam weapon sounds. Added MOTD
- * dialog to PXO screen.
- * 
- * 5     6/01/99 3:52p Dave
- * View footage screen. Fixed xstrings to not display the & symbol. Popup,
- * dead popup, pxo find player popup, pxo private room popup.
- * 
- * 4     2/11/99 3:08p Dave
- * PXO refresh button. Very preliminary squad war support.
- * 
- * 3     10/13/98 9:29a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:51a Dave
- * 
- * 36    5/11/98 11:39p Dave
- * Stuff.
- * 
- * 35    3/22/98 10:59p Allender
- * don't stop time in multiplayer when "in mission"
- * 
- * 34    3/17/98 12:41a Lawrance
- * Support \n's between title and body
- * 
- * 33    3/12/98 4:11p Dave
- * AL: Check that max popup lines isn't exceeded
- * 
- * 32    2/22/98 12:19p John
- * Externalized some strings
- * 
- * 31    2/10/98 3:26p Hoffoss
- * Don't check for 'dead key set' unless in the mission.
- * 
- * 30    2/05/98 11:21p Lawrance
- * move death popup to below letterbox view
- * 
- * 29    2/05/98 11:09a Dave
- * Fixed an ingame join bug. Fixed a read-only file problem with
- * multiplauer file xfer.
- * 
- * 28    2/03/98 11:52p Lawrance
- * Don't highlight default choice if there is only one.
- * 
- * 27    2/03/98 8:18p Dave
- * More MT stats transfer stuff
- * 
- * 26    1/30/98 3:05p Lawrance
- * reposition text on death popup
- * 
- * 25    1/29/98 6:55p Lawrance
- * Integrate new art for the death popup
- * 
- * 24    1/28/98 6:24p Dave
- * Made standalone use ~8 megs less memory. Fixed multiplayer submenu
- * sequencing problem.
- * 
- * 23    1/27/98 5:52p Lawrance
- * support new "tiny" popups
- * 
- * 22    1/27/98 5:01p Dave
- * Put in support for leaving multiplayer games in the pause state. Fixed
- * a popup bug which freed saved screens incorrectly. Reworked scoring
- * kill and assist evaluation.
- * 
- * 21    1/27/98 3:25p Hoffoss
- * Made popups use the correct button icons for default positive and
- * negative buttons.
- * 
- * 20    1/26/98 6:28p Lawrance
- * Use '&' meta char for underlining, change how keyboard usage works so
- * fits better with mouse usage.
- * 
- * 19    1/23/98 12:01a Lawrance
- * Fix bug when in single-choice popups.
- * 
- * 18    1/22/98 10:45p Lawrance
- * Implment default selections and arrow key navigation.
- * 
- * 17    1/20/98 5:52p Lawrance
- * center popup text in X and Y directions.  Support single affirmative
- * icon special placement.
- * 
- * 16    1/19/98 11:37p Lawrance
- * Fixing Optimization build warnings
- * 
- * 15    1/17/98 10:04p Lawrance
- * fix errors in popup comments
- * 
- * 14    1/15/98 2:52p Lawrance
- * Fix problem with reading bogus buttons.
- * 
- * 13    1/14/98 6:55p Dave
- * Fixed a slew of multiplayer bugs. Made certain important popups ignore
- * the escape character.
- * 
- * 12    1/14/98 6:42p Hoffoss
- * Massive changes to UI code.  A lot cleaner and better now.  Did all
- * this to get the new UI_DOT_SLIDER to work properly, which the old code
- * wasn't flexible enough to handle.
- * 
- * 11    1/14/98 12:23p Lawrance
- * Support for three choice popups.
- * 
- * 10    1/13/98 5:37p Dave
- * Reworked a lot of standalone interface code. Put in single and
- * multiplayer popups for death sequence. Solidified multiplayer kick
- * code.
- * 
- * 9     1/13/98 4:06p Lawrance
- * Add underline char for shortcuts.
- * 
- * 8     1/11/98 11:14p Lawrance
- * Don't grey out background when popup is active.
- * 
- * 7     1/08/98 10:32a Lawrance
- * Grey out screen when a popup appears.
- * 
- * 6     1/02/98 9:08p Lawrance
- * Integrated art for popups, expanded options.
- * 
- * 5     12/30/97 4:30p Sandeep
- * Added conditional popups
- * 
- * 4     12/26/97 10:01p Lawrance
- * Allow keyboard shortcuts for popup buttons
- * 
- * 3     12/24/97 9:49p Lawrance
- * ensure mouse gets drawn when popup menu is up
- * 
- * 2     12/24/97 8:54p Lawrance
- * Integrating new popup code
- * 
- * 1     12/24/97 3:51p Lawrance
- *
- * $NoKeywords: $
- */
+
 
 #include <stdarg.h>
 
@@ -545,7 +342,7 @@ int popup_process_keys(popup_info *pi, int k, int flags)
 
 
 	masked_k = k & ~KEY_CTRLED;	// take out CTRL modifier only
-	if ( (PF_ALLOW_DEAD_KEYS) && (Game_mode & GM_IN_MISSION) ) {
+	if ( (Game_mode & GM_IN_MISSION) ) {
 		process_set_of_keys(masked_k, Dead_key_set_size, Dead_key_set);
 		button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
 	}
@@ -558,7 +355,7 @@ void popup_split_lines(popup_info *pi, int flags)
 {
 	int	nlines, i, body_offset = 0;
 	int	n_chars[POPUP_MAX_LINES];
-	char	*p_str[POPUP_MAX_LINES];
+	const char	*p_str[POPUP_MAX_LINES];
 
 	gr_set_font(FONT1);
 	n_chars[0]=0;
@@ -677,7 +474,7 @@ int popup_init(popup_info *pi, int flags)
 	}
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode && GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
+	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) ){
 		game_stop_time();
 	}
 
@@ -778,7 +575,7 @@ void popup_close(popup_info *pi, int screen_id)
 	Popup_running_state = 0;
 
 	// anytime in single player, and multiplayer, not in mission, go ahead and stop time
-	if ( (Game_mode & GM_NORMAL) || ((Game_mode && GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
+	if ( (Game_mode & GM_NORMAL) || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) )
 		game_start_time();
 }
 
@@ -844,7 +641,7 @@ void popup_draw_title(int sy, char *line, int flags)
 	sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
 
 	popup_set_title_color(flags);
-	gr_string(sx,sy,line);
+	gr_string(sx,sy,line,GR_RESIZE_MENU);
 }
 
 // calculate the starting display index
@@ -928,14 +725,14 @@ void popup_draw_msg_text(popup_info *pi, int flags)
 
 		gr_get_string_size(&w, &h, pi->msg_lines[i]);
 		sx = fl2i(Title_coords[gr_screen.res][4] - w/2.0f + 0.5f);
-		gr_string(sx, sy + line_count * h, pi->msg_lines[i]);
+		gr_string(sx, sy + line_count * h, pi->msg_lines[i], GR_RESIZE_MENU);
 	}
 
 	// maybe draw "more"
 	h = 10;
 	if(i < pi->nlines){
-		gr_set_color_fast(&Color_bright_red);
-		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459));
+		gr_set_color_fast(&Color_more_bright);
+		gr_string(Title_coords[gr_screen.res][4], sy + (Popup_max_display[gr_screen.res]) * h, XSTR("More", 459), GR_RESIZE_MENU);
 	}
 
 	gr_set_font(FONT1);	// reset back to regular font size
@@ -959,7 +756,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 			sy = Button_regions[gr_screen.res][i][1]+4;
 		}
 
-		gr_string(sx, sy, pi->button_text[i]);
+		gr_string(sx, sy, pi->button_text[i], GR_RESIZE_MENU);
 
 		// figure out where to draw underline char
 		if ( pi->shortcut_index[i] > 0 ) {
@@ -972,7 +769,7 @@ void popup_draw_button_text(popup_info *pi, int flags)
 		}
 		
 		if ( pi->shortcut_index[i] >= 0 ) {
-			gr_printf(sx, sy, NOX("%c"), 95);
+			gr_printf_menu(sx, sy, NOX("%c"), 95);
 		}
 	}
 }
@@ -1022,6 +819,13 @@ int popup_do(popup_info *pi, int flags)
 	}
 
 	screen_id = gr_save_screen();
+
+	int old_max_w_unscaled = gr_screen.max_w_unscaled;
+	int old_max_h_unscaled = gr_screen.max_h_unscaled;
+	int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+	gr_reset_screen_scale();
 
 	while(!done) {
 		int k;
@@ -1074,6 +878,8 @@ int popup_do(popup_info *pi, int flags)
 		gr_flip();
 	}
 
+	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
+
 	popup_close(pi,screen_id);
 	return choice;
 }
@@ -1085,6 +891,13 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 	screen_id = gr_save_screen();
 	if ( popup_init(pi, flags) == -1 )
 		return -1;
+
+	int old_max_w_unscaled = gr_screen.max_w_unscaled;
+	int old_max_h_unscaled = gr_screen.max_h_unscaled;
+	int old_max_w_unscaled_zoomed = gr_screen.max_w_unscaled_zoomed;
+	int old_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
+
+	gr_reset_screen_scale();
 
 	while(!done) {
 		int k;
@@ -1121,6 +934,8 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 			}
 		}		
 	}
+
+	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
 
 	popup_close(pi,screen_id);
 	return choice;
@@ -1203,10 +1018,9 @@ int popup(int flags, int nchoices, ... )
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
@@ -1257,11 +1071,10 @@ int popup_till_condition(int (*condition)(), ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	Popup_info.raw_text[0] = 0;
-	vsprintf(Popup_info.raw_text, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
 	va_end(args);
-	Popup_info.raw_text[POPUP_MAX_CHARS-1] = '\0';
-		
+	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
+
 	gamesnd_play_iface(SND_POPUP_APPEAR); 	// play sound when popup appears
 
 	Mouse_hidden = 0;
@@ -1277,7 +1090,7 @@ int popup_till_condition(int (*condition)(), ...)
 }
 
 // popup to return the value from an input box
-char *popup_input(int flags, char *caption, int max_output_len)
+char *popup_input(int flags, const char *caption, int max_output_len)
 {
 	if ( Popup_is_active ) {
 		Int3();		// should never happen
@@ -1294,7 +1107,7 @@ char *popup_input(int flags, char *caption, int max_output_len)
 
 	// get msg text
 	Assert(caption != NULL);
-	strcpy(Popup_info.raw_text, caption);	
+	strcpy_s(Popup_info.raw_text, caption);	
 	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
 
 	// set input text length
@@ -1335,10 +1148,10 @@ void popup_kill_any_active()
 }
 
 // change the text inside of the popup 
-void popup_change_text(char *new_text)
+void popup_change_text(const char *new_text)
 {
 	// copy the raw text
-	strncpy(Popup_info.raw_text,new_text,POPUP_MAX_CHARS);
+	strcpy_s(Popup_info.raw_text,new_text);
 
 	// recalculate all display information
 	popup_split_lines(&Popup_info,Popup_flags);

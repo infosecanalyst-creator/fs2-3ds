@@ -4,69 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.11.2.4 $
- * $Date: 2007-07-28 21:31:06 $
- * $Author: Goober5000 $
- *
- * Implementation of new docking system
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.11.2.3  2007/07/28 21:17:55  Goober5000
- * make the parse object array dynamic; also made the docking bitstrings dynamic
- *
- * Revision 2.11.2.2  2007/02/20 04:19:34  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.11.2.1  2006/07/21 05:41:07  Goober5000
- * add another method for calculating dimensions of docked objects, plus improve an existing one
- * --Goober5000
- *
- * Revision 2.11  2006/04/20 06:32:23  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 2.10  2005/10/30 20:20:44  Goober5000
- * comment fixage
- *
- * Revision 2.9  2005/10/28 06:10:07  Goober5000
- * nitpicked a rather dumb non-bug
- * --Goober5000
- *
- * Revision 2.8  2005/05/27 03:37:53  Goober5000
- * moved some prototypes that WMC put in the header file back to the implementation file
- * --Goober5000
- *
- * Revision 2.7  2005/05/12 17:49:16  taylor
- * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
- *   fixes various problems and is past time to make the switch
- *
- * Revision 2.6  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.5  2005/03/03 06:05:30  wmcoolmon
- * Merge of WMC's codebase. "Features and bugs, making Goober say "Grr!", as release would be stalled now for two months for sure"
- *
- * Revision 2.4  2005/02/10 04:05:42  wmcoolmon
- * Got rid of a couple annoying compiler warnings
- *
- * Revision 2.3  2005/01/30 09:27:40  Goober5000
- * nitpicked some boolean tests, and fixed two small bugs
- * --Goober5000
- *
- * Revision 2.2  2005/01/29 05:34:30  Goober5000
- * docking fixes for FRED
- * --Goober5000
- *
- * Revision 2.1  2005/01/11 21:38:49  Goober5000
- * multiple ship docking :)
- * don't tell anyone yet... check the SCP internal
- * --Goober500
- *
- * Revision 1.0  2004/12/30 16:35:00  Goober5000
- * Addition to CVS repository
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "object/objectdock.h"
@@ -392,16 +330,16 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Num_objects));
+		ubyte *visited_bitstring = (ubyte *) vm_malloc(calculate_num_bytes(MAX_OBJECTS));
 
 		// clear it
-		memset(visited_bitstring, 0, calculate_num_bytes(Num_objects));
+		memset(visited_bitstring, 0, calculate_num_bytes(MAX_OBJECTS));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
 
 		// destroy the bit array
-		free(visited_bitstring);
+		vm_free(visited_bitstring);
 		visited_bitstring = NULL;
 	}
 }
@@ -780,6 +718,17 @@ void dock_remove_instance(object *objp, object *other_objp)
 		}
 
 		// delete it
+		vm_free(ptr);
+	}
+}
+
+// just free the list without worrying about undocking anything
+void dock_free_dock_list(object *objp)
+{
+	while (objp->dock_list != NULL)
+	{
+		dock_instance *ptr = objp->dock_list;
+		objp->dock_list = ptr->next;
 		vm_free(ptr);
 	}
 }

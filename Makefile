@@ -1,5 +1,5 @@
 #---------------------------------------------------------------------------------
-# FreeSpace 2 for the New Nintendo 3DS  (fs2_open 3.6.10 + picaGL)
+# FreeSpace 2 for the New Nintendo 3DS  (fs2_open 3.7.2 + picaGL)
 #
 #   make            -> fs2-3ds.3dsx
 #   make -j4        (recommended)

@@ -16,11 +16,11 @@ jobs:
         run: |
           apt-get update -qq
           apt-get install -y -qq git make python3 ca-certificates >/dev/null
-          dkp-pacman -Sy --noconfirm 3ds-dev 3ds-libogg 3ds-libpng 3ds-zlib >/dev/null
+          dkp-pacman -Sy --noconfirm 3ds-dev 3ds-libogg 3ds-libpng 3ds-zlib >/dev/null || echo "devkitPro package server unavailable: using the image's packages"
           git config --global --add safe.directory '*'
       - uses: actions/checkout@v4
       - name: Build
-        run: . ./env.sh && make -j$(nproc) 2>&1 | tee build.log; test -f fs2-3ds.3dsx
+        run: . ./env.sh && make -k -j$(nproc) 2>&1 | tee build.log; test -f fs2-3ds.3dsx
       - name: Collect
         if: always()
         run: |

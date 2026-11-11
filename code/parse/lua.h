@@ -2,19 +2,18 @@
 #define _LUA_H
 
 extern "C" {
-	#include "../../lua/lauxlib.h"
-	#include "../../lua/lualib.h"
+	#include <lauxlib.h>
+	#include <lualib.h>
 }
 
 #include "object/object.h"
 #include "globalincs/pstypes.h"
-
-#include <vector>
+#include "menuui/mainhallmenu.h"
 
 //*************************Lua funcs*************************
 //Used to parse arguments on the stack to C values
-int ade_get_args(lua_State *L, char *fmt, ...);
-int ade_set_args(lua_State *L, char* fmt, ...);
+int ade_get_args(lua_State *L, const char *fmt, ...);
+int ade_set_args(lua_State *L, const char *fmt, ...);
 void ade_stackdump(lua_State *L, char *stackdump);
 int ade_friendly_error(lua_State *L);
 
@@ -26,43 +25,18 @@ extern int Ade_get_args_skip;
 extern bool Ade_get_args_lfunction;
 
 //*************************Lua types*************************
-//WMC - These should really all be internal, but I needed ade_obj
-/*
-class ade_id
-{
-private:
-	std::vector<uint> Path;
-public:
-	ade_id(){Path.clear();}
-	ade_id(int n){Path.clear();Path.push_back(n);}
-	ade_id(ade_id &id, int n){
-		Path.resize(id.Path.size());
-		memcpy(&Path[0], &id.Path[0], sizeof(uint) * Path.size());
-		Path.push_back(n);
-	}
-
-	//Operators
-	ade_id &operator = (const ade_id &n_aid);
-	bool operator == (ade_id &n_aid);
-
-	//Get
-	class ade_table_entry *GetATE();
-	bool IsUsed(){return (Path.size() > 0);}
-	size_t GetSizeInBytes(){return Path.size() * sizeof(uint);}
-
-	//Set
-	void Copy(void *dest){memcpy(dest, &Path[0], Path.size() * sizeof(uint));}
-};
-*/
 
 //WMC - Define to say that this is to store just a pointer.
 #define ODATA_PTR_SIZE		-1
 #define ODATA_SIG_TYPE		uint						//WMC - Please don't touch.
 #define ODATA_SIG_DEFAULT	0
-//ade_odata Used for internal object->lua_set and lua_get->object communication
-class ade_odata
+/** Used for internal object->lua_set and lua_get->object communication.
+
+Must remain a struct and only contain POD datatypes because this is passed via
+variable args.
+*/
+struct ade_odata
 {
-public:
 	//ade_id aid;
 	uint idx;
 	ODATA_SIG_TYPE *sig;
@@ -97,7 +71,7 @@ public:
 
 #define ADE_INDEX(ate) (ate - &Ade_table_entries[0])
 
-extern std::vector<class ade_table_entry> Ade_table_entries;
+extern SCP_vector<class ade_table_entry> Ade_table_entries;
 
 class ade_table_entry
 {
@@ -136,9 +110,7 @@ public:
 	char *ReturnType;
 	char *ReturnDescription;
 
-	//Subentries, of course.
-	//std::vector<ade_table_entry> Subentries;
-	//std::vector<uint> Subentries;
+	//Subentries, of course
 	//WMC - I have HAD it with these motherfriendly vectors
 	//on this motherfriendly class.
 	uint Num_subentries;
@@ -150,10 +122,11 @@ private:
 
 public:
 	//*****Constructors
-	ade_table_entry(){
-		memset(this, 0, sizeof(ade_table_entry));
-		ParentIdx = UINT_MAX;
-		DerivatorIdx = UINT_MAX;
+	ade_table_entry() : Name(NULL), ShortName(NULL), ParentIdx(UINT_MAX), DerivatorIdx(UINT_MAX), Instanced(false), 
+        Size(0), Arguments(NULL), Description(NULL),  ReturnType(NULL), ReturnDescription(NULL), Num_subentries(0)
+    {
+        Type = '\0';
+		memset(Subentries, 0, sizeof(Subentries));
 	}
 
 	//*****Operators
@@ -249,6 +222,7 @@ public:
 	ade_odata GetPtr(StoreType **ptr){
 		ade_odata od;
 		od.idx = LibIdx;
+		od.sig = NULL;
 		od.buf = (void**)ptr;
 		od.size = -1;
 		return od;

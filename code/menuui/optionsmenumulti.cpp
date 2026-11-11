@@ -7,242 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-02-10 00:17:40 $
- * $Author: taylor $
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.10  2005/10/10 17:21:05  taylor
- * remove NO_NETWORK
- *
- * Revision 2.9  2005/07/18 03:45:07  taylor
- * more non-standard res fixing
- *  - I think everything should default to resize now (much easier than having to figure that crap out)
- *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
- *  - lots of little cleanups which fix several strange offset/size problems
- *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
- *
- * Revision 2.8  2005/07/13 03:15:50  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.7  2005/03/02 21:18:19  taylor
- * better support for Inferno builds (in PreProcDefines.h now, no networking support)
- * make sure NO_NETWORK builds are as friendly on Windows as it is on Linux/OSX
- * revert a timeout in Client.h back to the original value before Linux merge
- *
- * Revision 2.6  2005/02/04 10:12:30  taylor
- * merge with Linux/OSX tree - p0204
- *
- * Revision 2.5  2004/07/26 20:47:37  Kazan
- * remove MCD complete
- *
- * Revision 2.4  2004/07/12 16:32:53  Kazan
- * MCD - define _MCD_CHECK to use memory tracking
- *
- * Revision 2.3  2004/03/05 09:01:53  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.2  2003/09/23 02:42:53  Kazan
- * ##KAZAN## - FS2NetD Support! (FS2 Open PXO) -- Game Server Listing, and mission validation completed - stats storing to come - needs fs2open_pxo.cfg file [VP-able]
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.3  2002/05/10 06:08:08  mharris
- * Porting... added ifndef NO_SOUND
- *
- * Revision 1.2  2002/05/04 04:52:22  mharris
- * 1st draft at porting
- *
- * Revision 1.1  2002/05/02 18:03:09  mharris
- * Initial checkin - converted filenames and includes to lower case
- *  
- * 
- * 21    10/25/99 5:47p Jefff
- * reassigned some xstr ids
- * 
- * 20    8/02/99 2:44p Dave
- * Disable IPX for demo build.
- * 
- * 19    7/15/99 7:15p Jefff
- * Added various sound FX
- * 
- * 18    7/15/99 9:20a Andsager
- * FS2_DEMO initial checkin
- * 
- * 17    6/25/99 11:59a Dave
- * Multi options screen.
- * 
- * 16    6/22/99 7:03p Dave
- * New detail options screen.
- * 
- * 15    4/25/99 3:02p Dave
- * Build defines for the E3 build.
- * 
- * 14    2/25/99 4:19p Dave
- * Added multiplayer_beta defines. Added cd_check define. Fixed a few
- * release build warnings. Added more data to the squad war request and
- * response packets.
- * 
- * 13    2/19/99 2:55p Dave
- * Temporary checking to report the winner of a squad war match.
- * 
- * 12    2/17/99 2:10p Dave
- * First full run of squad war. All freespace and tracker side stuff
- * works.
- * 
- * 11    2/12/99 6:16p Dave
- * Pre-mission Squad War code is 95% done.
- * 
- * 10    2/05/99 7:22p Neilk
- * Fixed gamma bitmap and converted coordinates for multiple resolutions
- * 
- * 9     2/02/99 11:36a Dave
- * Removed obsolete data reference.
- * 
- * 8     12/18/98 1:13a Dave
- * Rough 1024x768 support for Direct3D. Proper detection and usage through
- * the launcher.
- * 
- * 7     11/20/98 11:16a Dave
- * Fixed up IPX support a bit. Making sure that switching modes and
- * loading/saving pilot files maintains proper state.
- * 
- * 6     11/19/98 4:19p Dave
- * Put IPX sockets back in psnet. Consolidated all multiplayer config
- * files into one.
- * 
- * 5     11/05/98 5:55p Dave
- * Big pass at reducing #includes
- * 
- * 4     10/13/98 9:28a Dave
- * Started neatening up freespace.h. Many variables renamed and
- * reorganized. Added AlphaColors.[h,cpp]
- * 
- * 3     10/09/98 2:57p Dave
- * Starting splitting up OS stuff.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 27    7/08/98 11:56a Dave
- * Changed mic problem error message.
- * 
- * 26    6/12/98 7:13p Hoffoss
- * Fixed options screen problem where it wasn't showing tooltips.
- * 
- * 25    6/09/98 10:31a Hoffoss
- * Created index numbers for all xstr() references.  Any new xstr() stuff
- * added from here on out should be added to the end if the list.  The
- * current list count can be found in FreeSpace.cpp (search for
- * XSTR_SIZE).
- * 
- * 24    6/01/98 11:43a John
- * JAS & MK:  Classified all strings for localization.
- * 
- * 23    5/21/98 9:45p Dave
- * Lengthened tracker polling times. Put in initial support for PXO
- * servers with channel filters. Fixed several small UI bugs.
- * 
- * 22    5/20/98 2:24a Dave
- * Fixed server side voice muting. Tweaked multi debrief/endgame
- * sequencing a bit. Much friendlier for stats tossing/accepting now.
- * 
- * 21    5/19/98 1:35a Dave
- * Tweaked pxo interface. Added rankings url to pxo.cfg. Make netplayer
- * local options update dynamically in netgames.
- * 
- * 20    5/18/98 12:03p Frank
- * Make sure network changes made in options screen are loaded into any
- * current Net_player as well as the Player.
- * 
- * 19    5/11/98 11:39p Dave
- * Stuff.
- * 
- * 18    5/10/98 7:05p Dave
- * Fix endgame sequencing ESC key. Changed how host options warning popups
- * are done. Fixed pause/message scrollback/options screen problems in mp.
- * Make sure observer HUD doesn't try to lock weapons.
- * 
- * 17    5/08/98 7:08p Dave
- * Lots of UI tweaking.
- * 
- * 16    5/08/98 5:04p Dave
- * Go to the join game screen when quitting multiplayer. Fixed mission
- * text chat bugs. Put mission type symbols on the create game list.
- * Started updating standalone gui controls.
- * 
- * 15    5/07/98 12:57a Dave
- * Fixed incorrect calls to free() from stats code. Put in new artwork for
- * debrief and host options screens. Another modification to scoring
- * system for secondary weapons.
- * 
- * 14    5/06/98 8:06p Dave
- * Made standalone reset properly under weird conditions. Tweak
- * optionsmulti screen. Upped MAX_WEAPONS to 350. Put in new launch
- * countdown anim. Minro ui fixes/tweaks.
- * 
- * 13    5/02/98 5:38p Dave
- * Put in new tracker API code. Put in ship information on mp team select
- * screen. Make standalone server name permanent. Fixed standalone server
- * text messages.
- * 
- * 12    4/30/98 5:24p Adam
- * JAS: Made multi config specify path.
- * 
- * 11    4/28/98 5:13p Dave
- * Remove references to old MT API
- * 
- * 10    4/25/98 2:00p Dave
- * Installed a bunch of multiplayer context help screens. Reworked ingame
- * join ship select screen. Fix places where network timestamps get hosed.
- * 
- * 9     4/22/98 4:09p John
- * String externalization
- * 
- * 8     4/22/98 12:34a Dave
- * Make sure hud config and control config buttons draw properly in all
- * tab modes. Make small tab buttons light up correctly in multi options
- * screen.
- * 
- * 7     4/21/98 4:44p Dave
- * Implement Vasudan ships in multiplayer. Added a debug function to bash
- * player rank. Fixed a few rtvoice buffer overrun problems. Fixed ui
- * problem in options screen. 
- * 
- * 6     4/20/98 6:04p Dave
- * Implement multidata cache flushing and xferring mission files to
- * multidata. Make sure observers can't change hud config. Fix pilot image
- * viewing in popup. Put in game status field. Tweaked multi options. 
- * 
- * 5     4/18/98 12:45p Dave
- * Aesthetic changes to multi options screen. Put in missing exit button.
- * oops.
- * 
- * 4     4/17/98 6:33p Dave
- * Finished first run of the screen. About time.
- * 
- * 3     4/17/98 5:27p Dave
- * More work on the multi options screen. Fixed many minor ui todo bugs.
- * 
- * 2     4/17/98 12:42a Dave
- * Worked on voice tab. Need to implement mic testing and player muting
- * list thingie.
- * 
- * 1     4/16/98 11:39p Dave
- *  
- * 
- * $NoKeywords: $
- */
+
 
 
 #include "ui/ui.h"
@@ -314,7 +79,7 @@ void options_multi_load_bmaps();
 void options_multi_unload_bmaps();
 
 // add a notification message
-void options_multi_add_notify(char *str);
+void options_multi_add_notify(const char *str);
 
 // process and blit any notification messages
 void options_multi_notify_process();
@@ -372,7 +137,7 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	30,	128,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	22,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	68,	235,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },	
+		{ "Broadcast Locally",	1387,	42,	260,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	42,	291,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[0][OM_PRO_VMT].button },
 		{ "Login",			1384,	14,	309,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	14,	336,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
@@ -386,7 +151,7 @@ UI_XSTR Om_pro_text[GR_NUM_RESOLUTIONS][OM_PRO_NUM_TEXT] = {
 		{ "IP Address",	1380,	47,	206,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "add",				1381,	36,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_ADD_IP].button },
 		{ "rem.",			1382,	109,	375,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_DELETE_IP].button },
-		{ "Broadcast Locally",	1397,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },	
+		{ "Broadcast Locally",	1387,	68,	417,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_LOCAL_BROADCAST].button },	
 		{ "PXO",				1383,	68,	467,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_buttons[1][OM_PRO_VMT].button },
 		{ "Login",			1384,	23,	495,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
 		{ "Password",		1385,	23,	538,	UI_XSTR_COLOR_GREEN, -1, &Om_pro_bogus },
@@ -703,7 +468,7 @@ op_sliders Om_vox_sliders[GR_NUM_RESOLUTIONS][NUM_OM_VOX_SLIDERS] = {
 		op_sliders("OVB_18",	429,	162,	-1,	-1,	18,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// voice QOS
 	},	
 	{ // GR_1024				
-		op_sliders("2_OVB_18",	686,	259,	-1,	-1,	18,	20,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// voice QOS
+		op_sliders("2_OVB_18",	686,	259,	-1,	-1,	18,	31,	10, NULL, -1, -1, -1, NULL, -1, -1, -1),	// voice QOS
 	}
 };
 
@@ -855,12 +620,12 @@ void options_multi_unload_bmaps()
 }
 
 // add a notification message
-void options_multi_add_notify(char *str)
+void options_multi_add_notify(const char *str)
 {
 	// copy the string
 	memset(Om_notify_string,0,255);
 	if(str != NULL){		
-		strcpy(Om_notify_string,str);
+		strcpy_s(Om_notify_string,str);
 	} 		
 
 	// set the timestamp
@@ -871,12 +636,13 @@ void options_multi_add_notify(char *str)
 void options_multi_notify_process()
 {
 	int w;
-	char *p_str[3];
+	const char *p_str[3];
 	int n_chars[3];
 	char line[255];
 	int line_count;
 	int y_start;
 	int idx;
+	int line_height;
 	
 	// if there is no timestamp, do nothing
 	if(Om_notify_stamp == -1){
@@ -890,6 +656,7 @@ void options_multi_notify_process()
 	}
 
 	// otherwise display the string
+	line_height = gr_get_font_height() + 1;
 	line_count = split_str(Om_notify_string, 600, n_chars, p_str, 3);	
 	y_start = OM_NOTIFY_Y;
 	gr_set_color_fast(&Color_bright);
@@ -898,9 +665,9 @@ void options_multi_notify_process()
 		strncpy(line, p_str[idx], n_chars[idx]);
 				
 		gr_get_string_size(&w,NULL,line);
-		gr_string((600 - w)/2,y_start,line);
+		gr_string((600 - w)/2,y_start,line,GR_RESIZE_MENU);
 
-		y_start += 10;
+		y_start += line_height;
 	}	
 }
 
@@ -949,10 +716,8 @@ void options_multi_load_protocol_controls()
 	Om_ip_input.disable();
 	
 	// disable IPX button in demo
-#ifdef FS2_DEMO
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.disable();
 	Om_pro_buttons[gr_screen.res][OM_PRO_IPX].button.hide();
-#endif
 
 	// bogus control
 	Om_pro_bogus.base_create(Om_window, UI_KIND_ICON, 0, 0, 0, 0);
@@ -1282,9 +1047,6 @@ void options_multi_protocol_button_pressed(int n)
 	// the vmt button
 	case OM_PRO_VMT:
 		// for the multiplayer beta, always force tracker mode
-#ifdef MULTIPLAYER_BETA_BUILD // do we want this for FS2_DEMO
-		Om_tracker_flag = 1;
-#else
 		// don't process if we're in input mode
 		if(Om_input_mode){
 			break;
@@ -1306,7 +1068,6 @@ void options_multi_protocol_button_pressed(int n)
 
 		// play a sound
 		gamesnd_play_iface(SND_USER_SELECT);
-#endif
 		break;
 
 	// general tab button 
@@ -1360,10 +1121,8 @@ void options_multi_protocol_button_pressed(int n)
 
 	// ipx mode
 	case OM_PRO_IPX:
-#ifndef FS2_DEMO
 		Om_protocol = NET_IPX;
 		gamesnd_play_iface(SND_USER_SELECT);
-#endif
 		break;
 	}
 }
@@ -1402,7 +1161,7 @@ void options_multi_protocol_load_ip_file()
 			nprintf(("Network","Invalid ip string (%s)\n",line));
 		} else {
 			if(Om_num_ips < MAX_IP_ADDRS-1){
-				strcpy(Om_ip_addrs[Om_num_ips++],line);
+				strcpy_s(Om_ip_addrs[Om_num_ips++],line);
 			}
 		}
 	}
@@ -1446,6 +1205,7 @@ void options_multi_protocol_display_ips()
 {
 	int idx;
 	int y_start = Ip_list_coords[gr_screen.res][1];
+	int line_height = gr_get_font_height() + 1;
 		
 	// get the # of items we should be displaying based upon the # of addresses and the starting display point
 	if(Om_ip_start >= Ip_list_max_display[gr_screen.res]){
@@ -1462,8 +1222,8 @@ void options_multi_protocol_display_ips()
 			gr_set_color_fast(&Color_white);
 		}
 
-		gr_printf(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
-		y_start += 10;
+		gr_printf_menu(Ip_list_coords[gr_screen.res][0], y_start, Om_ip_addrs[idx]);
+		y_start += line_height;
 	}
 }
 
@@ -1498,7 +1258,7 @@ void options_multi_protocol_check_ip_list()
 	if(Om_ip_button.pressed()){
 		// determine which item he clicked on	
 		Om_ip_button.get_mouse_pos(NULL, &click_y);
-		item = click_y / 10;
+		item = click_y / (gr_get_font_height() + 1);
 			
 		// determine if there is an item in this location, and select it if so
 		if(item < Om_ip_disp_count){
@@ -1517,7 +1277,7 @@ void options_multi_protocol_delete_ip()
 
 		// move down all the other items				
 		for(idx=Om_ip_selected; idx < Om_num_ips; idx++){
-			strcpy(Om_ip_addrs[idx],Om_ip_addrs[idx+1]);
+			strcpy_s(Om_ip_addrs[idx],Om_ip_addrs[idx+1]);
 		}
 
 		// make sure to decrement the starting index
@@ -1573,7 +1333,7 @@ void options_multi_protocol_add_current_ip()
 	Ip_validated_already = 0;
 	if(popup_till_condition(options_multi_verify_ip, XSTR( "Cancel", 387), XSTR( "Verifying ip address", 388)) == 10){
 		if(Om_num_ips < MAX_IP_ADDRS){
-			strcpy(Om_ip_addrs[Om_num_ips],Ip_str);
+			strcpy_s(Om_ip_addrs[Om_num_ips],Ip_str);
 			Om_ip_start = Om_num_ips;
 			Om_num_ips++;
 			
@@ -2078,7 +1838,7 @@ void options_multi_vox_do()
 				// attempt to get a playback handle
 				handle = multi_voice_test_get_playback_buffer();
 				if(handle != -1){
-					Om_vox_playback_handle = rtvoice_play_uncompressed(handle, Om_vox_comp_buffer, Om_vox_voice_comp_size);
+					Om_vox_playback_handle = rtvoice_play(handle, Om_vox_comp_buffer, Om_vox_voice_comp_size);
 
 					// mark us as playing back
 					Om_vox_test_status = OM_VOX_TEST_PLAYBACK;
@@ -2099,7 +1859,7 @@ void options_multi_vox_do()
 	
 	case OM_VOX_TEST_PLAYBACK:			
 		// if we were playing a sound back, but now the sound is done
-		if((Om_vox_playback_handle != -1) && (ds_get_play_position(ds_get_channel(Om_vox_playback_handle)) >= (DWORD)Om_vox_voice_comp_size)){
+		if ( (Om_vox_playback_handle != -1) && !ds_is_channel_playing(ds_get_channel(Om_vox_playback_handle)) ) {
 			// flush all playing sounds safely
 			rtvoice_stop_playback_all();
 
@@ -2221,7 +1981,7 @@ void options_multi_vox_process_waveform()
 
 	// grey the screen
 	gr_set_shader(&Grey_shader);
-	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, false);
+	gr_shade(0,0,gr_screen.clip_width, gr_screen.clip_height, GR_RESIZE_NONE);
 
 	switch(Om_vox_test_status){
 	case OM_VOX_TEST_RECORDING:
@@ -2252,13 +2012,13 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;
-			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg, GR_RESIZE_MENU);
 		}		
 
 		// if this packet would have been dropped, notify the user
 		if(multi_voice_test_packet_tossed()){
 			gr_set_color_fast(&Color_bright);
-			gr_string(OM_VOX_DROP_ICON_X,OM_VOX_DROP_ICON_Y, XSTR( "Packet Overflow", 393));
+			gr_string(OM_VOX_DROP_ICON_X,OM_VOX_DROP_ICON_Y, XSTR( "Packet Overflow", 393), GR_RESIZE_MENU);
 		}		
 		break;
 
@@ -2284,7 +2044,7 @@ void options_multi_vox_process_waveform()
 			}
 
 			running_avg /= avg_len;			
-			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg);
+			gr_line((gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y, (gr_screen.max_w_unscaled - OM_VOX_WAVE_WIDTH)/2 + idx, OM_VOX_WAVE_Y + running_avg, GR_RESIZE_MENU);
 		}				
 		break;
 	}
@@ -2298,10 +2058,12 @@ void options_multi_vox_process_player_list()
 	int selected_index,click_y;
 	char str[CALLSIGN_LEN+2];
 
+	int line_height = gr_get_font_height() + 1;
+
 	// check for mouse clicks
 	if(Om_vox_plist_button.pressed()){
 		Om_vox_plist_button.get_mouse_pos(NULL,&click_y);
-		selected_index = (click_y / 10) + Om_vox_plist_start;
+		selected_index = (click_y / line_height) + Om_vox_plist_start;
 
 		// if he clicked on a valid player, select him
 		if(Om_vox_players[selected_index] != NULL){
@@ -2324,14 +2086,14 @@ void options_multi_vox_process_player_list()
 			}
 
 			// force fit his callsign
-			strcpy(str,Om_vox_players[idx]->m_player->callsign);
+			strcpy_s(str,Om_vox_players[idx]->m_player->callsign);
 			gr_force_fit_string(str, CALLSIGN_LEN+1, Om_vox_plist_coords[gr_screen.res][2]);
 
 			// blit the callsign
-			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str);
+			gr_string(Om_vox_plist_coords[gr_screen.res][0], y_start, str, GR_RESIZE_MENU);
 
 			// increment the y index
-			y_start += 10;
+			y_start += line_height;
 
 			// increment the player count
 			p_count++;
@@ -2473,11 +2235,37 @@ void options_multi_close()
 	Om_mode = OM_MODE_NONE;
 }
 
-// called if the accept button on the main options screen was hit
-void options_multi_accept()
+/**
+* Checks if the multiplayer config screen is in a legal state to exit
+**/
+bool options_multi_ok_to_accept()
+{
+	// if PXO is turned on, do we have a username and password?
+	if (Om_tracker_flag) {
+		if (strlen(Multi_tracker_login) == 0) {
+			return false;
+		}
+		else if (strlen(Multi_tracker_passwd) == 0) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+* Called if the accept button on the main options screen was hit. 
+* Returns false if the multi option screen is not in a legal state
+**/
+bool options_multi_accept()
 {	
 	// accept function for the protocol section
 	options_multi_protocol_accept();
+
+	// is it legal to leave this screen?
+	if (!options_multi_ok_to_accept()) {
+		return false;
+	}
 
 	// accept function for the general tab
 	options_multi_gen_accept();
@@ -2495,6 +2283,8 @@ void options_multi_accept()
 	if((Net_player != NULL) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) && MULTI_CONNECTED(Net_players[MY_NET_PLAYER_NUM]) ){
 		multi_options_update_local();
 	}
+
+	return true;
 }
 
 // called when the multiplayer tab is hit - initializes/switches all necessary data.
@@ -2554,27 +2344,24 @@ void options_multi_unselect()
 }
 
 // set voice sound buffer for display 
-void options_multi_set_voice_data(unsigned char *sound_buf,int buf_size,unsigned char *comp_buf, int comp_size, int uncomp_size, double gain)
+void options_multi_set_voice_data(unsigned char *sound_buf, int buf_size, double gain)
 {
-	// copy the buffer to the vox tab data
-	if(buf_size > OM_VOX_BUF_SIZE){
-		memcpy(Om_vox_voice_buffer,sound_buf,OM_VOX_BUF_SIZE);
-		Om_vox_voice_buffer_size = OM_VOX_BUF_SIZE;
-	} else {
-		memcpy(Om_vox_voice_buffer,sound_buf,buf_size);
-		Om_vox_voice_buffer_size = buf_size;
+	if ( (sound_buf == NULL) || (buf_size <= 0) ) {
+		return;
 	}
+
+	// copy the buffer to the vox tab data
+	Om_vox_voice_buffer_size = MIN(buf_size, OM_VOX_BUF_SIZE);
+	memcpy(Om_vox_voice_buffer, sound_buf, Om_vox_voice_buffer_size);
 
 	// copy and uncompress the compressed buffer
 	if(Om_vox_voice_comp_size == -1){
 		Om_vox_voice_comp_size = 0;
 	}
-	// if we can fit it, decompress this data
-	if((Om_vox_voice_comp_size + uncomp_size) < OM_VOX_COMP_SIZE){
-		// uncompress the data
-		rtvoice_uncompress(comp_buf, comp_size, gain, Om_vox_comp_buffer + Om_vox_voice_comp_size, uncomp_size);
 
-		Om_vox_voice_comp_size += uncomp_size;
+	if ( (Om_vox_voice_comp_size + buf_size) < OM_VOX_COMP_SIZE ) {
+		memcpy(Om_vox_comp_buffer + Om_vox_voice_comp_size, sound_buf, buf_size);
+		Om_vox_voice_comp_size += buf_size;
 	}
 }
 

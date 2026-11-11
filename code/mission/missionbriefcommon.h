@@ -7,210 +7,7 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.14.2.3 $
- * $Date: 2007-11-21 07:27:47 $
- * $Author: Goober5000 $
- *
- * Header file for briefing stuff common to FreeSpace and FRED
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.14.2.2  2007/03/21 20:54:24  karajorma
- * Bump the number of debriefing stages.
- * Fix an annoying (and erroneous) warning in the campaign editor.
- *
- * Revision 2.14.2.1  2006/09/20 04:53:53  taylor
- * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
- *
- * Revision 2.14  2006/01/26 04:01:58  Goober5000
- * spelling
- *
- * Revision 2.13  2005/12/29 00:49:43  phreak
- * Briefing icons can now be mirrored so one can point them in the opposite direction.
- *
- * Revision 2.12  2005/11/21 23:55:57  taylor
- * move generic_* functions to their own file
- *
- * Revision 2.11  2005/09/27 02:36:57  Goober5000
- * clarification
- * --Goober5000
- *
- * Revision 2.10  2005/09/26 04:53:19  Goober5000
- * moved these per taylor's recommendation
- * --Goober5000
- *
- * Revision 2.9  2005/09/26 02:15:03  Goober5000
- * okay, this should all be working :)
- * --Goober5000
- *
- * Revision 2.8  2005/09/25 22:24:22  Goober5000
- * more fiddly stuff
- * --Goober5000
- *
- * Revision 2.7  2005/07/13 03:25:59  Goober5000
- * remove PreProcDefine #includes in FS2
- * --Goober5000
- *
- * Revision 2.6  2005/04/05 05:53:19  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
- * Revision 2.5  2005/02/21 09:00:17  wmcoolmon
- * Multi-res support
- *
- * Revision 2.4  2004/08/11 05:06:27  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.3  2004/07/17 18:46:08  taylor
- * various OGL and memory leak fixes
- *
- * Revision 2.2  2004/03/05 09:02:06  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:06  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:24  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:10  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 10    8/24/99 11:30a Jefff
- * Increased number of debriefing lines
- * 
- * 9     7/20/99 7:09p Jefff
- * briefing text occupies full window in 1024x768
- * 
- * 8     7/19/99 3:01p Dave
- * Fixed icons. Added single transport icon.
- * 
- * 7     7/18/99 5:20p Dave
- * Jump node icon. Fixed debris fogging. Framerate warning stuff.
- * 
- * 6     7/09/99 5:54p Dave
- * Seperated cruiser types into individual types. Added tons of new
- * briefing icons. Campaign screen.
- * 
- * 5     6/29/99 7:39p Dave
- * Lots of small bug fixes.
- * 
- * 4     1/30/99 4:03p Johnson
- * Include #defines for Fred
- * 
- * 3     1/29/99 4:17p Dave
- * New interface screens.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 71    6/10/98 6:47p Lawrance
- * increase MAX_RECOMMENDATION_LEN to 1024, to accommodate other languages
- * 
- * 70    4/25/98 3:49p Lawrance
- * Save briefing auto-advance pref
- * 
- * 69    4/20/98 3:53p Lawrance
- * Fix various bugs with auto-advancing through briefings.
- * 
- * 68    4/15/98 10:27a Sandeep
- * 
- * 67    4/13/98 7:06p Lawrance
- * implement auto advance of briefing stages
- * 
- * 66    4/06/98 2:51p Hoffoss
- * Added sexp for briefing to FreeSpace.
- * 
- * 65    4/03/98 5:22p Hoffoss
- * Changes: training missions don't show objectives anymore, text for
- * objective stage is different than last briefing stage now, and
- * objectives have a black background now.
- * 
- * 64    4/03/98 10:31a John
- * Made briefing and debriefing arrays be malloc'd
- * 
- * 63    4/01/98 8:38p Lawrance
- * Add support for jump node icons in the briefings.
- * 
- * 62    3/26/98 5:47p Lawrance
- * remove icon text functionality
- * 
- * 61    3/17/98 4:13p Hoffoss
- * finessed the coordinates of the text window in the briefing screen a
- * little to improve visual quality.
- * 
- * 60    3/12/98 4:04p Hoffoss
- * Changed text window size and spaced text out an extra pixel.
- * 
- * 59    3/09/98 12:13a Lawrance
- * Add support for Red Alert missions
- * 
- * 58    3/07/98 11:50a Lawrance
- * Fix bug with displaying the closeup title
- * 
- * 57    3/05/98 9:38p Hoffoss
- * Finished up command brief screen.
- * 
- * 56    3/05/98 10:39a Hoffoss
- * Added command brief stuff.
- * 
- * 55    2/26/98 4:59p Allender
- * groundwork for team vs team briefings.  Moved weaponry pool into the
- * Team_data structure.  Added team field into the p_info structure.
- * Allow for mutliple structures in the briefing code.
- * 
- * 54    2/24/98 6:21p Lawrance
- * Fix up map grid region
- * 
- * 53    2/24/98 12:22a Lawrance
- * New coords for revamped briefing graphics
- * 
- * 52    2/18/98 6:45p Hoffoss
- * Added support for lines between icons in briefings for Fred.
- * 
- * 51    2/13/98 5:16p Lawrance
- * Add support for icon lines in the briefing.
- * 
- * 50    2/09/98 9:25p Allender
- * team v team support.  multiple pools and briefings
- * 
- * 49    2/06/98 4:32p Lawrance
- * Allow briefing voices to be toggled on/off
- * 
- * 48    2/04/98 4:32p Allender
- * support for multiple briefings and debriefings.  Changes to mission
- * type (now a bitfield).  Bitfield defs for multiplayer modes
- * 
- * 47    1/28/98 7:22p Lawrance
- * Put back in highlight member in brief_icon for FRED compatability.
- * 
- * 46    1/28/98 7:19p Lawrance
- * Get fading/highlighting animations working
- * 
- * 45    10/19/97 5:14p Lawrance
- * add flags member to brief_stage
- * 
- * 44    10/15/97 4:45p Lawrance
- * implement scene cut in debriefing
- * 
- * 43    10/13/97 7:40p Lawrance
- * implement new debriefing/recommendation format
- * 
- * 42    10/04/97 12:00a Lawrance
- * grey out background when help overlay is activated
- * 
- * 41    10/03/97 8:25a Lawrance
- * be able to pause brief narration
- * 
- * 40    10/01/97 4:39p Lawrance
- * move chat code into Chatbox.cpp, simplify interface
- *
- * $NoKeywords: $
- */
+
 
 #ifndef __MISSIONBRIEFCOMMON_H__
 #define __MISSIONBRIEFCOMMON_H__
@@ -218,6 +15,7 @@
 #include "globalincs/globals.h"
 #include "anim/packunpack.h"
 #include "hud/hud.h"
+#include "graphics/generic.h"
 
 #define MAX_TEXT_STREAMS	2		// how many concurrent streams of text can be displayed
 
@@ -225,7 +23,7 @@
 // names for the icons that can appear in the briefing.  If you modify this list,
 // update the Icons_names[] string array located in MissionParse.cpp
 // ------------------------------------------------------------------------
-#define MAX_BRIEF_ICONS						35		// keep up to date
+#define MIN_BRIEF_ICONS						35		// keep up to date
 
 #define ICON_FIGHTER							0
 #define ICON_FIGHTER_WING					1
@@ -263,17 +61,31 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+typedef struct briefing_icon_info {
+	generic_anim	regular;
+	hud_anim		fade;
+	hud_anim		highlight;
+} briefing_icon_type;
+
+extern SCP_vector<briefing_icon_info> Briefing_icon_info;
+
+struct brief_icon;
+extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
+
+
+
+// Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
+extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
+
 // ------------------------------------------------------------------------
 // Structures to hold briefing data
 // ------------------------------------------------------------------------
 
-#define	MAX_BRIEF_LEN			4096		// size of char array which holds briefing text
 #define	MAX_BRIEF_LINES		70
 #define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode
 
-#define	MAX_DEBRIEF_LEN		2048		// size of char array which holds debriefing text
 #define	MAX_DEBRIEF_LINES		60
 #define	MAX_DEBRIEF_LINE_LEN	256		// max number of chars in a debriefing line
 #define	MAX_DEBRIEF_LINE_W	500		// max width of line in pixels
@@ -288,15 +100,14 @@
 #define	MAX_DEBRIEF_STAGES		40
 #define	MAX_LABEL_LEN				64
 
-#define	MAX_RECOMMENDATION_LEN	1024
-
 #define		BI_HIGHLIGHT		(1<<0)
 #define		BI_SHOWHIGHLIGHT	(1<<1)
 #define		BI_FADEIN			(1<<2)
-#define		BI_MIRROR_ICON		(1<<3)	//mirror the briefing icon so it points the other way - phreak
+#define		BI_MIRROR_ICON		(1<<3)	// mirror the briefing icon so it points the other way - phreak
+#define		BI_USE_WING_ICON	(1<<4)	// use wing variant of briefing icon
+#define		BI_USE_CARGO_ICON	(1<<5)	// use cargo variant of briefing icon
 
-typedef struct brief_icon
-{
+typedef struct brief_icon {
 	int		x,y,w,h;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
@@ -318,18 +129,18 @@ typedef struct brief_icon
 
 #define MAX_BRIEF_STAGE_LINES		20
 
-typedef struct brief_line
-{
+typedef struct brief_line {
 	int start_icon;		// index into icons[], where line starts
-	int end_icon;			// index into icons[], where line ends
+	int end_icon;		// index into icons[], where line ends
 } brief_line;
 
 #define BS_FORWARD_CUT		(1<<0)
 #define BS_BACKWARD_CUT		(1<<1)
 
-typedef struct brief_stage
+class brief_stage
 {
-	char			*new_text;
+public:
+	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
 	vec3d		camera_pos;
 	matrix		camera_orient;
@@ -341,28 +152,53 @@ typedef struct brief_stage
 	int			num_lines;
 	brief_line	*lines;
 
-	brief_stage() { memset(this, 0, sizeof(brief_stage)); formula = -1; };
-} brief_stage;
+	brief_stage( ) 
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
+		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+	{ 
+		voice[ 0 ] = 0;
+		camera_pos = vmd_zero_vector;
+		camera_orient = vmd_identity_matrix;
+	}
+};
 
-typedef struct debrief_stage
+class debrief_stage
 {
+public:
 	int			formula;
-	char			*new_text;
+	SCP_string	text;
 	char			voice[MAX_FILENAME_LEN];
-	char			*new_recommendation_text;
+	SCP_string	recommendation_text;
 
-	debrief_stage() { memset(this, 0, sizeof(debrief_stage)); formula = -1; };
-} debrief_stage;
+	debrief_stage( ) 
+		: formula( -1 ), text( ),
+		  recommendation_text( )
+	{ 
+		voice[ 0 ] = 0;
+	}
+};
 
-typedef struct briefing {
+class briefing
+{
+public:
 	int			num_stages;
 	brief_stage	stages[MAX_BRIEF_STAGES];
-} briefing;
 
-typedef struct debriefing {
+	briefing()
+		: num_stages(0)
+	{}
+};
+
+class debriefing
+{
+public:
 	int				num_stages;
 	debrief_stage	stages[MAX_DEBRIEF_STAGES];
-} debriefing;
+
+	debriefing()
+		: num_stages(0)
+	{}
+};
 
 
 
@@ -460,7 +296,7 @@ void brief_restart_text_wipe();
 void brief_reset_last_new_stage();
 void brief_blit_stage_num(int stage_num, int stage_max);
 
-void brief_common_get_icon_dimensions(int *w, int *h, int type, int ship_class);
+void brief_common_get_icon_dimensions(int *w, int *h, brief_icon *bi);
 
 // voice streaming interface
 void brief_voice_init();
@@ -472,11 +308,11 @@ void brief_voice_pause(int stage_num);
 void brief_voice_unpause(int stage_num);
 
 // fancy briefing style text functions for use in other modules.
-int brief_color_text_init(char *src, int w, int instance = 0);
+int brief_color_text_init(const char *src, int w, const char default_color = '\0', int instance = 0, int max_lines = MAX_BRIEF_LINES, const bool append = false);
 int brief_render_text(int line_offset, int x, int y, int h, float frametime, int instance = 0, int line_spacing = 0);
 
 void cmd_brief_reset();
 
-int brief_time_to_advance(int stage_num, float frametime);
+int brief_time_to_advance(int stage_num);
 
 #endif

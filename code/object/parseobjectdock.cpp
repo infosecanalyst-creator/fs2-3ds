@@ -4,27 +4,7 @@
  * create based on the source.
  */ 
 
-/*
- * $Logfile: /Freespace2/code/Object/ParseObjectDock.cpp $
- * $Revision: 1.3.2.1 $
- * $Date: 2007-07-28 21:17:55 $
- * $Author: Goober5000 $
- *
- * Implementation of new docking system for parse objects
- *
- * $Log: not supported by cvs2svn $
- * Revision 1.3  2006/04/20 06:32:23  Goober5000
- * proper capitalization according to Volition
- *
- * Revision 1.2  2005/10/31 09:12:16  Goober5000
- * remove unused commented stuff
- * --Goober5000
- *
- * Revision 1.1  2005/10/29 22:09:30  Goober5000
- * multiple ship docking implemented for initially docked ships
- * --Goober5000
- *
- */
+
 
 #include "globalincs/pstypes.h"
 #include "object/parseobjectdock.h"
@@ -87,6 +67,16 @@ bool dock_check_find_direct_docked_object(p_object *objp, p_object *other_objp)
 	return (dock_find_instance(objp, other_objp) != NULL);
 }
 
+p_object *dock_find_object_at_dockpoint(p_object *objp, char *dockpoint)
+{
+	p_dock_instance *result = dock_find_instance(objp, dockpoint);
+	
+	if (result == NULL)
+		return NULL;
+	else
+		return result->docked_objp;
+}
+
 char *dock_find_dockpoint_used_by_object(p_object *objp, p_object *other_objp)
 {
 	p_dock_instance *result = dock_find_instance(objp, other_objp);
@@ -135,7 +125,7 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Parse_objects.size()));
+		ubyte *visited_bitstring = (ubyte *) vm_malloc(calculate_num_bytes(Parse_objects.size()));
 
 		// clear it
 		memset(visited_bitstring, 0, calculate_num_bytes(Parse_objects.size()));
@@ -144,7 +134,7 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
 
 		// destroy the bit array
-		free(visited_bitstring);
+		vm_free(visited_bitstring);
 		visited_bitstring = NULL;
 	}
 }
@@ -249,7 +239,7 @@ void dock_add_instance(p_object *objp, char *dockpoint, p_object *other_objp)
 
 	// create item
 	item = (p_dock_instance *) vm_malloc(sizeof(p_dock_instance));
-	strcpy(item->dockpoint_used, dockpoint);
+	strcpy_s(item->dockpoint_used, dockpoint);
 	item->docked_objp = other_objp;
 
 	// prepend item to existing list
@@ -257,20 +247,13 @@ void dock_add_instance(p_object *objp, char *dockpoint, p_object *other_objp)
 	objp->dock_list = item;
 }
 
-// this is only allowed for parse objects because we can just free the lists
-// at mission close without worrying about undocking them
-void dock_free_instances(p_object *objp)
+// just free the list without worrying about undocking anything
+void dock_free_dock_list(p_object *objp)
 {
-	// delete the whole list
 	while (objp->dock_list != NULL)
 	{
-		// save first item
 		p_dock_instance *ptr = objp->dock_list;
-
-		// remove it from the list
 		objp->dock_list = ptr->next;
-
-		// delete it
 		vm_free(ptr);
 	}
 }

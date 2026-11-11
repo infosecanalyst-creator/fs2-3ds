@@ -7,72 +7,161 @@
  *
 */ 
 
-/*
- * $Logfile: /Freespace2/code/Hud/HUDreticle.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:15:52 $
- * $Author: Goober5000 $
- *
- * Header file for functions to draw and manage the reticle
- *
- * $Log: not supported by cvs2svn $
- * Revision 2.3  2004/08/11 05:06:25  Kazan
- * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
- *
- * Revision 2.2  2004/03/05 09:02:03  Goober5000
- * Uber pass at reducing #includes
- * --Goober5000
- *
- * Revision 2.1  2002/08/01 01:41:05  penguin
- * The big include file move
- *
- * Revision 2.0  2002/06/03 04:02:23  penguin
- * Warpcore CVS sync
- *
- * Revision 1.1  2002/05/02 18:03:08  mharris
- * Initial checkin - converted filenames and includes to lower case
- *
- * 
- * 3     12/21/98 5:02p Dave
- * Modified all hud elements to be multi-resolution friendly.
- * 
- * 2     10/07/98 10:53a Dave
- * Initial checkin.
- * 
- * 1     10/07/98 10:49a Dave
- * 
- * 5     4/08/98 10:34p Allender
- * make threat indicators work in multiplayer.  Fix socket problem (once
- * and for all???)
- * 
- * 4     11/04/97 7:49p Lawrance
- * integrating new HUD reticle and shield icons
- * 
- * 3     12/08/96 1:54a Lawrance
- * integrating hud configuration
- * 
- * 2     10/28/96 4:54p Lawrance
- * moving #defines to header file since other files need to reference them
- * 
- * 1     10/24/96 11:50a Lawrance
- *
- * $NoKeywords: $
- *
-*/
+
 
 #ifndef _HUDRETICLE_H
 #define _HUDRETICLE_H
 
 #include "graphics/2d.h"
+#include "hud/hud.h"
 
-struct player;
+class player;
+struct weapon_info;
 
 extern int Outer_circle_radius[GR_NUM_RESOLUTIONS];
 extern int Hud_reticle_center[GR_NUM_RESOLUTIONS][2];
 
+#define NUM_WEAPON_LINK_MODES	5
+#define LINK_ONE_PRIMARY		0
+#define LINK_TWO_PRIMARY		1
+#define LINK_ONE_SECONDARY		2
+#define LINK_TWO_SECONDARY		3
+#define LINK_THREE_SECONDARY	4
+
+struct firepoint {
+	vec2d xy;
+	int active;
+};
+
+class HudGaugeReticle: public HudGauge
+{
+protected:
+	hud_frames crosshair; 
+	bool firepoint_display;
+	SCP_vector<firepoint> fp;
+
+	int firepoint_size;
+	int firepoint_scale_x;
+	int firepoint_scale_y;
+public:
+	HudGaugeReticle();
+	void render(float frametime);
+	void initBitmaps(char *fname);
+	void pageIn();
+	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
+	void getFirepointStatus();
+};
+
+class HudGaugeThrottle: public HudGauge
+{
+protected:
+	hud_frames throttle_frames; 
+
+	int Bottom_offset_y;			// Hud_throttle_bottom_y[Hud_reticle_style][gr_screen.res]
+	int throttle_h;			// Hud_throttle_h[gr_screen.res]
+	int throttle_w;			// Hud_throttle_frame_w[gr_screen.res]
+	int throttle_aburn_h;	// Hud_throttle_aburn_h[gr_screen.res]
+
+	int Max_speed_offsets[2];		// Max_speed_coords[gr_screen.res][0] Max_speed_coords[gr_screen.res][1]
+	bool Show_max_speed;
+
+	int Zero_speed_offsets[2];		// Zero_speed_coords[gr_screen.res][0] Zero_speed_coords[gr_screen.res][1]
+	bool Show_min_speed;
+
+	int Orbit_center_offsets[2];	// Hud_reticle_center[gr_screen.res][0] Hud_reticle_center[gr_screen.res][1]
+	int orbit_radius;		// Outer_circle_radius[gr_screen.res]
+	bool orbit;
+
+	int Target_speed_offsets[2];
+	bool Show_target_speed;
+	bool Show_percent;
+
+	int Glide_offsets[2];
+	bool Use_custom_glide;
+
+	int Match_speed_offsets[2];
+	bool Use_custom_match_speed;
+	ubyte Match_speed_icon;
+
+	bool Show_background;
+public:
+	HudGaugeThrottle();
+	void initThrottleStartY(int y);
+	void initThrottleSizes(int w, int h);	// throttle_w will be implicitly figured out using bm_get_info
+	void initAburnHeight(int h);
+	void initMaxSpeedOffsets(int x, int y, bool show);
+	void initZeroSpeedOffsets(int x, int y, bool show);
+	void initOrbitCenterOffsets(int x, int y, bool orbiting);
+	void initOrbitRadius(int radius);
+	void initTargetSpeedOffsets(int x, int y, bool show, bool percent);
+	void initGlideOffsets(int x, int y, bool custom);
+	void initMatchSpeedOffsets(int x, int y, bool custom);
+	void showBackground(bool show);
+	void initBitmaps(char *fname);
+
+	void render(float frametime);
+	void renderThrottleSpeed(float current_speed, int y_end);
+	void renderThrottleLine(int y);
+	void renderThrottleForeground(int y_end);
+	void renderThrottleBackground(int y_end);
+
+	void pageIn();
+};
+
+class HudGaugeThreatIndicator: public HudGauge
+{
+protected:
+	hud_frames threat_arc; // The right arc if FS2 style reticle. Top arc if FS1 style reticle
+
+	hud_frames laser_warn;
+	int Laser_warn_offsets[2];
+
+	int laser_warn_timer;
+	int laser_warn_frame;
+
+	hud_frames lock_warn;
+	int Lock_warn_offsets[2];
+
+	int lock_warn_timer;
+	int lock_warn_frame;
+public:
+	HudGaugeThreatIndicator();
+	void initBitmaps(char *fname_arc, char *fname_laser, char *fname_lock);
+	void initLaserWarnOffsets(int x, int y);
+	void initLockWarnOffsets(int x, int y);
+	void render(float frametime);
+	void initialize();
+	void pageIn();
+	void renderLaserThreat();
+	void renderLockThreat();
+};
+
+class HudGaugeWeaponLinking: public HudGauge
+{
+protected:
+	hud_frames arc;
+
+	hud_frames weapon_linking_modes[NUM_WEAPON_LINK_MODES];
+	int Weapon_link_offsets[NUM_WEAPON_LINK_MODES][2];
+public:
+	HudGaugeWeaponLinking();
+	void init1PrimaryOffsets(int x, int y);
+	void init2PrimaryOffsets(int x, int y);
+	void init1SecondaryOffsets(int x, int y);
+	void init2SecondaryOffsets(int x, int y);
+	void init3SecondaryOffsets(int x, int y);
+	void initBitmaps(char *fname_arc, 
+		char *fname_primary_link_1, 
+		char *fname_primary_link_2, 
+		char *fname_secondary_link_1, 
+		char *fname_secondary_link_2, 
+		char *fname_secondary_link_3);
+	void render(float frametime);
+	void pageIn();
+};
+
 void hud_init_reticle();
 void hud_update_reticle( player *pp );
-void hud_show_reticle();
 
 void hud_draw_outer_reticle();
 void hud_draw_center_reticle();

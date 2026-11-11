@@ -185,13 +185,21 @@ EXTRA_DIST =	\
 
 # D_ variants are defaults and should always be used
 # FS2_ variants are for game building and wxFRED
-AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../lua
+AM_CXXFLAGS = @D_CFLAGS@ @FS2_CXXFLAGS@ -I../mongoose
 AM_LDFLAGS = @D_LDFLAGS@ @FS2_LDFLAGS@
 
-noinst_LIBRARIES = libcode.a
-noinst_PROGRAMS = @FS2_BINARY@
+if BUILD_WXFRED
+LIBCODE=
+else
+LIBCODE=libcode.a
+endif
+noinst_LIBRARIES = $(LIBCODE)
+bin_PROGRAMS = @FS2_BINARY@
 
-EXTRA_PROGRAMS = fs2_open_r fs2_open_d wxFRED2_r wxFRED2_d
+EXTRA_PROGRAMS = fs2_open_@PACKAGE_VERSION@ \
+	fs2_open_@PACKAGE_VERSION@_DEBUG \
+	wxFRED2_@PACKAGE_VERSION@ \
+	wxFRED2_@PACKAGE_VERSION@_DEBUG 
 
 ###############################################################################
 ##
@@ -255,15 +263,17 @@ FS2_SOURCES =	\
 	debris/debris.cpp	\
 	debris/debris.h	\
 	debugconsole/console.cpp	\
-	debugconsole/dbugfile.h	\
+	debugconsole/console.h	\
+	debugconsole/consolecmds.cpp	\
+	debugconsole/consoleparse.cpp	\
+	debugconsole/consoleparse.h	\
 	debugconsole/timerbar.cpp	\
 	debugconsole/timerbar.h	\
-	decals/decals.cpp	\
-	decals/decals.h	\
-	demo/demo.cpp	\
-	demo/demo.h	\
 	exceptionhandler/exceptionhandler.cpp	\
 	exceptionhandler/exceptionhandler.h	\
+	external_dll/externalcode.h		\
+	external_dll/trackirglobal.cpp	\
+	external_dll/trackirglobal.h	\
 	fireball/fireballs.cpp	\
 	fireball/fireballs.h	\
 	fireball/warpineffect.cpp	\
@@ -280,15 +290,23 @@ FS2_SOURCES =	\
 	gamehelp/gameplayhelp.h	\
 	gamesequence/gamesequence.cpp	\
 	gamesequence/gamesequence.h	\
+	gamesnd/eventmusic.cpp	\
+	gamesnd/eventmusic.h	\
+	gamesnd/gamesnd.cpp	\
+	gamesnd/gamesnd.h	\
 	globalincs/alphacolors.cpp	\
 	globalincs/alphacolors.h	\
-	globalincs/crypt.cpp	\
-	globalincs/crypt.h	\
 	globalincs/def_files.cpp	\
 	globalincs/def_files.h	\
+	globalincs/fsmemory.cpp	\
+	globalincs/fsmemory.h	\
 	globalincs/globals.h	\
 	globalincs/linklist.h	\
+	globalincs/profiling.cpp	\
 	globalincs/pstypes.h	\
+	globalincs/safe_strings.cpp	\
+	globalincs/safe_strings.h	\
+	globalincs/safe_strings_test.cpp	\
 	globalincs/systemvars.cpp	\
 	globalincs/systemvars.h	\
 	globalincs/version.cpp	\
@@ -312,6 +330,8 @@ FS2_SOURCES =	\
 	graphics/gropenglextension.h	\
 	graphics/gropengllight.cpp	\
 	graphics/gropengllight.h	\
+	graphics/gropenglpostprocessing.cpp	\
+	graphics/gropenglpostprocessing.h	\
 	graphics/gropenglshader.cpp	\
 	graphics/gropenglshader.h	\
 	graphics/gropenglstate.cpp	\
@@ -347,7 +367,6 @@ FS2_SOURCES =	\
 	hud/hudobserver.h	\
 	hud/hudparse.cpp	\
 	hud/hudparse.h	\
-	hud/hudresource.h	\
 	hud/hudreticle.cpp	\
 	hud/hudreticle.h	\
 	hud/hudshield.cpp	\
@@ -376,8 +395,6 @@ FS2_SOURCES =	\
 	io/mouse.h	\
 	io/timer.cpp	\
 	io/timer.h	\
-	io/trackir.cpp	\
-	io/trackir.h	\
 	jpgutils/jpgutils.cpp	\
 	jpgutils/jpgutils.h	\
 	jumpnode/jumpnode.cpp	\
@@ -392,7 +409,6 @@ FS2_SOURCES =	\
 	localization/fhash.h	\
 	localization/localize.cpp	\
 	localization/localize.h	\
-	math/bitarray.h	\
 	math/fix.cpp	\
 	math/fix.h	\
 	math/floating.cpp	\
@@ -475,6 +491,8 @@ FS2_SOURCES =	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
 	missionui/redalert.h	\
+	mod_table/mod_table.cpp \
+	mod_table/mod_table.h \
 	model/model.h	\
 	model/modelanim.cpp	\
 	model/modelanim.h	\
@@ -519,7 +537,6 @@ FS2_SOURCES =	\
 	network/multi_obj.h	\
 	network/multi_observer.cpp	\
 	network/multi_observer.h	\
-	network/multi_oo.h	\
 	network/multi_options.cpp	\
 	network/multi_options.h	\
 	network/multi_pause.cpp	\
@@ -536,6 +553,8 @@ FS2_SOURCES =	\
 	network/multi_rate.h	\
 	network/multi_respawn.cpp	\
 	network/multi_respawn.h	\
+	network/multi_sexp.cpp	\
+	network/multi_sexp.h	\
 	network/multi_team.cpp	\
 	network/multi_team.h	\
 	network/multi_update.h	\
@@ -543,8 +562,6 @@ FS2_SOURCES =	\
 	network/multi_voice.h	\
 	network/multi_xfer.cpp	\
 	network/multi_xfer.h	\
-	network/psnet.cpp	\
-	network/psnet.h	\
 	network/psnet2.cpp	\
 	network/psnet2.h	\
 	network/stand_gui.cpp	\
@@ -565,6 +582,8 @@ FS2_SOURCES =	\
 	object/object.h	\
 	object/objectshield.cpp	\
 	object/objectshield.h	\
+	object/objectsnd.cpp	\
+	object/objectsnd.h	\
 	object/objectsort.cpp	\
 	object/parseobjectdock.cpp	\
 	object/parseobjectdock.h	\
@@ -576,6 +595,8 @@ FS2_SOURCES =	\
 	palman/palman.h	\
 	parse/encrypt.cpp	\
 	parse/encrypt.h	\
+	parse/generic_log.cpp	\
+	parse/generic_log.h	\
 	parse/lua.cpp	\
 	parse/lua.h	\
 	parse/parselo.cpp	\
@@ -588,6 +609,16 @@ FS2_SOURCES =	\
 	particle/particle.h	\
 	pcxutils/pcxutils.cpp	\
 	pcxutils/pcxutils.h	\
+	pilotfile/pilotfile.cpp	\
+	pilotfile/pilotfile.h	\
+	pilotfile/pilotfile_convert.cpp	\
+	pilotfile/pilotfile_convert.h	\
+	pilotfile/plr.cpp	\
+	pilotfile/csg.cpp	\
+	pilotfile/plr_convert.cpp	\
+	pilotfile/csg_convert.cpp	\
+	pngutils/pngutils.cpp	\
+	pngutils/pngutils.h	\
 	physics/physics.cpp	\
 	physics/physics.h	\
 	playerman/managepilot.cpp	\
@@ -600,6 +631,8 @@ FS2_SOURCES =	\
 	popup/popupdead.h	\
 	radar/radar.cpp	\
 	radar/radar.h	\
+	radar/radardradis.cpp	\
+	radar/radardradis.h	\
 	radar/radarorb.cpp	\
 	radar/radarorb.h	\
 	radar/radarsetup.cpp	\
@@ -625,6 +658,30 @@ FS2_SOURCES =	\
 	ship/shiphit.cpp	\
 	ship/shiphit.h	\
 	ship/subsysdamage.h	\
+	sound/audiostr.cpp	\
+	sound/audiostr.h	\
+	sound/acm.cpp	\
+	sound/acm.h	\
+	sound/ds.cpp	\
+	sound/ds.h	\
+	sound/ds3d.cpp	\
+	sound/ds3d.h	\
+	sound/dscap.cpp	\
+	sound/dscap.h	\
+	sound/fsspeech.cpp	\
+	sound/fsspeech.h	\
+	sound/openal.cpp	\
+	sound/openal.h	\
+	sound/rtvoice.cpp	\
+	sound/rtvoice.h	\
+	sound/sound.cpp	\
+	sound/sound.h	\
+	sound/speech.cpp	\
+	sound/speech.h	\
+	sound/voicerec.cpp	\
+	sound/voicerec.h	\
+	sound/ogg/ogg.cpp	\
+	sound/ogg/ogg.h	\
 	species_defs/species_defs.cpp	\
 	species_defs/species_defs.h	\
 	starfield/nebula.cpp	\
@@ -698,56 +755,9 @@ JOY_SOURCES =	\
 	io/joy-unix.cpp
 endif
 
-## sound support sources
-if FS2_SOUND
-SOUND_SOURCES =	\
-	gamesnd/eventmusic.cpp	\
-	gamesnd/eventmusic.h	\
-	gamesnd/gamesnd.cpp	\
-	gamesnd/gamesnd.h	\
-	object/objectsnd.cpp	\
-	object/objectsnd.h	\
-	sound/ogg/ogg.cpp	\
-	sound/ogg/ogg.h	\
-	sound/audiostr-openal.cpp	\
-	sound/audiostr.cpp	\
-	sound/audiostr.h	\
-	sound/acm-openal.cpp	\
-	sound/acm.cpp	\
-	sound/acm.h	\
-	sound/ds.cpp	\
-	sound/ds.h	\
-	sound/ds3d.cpp	\
-	sound/ds3d.h	\
-	sound/dscap.cpp	\
-	sound/dscap.h	\
-	sound/midifile.cpp	\
-	sound/midifile.h	\
-	sound/midiseq.h	\
-	sound/rbaudio.cpp	\
-	sound/rbaudio.h	\
-	sound/rtvoice.cpp	\
-	sound/rtvoice.h	\
-	sound/sound.cpp	\
-	sound/sound.h	\
-	sound/winmidi.cpp	\
-	sound/winmidi.h	\
-	sound/winmidi_base.cpp	\
-	vcodec/codec1.cpp	\
-	vcodec/codec1.h	\
-	sound/fsspeech.cpp	\
-	sound/fsspeech.h	\
-	sound/speech.cpp	\
-	sound/speech.h	\
-	sound/voicerec.cpp	\
-	sound/voicerec.h
-endif
-
 ## Win32-specific sources
 if FS2_OS_WIN32
 WIN32_SOURCES =	\
-	directx/dx8show.cpp	\
-	directx/dx8show.h	\
 	directx/vasync.h	\
 	directx/vd3dtypes.h	\
 	directx/vddraw.h	\
@@ -755,7 +765,6 @@ WIN32_SOURCES =	\
 	directx/vdplay.h	\
 	directx/vdplobby.h	\
 	directx/vdsetup.h	\
-	directx/vdsound.h	\
 	directx/vdvp.h	\
 	globalincs/windebug.cpp	\
 	graphics/gl/GLAUX.H	\
@@ -763,20 +772,6 @@ WIN32_SOURCES =	\
 	graphics/gl/Gl.h	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
-	graphics/GrD3DStateBlock.cpp	\
-	graphics/GrD3DStateBlock.h	\
-	graphics/grd3d.cpp	\
-	graphics/grd3d.h	\
-	graphics/grd3dcalls.cpp	\
-	graphics/grd3dbmpman.cpp	\
-	graphics/grd3dbmpman.h	\
-	graphics/grd3dinternal.h	\
-	graphics/grd3dlight.cpp	\
-	graphics/grd3dlight.h	\
-	graphics/grd3drender.cpp	\
-	graphics/grd3dsetup.cpp	\
-	graphics/grd3dsetup.h	\
-	graphics/grd3dtexture.cpp	\
 	osapi/monopub.h	\
 	osapi/osapi.cpp	\
 	osapi/osapi.h	\
@@ -801,8 +796,8 @@ endif
 
 
 ## libcode.a
-libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${SOUND_SOURCES}	\
-	${WIN32_SOURCES} ${UNIX_SOURCES}
+libcode_a_SOURCES = ${FS2_SOURCES} ${JOY_SOURCES} ${WIN32_SOURCES}	\
+	${UNIX_SOURCES}
 
 ##
 ## End CODE library
@@ -820,14 +815,14 @@ FS2OPEN_SOURCES = \
 	freespace2/levelpaging.cpp	\
 	freespace2/levelpaging.h
 
-fs2_open_d_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_DEBUG_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_r_SOURCES =	\
+fs2_open_@PACKAGE_VERSION@_SOURCES =	\
 	${FS2OPEN_SOURCES}
 
-fs2_open_d_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
-fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
+fs2_open_@PACKAGE_VERSION@_DEBUG_LDADD = libcode.a ../mongoose/libmongoose.a
+fs2_open_@PACKAGE_VERSION@_LDADD = libcode.a ../mongoose/libmongoose.a
 
 ##
 ## End MAIN binary
@@ -840,21 +835,85 @@ fs2_open_r_LDADD = libcode.a ../libjpeg/libjpeg.a ../lua/liblua.a
 ##
 
 wxFRED_SOURCES = \
-	wxfred2/wxfred2.cpp	\
-	wxfred2/wxfred2.h	\
-	wxfred2/fredframe.cpp	\
-	wxfred2/fredframe.h	\
-	wxfred2/wxfred_xrc.cpp	\
-	wxfred2/wxfred_xrc.h
+	wxfred2/res/select.png.h \
+	wxfred2/res/constz.png.h \
+	wxfred2/res/constx.png.h \
+	wxfred2/res/selectrot.png.h \
+	wxfred2/res/constyz.png.h \
+	wxfred2/res/constxy.png.h \
+	wxfred2/res/wingform.png.h \
+	wxfred2/res/zoomsel.png.h \
+	wxfred2/res/constxz.png.h \
+	wxfred2/res/consty.png.h \
+	wxfred2/res/wingdisband.png.h \
+	wxfred2/res/showdist.png.h \
+	wxfred2/res/orbitsel.png.h \
+	wxfred2/res/zoomext.png.h \
+	wxfred2/res/rotlocal.png.h \
+	wxfred2/res/selectmove.png.h \
+	wxfred2/res/selectlock.png.h \
+	wxfred2/res/selectlist.png.h \
+	wxfred2/base/wxfred_base.h \
+	wxfred2/base/wxfred_base.cpp \
+	wxfred2/editors/dlgobjecteditor.h \
+	wxfred2/editors/dlgobjecteditor.cpp \
+	wxfred2/editors/dlgvoiceactingmanager.h \
+	wxfred2/editors/frmdebriefingeditor.h \
+	wxfred2/editors/dlgbackgroundeditor.cpp \
+	wxfred2/editors/dlgmissionobjectiveseditor.cpp \
+	wxfred2/editors/frmbriefingeditor.cpp \
+	wxfred2/editors/frmteamloadouteditor.h \
+	wxfred2/editors/dlgmissionobjectiveseditor.h \
+	wxfred2/editors/dlgmissionspecseditor.h \
+	wxfred2/editors/frmdebriefingeditor.cpp \
+	wxfred2/editors/dlgfictionviewer.cpp \
+	wxfred2/editors/dlgvoiceactingmanager.cpp \
+	wxfred2/editors/dlgsoundenvironment.cpp \
+	wxfred2/editors/frmcommandbriefingeditor.cpp \
+	wxfred2/editors/frmbriefingeditor.h \
+	wxfred2/editors/dlgshieldsystemeditor.h \
+	wxfred2/editors/dlgreinforcementseditor.h \
+	wxfred2/editors/dlgeventseditor.h \
+	wxfred2/editors/frmteamloadouteditor.cpp \
+	wxfred2/editors/frmcommandbriefingeditor.h \
+	wxfred2/editors/frmwaypointeditor.h \
+	wxfred2/editors/dlgasteroidfieldeditor.h \
+	wxfred2/editors/dlgsetglobalshipflagseditor.cpp \
+	wxfred2/editors/dlgshieldsystemeditor.cpp \
+	wxfred2/editors/frmshipseditor.h \
+	wxfred2/editors/dlgfictionviewer.h \
+	wxfred2/editors/dlgreinforcementspicker.cpp \
+	wxfred2/editors/frmcampaigneditor.cpp \
+	wxfred2/editors/dlgasteroidfieldeditor.cpp \
+	wxfred2/editors/dlgreinforcementspicker.h \
+	wxfred2/editors/dlgreinforcementseditor.cpp \
+	wxfred2/editors/frmcampaigneditor.h \
+	wxfred2/editors/dlgbackgroundeditor.h \
+	wxfred2/editors/frmshipseditor.cpp \
+	wxfred2/editors/dlgeventseditor.cpp \
+	wxfred2/editors/dlgsetglobalshipflagseditor.h \
+	wxfred2/editors/frmwingeditor.h \
+	wxfred2/editors/frmwingeditor.cpp \
+	wxfred2/editors/frmwaypointeditor.cpp \
+	wxfred2/editors/dlgsoundenvironment.h \
+	wxfred2/editors/dlgmissionspecseditor.cpp \
+	wxfred2/glcviewport.h \
+	wxfred2/misc/dlgmissionstats.h \
+	wxfred2/misc/dlgmissionstats.cpp \
+	wxfred2/wxfred2.cpp \
+	wxfred2/wxfred2.h \
+	wxfred2/help/dlgsexphelp.h \
+	wxfred2/help/dlgsexphelp.cpp \
+	wxfred2/help/dlgaboutbox.h \
+	wxfred2/help/dlgaboutbox.cpp \
+	wxfred2/frmfred2.h \
+	wxfred2/frmfred2.cpp
 
-wxFRED2_d_SOURCES = \
+wxFRED2_@PACKAGE_VERSION@_DEBUG_SOURCES = \
 	${wxFRED_SOURCES}
 
-wxFRED2_r_SOURCES =	\
+wxFRED2_@PACKAGE_VERSION@_SOURCES =	\
 	${wxFRED_SOURCES}
-
-wxFRED2_d_LDADD = libcode.a ../libjpeg/libjpeg.a
-wxFRED2_r_LDADD = libcode.a ../libjpeg/libjpeg.a
 
 ##
 ## End wxFRED2 binary
