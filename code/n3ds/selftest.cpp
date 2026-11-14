@@ -144,10 +144,14 @@ static LightEvent st_jobEvent;
 static const char* volatile st_writing;
 static volatile u32 st_wroteN, st_wroteMs, st_wroteMaxMs;
 static int st_writerCore = -2;
+static void st_watchdog_tick(void);
 static void st_writer(void* arg) {
     (void)arg;
+    u64 lastTick = 0;
     for (;;) {
-        LightEvent_Wait(&st_jobEvent);
+        LightEvent_WaitTimeout(&st_jobEvent, 250000000LL);
+        u64 now = osGetTime();
+        if (now - lastTick >= 1000) { lastTick = now; st_watchdog_tick(); }
         while (st_jobTail != st_jobHead) {
             StShotJob* j = &st_jobs[st_jobTail % 8];
             st_writing = j->path;
@@ -227,34 +231,33 @@ static void st_finish(const char* why) {
 // returns to the agent when the game does not quit within 15 s of the script's
 // end, when frames stop for 60 s (a hang), or after 30 minutes in all.
 static volatile u64 st_beat;
-static void st_watchdog(void* arg) {
-    (void)arg;
-    u64 last = 0, still = 0, doneAt = 0, start = osGetTime();
-    for (;;) {
-        svcSleepThread(1000000000LL);
-        u64 now = osGetTime();
-        const char* why = NULL;
-        if (st_done) {
-            // End the game ourselves as soon as the script is done. Asking it to
-            // quit (aptMainLoop false) crashed ScummVM on the real 3DS: its input
-            // thread still read the buttons after HID was shut down (Nov 13 2026).
-            if (!doneAt) doneAt = now;
-            why = "";
-        } else {
-            if (st_beat != last) { last = st_beat; still = now; }
-            // before the first frame a big game may still be loading (FS2: ~40 s+ of data): allow 3 min
-            else if (now - still > (st_beat ? 60000 : 180000)) why = st_beat ? "watchdog: no frames for 60 s (the game hung)"
-                                                                            : "watchdog: no first frame within 3 min (the game hung while starting)";
-            if (now - start > 30 * 60 * 1000) why = "watchdog: the test ran longer than 30 minutes";
-        }
-        if (why) {
-            if (*why) st_logf("%s\n%s\n", why, st_done ? "" : "done frames=0 (stopped by the watchdog)");
-            if (st_log) { fclose(st_log); st_log = NULL; }
-            st_set_target();
-            aptSetChainloaderToSelf();   // relaunch the Homebrew loader, which starts the agent
-            aptExit();
-            svcExitProcess();
-        }
+// One check per second, run from the writer thread (one thread in all: FreeSpace 2 runs close to
+// the 3DS thread limit, and two extra threads made its own thread creation fail and the game hang).
+static void st_watchdog_tick(void) {
+    static u64 last = 0, still = 0, doneAt = 0, start = 0;
+    u64 now = osGetTime();
+    if (!start) start = still = now;
+    const char* why = NULL;
+    if (st_done) {
+        // End the game ourselves as soon as the script is done. Asking it to
+        // quit (aptMainLoop false) crashed ScummVM on the real 3DS: its input
+        // thread still read the buttons after HID was shut down (Nov 13 2026).
+        if (!doneAt) doneAt = now;
+        why = "";
+    } else {
+        if (st_beat != last) { last = st_beat; still = now; }
+        // before the first frame a big game may still be loading (FS2: ~40 s+ of data): allow 3 min
+        else if (now - still > (st_beat ? 60000 : 180000)) why = st_beat ? "watchdog: no frames for 60 s (the game hung)"
+                                                                        : "watchdog: no first frame within 3 min (the game hung while starting)";
+        if (now - start > 30 * 60 * 1000) why = "watchdog: the test ran longer than 30 minutes";
+    }
+    if (why) {
+        if (*why) st_logf("%s\n%s\n", why, st_done ? "" : "done frames=0 (stopped by the watchdog)");
+        if (st_log) { fclose(st_log); st_log = NULL; }
+        st_set_target();
+        aptSetChainloaderToSelf();   // relaunch the Homebrew loader, which starts the agent
+        aptExit();
+        svcExitProcess();
     }
 }
 
@@ -290,11 +293,18 @@ __attribute__((constructor)) static void st_hide_arg(void) {
     __system_argc = n;
 }
 
+#ifndef ST_INJECT
+#define ST_INJECT 1
+#endif
+extern "C" void n3ds_log(const char *fmt, ...);
 static void st_init(void) {
     st_on = 0;
+    n3ds_log("st: init (script %s)\n", st_scriptArg ? st_scriptArg : "none");
     const char* script = st_scriptArg;
     for (int i = 0; !script && i < __system_argc; i++)   // a port may have changed argv: skip empty entries
         if (__system_argv[i] && !strncmp(__system_argv[i], "--selftest=", 11)) script = __system_argv[i] + 11;
+    static const char* emuScript = "sdmc:/3ds/testagent/emu_selftest.txt";   // lets the emulator suite run the hooks too
+    if (!script) { FILE* ef = fopen(emuScript, "r"); if (ef) { fclose(ef); script = emuScript; } }
     if (!script) return;
     snprintf(st_dir, sizeof st_dir, "sdmc:/3ds/testagent/results");
     mkdir("sdmc:/3ds/testagent", 0777);
@@ -302,22 +312,26 @@ static void st_init(void) {
     char lp[300];
     snprintf(lp, sizeof lp, "%s/run.log", st_dir);
     st_log = fopen(lp, "w");
+    n3ds_log("st: run.log %s\n", st_log ? "open" : "FAILED");
     st_load(script);
+    n3ds_log("st: %d steps loaded\n", st_n);
     st_logf("selftest: %d steps from %s\n", st_n, script);
+    n3ds_log("st: set target\n");
     st_set_target();   // if the game exits by itself mid-test, the loader starts the agent, not the Homebrew Menu
+    n3ds_log("st: target set\n");
     st_on = 1;
     s32 prio = 0x30;
     svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-    threadCreate(st_watchdog, NULL, 16 * 1024, prio - 1, -2, true);
+
     LightEvent_Init(&st_jobEvent, RESET_ONESHOT);
     // The writer runs on the New 3DS's extra core (2), so a busy game or sound
     // thread on the game's core can never starve it (it stalled in Gold Box
     // once the demo's sound started). Old 3DS: the game's core, as before.
-    st_writerCore = 2;
-    if (!threadCreate(st_writer, NULL, 32 * 1024, prio + 2, 2, true)) {
-        st_writerCore = -2;
-        threadCreate(st_writer, NULL, 32 * 1024, prio + 2, -2, true);
-    }
+    // FS2 runs its own sound mixer and SDL threads on core 2, so the writer stays on the game's core here.
+    st_writerCore = -2;
+    // the one selftest thread: writer + watchdog, above the game so a hung game cannot starve it
+    if (!threadCreate(st_writer, NULL, 32 * 1024, prio - 1, -2, true)) n3ds_log("st: COULD NOT CREATE THREAD\n");
+    n3ds_log("st: writer on core %d, init done\n", st_writerCore);
 }
 
 // One step of the script per frame; returns when the step needs more frames.
@@ -369,6 +383,7 @@ void __wrap_hidScanInput(void) {
     if (st_on != 1) return;
     st_frame++;
     st_beat = st_frame;
+    if (st_frame <= 3 || st_frame % 300 == 0) n3ds_log("st: frame %lu\n", (unsigned long)st_frame);
     if (st_done) {
         st_held = st_prev = 0;
         return;
@@ -378,22 +393,22 @@ void __wrap_hidScanInput(void) {
 bool __wrap_aptMainLoop(void) {   // the watchdog ends the game after the script; no quit request
     return __real_aptMainLoop();
 }
-u32 __wrap_hidKeysHeld(void) { return st_on == 1 ? st_held : __real_hidKeysHeld(); }
-u32 __wrap_hidKeysDown(void) { return st_on == 1 ? (st_held & ~st_prev) : __real_hidKeysDown(); }
-u32 __wrap_hidKeysDownRepeat(void) { return st_on == 1 ? (st_held & ~st_prev) : __real_hidKeysDownRepeat(); }
-u32 __wrap_hidKeysUp(void) { return st_on == 1 ? (st_prev & ~st_held) : __real_hidKeysUp(); }
+u32 __wrap_hidKeysHeld(void) { return ST_INJECT && st_on == 1 ? st_held : __real_hidKeysHeld(); }
+u32 __wrap_hidKeysDown(void) { return ST_INJECT && st_on == 1 ? (st_held & ~st_prev) : __real_hidKeysDown(); }
+u32 __wrap_hidKeysDownRepeat(void) { return ST_INJECT && st_on == 1 ? (st_held & ~st_prev) : __real_hidKeysDownRepeat(); }
+u32 __wrap_hidKeysUp(void) { return ST_INJECT && st_on == 1 ? (st_prev & ~st_held) : __real_hidKeysUp(); }
 void __wrap_hidTouchRead(touchPosition* pos) {
-    if (st_on != 1) { __real_hidTouchRead(pos); return; }
+    if (!ST_INJECT || st_on != 1) { __real_hidTouchRead(pos); return; }
     pos->px = st_tapFrames ? st_tx : 0;
     pos->py = st_tapFrames ? st_ty : 0;
 }
 void __wrap_hidCircleRead(circlePosition* pos) {
-    if (st_on != 1) { __real_hidCircleRead(pos); return; }
+    if (!ST_INJECT || st_on != 1) { __real_hidCircleRead(pos); return; }
     pos->dx = st_stick == 1 ? st_sx : 0;
     pos->dy = st_stick == 1 ? st_sy : 0;
 }
 void __wrap_irrstCstickRead(circlePosition* pos) {
-    if (st_on != 1) { __real_irrstCstickRead(pos); return; }
+    if (!ST_INJECT || st_on != 1) { __real_irrstCstickRead(pos); return; }
     pos->dx = st_stick == 2 ? st_sx : 0;
     pos->dy = st_stick == 2 ? st_sy : 0;
 }

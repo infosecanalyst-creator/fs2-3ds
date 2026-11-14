@@ -75,6 +75,7 @@ SDL_Thread *SDL_CreateThread(int (*fn)(void *), void *data)
 	/* run helper threads on the New 3DS extra core when possible */
 	t->th = threadCreate(sdl_thread_entry, t, 64 * 1024, prio - 1, 2, false);
 	if (!t->th) t->th = threadCreate(sdl_thread_entry, t, 64 * 1024, prio - 1, -2, false);
+	if (!t->th) n3ds_log("SDL_CreateThread: threadCreate FAILED (thread limit?)\n");
 	if (!t->th) { free(t); return NULL; }
 	return t;
 }
@@ -141,6 +142,7 @@ SDL_TimerID SDL_AddTimer(Uint32 interval, SDL_NewTimerCallback callback, void *p
 	s32 prio = 0x30;
 	svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
 	t->th = threadCreate(sdl_timer_entry, t, 32 * 1024, prio - 2, -2, false);
+	if (!t->th) n3ds_log("SDL_AddTimer: threadCreate FAILED (thread limit?)\n");
 	if (!t->th) { free(t); return NULL; }
 	return (SDL_TimerID)t;
 }
