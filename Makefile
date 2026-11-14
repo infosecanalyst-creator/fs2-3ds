@@ -66,6 +66,10 @@ WARN     := -w
 CFLAGS   := $(ARCH) $(OPT) $(WARN) $(DEFINES) $(INCLUDES)
 CXXFLAGS := $(CFLAGS) -std=gnu++98 -fpermissive -Wno-narrowing
 LDFLAGS  := -specs=3dsx.specs $(ARCH) -Wl,-Map,$(BUILD)/$(TARGET).map -Wl,--gc-sections
+# Hardware test hooks (3ds-test-suite hwtest/selftest, code/n3ds/selftest.cpp): inactive unless
+# the test agent starts the game with --selftest=<script>.
+SELFTEST_WRAP := hidScanInput hidKeysHeld hidKeysDown hidKeysDownRepeat hidKeysUp hidTouchRead hidCircleRead irrstCstickRead aptMainLoop
+LDFLAGS  += $(foreach f,$(SELFTEST_WRAP),-Wl,--wrap=$(f))
 LIBS     := -L$(PORTLIBS)/lib -L$(CTRULIB)/lib -logg -lpng -lz -lctru -lm
 
 #---------------------------------------------------------------------------------
