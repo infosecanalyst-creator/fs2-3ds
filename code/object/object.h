@@ -214,7 +214,7 @@ extern int Show_waypoints;
 extern int Object_next_signature;		
 extern int Num_objects;
 
-extern object Objects[];
+extern object *Objects;		// MAX_OBJECTS, on the heap
 extern int Highest_object_index;		//highest objnum
 extern int Highest_ever_object_index;
 extern object obj_free_list;

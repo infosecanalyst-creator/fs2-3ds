@@ -300,7 +300,7 @@ typedef struct spawn_weapon_info
 #define BEAM_FAR_LENGTH				30000.0f
 
 
-extern weapon Weapons[MAX_WEAPONS];
+extern weapon *Weapons;		// MAX_WEAPONS, on the heap
 
 #define WEAPON_TITLE_LEN			48
 
@@ -584,7 +584,7 @@ public:
 
 extern weapon_explosions Weapon_explosions;
 
-extern weapon_info Weapon_info[MAX_WEAPON_TYPES];
+extern weapon_info *Weapon_info;		// MAX_WEAPON_TYPES, on the heap
 
 extern int Num_weapon_types;			// number of weapons in the game
 extern int Num_weapons;

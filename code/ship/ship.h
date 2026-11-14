@@ -1434,7 +1434,7 @@ public:
 };
 
 extern int Num_wings;
-extern ship Ships[MAX_SHIPS];
+extern ship *Ships;		// MAX_SHIPS, on the heap
 extern ship	*Player_ship;
 extern int	*Player_cockpit_textures;
 
@@ -1543,7 +1543,7 @@ extern int CLOAKMAP;
 
 extern int Num_reinforcements;
 extern int Num_ship_classes;
-extern ship_info Ship_info[MAX_SHIP_CLASSES];
+extern ship_info *Ship_info;		// MAX_SHIP_CLASSES, on the heap (globalincs/bigarrays.h)
 extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
 
 // structure definition for ship type counts.  Used to give a count of the number of ships

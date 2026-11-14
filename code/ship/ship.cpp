@@ -11,6 +11,7 @@
 
 
 #include <setjmp.h>
+#include "globalincs/bigarrays.h"
 
 #include "globalincs/def_files.h"
 #include "globalincs/alphacolors.h"
@@ -120,7 +121,7 @@ extern void render_path_points(object *objp);
 
 int	Num_wings = 0;
 int	Num_reinforcements = 0;
-ship	Ships[MAX_SHIPS];
+ship *Ships = heap_table<ship>(MAX_SHIPS);
 
 ship	*Player_ship;
 int		*Player_cockpit_textures;
@@ -163,7 +164,7 @@ int	Player_ship_class;	// needs to be player specific, move to player structure
 ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
-ship_info		Ship_info[MAX_SHIP_CLASSES];
+ship_info *Ship_info = heap_table<ship_info>(MAX_SHIP_CLASSES);
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 
 static char **tspecies_names = NULL;

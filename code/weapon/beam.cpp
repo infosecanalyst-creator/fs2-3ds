@@ -11,6 +11,7 @@
 
 
 #include "weapon/beam.h"
+#include "globalincs/bigarrays.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/objcollide.h"
@@ -56,7 +57,7 @@ extern int Cmdline_nohtl;
 
 #define TOOLTIME						1500.0f
 
-beam Beams[MAX_BEAMS];				// all beams
+beam *Beams = heap_table<beam>(MAX_BEAMS);				// all beams
 beam Beam_free_list;					// free beams
 beam Beam_used_list;					// used beams
 int Beam_count = 0;					// how many beams are in use

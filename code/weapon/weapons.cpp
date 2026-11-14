@@ -10,6 +10,7 @@
 
 
 #include "weapon/weapon.h"
+#include "globalincs/bigarrays.h"
 #include "render/3d.h"
 #include "object/object.h"
 #include "ship/ship.h"
@@ -57,8 +58,8 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 
 static int Weapon_flyby_sound_timer;	
 
-weapon Weapons[MAX_WEAPONS];
-weapon_info Weapon_info[MAX_WEAPON_TYPES];
+weapon *Weapons = heap_table<weapon>(MAX_WEAPONS);
+weapon_info *Weapon_info = heap_table<weapon_info>(MAX_WEAPON_TYPES);
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list

@@ -169,7 +169,7 @@ typedef struct beam {
 	float		beam_width;
 } beam;
 
-extern beam Beams[MAX_BEAMS];				// all beams
+extern beam *Beams;		// MAX_BEAMS, on the heap				// all beams
 extern int Beam_count;
 
 // ------------------------------------------------------------------------------------------------

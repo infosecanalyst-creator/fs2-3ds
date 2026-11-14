@@ -11,6 +11,7 @@
 
 
 #include "asteroid/asteroid.h"
+#include "globalincs/bigarrays.h"
 #include "cmeasure/cmeasure.h"
 #include "debris/debris.h"
 #include "fireball/fireballs.h"
@@ -59,7 +60,7 @@ object *Viewer_obj = NULL;
 extern int Cmdline_old_collision_sys;
 
 //Data for objects
-object Objects[MAX_OBJECTS];
+object *Objects = heap_table<object>(MAX_OBJECTS);
 
 #ifdef OBJECT_CHECK 
 checkobject CheckObjects[MAX_OBJECTS];
