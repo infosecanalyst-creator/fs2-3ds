@@ -1063,3 +1063,43 @@ extern "C++" const char *n3ds_key_name(int keycode)
 			return Key_names[i].name;
 	return "the panel / ORDERS";   /* no 3DS button: never show a PC key */
 }
+
+// Heaps: like libctru's default (32 MB linear, the rest heap) but leave 8 MB uncommitted
+// and wait for memory first. With every byte committed, the next app (the test agent or
+// the Homebrew Menu) failed to load with D86007F3 in the loader while this process was
+// still being torn down; started right after another app, memory may still be held.
+extern "C" {
+extern u32 __ctru_heap, __ctru_heap_size, __ctru_linear_heap, __ctru_linear_heap_size;
+extern char *fake_heap_start, *fake_heap_end;
+void __system_allocateHeaps(void)
+{
+	Handle rl = 0;
+	s64 max = 0, cur = 0;
+	ResourceLimitType t = RESLIMIT_COMMIT;
+	if (R_FAILED(svcGetResourceLimit(&rl, CUR_PROCESS_HANDLE))) svcBreak(USERBREAK_PANIC);
+	for (int i = 0; i < 300; i++) {
+		svcGetResourceLimitLimitValues(&max, rl, &t, 1);
+		svcGetResourceLimitCurrentValues(&cur, rl, &t, 1);
+		if (max - cur >= (96ll << 20)) break;
+		svcSleepThread(10000000LL);
+	}
+	svcCloseHandle(rl);
+	const u32 reserve = 8u << 20;
+	u32 avail = (u32)(max - cur) & ~0xFFFu;
+	avail = avail > reserve * 4 ? avail - reserve : avail;
+	u32 linear = 32u << 20;
+	if (linear > avail / 3) linear = (avail / 3) & ~0xFFFu;
+	u32 heap = (avail - linear) & ~0xFFFu;
+	const u32 heap_max = OS_HEAP_AREA_END - OS_HEAP_AREA_BEGIN;
+	if (heap > heap_max) heap = heap_max;
+	__ctru_heap_size = heap;
+	__ctru_linear_heap_size = linear;
+	if (R_FAILED(svcControlMemory(&__ctru_heap, OS_HEAP_AREA_BEGIN, 0x0, heap, MEMOP_ALLOC,
+	                              (MemPerm)(MEMPERM_READ | MEMPERM_WRITE)))) svcBreak(USERBREAK_PANIC);
+	if (R_FAILED(svcControlMemory(&__ctru_linear_heap, 0x0, 0x0, linear, MEMOP_ALLOC_LINEAR,
+	                              (MemPerm)(MEMPERM_READ | MEMPERM_WRITE)))) svcBreak(USERBREAK_PANIC);
+	mappableInit(OS_MAP_AREA_BEGIN, OS_MAP_AREA_END);
+	fake_heap_start = (char *)__ctru_heap;
+	fake_heap_end = fake_heap_start + heap;
+}
+}

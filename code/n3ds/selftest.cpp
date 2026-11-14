@@ -242,7 +242,9 @@ static void st_watchdog(void* arg) {
             why = "";
         } else {
             if (st_beat != last) { last = st_beat; still = now; }
-            else if (now - still > 60000) why = "watchdog: no frames for 60 s (the game hung)";
+            // before the first frame a big game may still be loading (FS2: ~40 s+ of data): allow 3 min
+            else if (now - still > (st_beat ? 60000 : 180000)) why = st_beat ? "watchdog: no frames for 60 s (the game hung)"
+                                                                            : "watchdog: no first frame within 3 min (the game hung while starting)";
             if (now - start > 30 * 60 * 1000) why = "watchdog: the test ran longer than 30 minutes";
         }
         if (why) {
