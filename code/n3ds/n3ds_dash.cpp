@@ -117,13 +117,13 @@ static const screen_help Help[] = {
 
 static void hline(int y)
 {
-	gr_set_color(40, 70, 110);
+	gr_set_color(120, 150, 230);
 	gr_rect(4, y, DASH_W - 8, 1, false);
 }
 
 static void label(int x, int y, const char *text)
 {
-	gr_set_color(120, 160, 210);
+	gr_set_color(150, 150, 165);
 	gr_string(x, y, text, false);
 }
 
@@ -208,7 +208,7 @@ static void mission_label(char *out, int outlen, const char *name)
 
 /* ---- touch buttons on the dashboard */
 struct dash_button { int x, y, w, h; const char *label; };
-#define BTN_Y 184
+#define BTN_Y 180
 #define BTN_H 26
 static const dash_button Dash_buttons[] = {
 	/* rule 11: 74 wide, 4 px apart, 6 px from the edges (x 6..314) */
@@ -294,18 +294,20 @@ void n3ds_dash_touch(int held, int x, int y, int pressed)
 
 static void draw_buttons(void)
 {
+	/* house style: face 40,56,120, edge 120,150,230, shadow line, pressed 220,180,60, gold focus ring */
 	for (int i = 0; i < NUM_DASH_BUTTONS; i++) {
 		const dash_button &b = Dash_buttons[i];
 		int focused = Dash_nav && i == Dash_focus;
 		int pressed = (i == Dash_pressed) || (focused && Dash_flash > 0);
-		int off = pressed ? 1 : 0;       /* pressed buttons sink by a pixel and light up */
-		gr_set_color(pressed ? 90 : 40, pressed ? 140 : 70, pressed ? 200 : 110);
+		int off = pressed ? 1 : 0;       /* pressed buttons sink by a pixel */
+		if (pressed) gr_set_color(220, 180, 60); else gr_set_color(40, 56, 120);
 		gr_rect(b.x, b.y + off, b.w, b.h, false);
-		gr_set_color(pressed ? 160 : 70, pressed ? 200 : 110, pressed ? 250 : 160);
-		gr_rect(b.x, b.y + off, b.w, 1, false);
+		gr_set_color(120, 150, 230);
+		gr_rect(b.x, b.y + off, b.w, 1, false); gr_rect(b.x, b.y + off, 1, b.h, false); gr_rect(b.x + b.w - 1, b.y + off, 1, b.h, false);
+		gr_set_color(20, 30, 70);
+		gr_rect(b.x, b.y + off + b.h - 1, b.w, 1, false);
 		if (focused) {
-			/* the highlight: a gold ring just inside the button */
-			gr_set_color(255, 220, 120);
+			gr_set_color(255, 204, 64);
 			gr_rect(b.x, b.y + off, b.w, 2, false);
 			gr_rect(b.x, b.y + off + b.h - 2, b.w, 2, false);
 			gr_rect(b.x, b.y + off, 2, b.h, false);
@@ -317,7 +319,6 @@ static void draw_buttons(void)
 		gr_string(b.x + (b.w - w) / 2, b.y + off + (b.h - h) / 2, b.label, false);
 	}
 }
-
 
 /* ---- START port menu (house style: claude/3ds-look-and-feel.md) */
 int n3ds_exit_requested = 0;
@@ -469,14 +470,14 @@ void n3ds_dash_draw(void)
 		if (Help[i].state == state) { h = &Help[i]; break; }
 
 	gr_set_clip(0, 0, DASH_W, DASH_H, false);
-	gr_set_color(6, 10, 18);
+	gr_set_color(8, 12, 40);                  /* house palette: navy */
 	gr_rect(0, 0, DASH_W, DASH_H, false);
 
 	char buf[160];
 	int w, hh;
 
 	/* title bar: big font if it fits next to the clock, else the small one */
-	gr_set_color(24, 44, 74);
+	gr_set_color(40, 56, 120);                /* header bar */
 	gr_rect(0, 0, DASH_W, 22, false);
 	gr_set_font(FONT1);
 	time_t now = time(NULL);
@@ -492,8 +493,8 @@ void n3ds_dash_draw(void)
 	gr_set_font(FONT2);
 	gr_get_string_size(&w, &hh, title);
 	if (w > DASH_W - 20 - clock_w) gr_set_font(FONT1);
-	gr_set_color(255, 220, 120);
-	gr_string(6, 4, title, false);
+	gr_set_color(255, 204, 64);
+	gr_string(8, 4, title, false);
 	gr_set_font(FONT1);
 
 	/* pilot and campaign: label column sized to the widest label */
@@ -574,19 +575,22 @@ void n3ds_dash_draw(void)
 
 	draw_buttons();
 
-	/* controls footer */
-	gr_set_color(24, 44, 74);
-	gr_rect(0, DASH_H - 29, DASH_W, 29, false);
-	gr_set_color(200, 200, 200);
+	/* footer: one grey line of screen controls, then the gold hint strip (y 224, 16 px) */
 	Wrap_bottom = DASH_H;
-	if (Dash_nav) {
-		/* on the top screen (ZL): the menu is on the touchscreen */
-		gr_string(6, DASH_H - 27, "Stylus: mouse on the touchscreen", false);
-		gr_string(6, DASH_H - 14, n3ds_lefty() ? "ABXY: pick a button   D-Rt: press it" : "D-Pad: pick a button   A: press it", false);
-	} else {
-		gr_string(6, DASH_H - 27, "Pad / C-Stick / slide here: pointer", false);
-		gr_string(6, DASH_H - 14, n3ds_lefty() ? "D-Rt or tap: click  D-Lt: Enter  D-Dn: back" : "A or tap: click  X: Enter  B: back", false);
-	}
+	const char *grey = Dash_nav ? "Stylus: mouse on the touchscreen" : "Pad / C-Stick / slide here: pointer";
+	const char *gold;
+	if (Dash_nav) gold = n3ds_lefty() ? "ABXY: pick   D-Rt: press   START: menu" : "D-Pad: pick   A: press   START: menu";
+	else gold = n3ds_lefty() ? "D-Rt/tap: click  D-Lt: Enter  START: menu" : "A/tap: click  X: Enter  B: back  START: menu";
+	gr_get_string_size(&w, &hh, gold);
+	if (w > DASH_W - 8) gold = Dash_nav ? "A: press   START: menu" : "A/tap: click   START: menu";
+	gr_set_color(150, 150, 165);
+	gr_get_string_size(&w, &hh, grey);
+	gr_string((DASH_W - w) / 2, 211, grey, false);
+	gr_set_color(4, 6, 20);
+	gr_rect(0, 224, DASH_W, 16, false);
+	gr_get_string_size(&w, &hh, gold);
+	gr_set_color(255, 204, 64);
+	gr_string((DASH_W - w) / 2, 224 + (16 - hh) / 2, gold, false);
 
 	if (Pm_open) pm_draw();
 
