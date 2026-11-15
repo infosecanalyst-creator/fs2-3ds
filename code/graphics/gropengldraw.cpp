@@ -1502,6 +1502,10 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 	float u_scale = 1.0f, v_scale = 1.0f;
 	GLenum gl_mode = GL_TRIANGLE_FAN;
 	bool texture_matrix_set = false;
+#ifdef SCP_3DS
+	static float n3ds_uv[2 * 64];
+	bool n3ds_uv_used = false;
+#endif
 
 	GL_CHECK_FOR_ERRORS("start of render()");
 
@@ -1527,10 +1531,10 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 		GL_state.Array.SetActiveClientUnit(0);
 		GL_state.Array.EnableClientTexture();
 #ifdef SCP_3DS
-		// New 3DS: picaGL has no texture matrix, so scale the coordinates themselves
+		// New 3DS: scale the coordinates themselves
 		// (a 640x480 picture sits in a 1024x512 texture: u 0..0.625, v 0..0.9375)
-		static float n3ds_uv[2 * 64];
 		if ( ((u_scale != 1.0f) || (v_scale != 1.0f)) && nverts <= 64 ) {
+			n3ds_uv_used = true;
 			for (int k = 0; k < nverts; k++) {
 				n3ds_uv[k * 2] = verts[k].texture_position.u * u_scale;
 				n3ds_uv[k * 2 + 1] = verts[k].texture_position.v * v_scale;
@@ -1581,7 +1585,27 @@ void opengl_render_internal(int nverts, vertex *verts, uint flags)
 
 	gr_opengl_set_2d_matrix();
 
+#ifdef SCP_3DS
+	// New 3DS: 2D polygons from client arrays come out scrambled on picaGL since 3.7.2 (the main
+	// hall was patchy); immediate mode is right on the hardware, as it was for text.
+	{
+		bool tex = (flags & TMAP_FLAG_TEXTURED) != 0;
+		bool vcol = (flags & TMAP_FLAG_RGB) && (flags & TMAP_FLAG_GOURAUD);
+		bool valpha = vcol && (flags & TMAP_FLAG_ALPHA);
+		glBegin(gl_mode);
+		for (int k = 0; k < nverts; k++) {
+			if (vcol) glColor4ub(verts[k].r, verts[k].g, verts[k].b, valpha ? verts[k].a : (ubyte)alpha);
+			if (tex) {
+				if (nverts <= 64 && n3ds_uv_used) glTexCoord2f(n3ds_uv[k * 2], n3ds_uv[k * 2 + 1]);
+				else glTexCoord2f(verts[k].texture_position.u, verts[k].texture_position.v);
+			}
+			glVertex2f(verts[k].screen.xyw.x, verts[k].screen.xyw.y);
+		}
+		glEnd();
+	}
+#else
 	glDrawArrays(gl_mode, 0, nverts);
+#endif
 
 	gr_opengl_end_2d_matrix();
 
