@@ -355,8 +355,8 @@ extern "C" void n3ds_tap_key(int key)
 extern "C" void n3ds_input_poll(void)
 {
 	if (n3ds_quit) return;
-	if (!aptMainLoop()) {
-		/* HOME -> Close (or power off): the system waits for us to exit, so do it right
+	if (!aptMainLoop() || n3ds_exit_requested) {
+		/* HOME -> Close (or the START menu's EXIT GAME -> YES) (or power off): the system waits for us to exit, so do it right
 		   away instead of running the engine's long shutdown. Save the pilot first. */
 		n3ds_quit = 1;
 		n3ds_log("close requested - saving pilot and exiting\n");
@@ -398,6 +398,32 @@ extern "C" void n3ds_input_poll(void)
 		was_flight = flight;
 		panel_nav = 0;
 		n3ds_panel_set_nav(0);
+	}
+
+	/* START port menu (house style), menus only: START alone opens it (SELECT + START is still
+	   the manual); while it is open it takes every button and the dashboard touch, and nothing
+	   reaches the game. START no longer sends Esc in menus - Esc quit FS2 outright from the
+	   pilot screen. B is still the game's back key. */
+	if (flight && n3ds_portmenu_is_open()) n3ds_portmenu_close();
+	if (!flight && !n3ds_manual_is_open()) {
+		if (n3ds_portmenu_is_open()) {
+			touchPosition ptp; hidTouchRead(&ptp);
+			int th = (held & BTN_TOUCH) ? 1 : 0, td = (down & BTN_TOUCH) ? 1 : 0;
+			int dy = (down & BTN_DDOWN) ? 1 : (down & BTN_DUP) ? -1 : 0;
+			if (!dy) dy = (down & BTN_DRIGHT) ? 1 : (down & BTN_DLEFT) ? -1 : 0;
+			n3ds_portmenu_input(dy, (down & BTN_A) ? 1 : 0, (down & BTN_B) ? 1 : 0, (down & BTN_START) ? 1 : 0,
+				th, th || td ? ptp.px : 0, th || td ? ptp.py : 0, td);
+			release_all_keys();
+			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
+			return;
+		}
+		if ((down & BTN_START) && !(held & BTN_SELECT)) {
+			n3ds_click();
+			n3ds_portmenu_open();
+			release_all_keys();
+			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
+			return;
+		}
 	}
 
 	/* Everything you can tap also works with the buttons, for when the panel or dashboard is

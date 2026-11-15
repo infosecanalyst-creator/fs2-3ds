@@ -19,4 +19,15 @@ void n3ds_dash_nav(int dx, int dy, int press);
 /* label of the menu region under the pointer (main hall rooms etc.) for this frame */
 void n3ds_dash_hover(const char *text);
 
+/* House-style START port menu (menus only): RESUME / MANUAL / EXIT GAME, EXIT asks YES/NO
+   with the focus on NO. Drawn over the dashboard; works by touch or D-Pad + A; B or START close. */
+int  n3ds_portmenu_is_open(void);
+void n3ds_portmenu_open(void);
+void n3ds_portmenu_close(void);
+/* one call per menu frame while open: D-Pad step, A, B, START, and the touch (dashboard coords;
+   pass held = pressed = 0 when the dashboard can't be touched) */
+void n3ds_portmenu_input(int dy, int a, int b, int start, int touch_held, int tx, int ty, int touch_pressed);
+/* set by EXIT GAME -> YES; the platform code saves the pilot and exits */
+extern int n3ds_exit_requested;
+
 #endif

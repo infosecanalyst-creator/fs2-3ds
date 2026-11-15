@@ -318,6 +318,147 @@ static void draw_buttons(void)
 	}
 }
 
+
+/* ---- START port menu (house style: claude/3ds-look-and-feel.md) */
+int n3ds_exit_requested = 0;
+static int Pm_open = 0;
+static int Pm_page = 0;            /* 0 main, 1 exit confirm */
+static int Pm_focus = 0;
+static int Pm_pressed = -1;        /* button under the stylus */
+static int Pm_flash = 0;           /* frames of an A press's animation */
+#define PM_X 40
+#define PM_W 240
+#define PM_BH 30
+#define PM_GAP 6
+static const char *Pm_main[] = { "RESUME", "MANUAL", "EXIT GAME" };
+static const char *Pm_confirm[] = { "YES", "NO" };
+
+int n3ds_portmenu_is_open(void) { return Pm_open; }
+void n3ds_portmenu_open(void) { Pm_open = 1; Pm_page = 0; Pm_focus = 0; Pm_pressed = -1; Pm_flash = 0; }
+void n3ds_portmenu_close(void) { Pm_open = 0; Pm_pressed = -1; Pm_flash = 0; }
+
+static int pm_count(void) { return Pm_page == 0 ? 3 : 2; }
+
+/* button rectangles: main page stacked in the middle; confirm page side by side */
+static void pm_rect(int i, int *x, int *y, int *w, int *h)
+{
+	if (Pm_page == 0) {
+		*x = PM_X; *w = PM_W; *h = PM_BH;
+		*y = 60 + i * (PM_BH + PM_GAP);
+	} else {
+		*w = 114; *h = PM_BH; *y = 130;
+		*x = PM_X + i * (114 + 12);
+	}
+}
+
+static int pm_at(int tx, int ty)
+{
+	for (int i = 0; i < pm_count(); i++) {
+		int x, y, w, h; pm_rect(i, &x, &y, &w, &h);
+		if (tx >= x && tx < x + w && ty >= y && ty < y + h) return i;
+	}
+	return -1;
+}
+
+static void pm_act(int i)
+{
+	if (Pm_page == 0) {
+		if (i == 0) n3ds_portmenu_close();
+		else if (i == 1) { n3ds_portmenu_close(); n3ds_manual_toggle(); }
+		else { Pm_page = 1; Pm_focus = 1; }       /* focus starts on NO */
+	} else {
+		if (i == 0) { n3ds_portmenu_close(); n3ds_exit_requested = 1; }
+		else { Pm_page = 0; Pm_focus = 2; }
+	}
+}
+
+void n3ds_portmenu_input(int dy, int a, int b, int start, int touch_held, int tx, int ty, int touch_pressed)
+{
+	if (!Pm_open) return;
+	if (Pm_flash > 0) {                          /* finish an A press; new presses are dropped */
+		if (--Pm_flash == 0) pm_act(Pm_focus);
+		return;
+	}
+	if (touch_pressed) {
+		Pm_pressed = pm_at(tx, ty);
+		if (Pm_pressed >= 0) { Pm_focus = Pm_pressed; n3ds_click(); }
+		return;
+	}
+	if (!touch_held && Pm_pressed >= 0) {        /* act on release, like a real button */
+		int i = Pm_pressed; Pm_pressed = -1;
+		if (pm_at(tx, ty) == i || (tx == 0 && ty == 0)) pm_act(i);
+		return;
+	}
+	if (touch_held) return;
+	if (b || start) {
+		n3ds_click();
+		if (Pm_page == 1) { Pm_page = 0; Pm_focus = 2; } else n3ds_portmenu_close();
+		return;
+	}
+	int n = pm_count();
+	if (Pm_page == 0) { if (dy) Pm_focus = (Pm_focus + dy + n) % n; }
+	else if (dy) Pm_focus = 1 - Pm_focus;
+	if (a) { n3ds_click(); Pm_flash = 6; }
+}
+
+static void pm_button(int i, const char *text)
+{
+	int x, y, w, h; pm_rect(i, &x, &y, &w, &h);
+	int pressed = (i == Pm_pressed) || (i == Pm_focus && Pm_flash > 0);
+	int off = pressed ? 1 : 0;
+	if (pressed) gr_set_color(220, 180, 60); else gr_set_color(40, 56, 120);
+	gr_rect(x, y + off, w, h, false);
+	gr_set_color(120, 150, 230);                 /* edge */
+	gr_rect(x, y + off, w, 1, false); gr_rect(x, y + off, 1, h, false); gr_rect(x + w - 1, y + off, 1, h, false);
+	gr_set_color(20, 30, 70);                    /* shadow */
+	gr_rect(x, y + off + h - 1, w, 1, false);
+	if (i == Pm_focus && Pm_pressed < 0) {       /* gold focus ring */
+		gr_set_color(255, 204, 64);
+		gr_rect(x, y + off, w, 2, false); gr_rect(x, y + off + h - 2, w, 2, false);
+		gr_rect(x, y + off, 2, h, false); gr_rect(x + w - 2, y + off, 2, h, false);
+	}
+	int tw, th; gr_get_string_size(&tw, &th, text);
+	gr_set_color(240, 240, 240);
+	gr_string(x + (w - tw) / 2, y + off + (h - th) / 2, text, false);
+}
+
+static void pm_draw(void)
+{
+	gr_set_color(8, 12, 40);                     /* navy body under the header bar */
+	gr_rect(0, 22, DASH_W, DASH_H - 22, false);
+	int w, h;
+	gr_set_font(FONT1);
+	if (Pm_page == 0) {
+		const char *t = "MENU";
+		gr_get_string_size(&w, &h, t);
+		gr_set_color(255, 204, 64);
+		gr_string((DASH_W - w) / 2, 36, t, false);
+		for (int i = 0; i < 3; i++) pm_button(i, Pm_main[i]);
+	} else {
+		const char *t1 = "EXIT FREESPACE 2?", *t2 = "Progress since your last save is lost.";
+		gr_get_string_size(&w, &h, t1);
+		gr_set_color(255, 204, 64);
+		gr_string((DASH_W - w) / 2, 70, t1, false);
+		gr_get_string_size(&w, &h, t2);
+		gr_set_color(240, 240, 240);
+		gr_string((DASH_W - w) / 2, 92, t2, false);
+		for (int i = 0; i < 2; i++) pm_button(i, Pm_confirm[i]);
+	}
+	/* hint strip */
+	gr_set_color(4, 6, 20);
+	gr_rect(0, 224, DASH_W, 16, false);
+	/* the longest hint that fits (the rule: never cut off) */
+	const char *hints[] = { "D-Pad: choose   A: select   B: back", "D-Pad  A: select  B: back", "A: select  B: back" };
+	const char *hint = hints[2];
+	for (int i = 0; i < 3; i++) {
+		gr_get_string_size(&w, &h, hints[i]);
+		if (w <= DASH_W - 8) { hint = hints[i]; break; }
+	}
+	gr_get_string_size(&w, &h, hint);
+	gr_set_color(255, 204, 64);
+	gr_string((DASH_W - w) / 2, 224 + (16 - h) / 2, hint, false);
+}
+
 void n3ds_dash_draw(void)
 {
 	Dash_frame++;
@@ -446,6 +587,8 @@ void n3ds_dash_draw(void)
 		gr_string(6, DASH_H - 27, "Pad / C-Stick / slide here: pointer", false);
 		gr_string(6, DASH_H - 14, n3ds_lefty() ? "D-Rt or tap: click  D-Lt: Enter  D-Dn: back" : "A or tap: click  X: Enter  B: back", false);
 	}
+
+	if (Pm_open) pm_draw();
 
 	gr_reset_clip();
 }
