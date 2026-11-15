@@ -1369,13 +1369,22 @@ void freespace_mission_load_stuff()
 void game_post_level_init()
 {
 	extern void game_environment_map_gen();
+#ifdef SCP_3DS
+	// picaGL has no cube-map render targets: the environment map pass draws six faces
+	// into textures and was the last thing before the blank-screen freeze at mission load
+	game_busy( NOX("** env map skipped (3DS) **") );
+#else
 	game_environment_map_gen();
+#endif
 
+	game_busy( NOX("** HUD_init **") );
  	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
 
+	game_busy( NOX("** stars_post_level_init **") );
 	stars_post_level_init();	
+	game_busy( NOX("** neb2_post_level_init **") );
 
 	// While trying to track down the nebula bug I encountered a cool effect -
 	// comment this out to fly a mission in a void. Maybe we should develop this
@@ -1386,6 +1395,7 @@ void game_post_level_init()
 	game_event_debug_init();
 #endif
 
+	game_busy( NOX("** training / asteroids **") );
 	training_mission_init();
 	asteroid_create_all();
 

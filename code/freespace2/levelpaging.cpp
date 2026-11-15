@@ -41,14 +41,23 @@ void level_page_in()
 	game_busy( NOX("*** paging in weapons ***") );
 	weapons_page_in();
 	game_busy( NOX("*** paging in various effects ***") );
+	game_busy( NOX("*** fireballs_page_in ***") );
 	fireballs_page_in();
+	game_busy( NOX("*** particle_page_in ***") );
 	particle_page_in();
+	game_busy( NOX("*** debris_page_in ***") );
 	debris_page_in();
+	game_busy( NOX("*** hud_page_in ***") );
 	hud_page_in();
+	game_busy( NOX("*** stars_page_in ***") );
 	stars_page_in();
+	game_busy( NOX("*** shockwave_page_in ***") );
 	shockwave_page_in();
+	game_busy( NOX("*** shield_hit_page_in ***") );
 	shield_hit_page_in();
+	game_busy( NOX("*** asteroid_page_in ***") );
 	asteroid_page_in();
+	game_busy( NOX("*** neb2_page_in ***") );
 	neb2_page_in();
 	mflash_page_in(false);  // just so long as it happens after weapons_page_in()
 
@@ -58,7 +67,9 @@ void level_page_in()
 	}
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
+		game_busy( NOX("*** model_page_in_stop ***") );
 		model_page_in_stop();		// free any loaded models that aren't used
+		game_busy( NOX("*** bm_page_in_stop ***") );
 		bm_page_in_stop();
 	}
 

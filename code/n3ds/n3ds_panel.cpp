@@ -188,14 +188,14 @@ void n3ds_panel_draw(void)
 	hide_text_gauges();
 
 	gr_set_clip(0, 0, PANEL_W, PANEL_H, false);
-	gr_set_color(8, 14, 20);
+	gr_set_color(8, 12, 40);                  /* house palette: navy */
 	gr_rect(0, 0, PANEL_W, PANEL_H, false);
 	gr_set_font(FONT1);
 
 	char buf[160];
 
 	/* ---- target strip */
-	gr_set_color(30, 50, 70);
+	gr_set_color(40, 56, 120);                /* target strip in the header colour */
 	gr_rect(0, 0, PANEL_W, 30, false);
 	if (Player_ai && Player_ai->target_objnum >= 0 && Player_obj) {
 		object *tobj = &Objects[Player_ai->target_objnum];
@@ -278,7 +278,7 @@ void n3ds_panel_draw(void)
 
 		/* ---- text box: training message, directives, recent messages. Whole lines only:
 		   anything that would not fit completely is left out. */
-		gr_set_color(18, 28, 40);
+		gr_set_color(4, 6, 20);
 		gr_rect(2, BOX_Y - 2, TEXT_W + 4, BOX_BOTTOM - BOX_Y + 2, false);
 		int y = BOX_Y;
 		char lines[8][96];
@@ -350,9 +350,13 @@ void n3ds_panel_draw(void)
 	for (int i = 0; i < NUM_PANEL_BUTTONS; i++) {
 		const panel_button &b = Panel_buttons[i];
 		int pressed = (i == Panel_pressed_button), off = pressed ? 1 : 0;
-		if (pressed) gr_set_color(90, 140, 190);
-		else gr_set_color(36, 56, 76);
+		if (pressed) gr_set_color(220, 180, 60);
+		else gr_set_color(40, 56, 120);
 		gr_rect(b.x, b.y + off, b.w, b.h, false);
+		gr_set_color(120, 150, 230);              /* house button: edge and shadow */
+		gr_rect(b.x, b.y + off, b.w, 1, false); gr_rect(b.x, b.y + off, 1, b.h, false); gr_rect(b.x + b.w - 1, b.y + off, 1, b.h, false);
+		gr_set_color(20, 30, 70);
+		gr_rect(b.x, b.y + off + b.h - 1, b.w, 1, false);
 		int w = text_w(b.label);
 		gr_set_color(230, 230, 230);
 		gr_string(b.x + (b.w - w) / 2, b.y + off + (b.h - 9) / 2, b.label, false);
@@ -363,7 +367,7 @@ void n3ds_panel_draw(void)
 		int x, y, w, h;
 		nav_rect(Panel_focus, &x, &y, &w, &h);
 		if (Panel_focus < NUM_PANEL_BUTTONS && Panel_focus == Panel_pressed_button) y += 1;
-		gr_set_color(255, 220, 120);
+		gr_set_color(255, 204, 64);
 		gr_rect(x, y, w, 2, false);
 		gr_rect(x, y + h - 2, w, 2, false);
 		gr_rect(x, y, 2, h, false);
