@@ -211,7 +211,6 @@ extern int delete_pilot_file(char *pilot_name);
  */
 #ifdef __3DS__
 extern "C" void n3ds_log(const char *fmt, ...);
-static void n3ds_log_pilot(const char *f, bool ok, const char *pl, const char *cl) { n3ds_log("pilot %s verify %d lang '%s' cur '%s'\n", f, (int)ok, ok ? pl : "", cl); }
 #endif
 bool valid_pilot_lang(char *callsign)
 {
@@ -222,9 +221,6 @@ bool valid_pilot_lang(char *callsign)
 	lcl_get_language_name(current_lang);
 
 	bool ok = Pilot.verify(filename.c_str(), NULL, pilot_lang);
-#ifdef __3DS__
-	n3ds_log_pilot(filename.c_str(), ok, pilot_lang, current_lang);
-#endif
 	if (ok) {
 		if (!strcmp(current_lang, pilot_lang)) {
 			return true;
@@ -1177,9 +1173,6 @@ void player_select_display_all_text()
 int player_select_pilot_file_filter(const char *filename)
 {
 	int ok = (int)Pilot.verify(filename);
-#ifdef __3DS__
-	n3ds_log("pilot filter %s -> %d\n", filename, ok);
-#endif
 	return ok;
 }
 

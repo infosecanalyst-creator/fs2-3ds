@@ -311,14 +311,16 @@ struct v4 { GLfloat x,y,u,v; };
 static v4 GL_string_render_buff[MAX_VERTS_PER_DRAW];
 #ifdef __3DS__
 /* 3DS: draw text from two tight arrays; the interleaved x,y,u,v buffer comes out sheared on picaGL */
-#define N3DS_SPLIT_TEXT 0
-static GLfloat n3ds_spos[MAX_VERTS_PER_DRAW * 4], n3ds_suv[MAX_VERTS_PER_DRAW * 2];
-static void n3ds_string_split(int n)
+/* 3DS: 3.7.2 draws text from client arrays and it comes out sheared on picaGL; 3.6.10 drew it in
+   immediate mode, which is crisp on the hardware (bisected Nov 14 2026). Draw it that way again. */
+static void n3ds_string_imm(int n)
 {
+	glBegin(GL_TRIANGLES);
 	for (int k = 0; k < n; k++) {
-		n3ds_spos[k*4] = GL_string_render_buff[k].x; n3ds_spos[k*4+1] = GL_string_render_buff[k].y; n3ds_spos[k*4+2] = 0.0f; n3ds_spos[k*4+3] = 1.0f;
-		n3ds_suv[k*2]  = GL_string_render_buff[k].u; n3ds_suv[k*2+1]  = GL_string_render_buff[k].v;
+		glTexCoord2f(GL_string_render_buff[k].u, GL_string_render_buff[k].v);
+		glVertex2f(GL_string_render_buff[k].x, GL_string_render_buff[k].y);
 	}
+	glEnd();
 }
 #endif
 
@@ -393,19 +395,11 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	GL_state.Array.BindArrayBuffer(0);
 
 	GL_state.Array.EnableClientVertex();
-#if defined(__3DS__) && N3DS_SPLIT_TEXT
-	GL_state.Array.VertexPointer(4, GL_FLOAT, 0, n3ds_spos);
-#else
 	GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].x);
-#endif
 
 	GL_state.Array.SetActiveClientUnit(0);
 	GL_state.Array.EnableClientTexture();
-#if defined(__3DS__) && N3DS_SPLIT_TEXT
-	GL_state.Array.TexPointer(2, GL_FLOAT, 0, n3ds_suv);
-#else
 	GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].u);
-#endif
 
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
@@ -504,10 +498,12 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		
 		if ( buffer_offset == MAX_VERTS_PER_DRAW ) {
 			{
-#if defined(__3DS__) && N3DS_SPLIT_TEXT
-		n3ds_string_split(buffer_offset);
+#if defined(__3DS__)
+		n3ds_string_imm(buffer_offset);
+#else
+		glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
 #endif
-		glDrawArrays(GL_TRIANGLES, 0, buffer_offset); }
+		}
 			buffer_offset = 0;
 		}
 
@@ -550,10 +546,12 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 
 	if ( buffer_offset ) {
 		{
-#if defined(__3DS__) && N3DS_SPLIT_TEXT
-		n3ds_string_split(buffer_offset);
+#if defined(__3DS__)
+		n3ds_string_imm(buffer_offset);
+#else
+		glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
 #endif
-		glDrawArrays(GL_TRIANGLES, 0, buffer_offset); }
+		}
 	}
 
 	GL_state.Array.DisableClientVertex();
