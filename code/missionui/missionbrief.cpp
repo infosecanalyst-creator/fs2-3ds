@@ -1469,14 +1469,14 @@ void brief_maybe_flash_button()
 #ifdef SCP_3DS
 // briefing timing: render / UI / flip, logged every 120 frames (where the 12 fps goes)
 extern "C" void n3ds_log(const char *fmt, ...);
-#include <3ds.h>
-static u64 n3ds_bt_t0[3], n3ds_bt_sum[3];
+extern "C" unsigned long long osGetTime(void);   // ms (3ds.h clashes with io/key.h)
+static unsigned long long n3ds_bt_t0[3], n3ds_bt_sum[3];
 static int n3ds_bt_frames = 0;
-#define N3DS_T0(i) (n3ds_bt_t0[i] = svcGetSystemTick())
-#define N3DS_T1(i) do { n3ds_bt_sum[i] += svcGetSystemTick() - n3ds_bt_t0[i]; \
+#define N3DS_T0(i) (n3ds_bt_t0[i] = osGetTime())
+#define N3DS_T1(i) do { n3ds_bt_sum[i] += osGetTime() - n3ds_bt_t0[i]; \
 	if ((i) == 2 && ++n3ds_bt_frames == 120) { \
 		n3ds_log("brief 120f: render %.1f ms, ui %.1f ms, flip %.1f ms per frame\n", \
-			n3ds_bt_sum[0] / 268111.856 / 120, n3ds_bt_sum[1] / 268111.856 / 120, n3ds_bt_sum[2] / 268111.856 / 120); \
+			n3ds_bt_sum[0] / 120.0, n3ds_bt_sum[1] / 120.0, n3ds_bt_sum[2] / 120.0); \
 		n3ds_bt_sum[0] = n3ds_bt_sum[1] = n3ds_bt_sum[2] = 0; n3ds_bt_frames = 0; } } while (0)
 #else
 #define N3DS_T0(i) ((void)0)
