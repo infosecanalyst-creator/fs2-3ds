@@ -1,4 +1,5 @@
 #include "internal.h"
+extern void n3ds_log(const char *fmt, ...);
 
 static inline bool _addressIsLinear(const void* addr)
 {
@@ -231,7 +232,21 @@ void glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, 
 
 	_batchSubmit();
 
-	if(_checkBufferLimit((end * 48) + (sizeof(GLushort) * count) + 64) == false || gpuCmdBufOffset + 0x1000 > gpuCmdBufSize)
+	/* fs2-3ds: reserve what will really be copied. Each enabled array is copied at its own stride
+	   (fs2's vertex struct is far more than 48 bytes), and the old flat 48 bytes per vertex let the
+	   copies run past the end of the geometry buffer into the next linear allocation - often a
+	   texture, which came out patchy (main hall, Nov 14 2026). */
+	GLsizei need = (sizeof(GLushort) * count) + 64 + 5 * 16;
+	need += vertexArray->stride * end;
+	if(pglState->colorArrayState == GL_TRUE) need += colorArray->stride * end;
+	if(pglState->texCoordArrayState[0] == GL_TRUE) need += texCoordArray[0].stride * end;
+	if(pglState->texCoordArrayState[1] == GL_TRUE) need += texCoordArray[1].stride * end;
+	if(need > GEOMETRY_BUFFER_SIZE)
+	{
+		n3ds_log("picaGL: draw of %d vertices needs %d bytes, more than the geometry buffer; skipped\n", (int)end, (int)need);
+		return;
+	}
+	if(_checkBufferLimit(need) == false || gpuCmdBufOffset + 0x1000 > gpuCmdBufSize)
 		glFlush();
 
 	_stateFlush();
@@ -272,10 +287,19 @@ void glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, 
 
 	if( (pglState->texCoordArrayState[0] == GL_TRUE) && (pglState->texUnitState[0] == GL_TRUE) )
 	{
-		if(texCoordArray[0].inLinearMem)
+		int texmat = (texCoordArray[0].type == GL_FLOAT && texCoordArray[0].size >= 2) && _texmatActive();
+		if(texCoordArray[0].inLinearMem && !texmat)
 			arrayCache = (void*)texCoordArray[0].pointer;
 		else
 			arrayCache = _bufferArray(texCoordArray[0].pointer, texCoordArray[0].stride * end);
+		if(texmat)
+		{
+			/* fs2-3ds: apply the texture matrix to the copy */
+			uint8_t *tc = (uint8_t *)arrayCache;
+			for(GLsizei k = 0; k < end; k++, tc += texCoordArray[0].stride)
+				_texmatApply((float *)tc, (float *)tc + 1);
+			GSPGPU_FlushDataCache(arrayCache, texCoordArray[0].stride * end);
+		}
 
 		attributesFormat |= GPU_ATTRIBFMT(2, texCoordArray[0].size, texCoordArray[0].type);
 		_picaAttribBufferOffset(bufferCount, (uint32_t)arrayCache - __ctru_linear_heap);

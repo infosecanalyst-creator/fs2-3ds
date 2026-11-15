@@ -1,4 +1,5 @@
 #include "internal.h"
+extern void n3ds_log(const char *fmt, ...);
 
 #include <stdio.h>
 
@@ -314,7 +315,6 @@ void glClientActiveTexture( GLenum texture )
 	pglState->texUnitActiveClient = texunit;
 }
 
-extern void n3ds_log(const char *fmt, ...);
 static int _texUploads = 0;
 static u64 _texUploadMs = 0;
 
@@ -364,6 +364,7 @@ void _glTexImage2D_impl(GLenum target, GLint level, GLint internalFormat, GLsize
 	pglState->changes |= STATE_TEXTURE_CHANGE;
 
 	if(!data) return;
+
 
 	uint8_t offset_bpp = 0;
 

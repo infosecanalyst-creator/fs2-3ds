@@ -132,6 +132,11 @@ typedef struct {
 	matrix4x4			matrix_projection;
 	matrix4x4			matrix_projection_stack[MATRIX_STACK_SIZE];
 	GLuint				matrix_projection_stack_counter;
+	/* fs2-3ds: a real texture matrix (applied to texture unit 0 coordinates on the CPU).
+	   Before, GL_TEXTURE selected the projection matrix, so texture scaling moved geometry. */
+	matrix4x4			matrix_texture;
+	matrix4x4			matrix_texture_stack[MATRIX_STACK_SIZE];
+	GLuint				matrix_texture_stack_counter;
 	matrix4x4			*matrix_current;
 
 	GLboolean			scissorState;
@@ -240,4 +245,7 @@ void _picaRestartPrimitive();
 void _queueWaitAndClear();
 void _queueRun(bool async);
 
+/* texture matrix helpers (matrix.c) */
+int  _texmatActive(void);
+void _texmatApply(float *s, float *t);
 #endif

@@ -50,6 +50,7 @@ void pglInitEx(int mainWidth, int mainHeight)
 
 	pglState = malloc(sizeof(picaGLState));
 	memset(pglState, 0, sizeof(picaGLState));
+	matrix4x4_identity(&pglState->matrix_texture);   /* fs2-3ds: texture matrix starts as identity */
 	pglState->mainWidth = mainWidth;
 	pglState->mainHeight = mainHeight;
 	

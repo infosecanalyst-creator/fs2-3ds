@@ -305,6 +305,7 @@ static inline void _immVertex(GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 	v->r = pglState->currentColor.r; v->g = pglState->currentColor.g;
 	v->b = pglState->currentColor.b; v->a = pglState->currentColor.a;
 	v->s0 = pglState->currentTexCoord[0].s; v->t0 = pglState->currentTexCoord[0].t;
+	if(_texmatActive()) _texmatApply(&v->s0, &v->t0);
 	v->s1 = pglState->currentTexCoord[1].s; v->t1 = pglState->currentTexCoord[1].t;
 }
 

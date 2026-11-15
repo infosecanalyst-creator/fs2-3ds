@@ -8,6 +8,9 @@
 */
 
 
+#ifdef __3DS__
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"
 #include "osapi/osapi.h"

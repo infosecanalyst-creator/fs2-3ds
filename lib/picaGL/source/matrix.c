@@ -46,6 +46,8 @@ void glMatrixMode(GLenum mode)
 {
 	if(mode == GL_MODELVIEW)
 		pglState->matrix_current = &pglState->matrix_modelview;
+	else if(mode == GL_TEXTURE)
+		pglState->matrix_current = &pglState->matrix_texture;
 	else
 		pglState->matrix_current = &pglState->matrix_projection;
 
@@ -72,7 +74,13 @@ void glPopMatrix(void)
 {	
 	matrix4x4 *matrix = pglState->matrix_current;
 
-	if(matrix == &pglState->matrix_projection)
+	if(matrix == &pglState->matrix_texture)
+	{
+		matrix4x4_copy(matrix, &pglState->matrix_texture_stack[pglState->matrix_texture_stack_counter]);
+		if(pglState->matrix_texture_stack_counter > 0)
+			--pglState->matrix_texture_stack_counter;
+	}
+	else if(matrix == &pglState->matrix_projection)
 	{
 		matrix4x4_copy(matrix, &pglState->matrix_projection_stack[pglState->matrix_projection_stack_counter]);
 		if(pglState->matrix_projection_stack_counter > 0)
@@ -92,7 +100,13 @@ void glPushMatrix(void)
 {
 	matrix4x4 *matrix = pglState->matrix_current;
 
-	if(matrix == &pglState->matrix_projection)
+	if(matrix == &pglState->matrix_texture)
+	{
+		if(pglState->matrix_texture_stack_counter < (MATRIX_STACK_SIZE - 1))
+			++pglState->matrix_texture_stack_counter;
+		matrix4x4_copy(&pglState->matrix_texture_stack[pglState->matrix_texture_stack_counter], matrix);
+	}
+	else if(matrix == &pglState->matrix_projection)
 	{
 		if(pglState->matrix_projection_stack_counter < (MATRIX_STACK_SIZE - 1))
 			++pglState->matrix_projection_stack_counter;
@@ -147,4 +161,19 @@ void glMultMatrixf(const GLfloat *m)
 	*pglState->matrix_current = tmp;
 
 	pglState->changes |= STATE_MATRIX_CHANGE;
+}
+/* fs2-3ds: texture matrix, applied on the CPU to unit 0 coordinates (2D affine part) */
+int _texmatActive(void)
+{
+	const matrix4x4 *m = &pglState->matrix_texture;
+	return !(m->row[0].x == 1.0f && m->row[0].y == 0.0f && m->row[0].w == 0.0f &&
+	         m->row[1].x == 0.0f && m->row[1].y == 1.0f && m->row[1].w == 0.0f);
+}
+
+void _texmatApply(float *s, float *t)
+{
+	const matrix4x4 *m = &pglState->matrix_texture;
+	float a = *s, b = *t;
+	*s = m->row[0].x * a + m->row[0].y * b + m->row[0].w;
+	*t = m->row[1].x * a + m->row[1].y * b + m->row[1].w;
 }
