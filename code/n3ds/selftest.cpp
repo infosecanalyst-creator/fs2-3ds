@@ -255,6 +255,12 @@ static void st_watchdog_tick(void) {
         if (*why) st_logf("%s\n%s\n", why, st_done ? "" : "done frames=0 (stopped by the watchdog)");
         if (st_log) { fclose(st_log); st_log = NULL; }
         st_set_target();
+        if (!st_done) {
+            // A hung game is usually stuck waiting on the GPU. Killing it like that left the GPU hung,
+            // and every later launch froze on its first frame until a power-off (Nov 14 2026). Reset it.
+            GSPGPU_ResetGpuCore();
+            svcSleepThread(50000000LL);
+        }
         aptSetChainloaderToSelf();   // relaunch the Homebrew loader, which starts the agent
         aptExit();
         svcExitProcess();
