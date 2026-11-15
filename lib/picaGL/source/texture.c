@@ -336,6 +336,10 @@ void _glTexImage2D_impl(GLenum target, GLint level, GLint internalFormat, GLsize
 	if(level != 0 || target != GL_TEXTURE_2D)
 		return;
 
+	/* the PICA200 only takes power-of-two sizes from 8 to 1024; anything else can hang the GPU */
+	if(width < 8 || height < 8 || width > 1024 || height > 1024 || (width & (width - 1)) || (height & (height - 1)))
+		n3ds_log("tex BAD SIZE %dx%d fmt %x/%x\n", width, height, format, type);
+
 	TextureObject *texture = pglState->textureBound[pglState->texUnitActive];
 	texture->used = true;
 

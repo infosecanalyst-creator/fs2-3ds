@@ -1,3 +1,4 @@
+#define N3DS_ATLAS_TEST 0
 /*
  * Top-screen dashboard for FreeSpace 2 menus on the New 3DS.
  *
@@ -448,4 +449,13 @@ void n3ds_dash_draw(void)
 	}
 
 	gr_reset_clip();
+#if N3DS_ATLAS_TEST
+	/* test: draw the FONT1 image itself (256x256) as one picture, 1:1, to see whether the GPU samples it right */
+	gr_set_clip(0, 0, DASH_W, DASH_H, false);
+	gr_set_color(0, 0, 0);
+	gr_rect(0, 24, DASH_W, DASH_H - 24, false);
+	gr_set_color(255, 255, 255);
+	gr_set_bitmap(Fonts[0].bitmap_id);
+	gr_aabitmap_ex(0, 24, 256, DASH_H - 24, 0, 0, GR_RESIZE_NONE);
+#endif
 }

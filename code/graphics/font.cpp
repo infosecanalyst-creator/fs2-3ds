@@ -15,6 +15,9 @@
 #endif
 
 #include <stdio.h>
+#ifdef __3DS__
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 #include <stdarg.h>
 #include <limits.h>
 
@@ -537,6 +540,19 @@ int gr_create_font(char * typeface)
 		x += fnt->char_data[i].byte_width + 2;
 	}
 
+#ifdef __3DS__
+	{
+		long sum = 0; int maxw = 0;
+		for (int k = 0; k < fnt->num_chars; k++) { sum += (long)fnt->char_data[k].byte_width * fnt->h; if (fnt->char_data[k].byte_width > maxw) maxw = fnt->char_data[k].byte_width; }
+		unsigned fh = 2166136261u; for (int q = 0; q < fnt->bm_w * fnt->bm_h; q++) { fh ^= fnt->bm_data[q]; fh *= 16777619u; }
+		n3ds_log("font hash %08x\n", fh);
+		n3ds_log("font %s: chars %d h %d w %d pix %d sum %ld maxw %d bm %dx%d c0 w%d o%d c33 w%d o%d sizeof(font_char) %d char_data_size %d\n",
+			fnt->filename, fnt->num_chars, fnt->h, fnt->w, fnt->pixel_data_size, sum, maxw, fnt->bm_w, fnt->bm_h,
+			fnt->char_data[0].byte_width, fnt->char_data[0].offset,
+			fnt->num_chars > 33 ? fnt->char_data[33].byte_width : -1, fnt->num_chars > 33 ? fnt->char_data[33].offset : -1,
+			(int)sizeof(font_char), fnt->char_data_size);
+	}
+#endif
 	fnt->bitmap_id = bm_create( 8, fnt->bm_w, fnt->bm_h, fnt->bm_data, BMP_AABITMAP );
 
 	return fontnum;

@@ -1909,7 +1909,12 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 				continue;
 
 			char fn[MAX_PATH];
-			snprintf(fn, MAX_PATH-1, "%s/%s", filespec, dir->d_name);
+			{
+				/* 3DS: "a//b" fails stat, so pilot files were never listed; only fix the pilot folders,
+				   the other scans have always skipped loose files and the game relies on that */
+				bool pl = (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS);
+				snprintf(fn, MAX_PATH-1, (pl && filespec[0] && filespec[strlen(filespec)-1] == '/') ? "%s%s" : "%s/%s", filespec, dir->d_name);
+			}
 			fn[MAX_PATH-1] = 0;
 
 			struct stat buf;

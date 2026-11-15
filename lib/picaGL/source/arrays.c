@@ -67,6 +67,7 @@ void glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * poi
 			break;
 	}
 
+	vertexArray->padding = 0;   /* fs2-3ds: stride 0 (tight) must not keep the last call's padding */
 	if(stride)
 	{
 		vertexArray->padding = (stride - vertexArray->stride) / 4;
@@ -107,6 +108,7 @@ void glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid * poin
 			return;
 	}
 
+	colorArray->padding = 0;   /* fs2-3ds: stride 0 (tight) must not keep the last call's padding */
 	if(stride)
 	{
 		colorArray->padding = (stride - pglState->colorArrayPointer.stride) / 4;
@@ -139,6 +141,7 @@ void glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid* po
 			return;
 	}
 
+	texCoordArray->padding = 0;   /* fs2-3ds: stride 0 (tight) must not keep the last call's padding */
 	if(stride)
 	{
 		texCoordArray->padding = (stride - texCoordArray->stride) / 4;

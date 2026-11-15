@@ -309,6 +309,18 @@ void gr_opengl_aabitmap(int x, int y, int resize_mode, bool mirror)
 #define MAX_VERTS_PER_DRAW 120
 struct v4 { GLfloat x,y,u,v; };
 static v4 GL_string_render_buff[MAX_VERTS_PER_DRAW];
+#ifdef __3DS__
+/* 3DS: draw text from two tight arrays; the interleaved x,y,u,v buffer comes out sheared on picaGL */
+#define N3DS_SPLIT_TEXT 0
+static GLfloat n3ds_spos[MAX_VERTS_PER_DRAW * 4], n3ds_suv[MAX_VERTS_PER_DRAW * 2];
+static void n3ds_string_split(int n)
+{
+	for (int k = 0; k < n; k++) {
+		n3ds_spos[k*4] = GL_string_render_buff[k].x; n3ds_spos[k*4+1] = GL_string_render_buff[k].y; n3ds_spos[k*4+2] = 0.0f; n3ds_spos[k*4+3] = 1.0f;
+		n3ds_suv[k*2]  = GL_string_render_buff[k].u; n3ds_suv[k*2+1]  = GL_string_render_buff[k].v;
+	}
+}
+#endif
 
 void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 {
@@ -381,11 +393,19 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	GL_state.Array.BindArrayBuffer(0);
 
 	GL_state.Array.EnableClientVertex();
+#if defined(__3DS__) && N3DS_SPLIT_TEXT
+	GL_state.Array.VertexPointer(4, GL_FLOAT, 0, n3ds_spos);
+#else
 	GL_state.Array.VertexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].x);
+#endif
 
 	GL_state.Array.SetActiveClientUnit(0);
 	GL_state.Array.EnableClientTexture();
+#if defined(__3DS__) && N3DS_SPLIT_TEXT
+	GL_state.Array.TexPointer(2, GL_FLOAT, 0, n3ds_suv);
+#else
 	GL_state.Array.TexPointer(2, GL_FLOAT, sizeof(v4), &GL_string_render_buff[0].u);
+#endif
 
 	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
@@ -483,7 +503,11 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
 		
 		if ( buffer_offset == MAX_VERTS_PER_DRAW ) {
-			glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
+			{
+#if defined(__3DS__) && N3DS_SPLIT_TEXT
+		n3ds_string_split(buffer_offset);
+#endif
+		glDrawArrays(GL_TRIANGLES, 0, buffer_offset); }
 			buffer_offset = 0;
 		}
 
@@ -525,7 +549,11 @@ void gr_opengl_string(float sx, float sy, const char *s, int resize_mode)
 	}
 
 	if ( buffer_offset ) {
-		glDrawArrays(GL_TRIANGLES, 0, buffer_offset);
+		{
+#if defined(__3DS__) && N3DS_SPLIT_TEXT
+		n3ds_string_split(buffer_offset);
+#endif
+		glDrawArrays(GL_TRIANGLES, 0, buffer_offset); }
 	}
 
 	GL_state.Array.DisableClientVertex();

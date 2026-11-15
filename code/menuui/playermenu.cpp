@@ -209,6 +209,10 @@ extern int delete_pilot_file(char *pilot_name);
  * @param pilots callsign
  * @note not longer needed if intel entry "primary keys" change to a non-translated value
  */
+#ifdef __3DS__
+extern "C" void n3ds_log(const char *fmt, ...);
+static void n3ds_log_pilot(const char *f, bool ok, const char *pl, const char *cl) { n3ds_log("pilot %s verify %d lang '%s' cur '%s'\n", f, (int)ok, ok ? pl : "", cl); }
+#endif
 bool valid_pilot_lang(char *callsign)
 {
 	char pilot_lang[LCL_LANG_NAME_LEN+1], current_lang[LCL_LANG_NAME_LEN+1];
@@ -217,7 +221,11 @@ bool valid_pilot_lang(char *callsign)
 	filename += ".plr";
 	lcl_get_language_name(current_lang);
 
-	if (Pilot.verify(filename.c_str(), NULL, pilot_lang)) {
+	bool ok = Pilot.verify(filename.c_str(), NULL, pilot_lang);
+#ifdef __3DS__
+	n3ds_log_pilot(filename.c_str(), ok, pilot_lang, current_lang);
+#endif
+	if (ok) {
 		if (!strcmp(current_lang, pilot_lang)) {
 			return true;
 		}
@@ -888,6 +896,9 @@ void player_select_init_player_stuff(int mode)
 	Get_file_list_filter = player_select_pilot_file_filter;
 
 	Player_select_num_pilots = cf_get_file_list_preallocated(MAX_PILOTS, Pilots_arr, Pilots, CF_TYPE_PLAYERS, NOX("*.plr"), CF_SORT_TIME);
+#ifdef __3DS__
+	n3ds_log("pilot list: %d pilots, last '%s'\n", Player_select_num_pilots, Player_select_last_pilot);
+#endif
 
 	// if we have a "last_player", and they're in the list, bash them to the top of the list
 	if (Player_select_last_pilot[0] != '\0') {
@@ -1165,7 +1176,11 @@ void player_select_display_all_text()
 
 int player_select_pilot_file_filter(const char *filename)
 {
-	return (int)Pilot.verify(filename);
+	int ok = (int)Pilot.verify(filename);
+#ifdef __3DS__
+	n3ds_log("pilot filter %s -> %d\n", filename, ok);
+#endif
+	return ok;
 }
 
 void player_select_set_bottom_text(const char *txt)

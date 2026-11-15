@@ -11,6 +11,9 @@
 #include <windows.h>
 #endif
 
+#ifdef __3DS__
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "osapi/osregistry.h"
@@ -609,6 +612,17 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				}
 			}
 
+#ifdef __3DS__
+			{
+				static int aalogs = 0;
+				if (aalogs < 8) {
+					unsigned h = 2166136261u; for (int q = 0; q < tex_w * tex_h; q++) { h ^= texmem[q]; h *= 16777619u; }
+					unsigned hs = 2166136261u; if (byte_mult == 1) for (int q = 0; q < bmap_w * bmap_h; q++) { hs ^= bmp_data[q]; hs *= 16777619u; }
+					n3ds_log("aabitmap %d: bmap %dx%d tex %dx%d bm %d reload %d hash %08x src %08x xlat %d %d %d\n", bitmap_handle, bmap_w, bmap_h, tex_w, tex_h, byte_mult, reload, h, hs, GL_xlat[1], GL_xlat[7], GL_xlat[14]);
+					aalogs++;
+				}
+			}
+#endif
 			if ( !reload ) {
 				glTexImage2D (t->texture_target, 0, GL_ALPHA, tex_w, tex_h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
 			} else { // faster anis
