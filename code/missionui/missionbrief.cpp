@@ -1465,6 +1465,24 @@ void brief_maybe_flash_button()
 //
 // frametime is in seconds
 //
+
+#ifdef SCP_3DS
+// briefing timing: render / UI / flip, logged every 120 frames (where the 12 fps goes)
+extern "C" void n3ds_log(const char *fmt, ...);
+#include <3ds.h>
+static u64 n3ds_bt_t0[3], n3ds_bt_sum[3];
+static int n3ds_bt_frames = 0;
+#define N3DS_T0(i) (n3ds_bt_t0[i] = svcGetSystemTick())
+#define N3DS_T1(i) do { n3ds_bt_sum[i] += svcGetSystemTick() - n3ds_bt_t0[i]; \
+	if ((i) == 2 && ++n3ds_bt_frames == 120) { \
+		n3ds_log("brief 120f: render %.1f ms, ui %.1f ms, flip %.1f ms per frame\n", \
+			n3ds_bt_sum[0] / 268111.856 / 120, n3ds_bt_sum[1] / 268111.856 / 120, n3ds_bt_sum[2] / 268111.856 / 120); \
+		n3ds_bt_sum[0] = n3ds_bt_sum[1] = n3ds_bt_sum[2] = 0; n3ds_bt_frames = 0; } } while (0)
+#else
+#define N3DS_T0(i) ((void)0)
+#define N3DS_T1(i) ((void)0)
+#endif
+
 void brief_do_frame(float frametime)
 {
 	int k, brief_choice;
@@ -1725,7 +1743,9 @@ void brief_do_frame(float frametime)
 			brief_check_for_anim();
 		}
 
+		N3DS_T0(0);
 		brief_render(frametime);
+		N3DS_T1(0);
 		brief_camera_move(frametime, Current_brief_stage);
 
 		if (Closeup_icon && (Closeup_bitmap >= 0)) {
@@ -1734,7 +1754,9 @@ void brief_do_frame(float frametime)
 			gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD], Closeup_coords[gr_screen.res][BRIEF_Y_COORD], GR_RESIZE_MENU);
 		}
 
+		N3DS_T0(1);
 		Brief_ui_window.draw();
+		N3DS_T1(1);
 		brief_redraw_pressed_buttons();
 		common_render_selected_screen_button();
 
@@ -1773,7 +1795,9 @@ void brief_do_frame(float frametime)
 	// blit help overlay if active
 	help_overlay_maybe_blit(Briefing_overlay_id, gr_screen.res);
 
-	gr_flip();	
+	N3DS_T0(2);
+	gr_flip();
+	N3DS_T1(2);	
 
 	// If the commit button was pressed, do the commit button actions.  Done at the end of the
 	// loop so there isn't a skip in the animation (since ship_create() can take a long time if
