@@ -118,25 +118,31 @@ struct n3ds_timer {
 	SDL_NewTimerCallback cb;
 	void *param;
 	volatile bool in_cb;     /* the callback is running right now */
-	volatile bool orphan;    /* SDL_RemoveTimer gave up waiting: the thread frees itself */
 };
 
 static void sdl_timer_entry(void *arg)
 {
 	n3ds_timer *t = (n3ds_timer *)arg;
 	while (t->run) {
-		svcSleepThread((s64)t->interval * 1000000LL);
+		/* sleep in 10 ms slices so SDL_RemoveTimer never waits out a long interval */
+		s64 left = (s64)t->interval * 1000000LL;
+		while (left > 0 && t->run) {
+			s64 d = left > 10000000LL ? 10000000LL : left;
+			svcSleepThread(d);
+			left -= d;
+		}
 		if (!t->run) break;
 		t->in_cb = true;
+		u64 c0 = svcGetSystemTick();
 		Uint32 next = t->cb(t->interval, t->param);
+		u64 cms = (svcGetSystemTick() - c0) / (SYSCLOCK_ARM11 / 1000);
 		t->in_cb = false;
+		if (cms > 300) n3ds_log("SDL timer: callback took %u ms\n", (unsigned)cms);
 		if (next == 0) break;
 		t->interval = next;
 	}
-	if (t->orphan) {
-		n3ds_log("SDL timer: late thread finished, freeing it\n");
-		free(t);   /* the Thread object itself is left to libctru (detached) */
-	}
+	/* if SDL_RemoveTimer gave up waiting, the struct and thread are simply left behind
+	   (a few KB); freeing them from here raced the engine and crashed in free() (Nov 16) */
 }
 
 SDL_TimerID SDL_AddTimer(Uint32 interval, SDL_NewTimerCallback callback, void *param)
@@ -161,17 +167,16 @@ SDL_bool SDL_RemoveTimer(SDL_TimerID id)
 	if (!t) return SDL_FALSE;
 	t->run = false;
 	/* Never wait forever: on Nov 16 2026 leaving the briefing (brief_stop_voices ->
-	   AudioStream::Stop_and_Rewind -> Timer::destructor) hung here, joining the
-	   audio-service timer thread. Wait up to 1 s, then let the thread finish and
-	   free itself on its own. */
-	if (R_SUCCEEDED(threadJoin(t->th, 1000000000ULL))) {
+	   AudioStream::Stop_and_Rewind -> Timer::destructor) hung here joining the audio
+	   timer thread. Wait up to 3 s; if it is still busy, leave it (it exits by itself
+	   once its callback returns) and never free anything it may still touch. Freeing
+	   or detaching it after a 1 s wait crashed in free() (ml11). */
+	if (R_SUCCEEDED(threadJoin(t->th, 3000000000ULL))) {
 		threadFree(t->th);
 		free(t);
 		return SDL_TRUE;
 	}
-	n3ds_log("SDL_RemoveTimer: timer thread did not stop in 1 s (in callback: %d), detaching it\n", (int)t->in_cb);
-	t->orphan = true;
-	threadDetach(t->th);
+	n3ds_log("SDL_RemoveTimer: timer thread still busy after 3 s (in callback: %d), leaving it\n", (int)t->in_cb);
 	return SDL_TRUE;
 }
 

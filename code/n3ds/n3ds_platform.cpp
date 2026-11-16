@@ -85,6 +85,15 @@ static void n3ds_exception_handler(ERRF_ExceptionInfo *excep, CpuRegisters *regs
 	n3ds_log("%s", n3ds_exc_msg);
 	if (n3ds_logfile) fclose(n3ds_logfile);
 	n3ds_logfile = NULL;
+	/* Nov 16: a crash used to sit here forever with a frozen picture (Ryan had to hold
+	   POWER). Restart the console instead: cold restart through the MCU, which Luma treats
+	   as a power-on (it autoboots the test agent / Homebrew Launcher). */
+	svcSleepThread(1000000000LL);
+	if (R_SUCCEEDED(mcuHwcInit())) {
+		u8 v = 1 << 2;
+		MCUHWC_WriteRegister(0x20, &v, 1);
+		mcuHwcExit();
+	}
 	for (;;) svcSleepThread(1000000000LL);
 }
 
