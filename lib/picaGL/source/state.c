@@ -181,6 +181,7 @@ void _stateFlush()
 			texunit_enable_mask |= 0x01;
 			_picaTextureEnvSet(0, &pglState->texenv[0]);
 			_picaTextureObjectSet(GPU_TEXUNIT0, pglState->textureBound[0]);
+			{ extern unsigned pgl_tex_linear_binds; if (!pglState->textureBound[0]->in_vram) pgl_tex_linear_binds++; }
 		}
 		else
 			_picaTextureEnvSet(0, &pglState->texenv[PGL_TEXENV_UNTEXTURED]);

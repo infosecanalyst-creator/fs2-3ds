@@ -638,6 +638,22 @@ extern "C" void n3ds_input_poll(void)
 	memset(joy_buttons, 0, sizeof(joy_buttons));
 }
 
+/* ------------------------------------------------------------------ perf test flags */
+/* /3ds/freespace2/perf_flags holds words such as "no3d nopanel": test runs switch parts of
+   the frame off to find where the GPU time goes (Nov 16). Read once at start. */
+static char perf_flags[128] = "";
+static int perf_flags_read = 0;
+extern "C" int n3ds_perf_flag(const char *name)
+{
+	if (!perf_flags_read) {
+		perf_flags_read = 1;
+		FILE *f = fopen("sdmc:/3ds/freespace2/perf_flags", "r");
+		if (f) { size_t n = fread(perf_flags, 1, sizeof(perf_flags) - 1, f); perf_flags[n] = 0; fclose(f); }
+		n3ds_log("perf flags: '%s'\n", perf_flags);
+	}
+	return perf_flags[0] && strstr(perf_flags, name) != NULL;
+}
+
 /* ------------------------------------------------------------------ profiler */
 
 static inline float ticks_ms_early(u64 t) { return (float)((double)t / (SYSCLOCK_ARM11 / 1000.0)); }
@@ -690,6 +706,12 @@ static void prof_report(int frames_in_window, u64 window_ticks, int state)
 		gs.flushWaitMs / n, gs.swapWaitMs / n,
 		(unsigned)(gs.ends / n), (unsigned)(gs.batches / n), (unsigned)(gs.arrayDraws / n),
 		(unsigned)(gs.flushes / n), (unsigned)(gs.verts / n), (int)(linearSpaceFree() / 1024), gs.swapTimeouts);
+	{
+		extern unsigned pgl_tex_uploads, pgl_tex_upload_px, pgl_tex_linear_binds;
+		n3ds_log("tex per frame: %u uploads, %u px, %u binds of textures in linear memory\n",
+			(unsigned)(pgl_tex_uploads / n), (unsigned)(pgl_tex_upload_px / n), (unsigned)(pgl_tex_linear_binds / n));
+		pgl_tex_uploads = pgl_tex_upload_px = pgl_tex_linear_binds = 0;
+	}
 	memset(prof_total, 0, sizeof(prof_total));
 }
 
@@ -944,7 +966,7 @@ extern "C" void n3ds_present(void)
 		} else if (swapped || (frames & 1)) {
 			n3ds_prof_begin(N3DS_PROF_PANEL);
 			overlay_begin();
-			n3ds_panel_draw();
+			if (!n3ds_perf_flag("nopanel")) n3ds_panel_draw();
 			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
 			else overlay_to(PGL_TARGET_BOTTOM, 320);
 			n3ds_prof_end(N3DS_PROF_PANEL);

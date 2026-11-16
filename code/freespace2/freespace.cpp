@@ -4570,7 +4570,7 @@ void game_frame(bool paused)
 
 #ifdef SCP_3DS
 			n3ds_prof_begin(N3DS_PROF_3D);
-			N3DS_FT("render frame"); game_render_frame( cid ); N3DS_FT("render frame done");
+			{ if (!n3ds_perf_flag("no3d")) { N3DS_FT("render frame"); game_render_frame( cid ); N3DS_FT("render frame done"); } }
 			n3ds_prof_end(N3DS_PROF_3D);
 #else
 			PROFILE("Render", game_render_frame( cid ));

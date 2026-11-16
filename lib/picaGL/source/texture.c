@@ -331,6 +331,8 @@ void glTexImage2D(GLenum target, GLint level, GLint internalFormat, GLsizei widt
 			(int)_dt, _texUploads, (int)_texUploadMs, (int)(linearSpaceFree() / 1024));
 }
 
+unsigned pgl_tex_uploads = 0, pgl_tex_upload_px = 0, pgl_tex_linear_binds = 0;
+
 void _glTexImage2D_impl(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
 	if(level != 0 || target != GL_TEXTURE_2D)
@@ -371,8 +373,10 @@ void _glTexImage2D_impl(GLenum target, GLint level, GLint internalFormat, GLsize
 	readFunc readPixel   = _determineReadFunction(format, type, &offset_bpp);
 	writeFunc writePixel = _determineWriteFunction(texture->format);
 
-	if(readPixel && writePixel && data)
+	if(readPixel && writePixel && data) {
 		_textureTile(texture, 0, 0, width, height, data, offset_bpp, readPixel, writePixel);
+		pgl_tex_uploads++; pgl_tex_upload_px += width * height;
+	}
 }
 
 void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* data)
@@ -390,8 +394,10 @@ void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, G
 	readFunc readPixel   = _determineReadFunction(format, type, &offset_bpp);
 	writeFunc writePixel = _determineWriteFunction(texture->format);
 
-	if(readPixel && writePixel)
+	if(readPixel && writePixel) {
 		_textureTile(texture, xoffset, yoffset, width, height, data, offset_bpp, readPixel, writePixel);
+		pgl_tex_uploads++; pgl_tex_upload_px += width * height;
+	}
 
 	pglState->textureChanged = GL_TRUE;
 	pglState->changes |= STATE_TEXTURE_CHANGE;

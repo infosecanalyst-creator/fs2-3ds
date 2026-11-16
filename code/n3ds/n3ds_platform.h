@@ -62,4 +62,9 @@ int n3ds_keyboard(int password, const char *initial, char *out, int outlen);
 }
 #endif
 
+#ifdef __cplusplus
+extern "C"
+#endif
+int n3ds_perf_flag(const char *name);   /* /3ds/freespace2/perf_flags test switches */
+
 #endif
