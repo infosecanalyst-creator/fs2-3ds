@@ -1852,14 +1852,23 @@ bool is_weapon_carried(int weapon_index)
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+#define N3DS_CP(x) n3ds_log("commit: %s\n", x)
+#else
+#define N3DS_CP(x) ((void)0)
+#endif
 void commit_pressed()
 {
 	int j, player_ship_info_index;
 	
+	N3DS_CP("start");
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
 			int rc;
+			N3DS_CP("create_wings");
 			rc = create_wings();
+			N3DS_CP("create_wings done");
 			if (rc != 0) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				return;
@@ -1876,6 +1885,7 @@ void commit_pressed()
 			player_ship_info_index = Selected_ss_class;
 		}
 
+		N3DS_CP("update_player_ship");
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
@@ -1920,11 +1930,12 @@ void commit_pressed()
 	// for the player to assign a ship to a hotkey, then go and delete that ship in the 
 	// ship selection, and then try to start the mission.  This function will detect those objects,
 	// and remove them from the hotkey linked lists.
+	N3DS_CP("hotkeys");
 	mission_hotkey_validate();
 
 	// Goober5000 - no sound when skipping briefing
 	if (!(The_mission.flags & MISSION_FLAG_NO_BRIEFING))
-		gamesnd_play_iface(SND_COMMIT_PRESSED);
+		{ N3DS_CP("commit sound"); gamesnd_play_iface(SND_COMMIT_PRESSED); N3DS_CP("commit sound done"); }
 
 	// save the player loadout
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -1958,6 +1969,7 @@ void commit_pressed()
 		Pilot.save_savefile();
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
+	N3DS_CP("end");
 }
 
 // ------------------------------------------------------------------------
