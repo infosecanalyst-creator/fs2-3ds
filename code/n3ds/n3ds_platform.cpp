@@ -1043,6 +1043,15 @@ extern "C" void n3ds_present(void)
 	   the 400x240 the top LCD can show (a quarter of the pixels of 800x480): the real
 	   hardware is fill-rate bound there, the CPU side takes only a few ms. */
 	pglBindTarget(PGL_TARGET_MAIN);
+	/* the overlay (panel/dashboard/manual) was drawn into the depth buffer's VRAM: clear
+	   the whole depth buffer before the engine's next frame */
+	if (pglOverlayAliasesDepth()) {
+		pglSetRenderScale(1.0f);
+		glViewport(0, 0, N3DS_GAME_W, N3DS_GAME_H);
+		glDisable(GL_SCISSOR_TEST);
+		glClearDepth(1.0);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	}
 	/* Test switch (Nov 16): the file /3ds/freespace2/flight_fullres renders flight at full
 	   800x480 too, to see whether the half-scale path is what scrambles the top screen. */
 	static int fullres = -1;

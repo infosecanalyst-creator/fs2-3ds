@@ -105,6 +105,33 @@ void pglSelectScreen(unsigned display, unsigned side)
 
 /* ---------------- fs2-3ds additions ---------------- */
 
+/* The overlay (panel, dashboard, manual) needs a full-size RGBA8 buffer, but VRAM holds
+   only the main colour + depth buffers and the two screen buffers, so a separate 2 MB
+   overlay always landed in FCRAM, and drawing into FCRAM is very slow: the flight panel
+   cost ~160 ms of GPU time per redraw (10 fps in flight, Nov 16 2026). The overlay is only
+   drawn in present, after the engine's frame, and the depth buffer (same size, 32 bpp,
+   in VRAM) is not needed then and is cleared before the next frame's 3D
+   (pglClearMainDepth), so the overlay shares its memory. */
+static inline int _addressIsVRAM_pgl(const void *a) { u32 v = (u32)a; return v >= 0x1F000000 && v < 0x1F600000; }
+extern void n3ds_log(const char *fmt, ...);
+static void _pglOverlayAlloc(void)
+{
+	if(pglState->mainDepth && _addressIsVRAM_pgl(pglState->mainDepth)) {
+		pglState->overlayColor = pglState->mainDepth;
+		pglState->overlayAliasesDepth = 1;
+		n3ds_log("picaGL: overlay shares the depth buffer (VRAM)\n");
+		return;
+	}
+	size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
+	pglState->overlayColor = vramAlloc(sz);
+	if(!pglState->overlayColor) pglState->overlayColor = linearAlloc(sz);
+	n3ds_log("picaGL: overlay buffer in %s\n", _addressIsVRAM_pgl(pglState->overlayColor) ? "VRAM" : "FCRAM (slow)");
+}
+
+/* 1 when the overlay draws into the depth buffer's memory: the caller must clear depth
+   (glClear(GL_DEPTH_BUFFER_BIT)) on the main target before the next 3D */
+int pglOverlayAliasesDepth(void) { return pglState->overlayAliasesDepth; }
+
 void pglBindTarget(int which)
 {
 	/* Make sure everything drawn to the previous target lands in memory */
@@ -114,11 +141,7 @@ void pglBindTarget(int which)
 	if(which == PGL_TARGET_OVERLAY)
 	{
 		if(!pglState->overlayColor)
-		{
-			size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
-			pglState->overlayColor = vramAlloc(sz);
-			if(!pglState->overlayColor) pglState->overlayColor = linearAlloc(sz);
-		}
+			_pglOverlayAlloc();
 		pglState->targetColor  = pglState->overlayColor;
 		pglState->targetDepth  = NULL;
 		pglState->targetWidth  = pglState->mainWidth;
@@ -169,11 +192,7 @@ void pglMainAsTexture(GLuint name)
 void pglOverlayAsTexture(GLuint name)
 {
 	if(!pglState->overlayColor)
-	{
-		size_t sz = pglState->mainGpuW * pglState->mainGpuH * 4;
-		pglState->overlayColor = vramAlloc(sz);
-		if(!pglState->overlayColor) pglState->overlayColor = linearAlloc(sz);
-	}
+		_pglOverlayAlloc();
 	pglWrapTexture(name, pglState->overlayColor, pglState->mainGpuW, pglState->mainGpuH);
 }
 

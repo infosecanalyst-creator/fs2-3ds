@@ -38,6 +38,7 @@ typedef struct {
 	unsigned swapTimeouts;
 } pglFrameStats;
 void pglGetStats(pglFrameStats *out, int reset);
+int pglOverlayAliasesDepth(void);   /* overlay drew into the depth buffer: clear depth before 3D */
 
 /* scale applied to all viewports/scissors on the main target (1.0 or 0.5) */
 void pglSetRenderScale(float scale);
