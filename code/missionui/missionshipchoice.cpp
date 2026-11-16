@@ -1888,6 +1888,7 @@ void commit_pressed()
 		N3DS_CP("update_player_ship");
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
+			N3DS_CP("popup: player ship has no weapons");
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
 			return;
 		}
@@ -1914,6 +1915,7 @@ void commit_pressed()
 	}
 	if (num_satisfied_weapons < num_required_weapons)
 	{
+		N3DS_CP("popup: required weapons missing");
 		if (num_required_weapons == 1)
 		{
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624), weapon_list.c_str());
@@ -1941,10 +1943,12 @@ void commit_pressed()
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
 		strcpy_s(Player_loadout.filename, Game_current_mission_filename);
 		strcpy_s(Player_loadout.last_modified, The_mission.modified);
+		N3DS_CP("save loadout");
 		wss_save_loadout();
 	}
 
 	// warp the mouse cursor the the middle of the screen for those who control with a mouse
+	N3DS_CP("mouse_set_pos");
 	mouse_set_pos( gr_screen.max_w/2, gr_screen.max_h/2 );
 
 	// move to the next stage
@@ -1966,7 +1970,9 @@ void commit_pressed()
 	}
 	// in single player we jump directly into the mission
 	else {
+		N3DS_CP("save pilot");
 		Pilot.save_savefile();
+		N3DS_CP("post ENTER_GAME");
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 	N3DS_CP("end");
