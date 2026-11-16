@@ -1021,7 +1021,16 @@ extern "C" void n3ds_present(void)
 	   the 400x240 the top LCD can show (a quarter of the pixels of 800x480): the real
 	   hardware is fill-rate bound there, the CPU side takes only a few ms. */
 	pglBindTarget(PGL_TARGET_MAIN);
-	pglSetRenderScale(in_flight() ? 0.5f : 1.0f);
+	/* Test switch (Nov 16): the file /3ds/freespace2/flight_fullres renders flight at full
+	   800x480 too, to see whether the half-scale path is what scrambles the top screen. */
+	static int fullres = -1;
+	if (fullres < 0) {
+		FILE *ff = fopen("sdmc:/3ds/freespace2/flight_fullres", "r");
+		fullres = ff ? 1 : 0;
+		if (ff) fclose(ff);
+		n3ds_log("flight render scale: %s\n", fullres ? "1.0 (flight_fullres file)" : "0.5");
+	}
+	pglSetRenderScale(in_flight() && !fullres ? 0.5f : 1.0f);
 	pglRestoreViewport();
 	opengl_state_n3ds_resync();
 	n3ds_prof_end(N3DS_PROF_PRESENT);
