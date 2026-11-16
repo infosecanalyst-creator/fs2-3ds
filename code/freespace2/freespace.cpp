@@ -5631,6 +5631,9 @@ void game_process_event( int current_state, int event )
 // need to post an event, not change the state.
 void game_leave_state( int old_state, int new_state )
 {
+#ifdef SCP_3DS
+	n3ds_log("leave_state %d -> %d\n", old_state, new_state);
+#endif
 	int end_mission = 1;
 
 	switch (new_state) {
@@ -5668,7 +5671,13 @@ void game_leave_state( int old_state, int new_state )
 
 	switch (old_state) {
 		case GS_STATE_BRIEFING:
+#ifdef SCP_3DS
+			n3ds_log("leave BRIEFING -> %d: stop voices\n", new_state);
+#endif
 			brief_stop_voices();
+#ifdef SCP_3DS
+			n3ds_log("leave BRIEFING: voices stopped\n");
+#endif
 			if ( (new_state != GS_STATE_OPTIONS_MENU) && (new_state != GS_STATE_WEAPON_SELECT)
 				  && (new_state != GS_STATE_SHIP_SELECT) && (new_state != GS_STATE_HOTKEY_SCREEN)
 				  && (new_state != GS_STATE_TEAM_SELECT) && (new_state != GS_STATE_MULTI_MISSION_SYNC)){
@@ -6041,6 +6050,9 @@ int Main_hall_netgame_started = 0;
 
 void game_enter_state( int old_state, int new_state )
 {
+#ifdef SCP_3DS
+	n3ds_log("enter_state %d -> %d\n", old_state, new_state);
+#endif
 	//WMC - Scripting override
 	/*
 	if(script_hook_valid(&GS_state_hooks[new_state]) && Script_system.IsOverride(GS_state_hooks[new_state])) {

@@ -920,6 +920,12 @@ void common_check_keys(int k)
 //
 // weapon_select_close() and ship_select_close() are both called, since common_select_close()
 // is the function that is called the interface screens are finally exited.
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+#define N3DS_SC(x) n3ds_log("select_close: %s\n", x)
+#else
+#define N3DS_SC(x) ((void)0)
+#endif
 void common_select_close()
 {
 	if ( !Common_select_inited ) {
@@ -931,23 +937,30 @@ void common_select_close()
 
 	// catch open anims that weapon_select_init_team() opened when not in weapon_select - taylor
 	// *** not the same as weapon_select_close() ***
+	N3DS_SC("weapon_select_close_team");
 	weapon_select_close_team();
 
+	N3DS_SC("weapon_select_close");
 	weapon_select_close();
 
 	if(Game_mode & GM_MULTIPLAYER){
 		multi_ts_close();
 	} 
 
+	N3DS_SC("ship_select_close");
 	ship_select_close();
+	N3DS_SC("brief_close");
 	brief_close();	
 
+	N3DS_SC("common_free_interface_palette");
 	common_free_interface_palette();
 
 	// release the bitmpas that were previously extracted from anim files
+	N3DS_SC("unload_wing_icons");
 	unload_wing_icons();
 
 	// Release any instances that may still exist
+	N3DS_SC("anim_release_all_instances");
 	anim_release_all_instances();
 
 	// free the anim's that were loaded into memory
@@ -958,11 +971,14 @@ void common_select_close()
 	}
 	*/
 
+	N3DS_SC("common_music_close");
 	common_music_close();
 
+	N3DS_SC("common_reset_team_pointers");
 	common_reset_team_pointers();
 
 	Common_select_inited = 0;
+	N3DS_SC("done");
 }
 
 // ------------------------------------------------------------------------
