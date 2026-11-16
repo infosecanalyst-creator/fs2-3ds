@@ -3700,6 +3700,15 @@ void clip_frame_view();
 
 // Does everything needed to render a frame
 extern SCP_vector<object*> effect_ships; 
+
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+// first gameplay frames: log each render step (the game froze right after Commit)
+static int n3ds_ft = 0;
+#define N3DS_FT(x) do { if (n3ds_ft < 4) n3ds_log("frame %d: %s\n", n3ds_ft, x); } while (0)
+#else
+#define N3DS_FT(x) ((void)0)
+#endif
 void game_render_frame( camid cid )
 {
 
@@ -3748,16 +3757,20 @@ void game_render_frame( camid cid )
 	// Note: environment mapping gets disabled when rendering to texture; if you change
 	// this, make sure that the current render target gets restored right afterwards!
 	if ( Cmdline_env && !Env_cubemap_drawn && gr_screen.rendering_to_texture == -1 ) {
+		N3DS_FT("env map setup");
 		setup_environment_mapping(cid);
 
 		if ( !Dynamic_environment ) {
 			Env_cubemap_drawn = true;
 		}
 	}
+	N3DS_FT("zbuffer clear");
 	gr_zbuffer_clear(TRUE);
 
+	N3DS_FT("scene texture begin");
 	gr_scene_texture_begin();
 
+	N3DS_FT("neb2 setup");
 	neb2_render_setup(cid);
 
 #ifndef DYN_CLIP_DIST
@@ -3768,16 +3781,18 @@ void game_render_frame( camid cid )
 #endif
 
 	if ( Game_subspace_effect )	{
-		stars_draw(0,0,0,1,0);
+		N3DS_FT("stars_draw"); stars_draw(0,0,0,1,0);
 	} else {
 		stars_draw(1,1,1,0,0);
 	}
 
 	bool draw_viewer_last = false;
+	N3DS_FT("obj_render_all");
 	obj_render_all(obj_render, &draw_viewer_last);
 	
 	//	Why do we not show the shield effect in these modes?  Seems ok.
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
+	N3DS_FT("shields");
 	render_shields();
 	//}
 
@@ -4519,7 +4534,7 @@ void game_frame(bool paused)
 		
 #ifdef SCP_3DS
 		n3ds_prof_begin(N3DS_PROF_SIM);
-		game_simulation_frame(); 
+		N3DS_FT("simulation"); game_simulation_frame(); 
 		n3ds_prof_end(N3DS_PROF_SIM);
 #else
 		PROFILE("Simulation", game_simulation_frame()); 
@@ -4551,11 +4566,11 @@ void game_frame(bool paused)
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			
-			camid cid = game_render_frame_setup();
+			N3DS_FT("render setup"); camid cid = game_render_frame_setup();
 
 #ifdef SCP_3DS
 			n3ds_prof_begin(N3DS_PROF_3D);
-			game_render_frame( cid );
+			N3DS_FT("render frame"); game_render_frame( cid ); N3DS_FT("render frame done");
 			n3ds_prof_end(N3DS_PROF_3D);
 #else
 			PROFILE("Render", game_render_frame( cid ));
@@ -4576,6 +4591,7 @@ void game_frame(bool paused)
 			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud) {
+				N3DS_FT("hud");
 				game_render_hud(cid);
 			}
 			HUD_reset_clip();
@@ -4629,7 +4645,12 @@ void game_frame(bool paused)
 			game_show_time_left();
 
 			gr_reset_clip();
+			N3DS_FT("post frame (flip)");
 			game_render_post_frame();
+			N3DS_FT("frame done");
+#ifdef SCP_3DS
+			n3ds_ft++;
+#endif
 
 			game_tst_frame();
 
@@ -6191,6 +6212,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
  
 		case GS_STATE_GAME_PLAY:
+			N3DS_FT("enter GAME_PLAY");
 
 			// maybe play a cutscene
 			if((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) || 
@@ -6225,9 +6247,11 @@ void game_enter_state( int old_state, int new_state )
 				//Set the current hud
 				set_current_hud();
 
+				N3DS_FT("cockpit displays");
 				if ( !Is_standalone ) {
 					ship_init_cockpit_displays(Player_ship);
 				}
+				N3DS_FT("cockpit displays done");
 			}
 
 			// coming from the gameplay state or the main menu, we might need to load the mission
