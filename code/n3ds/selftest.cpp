@@ -261,15 +261,16 @@ static void st_watchdog_tick(void) {
         if (!st_done) {
             // A hung game is usually stuck waiting on the GPU. Ending the process left the GPU hung
             // (every later launch froze until a power-off), so restart the whole console instead:
-            // a clean reboot through ptm:sysm, the same as the system's own restart. Nobody has to
+            // a clean restart through APT. Nobody has to
             // hold POWER, and the log above is already closed (Nov 15 2026).
             if (st_log) { fclose(st_log); st_log = NULL; }
+            // Restart through APT (the application way), then end this process so the restart is
+            // not held up by a stuck main thread. ptm:sysm RebootAsync crashed the ptm process
+            // (kernel panic, Nov 15), so it is not used.
             svcSleepThread(500000000LL);
-            if (R_SUCCEEDED(ptmSysmInit())) {
-                PTMSYSM_RebootAsync(0);
-                ptmSysmExit();
-            }
-            for (;;) svcSleepThread(1000000000LL);   // the reboot takes over from here
+            APT_HardwareResetAsync();
+            svcSleepThread(2000000000LL);
+            svcExitProcess();
         }
         aptSetChainloaderToSelf();   // relaunch the Homebrew loader, which starts the agent
         aptExit();
