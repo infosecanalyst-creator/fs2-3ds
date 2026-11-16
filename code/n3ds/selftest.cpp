@@ -268,6 +268,15 @@ static void st_watchdog_tick(void) {
             // not held up by a stuck main thread. ptm:sysm RebootAsync crashed the ptm process
             // (kernel panic, Nov 15), so it is not used.
             svcSleepThread(500000000LL);
+            // Cold restart through the MCU first (Nov 16): Luma treats it as a power-on and
+            // autoboots the test agent, so nobody has to touch the 3DS. Tested from the agent
+            // (COLDREBOOT). APT restart as the fallback (lands on the HOME Menu).
+            if (R_SUCCEEDED(mcuHwcInit())) {
+                u8 v = 1 << 2;
+                MCUHWC_WriteRegister(0x20, &v, 1);
+                mcuHwcExit();
+                svcSleepThread(3000000000LL);
+            }
             APT_HardwareResetAsync();
             svcSleepThread(2000000000LL);
             svcExitProcess();
