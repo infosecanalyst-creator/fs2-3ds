@@ -259,12 +259,17 @@ static void st_watchdog_tick(void) {
         if (st_log) { fclose(st_log); st_log = NULL; }
         st_set_target();
         if (!st_done) {
-            // A hung game is usually stuck waiting on the GPU. Ending it from here left the GPU hung,
-            // and every later launch froze on its first frame until a power-off; GSPGPU_ResetGpuCore()
-            // did not help (Nov 15 2026). So leave the hung game alone: its screen shows where it
-            // stopped, the log is closed, and a power-off is needed either way.
-            st_gave_up = 1;
-            return;
+            // A hung game is usually stuck waiting on the GPU. Ending the process left the GPU hung
+            // (every later launch froze until a power-off), so restart the whole console instead:
+            // a clean reboot through ptm:sysm, the same as the system's own restart. Nobody has to
+            // hold POWER, and the log above is already closed (Nov 15 2026).
+            if (st_log) { fclose(st_log); st_log = NULL; }
+            svcSleepThread(500000000LL);
+            if (R_SUCCEEDED(ptmSysmInit())) {
+                PTMSYSM_RebootAsync(0);
+                ptmSysmExit();
+            }
+            for (;;) svcSleepThread(1000000000LL);   // the reboot takes over from here
         }
         aptSetChainloaderToSelf();   // relaunch the Homebrew loader, which starts the agent
         aptExit();
