@@ -118,6 +118,7 @@ struct n3ds_timer {
 	SDL_NewTimerCallback cb;
 	void *param;
 	volatile bool in_cb;     /* the callback is running right now */
+	volatile bool self_free; /* removed from inside its own callback: the thread frees itself */
 };
 
 static void sdl_timer_entry(void *arg)
@@ -140,6 +141,12 @@ static void sdl_timer_entry(void *arg)
 		if (cms > 300) n3ds_log("SDL timer: callback took %u ms\n", (unsigned)cms);
 		if (next == 0) break;
 		t->interval = next;
+	}
+	/* removed from inside its own callback (the stream finished while being serviced):
+	   nobody else will join this thread, so it cleans up after itself */
+	if (t->self_free) {
+		threadDetach(t->th);   /* libctru frees the Thread when this function returns */
+		free(t);
 	}
 	/* if SDL_RemoveTimer gave up waiting, the struct and thread are simply left behind
 	   (a few KB); freeing them from here raced the engine and crashed in free() (Nov 16) */
@@ -166,6 +173,13 @@ SDL_bool SDL_RemoveTimer(SDL_TimerID id)
 	n3ds_timer *t = (n3ds_timer *)id;
 	if (!t) return SDL_FALSE;
 	t->run = false;
+	/* Called from the timer's own thread (the audio callback stopped its own stream):
+	   joining itself can never finish. This was the root of the briefing hang: the timer
+	   thread waited on itself forever, then the main thread waited on it (Nov 16). */
+	if (threadGetCurrent() == t->th) {
+		t->self_free = true;
+		return SDL_TRUE;
+	}
 	/* Never wait forever: on Nov 16 2026 leaving the briefing (brief_stop_voices ->
 	   AudioStream::Stop_and_Rewind -> Timer::destructor) hung here joining the audio
 	   timer thread. Wait up to 3 s; if it is still busy, leave it (it exits by itself
