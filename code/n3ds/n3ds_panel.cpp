@@ -30,6 +30,12 @@
 #include "hud/hudgauges.h"
 #include "io/timer.h"
 #include <string.h>
+#include "n3ds/n3ds_platform.h"
+
+/* perf test (Nov 16): /3ds/freespace2/perf_flags "panelnotext" / "panelnorect" skip the
+   panel's text or its filled rectangles, to see which one costs the GPU time */
+static void panel_string(int x, int y, const char *t) { if (!n3ds_perf_flag("panelnotext")) gr_string(x, y, (char *)t, false); }
+static void panel_rect(int x, int y, int w, int h) { if (!n3ds_perf_flag("panelnorect")) gr_rect(x, y, w, h, false); }
 
 extern "C" void n3ds_click(void);
 
@@ -130,9 +136,9 @@ static void panel_bar(int x, int y, int w, int h, float frac, int r, int g, int 
 	if (frac < 0.0f) frac = 0.0f;
 	if (frac > 1.0f) frac = 1.0f;
 	gr_set_color(40, 40, 40);
-	gr_rect(x, y, w, h, false);
+	panel_rect(x, y, w, h);
 	gr_set_color(r, g, b);
-	gr_rect(x, y, (int)(w * frac), h, false);
+	panel_rect(x, y, (int)(w * frac), h);
 }
 
 static void panel_vbar(int x, int y, int w, int h, float frac, int r, int g, int b)
@@ -140,10 +146,10 @@ static void panel_vbar(int x, int y, int w, int h, float frac, int r, int g, int
 	if (frac < 0.0f) frac = 0.0f;
 	if (frac > 1.0f) frac = 1.0f;
 	gr_set_color(40, 40, 40);
-	gr_rect(x, y, w, h, false);
+	panel_rect(x, y, w, h);
 	int fh = (int)(h * frac);
 	gr_set_color(r, g, b);
-	gr_rect(x, y + h - fh, w, fh, false);
+	panel_rect(x, y + h - fh, w, fh);
 }
 
 static int text_w(const char *s)
@@ -189,14 +195,14 @@ void n3ds_panel_draw(void)
 
 	gr_set_clip(0, 0, PANEL_W, PANEL_H, false);
 	gr_set_color(8, 12, 40);                  /* house palette: navy */
-	gr_rect(0, 0, PANEL_W, PANEL_H, false);
+	panel_rect(0, 0, PANEL_W, PANEL_H);
 	gr_set_font(FONT1);
 
 	char buf[160];
 
 	/* ---- target strip */
 	gr_set_color(40, 56, 120);                /* target strip in the header colour */
-	gr_rect(0, 0, PANEL_W, 30, false);
+	panel_rect(0, 0, PANEL_W, 30);
 	if (Player_ai && Player_ai->target_objnum >= 0 && Player_obj) {
 		object *tobj = &Objects[Player_ai->target_objnum];
 		char right1[32] = "", right2[32];
@@ -210,15 +216,15 @@ void n3ds_panel_draw(void)
 			sprintf(right1, "HULL %d%%", (int)(get_hull_pct(tobj) * 100.0f + 0.5f));
 		}
 		gr_set_color(255, 200, 80);
-		gr_string(4, 4, (char *)name, false);
+		panel_string(4, 4, name);
 		gr_set_color(200, 200, 200);
-		gr_string(4, 17, (char *)cls, false);
+		panel_string(4, 17, cls);
 		gr_set_color(255, 255, 255);
-		gr_string(PANEL_W - 4 - text_w(right1), 4, right1, false);
-		gr_string(PANEL_W - 4 - text_w(right2), 17, right2, false);
+		panel_string(PANEL_W - 4 - text_w(right1), 4, right1);
+		panel_string(PANEL_W - 4 - text_w(right2), 17, right2);
 	} else {
 		gr_set_color(140, 140, 140);
-		gr_string(4, 10, "NO TARGET", false);
+		panel_string(4, 10, "NO TARGET");
 	}
 
 	if (Player_obj && Player_ship) {
@@ -227,35 +233,35 @@ void n3ds_panel_draw(void)
 		float smax = sip->max_shield_strength, s = 0.0f;
 		for (int i = 0; i < Player_obj->n_quadrants; i++) s += Player_obj->shield_quadrant[i];
 		gr_set_color(200, 200, 200);
-		gr_string(4, 34, "HULL", false);
+		panel_string(4, 34, "HULL");
 		panel_bar(44, 35, 72, 7, get_hull_pct(Player_obj), 80, 220, 80);
 		gr_set_color(200, 200, 200);
-		gr_string(122, 34, "SHLD", false);
+		panel_string(122, 34, "SHLD");
 		panel_bar(162, 35, 64, 7, smax > 0.0f ? s / smax : 0.0f, 80, 160, 255);
 
 		gr_set_color(200, 200, 200);
-		gr_string(4, 46, "AFTB", false);
+		panel_string(4, 46, "AFTB");
 		panel_bar(44, 47, 72, 7, sip->afterburner_fuel_capacity > 0.0f ? Player_ship->afterburner_fuel / sip->afterburner_fuel_capacity : 0.0f, 255, 120, 60);
 		gr_set_color(200, 200, 200);
-		gr_string(122, 46, "WPN", false);
+		panel_string(122, 46, "WPN");
 		panel_bar(162, 47, 64, 7, sip->max_weapon_reserve > 0.0f ? Player_ship->weapon_energy / sip->max_weapon_reserve : 0.0f, 220, 220, 80);
 
 		sprintf(buf, "SPD %d", (int)Player_obj->phys_info.fspeed);
 		gr_set_color(200, 200, 200);
-		gr_string(4, 58, buf, false);
+		panel_string(4, 58, buf);
 		if (Player && (Player->flags & PLAYER_FLAGS_MATCH_TARGET)) {
 			/* matching the target's speed */
 			gr_set_color(255, 220, 80);
-			gr_string(4 + text_w(buf) + 8, 58, "M", false);
+			panel_string(4 + text_w(buf) + 8, 58, "M");
 		}
-		gr_string(122, 58, "THR", false);
+		panel_string(122, 58, "THR");
 		panel_bar(162, 59, 64, 7, Player_obj->phys_info.forward_thrust, 255, 180, 60);
 
 		/* ---- weapons */
 		ship_weapon *swp = &Player_ship->weapons;
 		int pb = swp->current_primary_bank, sb = swp->current_secondary_bank;
 		gr_set_color(120, 200, 255);
-		gr_string(4, 72, "PRI", false);
+		panel_string(4, 72, "PRI");
 		gr_set_color(235, 235, 235);
 		if (pb >= 0 && pb < swp->num_primary_banks && swp->primary_bank_weapons[pb] >= 0) {
 			strcpy(buf, Weapon_info[swp->primary_bank_weapons[pb]].name);
@@ -265,21 +271,21 @@ void n3ds_panel_draw(void)
 				if (text_w(tmp) <= TEXT_W - 36) strcpy(buf, tmp);
 			}
 		} else strcpy(buf, "-");
-		gr_string(36, 72, buf, false);
+		panel_string(36, 72, buf);
 
 		gr_set_color(120, 200, 255);
-		gr_string(4, 84, "SEC", false);
+		panel_string(4, 84, "SEC");
 		gr_set_color(235, 235, 235);
 		if (sb >= 0 && sb < swp->num_secondary_banks && swp->secondary_bank_weapons[sb] >= 0) {
 			sprintf(buf, "%s  x%d", Weapon_info[swp->secondary_bank_weapons[sb]].name, swp->secondary_bank_ammo[sb]);
 			if (text_w(buf) > TEXT_W - 36) strcpy(buf, Weapon_info[swp->secondary_bank_weapons[sb]].name);
 		} else strcpy(buf, "-");
-		gr_string(36, 84, buf, false);
+		panel_string(36, 84, buf);
 
 		/* ---- text box: training message, directives, recent messages. Whole lines only:
 		   anything that would not fit completely is left out. */
 		gr_set_color(4, 6, 20);
-		gr_rect(2, BOX_Y - 2, TEXT_W + 4, BOX_BOTTOM - BOX_Y + 2, false);
+		panel_rect(2, BOX_Y - 2, TEXT_W + 4, BOX_BOTTOM - BOX_Y + 2);
 		int y = BOX_Y;
 		char lines[8][96];
 		char tbuf[512];
@@ -296,7 +302,7 @@ void n3ds_panel_draw(void)
 			}
 			gr_set_color(140, 200, 255);
 			for (int i = first; i < n && i < first + fit; i++, y += LINE_H)
-				gr_string(5, y, tl[i], false);
+				panel_string(5, y, tl[i]);
 		}
 		char dl[3][128];
 		int dst[3];
@@ -311,7 +317,7 @@ void n3ds_panel_draw(void)
 				default: gr_set_color(255, 255, 255); break;
 			}
 			for (int i = 0; i < n; i++, y += LINE_H)
-				gr_string(5, y, lines[i], false);
+				panel_string(5, y, lines[i]);
 		}
 		/* newest messages first, shown for 12 seconds */
 		for (int k = 1; k <= PANEL_MSGS; k++) {
@@ -321,7 +327,7 @@ void n3ds_panel_draw(void)
 			if (y + n * LINE_H > BOX_BOTTOM) break;
 			gr_set_color(200, 230, 200);
 			for (int i = 0; i < n; i++, y += LINE_H)
-				gr_string(5, y, lines[i], false);
+				panel_string(5, y, lines[i]);
 		}
 
 		/* ---- ETS */
@@ -329,20 +335,20 @@ void n3ds_panel_draw(void)
 		for (int c = 0; c < 3; c++) {
 			const ets_column &e = Ets_cols[c];
 			gr_set_color(200, 200, 200);
-			gr_string(e.x + (ETS_W - text_w(e.label)) / 2, 34, (char *)e.label, false);
+			panel_string(e.x + (ETS_W - text_w(e.label)) / 2, 34, e.label);
 			panel_vbar(e.x, ETS_Y, ETS_W, ETS_H, Energy_levels[idx[c]], 120, 200, 255);
 			if (Panel_pressed_ets >= 0 && Panel_pressed_ets / 2 == c) {
 				/* pressed half: a light frame around it */
 				int py = ETS_Y + ((Panel_pressed_ets & 1) ? ETS_H / 2 : 0);
 				gr_set_color(200, 230, 255);
-				gr_rect(e.x, py, ETS_W, 2, false);
-				gr_rect(e.x, py + ETS_H / 2 - 2, ETS_W, 2, false);
-				gr_rect(e.x, py, 2, ETS_H / 2, false);
-				gr_rect(e.x + ETS_W - 2, py, 2, ETS_H / 2, false);
+				panel_rect(e.x, py, ETS_W, 2);
+				panel_rect(e.x, py + ETS_H / 2 - 2, ETS_W, 2);
+				panel_rect(e.x, py, 2, ETS_H / 2);
+				panel_rect(e.x + ETS_W - 2, py, 2, ETS_H / 2);
 			}
 			gr_set_color(255, 255, 255);
-			gr_string(e.x + (ETS_W - text_w("+")) / 2, ETS_Y + 2, "+", false);
-			gr_string(e.x + (ETS_W - text_w("-")) / 2, ETS_Y + ETS_H - 12, "-", false);
+			panel_string(e.x + (ETS_W - text_w("+")) / 2, ETS_Y + 2, "+");
+			panel_string(e.x + (ETS_W - text_w("-")) / 2, ETS_Y + ETS_H - 12, "-");
 		}
 	}
 
@@ -352,14 +358,14 @@ void n3ds_panel_draw(void)
 		int pressed = (i == Panel_pressed_button), off = pressed ? 1 : 0;
 		if (pressed) gr_set_color(220, 180, 60);
 		else gr_set_color(40, 56, 120);
-		gr_rect(b.x, b.y + off, b.w, b.h, false);
+		panel_rect(b.x, b.y + off, b.w, b.h);
 		gr_set_color(120, 150, 230);              /* house button: edge and shadow */
-		gr_rect(b.x, b.y + off, b.w, 1, false); gr_rect(b.x, b.y + off, 1, b.h, false); gr_rect(b.x + b.w - 1, b.y + off, 1, b.h, false);
+		panel_rect(b.x, b.y + off, b.w, 1); panel_rect(b.x, b.y + off, 1, b.h); panel_rect(b.x + b.w - 1, b.y + off, 1, b.h);
 		gr_set_color(20, 30, 70);
-		gr_rect(b.x, b.y + off + b.h - 1, b.w, 1, false);
+		panel_rect(b.x, b.y + off + b.h - 1, b.w, 1);
 		int w = text_w(b.label);
 		gr_set_color(230, 230, 230);
-		gr_string(b.x + (b.w - w) / 2, b.y + off + (b.h - 9) / 2, b.label, false);
+		panel_string(b.x + (b.w - w) / 2, b.y + off + (b.h - 9) / 2, b.label);
 	}
 
 	/* the highlight (panel on the top screen, SELECT + B): a gold ring inside the target */
@@ -368,10 +374,10 @@ void n3ds_panel_draw(void)
 		nav_rect(Panel_focus, &x, &y, &w, &h);
 		if (Panel_focus < NUM_PANEL_BUTTONS && Panel_focus == Panel_pressed_button) y += 1;
 		gr_set_color(255, 204, 64);
-		gr_rect(x, y, w, 2, false);
-		gr_rect(x, y + h - 2, w, 2, false);
-		gr_rect(x, y, 2, h, false);
-		gr_rect(x + w - 2, y, 2, h, false);
+		panel_rect(x, y, w, 2);
+		panel_rect(x, y + h - 2, w, 2);
+		panel_rect(x, y, 2, h);
+		panel_rect(x + w - 2, y, 2, h);
 	}
 
 	gr_reset_clip();
