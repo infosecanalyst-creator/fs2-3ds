@@ -31,11 +31,34 @@
 #include "io/timer.h"
 #include <string.h>
 #include "n3ds/n3ds_platform.h"
+#include "render/3d.h"
 
 /* perf test (Nov 16): /3ds/freespace2/perf_flags "panelnotext" / "panelnorect" skip the
    panel's text or its filled rectangles, to see which one costs the GPU time */
 static void panel_string(int x, int y, const char *t) { if (!n3ds_perf_flag("panelnotext")) gr_string(x, y, (char *)t, false); }
-static void panel_rect(int x, int y, int w, int h) { if (!n3ds_perf_flag("panelnorect")) gr_rect(x, y, w, h, false); }
+/* Filled rectangle in the current colour. Not gr_rect: that goes through g3_draw_2d_rect,
+   which calls g3_start_frame(1) for every rectangle, and that clears the whole z-buffer
+   each time - about 20 full-screen clears per panel redraw, ~100 ms of GPU time (Nov 16).
+   This draws the same quad without the per-rectangle frame start. */
+static void panel_rect(int x, int y, int w, int h)
+{
+	if (n3ds_perf_flag("panelnorect")) return;
+	vertex v[4];
+	vertex *verts[4] = { &v[0], &v[1], &v[2], &v[3] };
+	memset(v, 0, sizeof(v));
+	int px[4] = { x, x + w, x + w, x };
+	int py[4] = { y, y, y + h, y + h };
+	for (int i = 0; i < 4; i++) {
+		v[i].screen.xyw.x = i2fl(px[i]);
+		v[i].screen.xyw.y = i2fl(py[i]);
+		v[i].flags = PF_PROJECTED;
+		v[i].r = (ubyte)gr_screen.current_color.red;
+		v[i].g = (ubyte)gr_screen.current_color.green;
+		v[i].b = (ubyte)gr_screen.current_color.blue;
+		v[i].a = (ubyte)gr_screen.current_color.alpha;
+	}
+	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);
+}
 
 extern "C" void n3ds_click(void);
 
@@ -192,6 +215,10 @@ static int wrap_lines(const char *text, int maxw, char out[][96], int maxlines)
 void n3ds_panel_draw(void)
 {
 	hide_text_gauges();
+	/* one 3D frame (no z-buffer) for all the panel's rectangles */
+	g3_start_frame(0);
+	int panel_zbuf = gr_zbuffer_set(GR_ZBUFF_NONE);
+	int panel_cull = gr_set_cull(0);
 
 	gr_set_clip(0, 0, PANEL_W, PANEL_H, false);
 	gr_set_color(8, 12, 40);                  /* house palette: navy */
@@ -380,6 +407,9 @@ void n3ds_panel_draw(void)
 		panel_rect(x + w - 2, y, 2, h);
 	}
 
+	gr_set_cull(panel_cull);
+	gr_zbuffer_set(panel_zbuf);
+	g3_end_frame();
 	gr_reset_clip();
 }
 
