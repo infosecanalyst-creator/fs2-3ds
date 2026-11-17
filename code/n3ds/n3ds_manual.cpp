@@ -11,6 +11,7 @@
  * The text is on the top screen, the section buttons on the touchscreen.
  * Open with SELECT + START (pauses the game in flight) or the MANUAL button.
  */
+#include "n3ds/n3ds_panel.h"
 #include "n3ds/n3ds_manual.h"
 
 #include <string.h>
@@ -267,7 +268,7 @@ void n3ds_manual_draw_text(void)
 	const manual_section &p = Sections[Manual_section];
 	gr_set_clip(0, 0, 400, 240, false);
 	gr_set_color(6, 10, 18);
-	gr_rect(0, 0, 400, 240, false);
+	n3ds_rect(0, 0, 400, 240);
 
 	int n = 0;
 	while (n < 40 && p.lines[n]) n++;
@@ -285,7 +286,7 @@ void n3ds_manual_draw_text(void)
 
 	/* header and footer drawn over the text so scrolled lines slide under them */
 	gr_set_color(24, 44, 74);
-	gr_rect(0, 0, 400, TEXT_TOP - 2, false);
+	n3ds_rect(0, 0, 400, TEXT_TOP - 2);
 	gr_set_font(FONT2);
 	gr_set_color(255, 220, 120);
 	gr_string(8, 3, p.title, false);
@@ -298,15 +299,15 @@ void n3ds_manual_draw_text(void)
 	gr_string(390 - w, 7, buf, false);
 
 	gr_set_color(24, 44, 74);
-	gr_rect(0, TEXT_BOTTOM + 2, 400, 240 - TEXT_BOTTOM - 2, false);
+	n3ds_rect(0, TEXT_BOTTOM + 2, 400, 240 - TEXT_BOTTOM - 2);
 	if (Manual_max_scroll > 0) {
 		int track = TEXT_BOTTOM - TEXT_TOP;
 		int bar = track * track / (track + Manual_max_scroll);
 		int pos = (int)((track - bar) * Manual_scroll / Manual_max_scroll);
 		gr_set_color(40, 70, 110);
-		gr_rect(395, TEXT_TOP, 3, track, false);
+		n3ds_rect(395, TEXT_TOP, 3, track);
 		gr_set_color(140, 180, 230);
-		gr_rect(395, TEXT_TOP + pos, 3, bar, false);
+		n3ds_rect(395, TEXT_TOP + pos, 3, bar);
 		gr_set_color(170, 170, 170);
 		gr_string(8, TEXT_BOTTOM + 3, "Circle Pad / C-Stick: scroll", false);
 	}
@@ -318,10 +319,10 @@ void n3ds_manual_draw(void)
 {
 	gr_set_clip(0, 0, 320, 240, false);
 	gr_set_color(6, 10, 18);
-	gr_rect(0, 0, 320, 240, false);
+	n3ds_rect(0, 0, 320, 240);
 
 	gr_set_color(24, 44, 74);
-	gr_rect(0, 0, 320, 22, false);
+	n3ds_rect(0, 0, 320, 22);
 	gr_set_font(FONT2);
 	gr_set_color(255, 220, 120);
 	gr_string(6, 3, "MANUAL", false);
@@ -336,13 +337,13 @@ void n3ds_manual_draw(void)
 		if (pressed)    gr_set_color(90, 140, 200);
 		else if (cur)   gr_set_color(50, 90, 140);
 		else            gr_set_color(30, 52, 84);
-		gr_rect(x, y + off, w, h, false);
+		n3ds_rect(x, y + off, w, h);
 		if (i == Manual_focus) {
 			gr_set_color(255, 220, 120);
-			gr_rect(x, y + off, w, 2, false);
-			gr_rect(x, y + off + h - 2, w, 2, false);
-			gr_rect(x, y + off, 2, h, false);
-			gr_rect(x + w - 2, y + off, 2, h, false);
+			n3ds_rect(x, y + off, w, 2);
+			n3ds_rect(x, y + off + h - 2, w, 2);
+			n3ds_rect(x, y + off, 2, h);
+			n3ds_rect(x + w - 2, y + off, 2, h);
 		}
 		int tw, th;
 		const char *label = (i == NUM_SECTIONS) ? (n3ds_lefty() ? "LEFT HAND: ON" : "LEFT HAND: OFF") : Sections[i].title;
@@ -354,7 +355,7 @@ void n3ds_manual_draw(void)
 	if (Manual_flash > 0) Manual_flash--;
 
 	gr_set_color(24, 44, 74);
-	gr_rect(0, 210, 320, 30, false);
+	n3ds_rect(0, 210, 320, 30);
 	gr_set_color(200, 200, 200);
 	gr_string(6, 212, "D-Pad: choose   A: open   L / R: section", false);
 	gr_string(6, 225, "Tap a section      B / START: close", false);

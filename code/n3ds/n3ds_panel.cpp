@@ -40,9 +40,29 @@ static void panel_string(int x, int y, const char *t) { if (!n3ds_perf_flag("pan
    which calls g3_start_frame(1) for every rectangle, and that clears the whole z-buffer
    each time - about 20 full-screen clears per panel redraw, ~100 ms of GPU time (Nov 16).
    This draws the same quad without the per-rectangle frame start. */
+static void quad_rect(int x, int y, int w, int h);
 static void panel_rect(int x, int y, int w, int h)
 {
 	if (n3ds_perf_flag("panelnorect")) return;
+	quad_rect(x, y, w, h);
+}
+
+/* Fast filled rectangle for the port's own 2D screens (dashboard, manual): the same quad
+   as gr_rect but without g3_start_frame(1), which clears the whole z-buffer per call. */
+void n3ds_rect(int x, int y, int w, int h)
+{
+	if (g3_in_frame()) { quad_rect(x, y, w, h); return; }
+	g3_start_frame(0);
+	int zb = gr_zbuffer_set(GR_ZBUFF_NONE);
+	int cull = gr_set_cull(0);
+	quad_rect(x, y, w, h);
+	gr_set_cull(cull);
+	gr_zbuffer_set(zb);
+	g3_end_frame();
+}
+
+static void quad_rect(int x, int y, int w, int h)
+{
 	vertex v[4];
 	vertex *verts[4] = { &v[0], &v[1], &v[2], &v[3] };
 	memset(v, 0, sizeof(v));

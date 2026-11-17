@@ -18,6 +18,7 @@
  *   | controls footer                                    |
  *   +--------------------------------------------------+
  */
+#include "n3ds/n3ds_panel.h"
 #include "n3ds/n3ds_dash.h"
 
 #include <time.h>
@@ -118,7 +119,7 @@ static const screen_help Help[] = {
 static void hline(int y)
 {
 	gr_set_color(120, 150, 230);
-	gr_rect(4, y, DASH_W - 8, 1, false);
+	n3ds_rect(4, y, DASH_W - 8, 1);
 }
 
 static void label(int x, int y, const char *text)
@@ -301,17 +302,17 @@ static void draw_buttons(void)
 		int pressed = (i == Dash_pressed) || (focused && Dash_flash > 0);
 		int off = pressed ? 1 : 0;       /* pressed buttons sink by a pixel */
 		if (pressed) gr_set_color(220, 180, 60); else gr_set_color(40, 56, 120);
-		gr_rect(b.x, b.y + off, b.w, b.h, false);
+		n3ds_rect(b.x, b.y + off, b.w, b.h);
 		gr_set_color(120, 150, 230);
-		gr_rect(b.x, b.y + off, b.w, 1, false); gr_rect(b.x, b.y + off, 1, b.h, false); gr_rect(b.x + b.w - 1, b.y + off, 1, b.h, false);
+		n3ds_rect(b.x, b.y + off, b.w, 1); n3ds_rect(b.x, b.y + off, 1, b.h); n3ds_rect(b.x + b.w - 1, b.y + off, 1, b.h);
 		gr_set_color(20, 30, 70);
-		gr_rect(b.x, b.y + off + b.h - 1, b.w, 1, false);
+		n3ds_rect(b.x, b.y + off + b.h - 1, b.w, 1);
 		if (focused) {
 			gr_set_color(255, 204, 64);
-			gr_rect(b.x, b.y + off, b.w, 2, false);
-			gr_rect(b.x, b.y + off + b.h - 2, b.w, 2, false);
-			gr_rect(b.x, b.y + off, 2, b.h, false);
-			gr_rect(b.x + b.w - 2, b.y + off, 2, b.h, false);
+			n3ds_rect(b.x, b.y + off, b.w, 2);
+			n3ds_rect(b.x, b.y + off + b.h - 2, b.w, 2);
+			n3ds_rect(b.x, b.y + off, 2, b.h);
+			n3ds_rect(b.x + b.w - 2, b.y + off, 2, b.h);
 		}
 		int w, h;
 		gr_get_string_size(&w, &h, b.label);
@@ -408,15 +409,15 @@ static void pm_button(int i, const char *text)
 	int pressed = (i == Pm_pressed) || (i == Pm_focus && Pm_flash > 0);
 	int off = pressed ? 1 : 0;
 	if (pressed) gr_set_color(220, 180, 60); else gr_set_color(40, 56, 120);
-	gr_rect(x, y + off, w, h, false);
+	n3ds_rect(x, y + off, w, h);
 	gr_set_color(120, 150, 230);                 /* edge */
-	gr_rect(x, y + off, w, 1, false); gr_rect(x, y + off, 1, h, false); gr_rect(x + w - 1, y + off, 1, h, false);
+	n3ds_rect(x, y + off, w, 1); n3ds_rect(x, y + off, 1, h); n3ds_rect(x + w - 1, y + off, 1, h);
 	gr_set_color(20, 30, 70);                    /* shadow */
-	gr_rect(x, y + off + h - 1, w, 1, false);
+	n3ds_rect(x, y + off + h - 1, w, 1);
 	if (i == Pm_focus && Pm_pressed < 0) {       /* gold focus ring */
 		gr_set_color(255, 204, 64);
-		gr_rect(x, y + off, w, 2, false); gr_rect(x, y + off + h - 2, w, 2, false);
-		gr_rect(x, y + off, 2, h, false); gr_rect(x + w - 2, y + off, 2, h, false);
+		n3ds_rect(x, y + off, w, 2); n3ds_rect(x, y + off + h - 2, w, 2);
+		n3ds_rect(x, y + off, 2, h); n3ds_rect(x + w - 2, y + off, 2, h);
 	}
 	int tw, th; gr_get_string_size(&tw, &th, text);
 	gr_set_color(240, 240, 240);
@@ -426,7 +427,7 @@ static void pm_button(int i, const char *text)
 static void pm_draw(void)
 {
 	gr_set_color(8, 12, 40);                     /* navy body under the header bar */
-	gr_rect(0, 22, DASH_W, DASH_H - 22, false);
+	n3ds_rect(0, 22, DASH_W, DASH_H - 22);
 	int w, h;
 	gr_set_font(FONT1);
 	if (Pm_page == 0) {
@@ -447,7 +448,7 @@ static void pm_draw(void)
 	}
 	/* hint strip */
 	gr_set_color(4, 6, 20);
-	gr_rect(0, 224, DASH_W, 16, false);
+	n3ds_rect(0, 224, DASH_W, 16);
 	/* the longest hint that fits (the rule: never cut off) */
 	const char *hints[] = { "D-Pad: choose   A: select   B: back", "D-Pad  A: select  B: back", "A: select  B: back" };
 	const char *hint = hints[2];
@@ -471,14 +472,14 @@ void n3ds_dash_draw(void)
 
 	gr_set_clip(0, 0, DASH_W, DASH_H, false);
 	gr_set_color(8, 12, 40);                  /* house palette: navy */
-	gr_rect(0, 0, DASH_W, DASH_H, false);
+	n3ds_rect(0, 0, DASH_W, DASH_H);
 
 	char buf[160];
 	int w, hh;
 
 	/* title bar: big font if it fits next to the clock, else the small one */
 	gr_set_color(40, 56, 120);                /* header bar */
-	gr_rect(0, 0, DASH_W, 22, false);
+	n3ds_rect(0, 0, DASH_W, 22);
 	gr_set_font(FONT1);
 	time_t now = time(NULL);
 	struct tm *lt = localtime(&now);
@@ -587,7 +588,7 @@ void n3ds_dash_draw(void)
 	gr_get_string_size(&w, &hh, grey);
 	gr_string((DASH_W - w) / 2, 211, grey, false);
 	gr_set_color(4, 6, 20);
-	gr_rect(0, 224, DASH_W, 16, false);
+	n3ds_rect(0, 224, DASH_W, 16);
 	gr_get_string_size(&w, &hh, gold);
 	gr_set_color(255, 204, 64);
 	gr_string((DASH_W - w) / 2, 224 + (16 - hh) / 2, gold, false);

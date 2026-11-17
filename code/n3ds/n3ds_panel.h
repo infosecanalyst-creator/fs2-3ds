@@ -15,4 +15,6 @@ void n3ds_panel_nav(int dx, int dy, int press);
 /* resync the engine's OpenGL state cache after the platform layer touched GL directly */
 void opengl_state_n3ds_resync(void);
 
+void n3ds_rect(int x, int y, int w, int h);   /* fast gr_rect for the port's 2D screens */
+
 #endif
