@@ -674,6 +674,11 @@ void script_state::SetHookVar(char *name, char format, void *data)
 					ade_set_args(LuaState, fmt, data);
 				else if (format == 'i')
 					ade_set_args(LuaState, fmt, *(int*)data);
+				else if (format == 'b')
+					// 3DS: a bool went down the ade_odata path below, which reads a whole
+					// ade_odata from the bool's (odd) stack address: a data abort on ARM, the
+					// first time a mission message played (SM1-01, Nov 18 2026).
+					ade_set_args(LuaState, fmt, (int)*(bool*)data);
 				else
 					ade_set_args(LuaState, fmt, *(ade_odata*)data);
 			}
