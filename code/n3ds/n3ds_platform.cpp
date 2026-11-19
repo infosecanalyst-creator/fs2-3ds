@@ -904,6 +904,27 @@ extern "C" void n3ds_restore_screen(void)
 	opengl_state_n3ds_resync();
 }
 
+/* Stall trace (Nov 18 2026, SM1-01 hangs ~2 s into flight): the game marks where it is
+   (N3DS_FT in freespace.cpp sets n3ds_phase / n3ds_phase_line every frame step); if frames
+   stop for 3 s, this thread writes the last mark to fs2_3ds.log, then again every 10 s. */
+extern "C" { volatile const char* n3ds_phase = "start"; volatile int n3ds_phase_line = 0; }
+static volatile u32 n3ds_present_count = 0;
+static void stall_thread(void*)
+{
+	u32 last = 0; u64 still = osGetTime(), lastLog = 0;
+	for (;;) {
+		svcSleepThread(500000000LL);
+		const u64 now = osGetTime();
+		const u32 c = n3ds_present_count;
+		if (c != last) { last = c; still = now; continue; }
+		if (c == 0 || now - still < 3000) continue;
+		if (lastLog && now - lastLog < 10000) continue;
+		lastLog = now;
+		n3ds_log("STALL: no frame for %.1f s after frame %lu; last step '%s' (freespace.cpp line %d)\n",
+		         (double)(now - still) / 1000.0, (unsigned long)c, (const char*)n3ds_phase, (int)n3ds_phase_line);
+	}
+}
+
 extern "C" void n3ds_present(void)
 {
 	int flight = in_flight();
@@ -915,6 +936,9 @@ extern "C" void n3ds_present(void)
 		last_state = state;
 	}
 	frames++;
+	n3ds_present_count++;
+	{ static bool st = false; if (!st) { st = true; s32 pr = 0x30; svcGetThreadPriority(&pr, CUR_THREAD_HANDLE);
+	  if (!threadCreate(stall_thread, NULL, 8 * 1024, pr - 2, -2, true)) n3ds_log("stall trace: no thread\n"); } }
 	static u64 window_t0 = 0;
 	if (!window_t0) window_t0 = svcGetSystemTick();
 	if ((frames % 300) == 0) {

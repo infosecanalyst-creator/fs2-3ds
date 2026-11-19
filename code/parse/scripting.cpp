@@ -637,8 +637,14 @@ bool script_state::CloseHookVarTable()
 	}
 }
 
+#ifdef SCP_3DS
+extern "C" volatile const char* n3ds_phase;
+#endif
 void script_state::SetHookVar(char *name, char format, void *data)
 {
+#ifdef SCP_3DS
+	n3ds_phase = "script: SetHookVar";
+#endif
 	if(format == '\0')
 		return;
 
@@ -918,6 +924,9 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 
 int script_state::RunCondition(int action, char format, void *data, object *objp, int more_data)
 {
+#ifdef SCP_3DS
+	n3ds_phase = "script: RunCondition";
+#endif
 	int num = 0;
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{

@@ -3705,7 +3705,8 @@ extern SCP_vector<object*> effect_ships;
 extern "C" void n3ds_log(const char *fmt, ...);
 // first gameplay frames: log each render step (the game froze right after Commit)
 static int n3ds_ft = 0;
-#define N3DS_FT(x) do { if (n3ds_ft < 4) n3ds_log("frame %d: %s\n", n3ds_ft, x); } while (0)
+extern "C" volatile const char* n3ds_phase; extern "C" volatile int n3ds_phase_line;
+#define N3DS_FT(x) do { n3ds_phase = x; n3ds_phase_line = __LINE__; if (n3ds_ft < 4) n3ds_log("frame %d: %s\n", n3ds_ft, x); } while (0)
 #else
 #define N3DS_FT(x) ((void)0)
 #endif
@@ -4037,10 +4038,12 @@ void game_simulation_frame()
 	//Do ingame cutscenes stuff
 	if(!Time_compression_locked)
 	{
+		N3DS_FT("sim: cam_do_frame");
 		cam_do_frame(flFrametime);
 	}
 	else
 	{
+		N3DS_FT("sim: cam_do_frame");
 		cam_do_frame(flRealframetime);
 	}
 
@@ -4062,6 +4065,7 @@ void game_simulation_frame()
 			// only blow up small ships			
 			if((sip->flags & SIF_SMALL_SHIP) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) ){							
 				// function to simply explode a ship where it is currently at
+				N3DS_FT("sim: ship_self_destruct");
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
 
@@ -4072,9 +4076,11 @@ void game_simulation_frame()
 	}
 
 	// process AWACS stuff - do this first thing
+	N3DS_FT("sim: awacs_process");
 	awacs_process();
 
 	//Do autopilot stuff
+	N3DS_FT("sim: NavSystem_Do");
 	NavSystem_Do();
 
 	// single player, set Player hits_this_frame to 0
@@ -4084,6 +4090,7 @@ void game_simulation_frame()
 	}
 
 	// supernova
+	N3DS_FT("sim: supernova_process");
 	supernova_process();
 	if(supernova_active() >= 5){
 		return;
@@ -4096,6 +4103,7 @@ void game_simulation_frame()
 	// 4 - ignored and deleted next frame
 	// the basic idea being that because it con be confusing to deal with them on a multi-frame basis, they are only valid for
 	// frame
+	N3DS_FT("sim: ship_process_targeting_lasers");
 	ship_process_targeting_lasers();	
 
 	// do this here so that it works for multiplayer
@@ -4119,8 +4127,10 @@ void game_simulation_frame()
 			viewer_direction = PHYSICS_VIEWER_RIGHT;
 		}
 
+		N3DS_FT("sim: physics_set_viewer");
 		physics_set_viewer( &Viewer_obj->phys_info, viewer_direction );
 	} else {
+		N3DS_FT("sim: physics_set_viewer");
 		physics_set_viewer( &Objects[Player->objnum].phys_info, PHYSICS_VIEWER_FRONT );
 	}
 
@@ -4130,34 +4140,42 @@ void game_simulation_frame()
 		// we don't want to evaluate mission stuff when any ingame joiner in multiplayer is receiving
 		// ships/wing packets.
 		if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.flags & NG_FLAG_INGAME_JOINING_CRITICAL))) {
+			N3DS_FT("sim: mission_parse_eval_stuff");
 			mission_parse_eval_stuff();
 		}
 
 		// if we're an observer, move ourselves seperately from the standard physics
 		if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER)){
+			N3DS_FT("sim: obj_observer_move");
 			obj_observer_move(flFrametime);
 		}
 		
 		// move all the objects now
+		N3DS_FT("sim: PROFILE");
 		PROFILE("Move Objects - Master", obj_move_all(flFrametime));
 
+		N3DS_FT("sim: mission_eval_goals");
 		mission_eval_goals();
 	}
 
 	// always check training objectives, even in multiplayer missions. we need to do this so that the directives gauge works properly on clients
+	N3DS_FT("sim: training_check_objectives");
 	training_check_objectives();
 	
 	// do all interpolation now
 	if ( MULTIPLAYER_CLIENT && !multi_endgame_ending() && !(Netgame.flags & NG_FLAG_SERVER_LOST)) {
 		// client side processing of warping in effect stages
+		N3DS_FT("sim: multi_do_client_warp");
 		multi_do_client_warp(flFrametime);     
 	
 		// client side movement of an observer
 		if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)){
+			N3DS_FT("sim: obj_observer_move");
 			obj_observer_move(flFrametime);   
 		}
 
 		// move all objects - does interpolation now as well
+		N3DS_FT("sim: PROFILE");
 		PROFILE("Move Objects - Client", obj_move_all(flFrametime));
 
 
@@ -4165,44 +4183,60 @@ void game_simulation_frame()
 
 	// only process the message queue when the player is "in" the game
 	if ( !Pre_player_entry ){
+		N3DS_FT("sim: message_queue_process");
 		message_queue_process();				// process any messages send to the player
 	}
 
+	N3DS_FT("sim: message_maybe_distort");
 	message_maybe_distort();				// maybe distort incoming message if comms damaged
+	N3DS_FT("sim: player_repair_frame");
 	player_repair_frame(flFrametime);	//	AI objects get repaired in ai_process, called from move code...deal with player.
+	N3DS_FT("sim: player_process_pending_praise");
 	player_process_pending_praise();		// maybe send off a delayed praise message to the player
+	N3DS_FT("sim: player_maybe_play_all_alone_msg");
 	player_maybe_play_all_alone_msg();	// maybe tell the player he is all alone	
 
 	if(!(Game_mode & GM_STANDALONE_SERVER)){		
 		// process some stuff every frame (before frame is rendered)
+		N3DS_FT("sim: emp_process_local");
 		emp_process_local();
 
+		N3DS_FT("sim: hud_update_frame");
 		hud_update_frame(flFrametime);						// update hud systems
 
 		if (!physics_paused)	{
 			// Move particle system
+			N3DS_FT("sim: PROFILE");
 			PROFILE("Move Particles", particle_move_all(flFrametime));	
 
 			// Move missile trails
+			N3DS_FT("sim: PROFILE");
 			PROFILE("Move Trails", trail_move_all(flFrametime));		
 
 			// Flash the gun flashes
+			N3DS_FT("sim: shipfx_flash_do_frame");
 			shipfx_flash_do_frame(flFrametime);			
 
+			N3DS_FT("sim: shockwave_move_all");
 			shockwave_move_all(flFrametime);	// update all the shockwaves
 		}
 
 		// subspace missile strikes
+		N3DS_FT("sim: ssm_process");
 		ssm_process();
 
+		N3DS_FT("sim: obj_snd_do_frame");
 		obj_snd_do_frame();						// update the object-linked persistant sounds
 
+		N3DS_FT("sim: game_maybe_update_sound_environment");
 		game_maybe_update_sound_environment();
+		N3DS_FT("sim: snd_update_listener");
 		snd_update_listener(&Eye_position, &Player_obj->phys_info.vel, &Eye_matrix);
 
 // AL: debug code used for testing ambient subspace sound (ie when enabling subspace through debug console)
 #ifndef NDEBUG
 		if ( Game_subspace_effect ) {
+			N3DS_FT("sim: game_start_subspace_ambient_sound");
 			game_start_subspace_ambient_sound();
 		}
 #endif
