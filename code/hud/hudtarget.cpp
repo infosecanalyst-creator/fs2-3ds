@@ -6485,15 +6485,15 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	displayed_distance = distance * Hud_unit_multiplier;
 
 #ifdef SCP_3DS
-	// 3DS (SM1-01 hang, Nov 18 2026): this gauge was the one that locked up the GPU ~3 s into the
-	// mission. An off-screen target whose projection is not finite (or wildly off) makes huge
-	// triangles, which the PICA200 rasterizer never finishes. Skip such frames; log what came in.
+	// 3DS: an off-screen target whose projection is not finite (or wildly off) would make huge
+	// triangles; skip such frames. (The SM1-01 hang turned out to be picaGL drawing this gauge's
+	// lines as incomplete triangle lists, fixed in lib/picaGL arrays.c; this guard stays.)
 	{
 		static int logged = 0;
 		const bool bad = !(coords->x == coords->x) || !(coords->y == coords->y) ||
 			fabsf(coords->x) > 4096.0f || fabsf(coords->y) > 4096.0f ||
 			!(half_triangle_sep == half_triangle_sep) || fabsf(half_triangle_sep) > 4096.0f;
-		if (logged < 8 || (bad && logged < 40)) {
+		if (bad && logged < 20) {
 			logged++;
 			n3ds_log("offscreen indicator: dir %d at (%.1f, %.1f) sep %.1f dist %.1f%s\n", dir, coords->x, coords->y, half_triangle_sep, distance, bad ? "  SKIPPED (not drawable)" : "");
 		}
