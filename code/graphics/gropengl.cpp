@@ -326,13 +326,21 @@ void gr_opengl_clear()
 	glClear ( GL_COLOR_BUFFER_BIT );
 }
 
+#ifdef SCP_3DS
+extern "C" volatile const char* n3ds_phase;
+#define N3P(x) (n3ds_phase = (x))
+#else
+#define N3P(x) ((void)0)
+#endif
 void gr_opengl_flip()
 {
 	if ( !GL_initted )
 		return;
+	N3P("flip: start");
 
 	gr_reset_clip();
 
+	N3P("flip: mouse");
 	mouse_eval_deltas();
 	
 	GL_mouse_saved = 0;
@@ -356,10 +364,13 @@ void gr_opengl_flip()
 #else
 	if (Cmdline_gl_finish)
 		glFinish ();
+	N3P("flip: swap");
 	SDL_GL_SwapBuffers();
+	N3P("flip: tcache");
 #endif
 
 	opengl_tcache_frame();
+	N3P("flip: done");
 
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();

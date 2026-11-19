@@ -943,9 +943,11 @@ extern "C" void n3ds_present(void)
 	if (!window_t0) window_t0 = svcGetSystemTick();
 	if ((frames % 300) == 0) {
 		u64 now = svcGetSystemTick();
+		n3ds_phase = "present: prof_report"; n3ds_phase_line = 946;
 		prof_report(300, now - window_t0, state);
 		window_t0 = now;
 	}
+	n3ds_phase = "present: n3ds_prof_begin"; n3ds_phase_line = 949;
 	n3ds_prof_begin(N3DS_PROF_PRESENT);
 
 	/* Top-screen text is sharpest in the LCD's 800x240 wide mode (its own columns; the
@@ -954,6 +956,7 @@ extern "C" void n3ds_present(void)
 	   slider up it goes back to the normal 3D-capable mode. */
 	top_wide = pglSetTopWide(osGet3DSliderState() <= 0.0f);
 
+	n3ds_phase = "present: pglSaveViewport"; n3ds_phase_line = 957;
 	pglSaveViewport();
 
 	/* where this frame was rendered: at render scale 0.5 the whole 800x480 engine frame
@@ -965,43 +968,60 @@ extern "C" void n3ds_present(void)
 		src_x1 = N3DS_GAME_W * fscale;
 	}
 	/* overlays (panel, manual, dashboard) are drawn 1:1 into the engine's top-left corner */
+	n3ds_phase = "present: pglSetRenderScale"; n3ds_phase_line = 968;
 	pglSetRenderScale(1.0f);
 
 	int bottom = 1;
 	/* swapped: the picture is drawn to the bottom every frame, so always present it */
 	if (n3ds_manual_is_open()) {
 		/* manual: text on top, section buttons on the touchscreen */
+		n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 974;
 		overlay_begin();
+		n3ds_phase = "present: n3ds_manual_draw_text"; n3ds_phase_line = 975;
 		n3ds_manual_draw_text();
 		if (swapped) overlay_to_ex(PGL_TARGET_BOTTOM, 400, 0, 24, 320, 216);
 		else overlay_to(PGL_TARGET_TOP, 400);
+		n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 978;
 		overlay_begin();
+		n3ds_phase = "present: n3ds_manual_draw"; n3ds_phase_line = 979;
 		n3ds_manual_draw();
 		if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
 		else overlay_to(PGL_TARGET_BOTTOM, 320);
 	} else if (flight) {
 		/* ---- top: the cockpit view (rendered at the LCD's own 400x240) */
 		if (swapped) {
+			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 985;
 			compose_begin(PGL_TARGET_BOTTOM);
+			n3ds_phase = "present: blit_main"; n3ds_phase_line = 986;
 			blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);   /* fills the touchscreen, no bars */
 		} else {
+			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 988;
 			compose_begin(PGL_TARGET_TOP);
+			n3ds_phase = "present: blit_main"; n3ds_phase_line = 989;
 			blit_main(0, 0, 400, 240, src_x0, src_y0, src_x1, src_y1);
 		}
+		n3ds_phase = "present: compose_end"; n3ds_phase_line = 991;
 		compose_end();
 
 		/* ---- bottom: the manual, or the cockpit panel (drawn by the engine into the
 		   corner of the main target, copied 1:1) at 30 Hz - it's only gauges and text */
 		if (n3ds_manual_is_open()) {
+			n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 996;
 			overlay_begin();
+			n3ds_phase = "present: n3ds_manual_draw"; n3ds_phase_line = 997;
 			n3ds_manual_draw();
+			n3ds_phase = "present: overlay_to"; n3ds_phase_line = 998;
 			overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else if (swapped || (frames & 1)) {
+			n3ds_phase = "present: n3ds_prof_begin"; n3ds_phase_line = 1000;
 			n3ds_prof_begin(N3DS_PROF_PANEL);
+			n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 1001;
 			overlay_begin();
+			n3ds_phase = "present: n3ds_panel_draw"; n3ds_phase_line = 1002;
 			if (!n3ds_perf_flag("nopanel")) n3ds_panel_draw();
 			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
 			else overlay_to(PGL_TARGET_BOTTOM, 320);
+			n3ds_phase = "present: n3ds_prof_end"; n3ds_phase_line = 1005;
 			n3ds_prof_end(N3DS_PROF_PANEL);
 		} else {
 			bottom = 0;
@@ -1037,20 +1057,26 @@ extern "C" void n3ds_present(void)
 		float kx = (src_x1 - src_x0) / N3DS_GAME_W, ky = (src_y1 - src_y0) / N3DS_GAME_H;
 		if (swapped) {
 			/* the whole touchscreen, so the stylus can reach everything and there are no bars */
+			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 1040;
 			compose_begin(PGL_TARGET_BOTTOM);
+			n3ds_phase = "present: blit_main"; n3ds_phase_line = 1041;
 			blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);   /* fills the touchscreen, no bars */
 		} else {
+			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 1043;
 			compose_begin(PGL_TARGET_TOP);
 			blit_main(0, 0, 400, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
 				src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
 		}
+		n3ds_phase = "present: compose_end"; n3ds_phase_line = 1047;
 		compose_end();
 
 		/* ---- bottom: the dashboard - nothing that is on the top screen. It only changes
 		   when something happens, so it is redrawn at 20 Hz (every frame while touched). */
 		static int dash_tick = 0;
 		if ((held_touch_now() || swapped || (dash_tick++ % 3) == 0)) {
+			n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 1053;
 			overlay_begin();
+			n3ds_phase = "present: n3ds_dash_draw"; n3ds_phase_line = 1054;
 			n3ds_dash_draw();
 			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
 			else overlay_to(PGL_TARGET_BOTTOM, 320);
@@ -1069,6 +1095,7 @@ extern "C" void n3ds_present(void)
 
 	int stereo = 0;
 	u64 t_present0 = osGetTime();
+	n3ds_phase = "present: pglPresentScreensEx"; n3ds_phase_line = 1072;
 	pglPresentScreensEx(stereo, bottom);   /* queues the frame; no GPU or VBlank wait here */
 	u64 t_present1 = osGetTime();
 
@@ -1079,10 +1106,15 @@ extern "C" void n3ds_present(void)
 	/* the overlay (panel/dashboard/manual) was drawn into the depth buffer's VRAM: clear
 	   the whole depth buffer before the engine's next frame */
 	if (pglOverlayAliasesDepth()) {
+		n3ds_phase = "present: pglSetRenderScale"; n3ds_phase_line = 1082;
 		pglSetRenderScale(1.0f);
+		n3ds_phase = "present: glViewport"; n3ds_phase_line = 1083;
 		glViewport(0, 0, N3DS_GAME_W, N3DS_GAME_H);
+		n3ds_phase = "present: glDisable"; n3ds_phase_line = 1084;
 		glDisable(GL_SCISSOR_TEST);
+		n3ds_phase = "present: glClearDepth"; n3ds_phase_line = 1085;
 		glClearDepth(1.0);
+		n3ds_phase = "present: glClear"; n3ds_phase_line = 1086;
 		glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	}
 	/* Test switch (Nov 16): the file /3ds/freespace2/flight_fullres renders flight at full
@@ -1094,9 +1126,13 @@ extern "C" void n3ds_present(void)
 		if (ff) fclose(ff);
 		n3ds_log("flight render scale: %s\n", fullres ? "1.0 (flight_fullres file)" : "0.5");
 	}
+	n3ds_phase = "present: pglSetRenderScale"; n3ds_phase_line = 1097;
 	pglSetRenderScale(in_flight() && !fullres ? 0.5f : 1.0f);
+	n3ds_phase = "present: pglRestoreViewport"; n3ds_phase_line = 1098;
 	pglRestoreViewport();
+	n3ds_phase = "present: opengl_state_n3ds_resync"; n3ds_phase_line = 1099;
 	opengl_state_n3ds_resync();
+	n3ds_phase = "present: n3ds_prof_end"; n3ds_phase_line = 1100;
 	n3ds_prof_end(N3DS_PROF_PRESENT);
 
 	u64 t_vb0 = osGetTime(), t_vb1 = t_vb0;
