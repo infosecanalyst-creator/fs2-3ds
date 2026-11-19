@@ -1780,6 +1780,10 @@ void hud_render_all()
 	gr_set_font(FONT1);
 }
 
+#ifdef SCP_3DS
+extern "C" int n3ds_perf_range(const char *key, int *a, int *b);
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 void hud_render_gauges(int cockpit_display_num)
 {
 	size_t j, num_gauges;
@@ -1832,6 +1836,12 @@ void hud_render_gauges(int cockpit_display_num)
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
+#ifdef SCP_3DS
+		// test bisection (SM1-01 GPU hang): perf_flags "hs=a-b" skips gauges a..b; their list is logged once
+		static int hs_a = -1, hs_b = -2, hs_read = 0;
+		if (!hs_read) { hs_read = 1; n3ds_perf_range("hs", &hs_a, &hs_b);
+			for (size_t g = 0; g < num_gauges; g++) n3ds_log("hud gauge %d: object type %d, config type %d\n", (int)g, default_hud_gauges[g]->getObjectType(), default_hud_gauges[g]->getConfigType()); }
+#endif
 
 		for(j = 0; j < num_gauges; j++) {
 			default_hud_gauges[j]->preprocess();
@@ -1841,6 +1851,9 @@ void hud_render_gauges(int cockpit_display_num)
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
 			}
+#ifdef SCP_3DS
+			if ((int)j >= hs_a && (int)j <= hs_b) continue;
+#endif
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();

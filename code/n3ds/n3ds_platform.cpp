@@ -663,6 +663,16 @@ extern "C" int n3ds_perf_flag(const char *name)
 	return perf_flags[0] && strstr(perf_flags, name) != NULL;
 }
 
+/* "key=a-b" in perf_flags: 1 and the range if present (test bisection) */
+extern "C" int n3ds_perf_range(const char *key, int *a, int *b)
+{
+	n3ds_perf_flag("");   /* reads the file once */
+	char pat[24]; snprintf(pat, sizeof pat, "%s=", key);
+	const char *p = strstr(perf_flags, pat);
+	if (!p) return 0;
+	return sscanf(p + strlen(pat), "%d-%d", a, b) == 2;
+}
+
 /* ------------------------------------------------------------------ profiler */
 
 static inline float ticks_ms_early(u64 t) { return (float)((double)t / (SYSCLOCK_ARM11 / 1000.0)); }
