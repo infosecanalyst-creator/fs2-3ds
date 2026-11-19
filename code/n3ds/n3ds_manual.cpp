@@ -29,7 +29,7 @@ struct manual_section {
 
 static const manual_section Sections[] = {
 	{ "WELCOME", {
-		"FreeSpace 2 for the New 3DS (fs2_open 3.6.10).",
+		"FreeSpace 2 for the New 3DS (fs2_open 3.7.2).",
 		"",
 		"IN FLIGHT",
 		"Top screen: the cockpit view and HUD.",
