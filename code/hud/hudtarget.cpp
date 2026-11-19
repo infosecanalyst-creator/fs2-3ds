@@ -6457,6 +6457,9 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 		g3_end_frame();
 }
 
+#ifdef SCP_3DS
+extern "C" void n3ds_log(const char *fmt, ...);
+#endif
 void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid)
 {
 	float xpos, ypos;
@@ -6480,6 +6483,23 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 
 	// scale by distance modifier from hud_guages.tbl for display purposes
 	displayed_distance = distance * Hud_unit_multiplier;
+
+#ifdef SCP_3DS
+	// 3DS (SM1-01 hang, Nov 18 2026): this gauge was the one that locked up the GPU ~3 s into the
+	// mission. An off-screen target whose projection is not finite (or wildly off) makes huge
+	// triangles, which the PICA200 rasterizer never finishes. Skip such frames; log what came in.
+	{
+		static int logged = 0;
+		const bool bad = !(coords->x == coords->x) || !(coords->y == coords->y) ||
+			fabsf(coords->x) > 4096.0f || fabsf(coords->y) > 4096.0f ||
+			!(half_triangle_sep == half_triangle_sep) || fabsf(half_triangle_sep) > 4096.0f;
+		if (logged < 8 || (bad && logged < 40)) {
+			logged++;
+			n3ds_log("offscreen indicator: dir %d at (%.1f, %.1f) sep %.1f dist %.1f%s\n", dir, coords->x, coords->y, half_triangle_sep, distance, bad ? "  SKIPPED (not drawable)" : "");
+		}
+		if (bad) return;
+	}
+#endif
 
 	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame)
