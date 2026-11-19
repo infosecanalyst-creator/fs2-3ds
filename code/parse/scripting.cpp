@@ -936,6 +936,9 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 			num++;
 		}
 	}
+#ifdef SCP_3DS
+	n3ds_phase = "script: RunCondition returned";
+#endif
 	return num;
 }
 

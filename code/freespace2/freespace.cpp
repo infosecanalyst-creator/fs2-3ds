@@ -4506,6 +4506,7 @@ void game_frame(bool paused)
 	}
 #endif
 	// start timing frame
+	N3DS_FT("game_frame start");
 	timing_frame_start();
 	profile_begin("Main Frame");
 
@@ -4694,7 +4695,9 @@ void game_frame(bool paused)
 			DEBUG_GET_TIME( render2_time2 )
 
 			// maybe render and process the dead popup
+			N3DS_FT("dead popup");
 			game_maybe_do_dead_popup(flFrametime);
+			N3DS_FT("dead popup done");
 
 			// start timing frame
 			timing_frame_stop();
@@ -4703,7 +4706,9 @@ void game_frame(bool paused)
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
 				DEBUG_GET_TIME( flip_time1 )
+				N3DS_FT("page flip");
 				PROFILE("Page Flip", game_flip_page_and_time_it());
+				N3DS_FT("page flip done");
 				DEBUG_GET_TIME( flip_time2 )
 			}
 
@@ -4715,11 +4720,15 @@ void game_frame(bool paused)
 		}
 	}
 
+	N3DS_FT("training checks");
 	game_do_training_checks();
+	N3DS_FT("asteroid_frame");
 	asteroid_frame();
 
 	// process lightning (nebula only)
+	N3DS_FT("nebl_process");
 	nebl_process();
+	N3DS_FT("game_frame end");
 
 	profile_end("Main Frame");
 	profile_dump_output();
@@ -4983,8 +4992,11 @@ void game_update_missiontime()
 
 void game_do_frame()
 {	
+	N3DS_FT("do_frame: frametime");
 	game_set_frametime(GS_STATE_GAME_PLAY);
+	N3DS_FT("do_frame: missiontime");
 	game_update_missiontime();
+	N3DS_FT("do_frame: before game_frame");
 
 //	if (Player_ship->flags & SF_DYING)
 //		flFrametime /= 15.0;
@@ -5009,7 +5021,9 @@ void game_do_frame()
 	game_frame();
 
 	Keep_mouse_centered = 0;
+	N3DS_FT("do_frame: monitor_update");
 	monitor_update();			// Update monitor variables
+	N3DS_FT("do_frame: done");
 }
 
 void multi_maybe_do_frame()
@@ -7275,7 +7289,9 @@ int game_main(char *cmdline)
 		// only important for non THREADED mode
 		os_poll();
 
+		N3DS_FT("main loop: gameseq_process_events");
 		state = gameseq_process_events();
+		N3DS_FT("main loop: events done");
 #ifdef SCP_3DS
 		{ static int last = -1; if (state != last) { n3ds_log("main loop state %d\n", state); last = state; } }
 #endif
