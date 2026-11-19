@@ -3797,7 +3797,7 @@ void game_render_frame( camid cid )
 	render_shields();
 	//}
 
-	PROFILE("Particles", particle_render_all());					// render particles after everything else.
+	if (!n3ds_perf_flag("xpart")) PROFILE("Particles", particle_render_all());					// render particles after everything else.
 	
 #ifdef DYN_CLIP_DIST
 	if(!Cmdline_nohtl)
@@ -3809,9 +3809,9 @@ void game_render_frame( camid cid )
 	}
 #endif
 
-	beam_render_all();						// render all beam weapons
+	if (!n3ds_perf_flag("xbeam")) beam_render_all();						// render all beam weapons
 	
-	PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.	
+	if (!n3ds_perf_flag("xtrail")) PROFILE("Trails", trail_render_all());						// render missilie trails after everything else.	
 
 	// render nebula lightning
 	nebl_render_all();

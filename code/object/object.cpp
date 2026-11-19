@@ -1528,6 +1528,12 @@ MONITOR( NumObjectsRend )
  * Render an object.  Calls one of several routines based on type
  */
 extern int Cmdline_dis_weapons;
+#ifdef SCP_3DS
+extern "C" int n3ds_perf_flag(const char *name);
+#define N3X(f) n3ds_perf_flag(f)
+#else
+#define N3X(f) 0
+#endif
 void obj_render(object *obj)
 {
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1548,19 +1554,23 @@ void obj_render(object *obj)
 			#endif
 			break;
 		case OBJ_WEAPON:
-			if(Cmdline_dis_weapons) return;
+			if(Cmdline_dis_weapons || N3X("xweap")) return;
 			weapon_render(obj);
 			break;
 		case OBJ_SHIP:
+			if (N3X("xship")) break;
 			ship_render(obj);
 			break;
 		case OBJ_FIREBALL:
+			if (N3X("xfire")) break;
 			fireball_render(obj);
 			break;
 		case OBJ_SHOCKWAVE:
+			if (N3X("xshock")) break;
 			shockwave_render(obj);
 			break;
 		case OBJ_DEBRIS:
+			if (N3X("xdeb")) break;
 			debris_render(obj);
 			break;
 		case OBJ_ASTEROID:
