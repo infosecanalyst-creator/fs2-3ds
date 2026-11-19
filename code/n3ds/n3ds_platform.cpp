@@ -1077,7 +1077,7 @@ extern "C" void n3ds_present(void)
 			n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 1053;
 			overlay_begin();
 			n3ds_phase = "present: n3ds_dash_draw"; n3ds_phase_line = 1054;
-			n3ds_dash_draw();
+			if (!n3ds_perf_flag("nodash")) n3ds_dash_draw();
 			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
 			else overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else {

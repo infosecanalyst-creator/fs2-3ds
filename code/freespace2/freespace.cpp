@@ -4627,12 +4627,12 @@ void game_frame(bool paused)
 
 			if(Scripting_didnt_draw_hud) {
 				N3DS_FT("hud");
-				game_render_hud(cid);
+				if (!n3ds_perf_flag("nohud")) game_render_hud(cid);
 			}
 			HUD_reset_clip();
 
 			if( (Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) ) {
-				anim_render_all(0, flFrametime);
+				if (!n3ds_perf_flag("noanims")) anim_render_all(0, flFrametime);
 			}
 
 			Script_system.SetHookObject("Self", Viewer_obj);
