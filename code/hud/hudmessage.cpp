@@ -1269,7 +1269,7 @@ void HudGaugeTalkingHead::render(float frametime)
 	}
 #ifdef SCP_3DS
 	// test switches for the SM1-01 hang (frame 2466, in the page flip, as the first message plays)
-	if (n3ds_perf_flag("nohead")) return;
+	if (n3ds_perf_flag("headoff")) return;
 #endif
 
 	if(msg_id != -1 && head_anim != NULL) {
@@ -1280,7 +1280,7 @@ void HudGaugeTalkingHead::render(float frametime)
 
 			// clear
 #ifdef SCP_3DS
-			if (!n3ds_perf_flag("noheadclear"))
+			if (!n3ds_perf_flag("hclearoff"))
 #endif
 			{
 			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
@@ -1292,7 +1292,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			gr_set_screen_scale(base_w, base_h);
 			setGaugeColor();
 #ifdef SCP_3DS
-			if (!n3ds_perf_flag("noheadanim"))
+			if (!n3ds_perf_flag("hanimoff"))
 #endif
 			generic_anim_render(head_anim,frametime, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y));
 			// draw title
