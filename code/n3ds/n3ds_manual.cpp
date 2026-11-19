@@ -2,7 +2,7 @@
  * Built-in user manual for FreeSpace 2 on the New 3DS.
  *
  * Same controls as every other 3DS port:
- *   Circle Pad / C-Stick   scroll the text (hold to keep scrolling)
+ *   Circle Pad / C-Stick   scroll the text (hold to keep scrolling); or drag it with the stylus
  *   D-Pad                  move between the section buttons (touchscreen)
  *   A                      open the highlighted section
  *   L / R                  previous / next section
@@ -244,6 +244,18 @@ void n3ds_manual_select(void)
 
 void n3ds_manual_touch(int held, int tx, int ty, int pressed)
 {
+	/* drag to scroll (rule 13): a touch that moves more than 6 px scrolls the text on the
+	   top screen and presses no button; a little momentum after the stylus is lifted */
+	static int x0, y0, ylast, dragging;
+	static float mom;
+	if (pressed) { x0 = tx; y0 = ty; ylast = ty; dragging = 0; mom = 0; }
+	else if (held) {
+		if (!dragging && (tx - x0 > 6 || x0 - tx > 6 || ty - y0 > 6 || y0 - ty > 6)) { dragging = 1; Manual_pressed = -1; }
+		if (dragging) { mom = (float)(ylast - ty); n3ds_manual_scroll_by(mom); }
+		ylast = ty;
+		if (dragging) return;
+	} else if (dragging) { dragging = 0; return; }
+	else if (mom > 0.5f || mom < -0.5f) { n3ds_manual_scroll_by(mom); mom *= 0.88f; }
 	if (pressed) {
 		Manual_pressed = -1;
 		for (int i = 0; i <= NUM_SECTIONS; i++) {
