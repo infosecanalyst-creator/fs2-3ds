@@ -1282,6 +1282,26 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 		vertPos[j].w = sw;
 	}
 
+#ifdef SCP_3DS
+	// New 3DS (SM1-01 GPU hang, Nov 18 2026): an untextured primitive from client arrays (the
+	// colour array is stride 0) locked up the GPU: the HUD's off-screen indicator triangles, the
+	// first time a target was off screen. Immediate mode, as for text (f4a5cd8) and 2D polygons
+	// (25111aa). Textured primitives keep the arrays below.
+	if (!(flags & TMAP_FLAG_TEXTURED)) {
+		const bool vcol = (flags & (TMAP_FLAG_NEBULA | TMAP_FLAG_GOURAUD)) != 0;
+		GL_state.Array.BindArrayBuffer(0);
+		glBegin(gl_mode);
+		for (int k = 0; k < nv; k++) {
+			if (vcol) glColor4ub(vertCol[k].r, vertCol[k].g, vertCol[k].b, vertCol[k].a);
+			glVertex4f(vertPos[k].x, vertPos[k].y, vertPos[k].z, vertPos[k].w);
+		}
+		glEnd();
+		if (vcol) GL_state.InvalidateColor();
+		vm_free(vertPos);
+		vm_free(vertCol);
+		return;
+	}
+#endif
 	GL_state.Array.BindArrayBuffer(0);
 
 	GL_state.Array.EnableClientVertex();
