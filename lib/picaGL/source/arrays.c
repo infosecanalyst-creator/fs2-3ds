@@ -214,8 +214,58 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indic
 	glDrawRangeElements( mode, 0, end, count, type, indices );
 }
 
+/* fs2-3ds (Nov 18 2026, SM1-01 GPU hang): the PICA200 draws only triangle lists, strips and fans.
+   Every other mode used to fall through to GPU_TRIANGLES below, so a 2-vertex GL_LINES draw became
+   a triangle list with an incomplete triangle, which can lock up the GPU (FreeSpace 2's HUD draws
+   its lines, circles and arcs from client arrays). Those draws are replayed through the immediate
+   path, which builds lines and points as quads and splits quads into triangles. */
+static float _attrComp(const AttribPointer *a, GLuint idx, int comp)
+{
+	if (comp >= a->size) return comp == 3 ? 1.0f : 0.0f;
+	const uint8_t *e = (const uint8_t *)a->pointer + idx * (GLuint)(a->stride + a->padding * 4);
+	switch (a->type) {
+		case GPU_FLOAT:         return ((const float *)e)[comp];
+		case GPU_UNSIGNED_BYTE: return ((const uint8_t *)e)[comp] / 255.0f;
+		case GPU_BYTE:          return ((const int8_t *)e)[comp] / 127.0f;
+		case GPU_SHORT:         return (float)((const int16_t *)e)[comp];
+		default:                return 0.0f;
+	}
+}
+
+static bool _replayImmediate(GLenum mode, GLuint start, GLsizei count, const GLushort *indices)
+{
+	AttribPointer *v = &pglState->vertexArrayPointer;
+	if (v->type != GPU_FLOAT || !v->pointer) return false;
+	const bool col = pglState->colorArrayState == GL_TRUE && pglState->colorArrayPointer.pointer;
+	const bool tc0 = pglState->texCoordArrayState[0] == GL_TRUE && pglState->texCoordArrayPointer[0].pointer;
+	const bool tc1 = pglState->texCoordArrayState[1] == GL_TRUE && pglState->texCoordArrayPointer[1].pointer;
+	glBegin(mode);
+	for (GLsizei k = 0; k < count; k++) {
+		const GLuint i = indices ? indices[k] : start + (GLuint)k;
+		if (col) {
+			const AttribPointer *c = &pglState->colorArrayPointer;
+			glColor4f(_attrComp(c, i, 0), _attrComp(c, i, 1), _attrComp(c, i, 2), c->size >= 4 ? _attrComp(c, i, 3) : 1.0f);
+		}
+		if (tc0) glTexCoord2f(_attrComp(&pglState->texCoordArrayPointer[0], i, 0), _attrComp(&pglState->texCoordArrayPointer[0], i, 1));
+		if (tc1) glMultiTexCoord2f(GL_TEXTURE1, _attrComp(&pglState->texCoordArrayPointer[1], i, 0), _attrComp(&pglState->texCoordArrayPointer[1], i, 1));
+		glVertex4f(_attrComp(v, i, 0), _attrComp(v, i, 1), _attrComp(v, i, 2), v->size >= 4 ? _attrComp(v, i, 3) : 1.0f);
+	}
+	glEnd();
+	return true;
+}
+
 void glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices )
 {
+	if(type != GL_UNSIGNED_SHORT || pglState->vertexArrayState == GL_FALSE)
+		return;
+	{
+		const bool native = mode == GL_TRIANGLE_FAN || mode == GL_TRIANGLE_STRIP || (mode == GL_TRIANGLES && count % 3 == 0);
+		if ((!native || count < 3) && _replayImmediate(mode, start, count, (const GLushort *)indices)) {
+			pglStats.arrayDraws++;
+			return;
+		}
+		if (!native || count < 3) return;   /* never hand the GPU a primitive it can't draw */
+	}
 	if(type != GL_UNSIGNED_SHORT || pglState->vertexArrayState == GL_FALSE)
 		return;
 
