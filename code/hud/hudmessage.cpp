@@ -1259,11 +1259,18 @@ anim_instance* HudGaugeTalkingHead::createAnim(int anim_start_frame, anim* anim_
  * ANI (see anim_render_all), i.e. the background, border & title
  * Also checks for when new head ani's need to start playing
  */
+#ifdef SCP_3DS
+extern "C" int n3ds_perf_flag(const char *name);
+#endif
 void HudGaugeTalkingHead::render(float frametime)
 {
 	if ( Head_frame.first_frame == -1 ){
 		return;
 	}
+#ifdef SCP_3DS
+	// test switches for the SM1-01 hang (frame 2466, in the page flip, as the first message plays)
+	if (n3ds_perf_flag("nohead")) return;
+#endif
 
 	if(msg_id != -1 && head_anim != NULL) {
 		if(!head_anim->done_playing) {
@@ -1272,13 +1279,21 @@ void HudGaugeTalkingHead::render(float frametime)
 			setGaugeColor();
 
 			// clear
+#ifdef SCP_3DS
+			if (!n3ds_perf_flag("noheadclear"))
+#endif
+			{
 			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
+			}
 
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
 			gr_set_screen_scale(base_w, base_h);
 			setGaugeColor();
+#ifdef SCP_3DS
+			if (!n3ds_perf_flag("noheadanim"))
+#endif
 			generic_anim_render(head_anim,frametime, position[0] + Anim_offsets[0] + fl2i(HUD_offset_x), position[1] + Anim_offsets[1] + fl2i(HUD_offset_y));
 			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
