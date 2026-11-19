@@ -387,7 +387,15 @@ extern "C" void n3ds_input_poll(void)
 	u32 held = lefty_remap(hidKeysHeld());
 	u32 down = lefty_remap(hidKeysDown());
 	u32 up = lefty_remap(hidKeysUp());
-	if (down & BTN_ZL) swapped = !swapped;
+	{	/* rule 16: the swap is remembered (marker file, like .lefty) */
+		static int loaded = 0;
+		if (!loaded) { struct stat sb; swapped = stat(FS2_DIR "/.swapped", &sb) == 0; loaded = 1; }
+	}
+	if (down & BTN_ZL) {
+		swapped = !swapped;
+		if (swapped) { FILE *f = fopen(FS2_DIR "/.swapped", "w"); if (f) fclose(f); }
+		else remove(FS2_DIR "/.swapped");
+	}
 	held &= ~BTN_ZL; down &= ~BTN_ZL; up &= ~BTN_ZL;
 	/* swapped: the touchscreen shows the game picture, so the stylus works on that
 	   picture (menus: it is the mouse; manual: drag scrolls) instead of the panels */
