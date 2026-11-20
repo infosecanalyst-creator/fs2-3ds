@@ -41,6 +41,7 @@ static const u32 BTN_DUP = KEY_DUP, BTN_DDOWN = KEY_DDOWN, BTN_DLEFT = KEY_DLEFT
 
 static FILE *n3ds_logfile = NULL;
 static int n3ds_quit = 0;
+static int n3ds_in_keyboard = 0;   /* the system keyboard applet is open (FS-05) */
 
 extern "C" void n3ds_log(const char *fmt, ...)
 {
@@ -102,6 +103,7 @@ int n3ds_trace_frames = 10;
 extern "C" int n3ds_keyboard(int password, const char *initial, char *out, int outlen)
 {
 	n3ds_trace_frames = 20;
+	n3ds_in_keyboard = 1;               /* the keyboard applet suspends us too: no pilot save then (FS-05) */
 	SwkbdState kb;
 	swkbdInit(&kb, SWKBD_TYPE_NORMAL, 2, outlen - 1);
 	swkbdSetHintText(&kb, password ? "Password" : "Enter text");
@@ -109,6 +111,7 @@ extern "C" int n3ds_keyboard(int password, const char *initial, char *out, int o
 	if (password) swkbdSetPasswordMode(&kb, SWKBD_PASSWORD_HIDE_DELAY);
 	swkbdSetValidation(&kb, SWKBD_NOTEMPTY_NOTBLANK, 0, 0);
 	SwkbdButton b = swkbdInputText(&kb, out, outlen);
+	n3ds_in_keyboard = 0;
 	n3ds_log("keyboard: button %d text '%s'\n", (int)b, (b == SWKBD_BUTTON_CONFIRM && !password) ? out : "");
 	return b == SWKBD_BUTTON_CONFIRM;
 }
@@ -119,8 +122,46 @@ static GLuint n3ds_main_tex = 0;
 static GLuint n3ds_overlay_tex = 0;   /* panel / manual / dashboard are drawn here, never into the game's frame */
 static GLuint n3ds_snap_tex = 0;      /* engine save_screen copy */
 
+/* FS-06: FreeSpace 2 needs a New 3DS (its memory and 804 MHz CPU). On an original 3DS/2DS say
+   so on both screens and go back to the Homebrew Menu, instead of running out of memory later. */
+static void n3ds_require_new3ds(void)
+{
+	bool is_new = false;
+	if (R_FAILED(APT_CheckNew3DS(&is_new)) || is_new) return;
+	gfxInitDefault();
+	PrintConsole top, bot;
+	consoleInit(GFX_TOP, &top);
+	consoleInit(GFX_BOTTOM, &bot);
+	/* the console's font is 8x8: 50 columns on top, 40 below (every line here fits in 38) */
+	static const char *const lines[] = {
+		"FreeSpace 2 needs a New 3DS",
+		"(New 3DS, New 3DS XL or New 2DS XL).",
+		"",
+		"This is an original 3DS or 2DS: it",
+		"lacks the memory and CPU speed the",
+		"game needs.",
+		"",
+		"Press START to go back.",
+	};
+	for (int s = 0; s < 2; s++) {
+		consoleSelect(s ? &bot : &top);
+		int cols = s ? 40 : 50;
+		printf("\x1b[9;1H");
+		for (unsigned i = 0; i < sizeof lines / sizeof lines[0]; i++)
+			printf("%*s%s\n", (cols - (int)strlen(lines[i])) / 2, "", lines[i]);
+	}
+	while (aptMainLoop()) {
+		hidScanInput();
+		if (hidKeysDown() & (BTN_START | BTN_A | BTN_B)) break;
+		gspWaitForVBlank();
+	}
+	gfxExit();
+	_exit(0);
+}
+
 extern "C" void n3ds_init(void)
 {
+	n3ds_require_new3ds();
 	osSetSpeedupEnable(true);           /* 804 MHz + L2 cache on New 3DS */
 	threadOnException(n3ds_exception_handler, n3ds_exc_stack + sizeof(n3ds_exc_stack), WRITE_DATA_TO_HANDLER_STACK);
 	gfxInitDefault();
@@ -361,9 +402,43 @@ extern "C" void n3ds_tap_key(int key)
 	key_mark(key, 0, 0);
 }
 
+/* FS-05: HOME pressed or the lid closed. libctru runs these hooks on the thread that called
+   aptMainLoop, which is the engine's main thread inside n3ds_input_poll below (the same place
+   HOME -> Close saves the pilot), before it hands the screens over. The pilot is saved there,
+   the game's clock is stopped (game_stop_time, as the engine's own pause does) and every key
+   is let go; on the way back the clock starts again. The system keyboard applet suspends us
+   too: then nothing is saved and the clock is left alone (the keyboard is how a pilot is named). */
+void game_stop_time();
+void game_start_time();
+static int n3ds_suspended = 0;
+static aptHookCookie n3ds_apt_cookie;
+
+static void n3ds_apt_hook(APT_HookType h, void *)
+{
+	if (n3ds_quit || n3ds_in_keyboard) return;
+	if ((h == APTHOOK_ONSUSPEND || h == APTHOOK_ONSLEEP) && !n3ds_suspended) {
+		n3ds_suspended = 1;
+		release_all_keys();
+		game_stop_time();
+		if (Player && Player->callsign[0]) {
+			n3ds_log("suspend (%s) - saving pilot\n", h == APTHOOK_ONSLEEP ? "lid" : "HOME");
+			Pilot.save_player(Player);
+		}
+	} else if ((h == APTHOOK_ONRESTORE || h == APTHOOK_ONWAKEUP) && n3ds_suspended) {
+		n3ds_suspended = 0;
+		release_all_keys();
+		game_start_time();
+		n3ds_log("resumed\n");
+	}
+}
+
 extern "C" void n3ds_input_poll(void)
 {
 	if (n3ds_quit) return;
+	{
+		static int hooked = 0;
+		if (!hooked) { aptHook(&n3ds_apt_cookie, n3ds_apt_hook, NULL); hooked = 1; }
+	}
 	if (!aptMainLoop() || n3ds_exit_requested) {
 		/* HOME -> Close (or the START menu's EXIT GAME -> YES) (or power off): the system waits for us to exit, so do it right
 		   away instead of running the engine's long shutdown. Save the pilot first. */
@@ -1234,6 +1309,7 @@ void __system_allocateHeaps(void)
 		svcGetResourceLimitLimitValues(&max, rl, &t, 1);
 		svcGetResourceLimitCurrentValues(&cur, rl, &t, 1);
 		if (max - cur >= (96ll << 20)) break;
+		if (max < (96ll << 20)) break;     /* never that much (an original 3DS): no use waiting (FS-06) */
 		svcSleepThread(10000000LL);
 	}
 	svcCloseHandle(rl);
