@@ -408,15 +408,20 @@ extern "C" void n3ds_tap_key(int key)
 	key_mark(key, 0, 0);
 }
 
-/* FS-05: HOME pressed or the lid closed. libctru runs these hooks on the thread that called
-   aptMainLoop, which is the engine's main thread inside n3ds_input_poll below (the same place
-   HOME -> Close saves the pilot), before it hands the screens over. The pilot is saved there,
-   the game's clock is stopped (game_stop_time, as the engine's own pause does) and every key
-   is let go; on the way back the clock starts again. The system keyboard applet suspends us
-   too: then nothing is saved and the clock is left alone (the keyboard is how a pilot is named). */
+/* FS-05: HOME pressed or the lid closed. libctru calls the APT hooks from inside
+   aptJumpToHomeMenu() / aptHandleSleep(), after the HOME transition has begun; a save in there
+   froze HOME on real hardware in Star Fleet II (Nov 20 2026), so nothing here writes a file,
+   logs or waits. The hook only pauses the game's clock (game_stop_time / game_start_time: two
+   counters, as the engine's own pause; the engine runs on this same thread, so nothing races)
+   and flags the way back. The keys are let go on the main thread: before aptMainLoop handles a
+   HOME press (n3ds_apt_before) and after we are back (n3ds_apt_after). The pilot is not saved on
+   HOME or sleep itself; HOME -> Close and power off save it in n3ds_input_poll, as START > EXIT
+   GAME does. The system keyboard applet suspends us too: then the clock is left alone (the
+   keyboard is how a pilot is named). */
 void game_stop_time();
 void game_start_time();
 static int n3ds_suspended = 0;
+static volatile int n3ds_resumed = 0;
 static aptHookCookie n3ds_apt_cookie;
 
 static void n3ds_apt_hook(APT_HookType h, void *)
@@ -424,18 +429,28 @@ static void n3ds_apt_hook(APT_HookType h, void *)
 	if (n3ds_quit || n3ds_in_keyboard) return;
 	if ((h == APTHOOK_ONSUSPEND || h == APTHOOK_ONSLEEP) && !n3ds_suspended) {
 		n3ds_suspended = 1;
-		release_all_keys();
 		game_stop_time();
-		if (Player && Player->callsign[0]) {
-			n3ds_log("suspend (%s) - saving pilot\n", h == APTHOOK_ONSLEEP ? "lid" : "HOME");
-			Pilot.save_player(Player);
-		}
 	} else if ((h == APTHOOK_ONRESTORE || h == APTHOOK_ONWAKEUP) && n3ds_suspended) {
 		n3ds_suspended = 0;
-		release_all_keys();
 		game_start_time();
-		n3ds_log("resumed\n");
+		n3ds_resumed = 1;
 	}
+}
+
+/* Main thread, just before aptMainLoop: a HOME press is waiting - let go of every key, so none
+   is stuck down when we come back. */
+static void n3ds_apt_before(void)
+{
+	if (!n3ds_in_keyboard && aptShouldJumpToHome()) release_all_keys();
+}
+
+/* Main thread, aptMainLoop came back true: back from the HOME Menu or sleep. */
+static void n3ds_apt_after(void)
+{
+	if (!n3ds_resumed) return;
+	n3ds_resumed = 0;
+	release_all_keys();
+	n3ds_log("resumed\n");
 }
 
 extern "C" void n3ds_input_poll(void)
@@ -445,13 +460,21 @@ extern "C" void n3ds_input_poll(void)
 		static int hooked = 0;
 		if (!hooked) { aptHook(&n3ds_apt_cookie, n3ds_apt_hook, NULL); hooked = 1; }
 	}
-	if (!aptMainLoop() || n3ds_exit_requested) {
+	if (!n3ds_exit_requested) n3ds_apt_before();
+	if (n3ds_exit_requested || !aptMainLoop()) {
 		/* HOME -> Close (or the START menu's EXIT GAME -> YES) (or power off): the system waits for us to exit, so do it right
-		   away instead of running the engine's long shutdown. Save the pilot first. */
+		   away instead of running the engine's long shutdown. All on the engine's main thread, outside the APT hooks: the
+		   pilot is saved (one small file, <name>.tmp + rename; only once a pilot exists, the same rule for every way out),
+		   then the mixer is stopped (its thread is joined: it only ever waits on its own event, which is signalled first,
+		   and on the AL lock, which nothing holds here) and the services shut down; no game thread is waited on (the
+		   engine has none). */
 		n3ds_quit = 1;
+		u64 c0 = osGetTime();
 		n3ds_log("close requested - saving pilot and exiting\n");
-		if (Player && Player->callsign[0])
+		if (Player && Player->callsign[0]) {
 			Pilot.save_player(Player);
+			n3ds_log("close: pilot saved in %llu ms\n", (unsigned long long)(osGetTime() - c0));
+		}
 		n3ds_audio_shutdown();
 		n3ds_log("bye\n");
 		if (n3ds_logfile) { fclose(n3ds_logfile); n3ds_logfile = NULL; }
@@ -462,6 +485,7 @@ extern "C" void n3ds_input_poll(void)
 		   shutdown (and draw with freed buffers) - the system only needs us gone */
 		_exit(0);
 	}
+	n3ds_apt_after();
 
 	hidScanInput();
 	input_frame++;
