@@ -236,6 +236,8 @@ static void mix_thread_func(void *arg)
 	}
 }
 
+static void stop_mixer(void);
+
 static void start_mixer(void)
 {
 	if (Ndsp_ok) return;
@@ -244,6 +246,15 @@ static void start_mixer(void)
 		return;
 	}
 	Ndsp_ok = 1;
+	/* Exit: exit() from anywhere (Error()'s exit(EXIT_FAILURE), the engine's own exit(1)s) must
+	   not leave the mixer thread and our ndsp reference running: the DSP thread would fault in
+	   ndspiReadChnState once exit() frees the heap its stack lives in (the JA2 exit crash,
+	   Nov 20 2026). stop_mixer is guarded by Ndsp_ok, so after alcCloseDevice or the HOME close
+	   path this does nothing. */
+	{
+		static int registered = 0;
+		if (!registered) { registered = 1; atexit(stop_mixer); }
+	}
 	LightLock_Init(&Al_lock);
 	LightEvent_Init(&Mix_event, RESET_ONESHOT);
 

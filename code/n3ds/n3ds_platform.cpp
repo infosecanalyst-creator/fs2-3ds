@@ -62,6 +62,8 @@ extern "C" void n3ds_log(const char *fmt, ...)
 	fflush(n3ds_logfile);
 }
 
+extern "C" void n3ds_audio_shutdown(void);
+
 extern "C" void n3ds_fatal(const char *msg)
 {
 	if (n3ds_quit) _exit(0);     /* errors while closing down: just leave */
@@ -70,6 +72,10 @@ extern "C" void n3ds_fatal(const char *msg)
 	errorInit(&err, ERROR_TEXT_WORD_WRAP, CFG_LANGUAGE_EN);
 	errorText(&err, msg);
 	errorDisp(&err);
+	/* the caller ends the process next (exit, or abort for a failed assertion, which skips the
+	   atexit handlers): stop the mixer and give our ndsp reference back first, so the DSP
+	   thread is gone before the heap is */
+	n3ds_audio_shutdown();
 }
 
 /* crash handler: log the faulting address and registers, then show a dialog */
