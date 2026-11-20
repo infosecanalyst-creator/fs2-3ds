@@ -1007,7 +1007,16 @@ bool pilotfile::save_player(player *_p)
 		cfp = NULL;
 		SCP_string fin = filename;
 		plr_close();
-		if (rc != 0 || cf_rename((fin + ".tmp").c_str(), fin.c_str(), CF_TYPE_PLAYERS) != CF_RENAME_SUCCESS) {
+		bool moved = rc == 0 && cf_rename((fin + ".tmp").c_str(), fin.c_str(), CF_TYPE_PLAYERS) == CF_RENAME_SUCCESS;
+		if (rc == 0 && !moved) {
+			// The 3DS SD card refuses to rename over an existing file: keep the old one
+			// as .bak, move the new one in, and put the old one back if that fails.
+			cf_delete((fin + ".bak").c_str(), CF_TYPE_PLAYERS);
+			bool had = cf_rename(fin.c_str(), (fin + ".bak").c_str(), CF_TYPE_PLAYERS) == CF_RENAME_SUCCESS;
+			moved = cf_rename((fin + ".tmp").c_str(), fin.c_str(), CF_TYPE_PLAYERS) == CF_RENAME_SUCCESS;
+			if (!moved && had) cf_rename((fin + ".bak").c_str(), fin.c_str(), CF_TYPE_PLAYERS);
+		}
+		if (!moved) {
 			mprintf(("PLR => saving '%s' failed (card full?)\n", fin.c_str()));
 			cf_delete((fin + ".tmp").c_str(), CF_TYPE_PLAYERS);
 			return false;
