@@ -963,7 +963,8 @@ bool pilotfile::save_player(player *_p)
 	}
 
 	// open it, hopefully...
-	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	// FS-03: written as <name>.tmp; only a complete file replaces the real one
+	cfp = cfopen((char*)(filename + ".tmp").c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
 
 	if ( !cfp ) {
 		mprintf(("PLR => Unable to open '%s' for saving!\n", filename.c_str()));
@@ -1001,7 +1002,17 @@ bool pilotfile::save_player(player *_p)
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));
 
-	plr_close();
+	{
+		int rc = cfclose(cfp);
+		cfp = NULL;
+		SCP_string fin = filename;
+		plr_close();
+		if (rc != 0 || cf_rename((fin + ".tmp").c_str(), fin.c_str(), CF_TYPE_PLAYERS) != CF_RENAME_SUCCESS) {
+			mprintf(("PLR => saving '%s' failed (card full?)\n", fin.c_str()));
+			cf_delete((fin + ".tmp").c_str(), CF_TYPE_PLAYERS);
+			return false;
+		}
+	}
 
 	return true;
 }

@@ -1559,7 +1559,8 @@ bool pilotfile::save_savefile()
 	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: %u\n", Red_alert_wingman_status.size());
 
 	// open it, hopefully...
-	cfp = cfopen((char*)filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
+	// FS-03: written as <name>.tmp; only a complete file replaces the real one
+	cfp = cfopen((char*)(filename + ".tmp").c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS);
 
 	if ( !cfp ) {
 		mprintf(("CSG => Unable to open '%s' for saving!\n", filename.c_str()));
@@ -1605,7 +1606,17 @@ bool pilotfile::save_savefile()
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));
 
-	csg_close();
+	{
+		int rc = cfclose(cfp);
+		cfp = NULL;
+		SCP_string fin = filename;
+		csg_close();
+		if (rc != 0 || cf_rename((fin + ".tmp").c_str(), fin.c_str(), CF_TYPE_PLAYERS) != CF_RENAME_SUCCESS) {
+			mprintf(("CSG => saving '%s' failed (card full?)\n", fin.c_str()));
+			cf_delete((fin + ".tmp").c_str(), CF_TYPE_PLAYERS);
+			return false;
+		}
+	}
 
 	return true;
 }
