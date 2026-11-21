@@ -105,6 +105,29 @@ extern "C" void n3ds_note(const char *fmt, ...)
 	va_end(ap);
 }
 
+/* FS-07: memory headroom at mission load / end. Linear memory (32 MB here) holds picaGL's
+   geometry, index and command buffers (~5.8 MB), the framebuffers and every texture that does
+   not fit in VRAM; VRAM (6 MB) holds picaGL's render targets (~5 MB: 800x480 colour + depth in a
+   512x1024 GPU surface each, both screens' compose buffers), leaving about 1 MB for textures.
+   With debug.txt one line per call: free linear / VRAM now, the least free since the last line,
+   texture memory in VRAM and in linear, heap free. Always (a note): free linear under 2 MB, or a
+   texture that found no memory at all, since those end in missing textures or a crash. */
+extern "C" char *fake_heap_end;
+extern "C" void n3ds_mem_report(const char *tag)
+{
+	extern unsigned pgl_tex_vram_kb, pgl_tex_linear_kb, pgl_tex_failed, pgl_linear_low_kb, pgl_vram_low_kb;
+	const unsigned lf = (unsigned)(linearSpaceFree() / 1024), vf = (unsigned)(vramSpaceFree() / 1024);
+	struct mallinfo mi = mallinfo();
+	const unsigned heap_free = (unsigned)((mi.fordblks + (fake_heap_end - (char *)sbrk(0))) / 1024);
+	const unsigned llow = pgl_linear_low_kb < lf ? pgl_linear_low_kb : lf, vlow = pgl_vram_low_kb < vf ? pgl_vram_low_kb : vf;
+	n3ds_log("mem %s: linear free %u KB (least %u), VRAM free %u KB (least %u), textures %u KB in VRAM + %u KB in linear, heap free %u KB, texture allocs failed %u\n",
+	         tag, lf, llow, vf, vlow, pgl_tex_vram_kb, pgl_tex_linear_kb, heap_free, pgl_tex_failed);
+	if (llow < 2048 || pgl_tex_failed)
+		n3ds_note("LOW MEMORY at %s: linear free %u KB (least %u), %u texture allocs failed\n", tag, lf, llow, pgl_tex_failed);
+	pgl_linear_low_kb = pgl_vram_low_kb = 0xFFFFFFFFu;
+	pgl_tex_failed = 0;
+}
+
 extern "C" void n3ds_audio_shutdown(void);
 extern "C" void n3ds_timers_stop(void);   /* n3ds_sdl.cpp */
 

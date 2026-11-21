@@ -146,6 +146,11 @@ static inline uint32_t _picaConvertFilter(uint32_t param)
 	}
 }
 
+/* fs2-3ds FS-07: texture memory in use (live) and the least free linear / VRAM seen, for the
+   mission-load memory line (n3ds_mem_report, debug.txt) */
+unsigned pgl_tex_vram_kb = 0, pgl_tex_linear_kb = 0, pgl_tex_failed = 0;
+unsigned pgl_linear_low_kb = 0xFFFFFFFFu, pgl_vram_low_kb = 0xFFFFFFFFu;
+
 static inline void *_textureDataAlloc(size_t size)
 {
 	void *ret = NULL;
@@ -153,18 +158,36 @@ static inline void *_textureDataAlloc(size_t size)
 	if(size > 0x800)
 		ret = vramAlloc(size);
 
-	if(!ret)
-		ret = linearAlloc(size); 
+	if(ret)
+		pgl_tex_vram_kb += (unsigned)(size >> 10);
+	else
+	{
+		ret = linearAlloc(size);
+		if(ret) pgl_tex_linear_kb += (unsigned)(size >> 10);
+		else pgl_tex_failed++;
+	}
+	{
+		unsigned lf = (unsigned)(linearSpaceFree() >> 10), vf = (unsigned)(vramSpaceFree() >> 10);
+		if(lf < pgl_linear_low_kb) pgl_linear_low_kb = lf;
+		if(vf < pgl_vram_low_kb) pgl_vram_low_kb = vf;
+	}
 
 	return ret;
 }
 
 static inline void _textureDataFree(TextureObject *texture)
 {
+	const unsigned kb = (unsigned)(((size_t)texture->width * texture->height * texture->bpp) >> 10);
 	if(texture->in_vram)
+	{
 		vramFree(texture->data);
+		pgl_tex_vram_kb = pgl_tex_vram_kb > kb ? pgl_tex_vram_kb - kb : 0;
+	}
 	else
+	{
 		linearFree(texture->data);
+		pgl_tex_linear_kb = pgl_tex_linear_kb > kb ? pgl_tex_linear_kb - kb : 0;
+	}
 
 	texture->data = NULL;
 }

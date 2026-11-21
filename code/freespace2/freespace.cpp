@@ -869,8 +869,14 @@ void game_flash_diminish(float frametime)
 }
 
 
+#ifdef SCP_3DS
+extern "C" void n3ds_mem_report(const char *tag);   // n3ds/n3ds_platform.cpp (FS-07)
+#endif
 void game_level_close()
 {
+#ifdef SCP_3DS
+	n3ds_mem_report("mission end");      // FS-07: the least free memory seen during the mission
+#endif
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
 	if(!Script_system.IsConditionOverride(CHA_MISSIONEND))
@@ -1412,6 +1418,9 @@ void game_post_level_init()
 	}
 
 	freespace_mission_load_stuff();
+#ifdef SCP_3DS
+	n3ds_mem_report("mission loaded");   // FS-07: memory headroom once the mission's models and textures are in
+#endif
 
 	// m!m Make hv.Player available in "On Mission Start" hook
 	if(Player_obj)

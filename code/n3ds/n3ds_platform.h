@@ -44,6 +44,8 @@ int  n3ds_should_quit(void);
 void n3ds_log(const char *fmt, ...);    /* only with sdmc:/3ds/freespace2/debug.txt; buffered */
 void n3ds_note(const char *fmt, ...);   /* rare lines (start, exit, crash): always, flushed */
 int n3ds_debug_on(void);
+/* FS-07: free linear / VRAM and texture memory, one log line (debug.txt; a note if low) */
+void n3ds_mem_report(const char *tag);
 
 /* log the message, show it in the system error dialog, then return (caller exits) */
 void n3ds_fatal(const char *msg);
