@@ -3,8 +3,8 @@
  *
  * Same controls as every other 3DS port:
  *   Circle Pad / C-Stick   scroll the text (hold to keep scrolling); or drag it with the stylus
- *   D-Pad                  move between the section buttons (touchscreen)
- *   A                      open the highlighted section
+ *   D-Pad                  move between the section buttons (touchscreen); a section opens as it is picked
+ *   A                      press LEFT HAND when the D-Pad is on it
  *   L / R                  previous / next section
  *   tap                    open a section
  *   B or START             close
@@ -262,6 +262,8 @@ void n3ds_manual_dpad(int dx, int dy)
 	if (dy > 0 && Manual_focus + 2 < NUM_SECTIONS) Manual_focus += 2;
 	else if (dy > 0 && Manual_focus < NUM_SECTIONS) Manual_focus = NUM_SECTIONS;   /* down to Left hand */
 	else if (dy < 0 && Manual_focus == NUM_SECTIONS) Manual_focus = NUM_SECTIONS - 1;
+	/* house standard: a section opens as the D-Pad picks it (A is only needed on LEFT HAND) */
+	if (Manual_focus < NUM_SECTIONS && Manual_focus != Manual_section) open_section(Manual_focus);
 }
 
 void n3ds_manual_select(void)
@@ -351,8 +353,6 @@ void n3ds_manual_draw_text(void)
 		n3ds_rect(395, TEXT_TOP, 3, track);
 		gr_set_color(120, 150, 230);
 		n3ds_rect(395, TEXT_TOP + pos, 3, bar);
-		gr_set_color(170, 170, 170);
-		gr_string(8, TEXT_BOTTOM + 3, "Circle Pad / C-Stick: scroll", false);
 	}
 	gr_reset_clip();
 }
@@ -406,7 +406,8 @@ void n3ds_manual_draw(void)
 	gr_set_color(40, 56, 120);    /* house bar */
 	n3ds_rect(0, 210, 320, 30);
 	gr_set_color(255, 204, 64);               /* house hint strip: gold */
-	gr_string(6, 212, "D-Pad: choose   A: open   L / R: section", false);
-	gr_string(6, 225, "Tap a section      B / START: close", false);
+	/* the house footer wording (the same in every port), on two lines: this font is wide */
+	gr_string(6, 212, n3ds_lefty() ? "Sticks: scroll  A/B/X/Y, L / R: section" : "Sticks: scroll   D-Pad, L / R: section", false);
+	gr_string(6, 225, n3ds_lefty() ? "D-Down / START: close" : "B / START: close", false);
 	gr_reset_clip();
 }

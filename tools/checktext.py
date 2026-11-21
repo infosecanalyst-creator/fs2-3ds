@@ -19,9 +19,8 @@ for title, body in re.findall(r'\{ "([^"]+)", \{(.*?)NULL \} \}', man, re.S):
     check(F1, title, 152 - 6, "manual section button")
     for line in re.findall(r'"((?:[^"\\]|\\.)*)"', body):
         check(F1, line, 394 - 8 - 2, "manual text line (top)")
-for s in ["D-Pad: choose   A: open   L / R: section", "Tap a section      B / START: close"]:
+for s in ["Sticks: scroll   D-Pad, L / R: section", "B / START: close", "Sticks: scroll  A/B/X/Y, L / R: section", "D-Down / START: close"]:
     check(F1, s, 320 - 6 - 4, "manual footer (bottom)")
-check(F1, "Circle Pad / C-Stick: scroll", 400 - 16, "manual scroll hint")
 
 dash = open(f"{src}/n3ds_dash.cpp", encoding='latin1').read()
 clock = F1.width("23:59")
