@@ -202,6 +202,24 @@ static int text_w(const char *s)
 	return w;
 }
 
+/* FS-09: copy text into out (size n), ending it with "..." if it is wider than maxw pixels, so a long
+   ship or weapon name never runs into the text next to it. Cuts whole characters (names are ASCII). */
+static void fit_string(const char *text, int maxw, char *out, int n)
+{
+	snprintf(out, n, "%s", text);
+	if (text_w(out) <= maxw) return;
+	int len = (int)strlen(out);
+	while (len > 0) {
+		len--;
+		while (len > 0 && out[len - 1] == ' ') len--;
+		out[len] = 0;
+		char t[160];
+		snprintf(t, sizeof(t), "%s...", out);
+		if (text_w(t) <= maxw) { snprintf(out, n, "%s", t); return; }
+	}
+	out[0] = 0;
+}
+
 /* word-wrap text into lines of at most maxw pixels; returns the line count */
 static int wrap_lines(const char *text, int maxw, char out[][96], int maxlines)
 {
@@ -262,10 +280,15 @@ void n3ds_panel_draw(void)
 			cls = Ship_info[tsp->ship_info_index].name;
 			sprintf(right1, "HULL %d%%", (int)(get_hull_pct(tobj) * 100.0f + 0.5f));
 		}
+		/* FS-09: the name and class get what is left of the strip after the hull and distance texts */
+		int rightw = text_w(right1) > text_w(right2) ? text_w(right1) : text_w(right2);
+		char fitn[64], fitc[64];
+		fit_string(name, PANEL_W - 8 - rightw - 8, fitn, sizeof(fitn));
+		fit_string(cls, PANEL_W - 8 - rightw - 8, fitc, sizeof(fitc));
 		gr_set_color(255, 200, 80);
-		panel_string(4, 4, name);
+		panel_string(4, 4, fitn);
 		gr_set_color(200, 200, 200);
-		panel_string(4, 17, cls);
+		panel_string(4, 17, fitc);
 		gr_set_color(255, 255, 255);
 		panel_string(PANEL_W - 4 - text_w(right1), 4, right1);
 		panel_string(PANEL_W - 4 - text_w(right2), 17, right2);
@@ -318,6 +341,7 @@ void n3ds_panel_draw(void)
 				if (text_w(tmp) <= TEXT_W - 36) strcpy(buf, tmp);
 			}
 		} else strcpy(buf, "-");
+		{ char fb[160]; fit_string(buf, TEXT_W - 36, fb, sizeof(fb)); strcpy(buf, fb); }   /* FS-09 */
 		panel_string(36, 72, buf);
 
 		gr_set_color(120, 200, 255);
@@ -327,6 +351,7 @@ void n3ds_panel_draw(void)
 			sprintf(buf, "%s  x%d", Weapon_info[swp->secondary_bank_weapons[sb]].name, swp->secondary_bank_ammo[sb]);
 			if (text_w(buf) > TEXT_W - 36) strcpy(buf, Weapon_info[swp->secondary_bank_weapons[sb]].name);
 		} else strcpy(buf, "-");
+		{ char fb[160]; fit_string(buf, TEXT_W - 36, fb, sizeof(fb)); strcpy(buf, fb); }   /* FS-09 */
 		panel_string(36, 84, buf);
 
 		/* ---- text box: training message, directives, recent messages. Whole lines only:

@@ -613,17 +613,19 @@ extern "C" void n3ds_input_poll(void)
 	static int select_used = 0;
 	if (flight != was_flight) {
 		release_all_keys();
+		if (n3ds_portmenu_is_open()) n3ds_portmenu_close();   /* the game moved on (a mission ended) under an open menu */
 		was_flight = flight;
 		panel_nav = 0;
 		n3ds_panel_set_nav(0);
 	}
 
-	/* START port menu (house style), menus only: START alone opens it (SELECT + START is still
-	   the manual); while it is open it takes every button and the dashboard touch, and nothing
-	   reaches the game. START no longer sends Esc in menus - Esc quit FS2 outright from the
-	   pilot screen. B is still the game's back key. */
-	if (flight && n3ds_portmenu_is_open()) n3ds_portmenu_close();
-	if (!flight && !n3ds_manual_is_open()) {
+	/* START port menu (house style), in menus and in flight (FS-08: one menu): START alone opens it
+	   (SELECT + START is still the manual); while it is open it takes every button and the touch,
+	   and nothing reaches the game. In flight the game is paused while it is open (the same pause
+	   key the manual uses) and it has a GAME MENU row: the game's own pause / options / abort screen,
+	   which START used to send Esc for. B is still the game's back key in menus. */
+	static int pm_was_open = 0;
+	if (!n3ds_manual_is_open()) {
 		if (n3ds_portmenu_is_open()) {
 			touchPosition ptp; hidTouchRead(&ptp);
 			int th = (held & BTN_TOUCH) ? 1 : 0, td = (down & BTN_TOUCH) ? 1 : 0;
@@ -633,12 +635,24 @@ extern "C" void n3ds_input_poll(void)
 				th, th || td ? ptp.px : 0, th || td ? ptp.py : 0, td);
 			release_all_keys();
 			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
+			if (!n3ds_portmenu_is_open() && pm_was_open) {
+				pm_was_open = 0;
+				/* closed: in flight the game was paused for the menu. RESUME, B and GAME MENU unpause;
+				   MANUAL keeps it paused (closing the manual unpauses) and EXIT is leaving anyway */
+				if (flight && !n3ds_manual_is_open() && !n3ds_exit_requested) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+				if (n3ds_pm_game_menu_requested) {
+					n3ds_pm_game_menu_requested = 0;
+					if (flight) { key_mark(KEY_ESC, 1, 0); key_mark(KEY_ESC, 0, 0); }
+				}
+			}
 			return;
 		}
 		if ((down & BTN_START) && !(held & BTN_SELECT)) {
 			n3ds_click();
-			n3ds_portmenu_open();
+			n3ds_portmenu_open(flight);
+			pm_was_open = 1;
 			release_all_keys();
+			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
 			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
 			return;
 		}
@@ -1233,6 +1247,12 @@ extern "C" void n3ds_present(void)
 			n3ds_manual_draw();
 			n3ds_phase = "present: overlay_to"; n3ds_phase_line = 998;
 			overlay_to(PGL_TARGET_BOTTOM, 320);
+		} else if (n3ds_portmenu_is_open()) {
+			/* FS-08: the START menu, on the panel's screen, every frame (its buttons animate) */
+			overlay_begin();
+			n3ds_portmenu_draw_flight();
+			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+			else overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else if (swapped || (frames & 1)) {
 			n3ds_phase = "present: n3ds_prof_begin"; n3ds_phase_line = 1000;
 			n3ds_prof_begin(N3DS_PROF_PANEL);

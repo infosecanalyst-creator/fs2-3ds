@@ -335,21 +335,32 @@ static int Pm_flash = 0;           /* frames of an A press's animation */
 #define PM_W 240
 #define PM_BH 30
 #define PM_GAP 6
-static const char *Pm_main[] = { "RESUME", "MANUAL", "EXIT GAME" };
+/* FS-08: one START menu in flight and out. In flight it has a fourth row, GAME MENU, that gives the
+   START key's old job (the game's own pause / options / abort screen) and it is drawn on the cockpit
+   panel's screen; the platform code pauses the game while it is open. */
+static int Pm_flight = 0;
+int n3ds_pm_game_menu_requested = 0;     /* set by GAME MENU: the platform sends Esc after the menu closes */
+static const char *Pm_main[] = { "RESUME", "MANUAL", "GAME MENU", "EXIT GAME" };
+static const char *Pm_main_menus[] = { "RESUME", "MANUAL", "EXIT GAME" };
+/* the label of row i on the main page */
+static const char *pm_label(int i) { return Pm_flight ? Pm_main[i] : Pm_main_menus[i]; }
+static int Pm_lx = 0, Pm_ly = 0;         /* last stylus position while held (a release has no position) */
+static int Pm_over = 0;                  /* the stylus is still on the button it went down on */
 static const char *Pm_confirm[] = { "YES", "NO" };
 
 int n3ds_portmenu_is_open(void) { return Pm_open; }
-void n3ds_portmenu_open(void) { Pm_open = 1; Pm_page = 0; Pm_focus = 0; Pm_pressed = -1; Pm_flash = 0; }
+void n3ds_portmenu_open(int in_flight) { Pm_open = 1; Pm_page = 0; Pm_focus = 0; Pm_pressed = -1; Pm_flash = 0; Pm_flight = in_flight ? 1 : 0; Pm_over = 0; }
 void n3ds_portmenu_close(void) { Pm_open = 0; Pm_pressed = -1; Pm_flash = 0; }
 
-static int pm_count(void) { return Pm_page == 0 ? 3 : 2; }
+static int pm_count(void) { return Pm_page == 0 ? (Pm_flight ? 4 : 3) : 2; }
+#define PM_ROWS_Y0 (Pm_flight ? 52 : 60)    /* four rows start higher so they clear the build line */
 
 /* button rectangles: main page stacked in the middle; confirm page side by side */
 static void pm_rect(int i, int *x, int *y, int *w, int *h)
 {
 	if (Pm_page == 0) {
 		*x = PM_X; *w = PM_W; *h = PM_BH;
-		*y = 60 + i * (PM_BH + PM_GAP);
+		*y = PM_ROWS_Y0 + i * (PM_BH + PM_GAP);
 	} else {
 		*w = 114; *h = PM_BH; *y = 130;
 		*x = PM_X + i * (114 + 12);
@@ -368,9 +379,11 @@ static int pm_at(int tx, int ty)
 static void pm_act(int i)
 {
 	if (Pm_page == 0) {
+		const int exit_row = Pm_flight ? 3 : 2;
 		if (i == 0) n3ds_portmenu_close();
 		else if (i == 1) { n3ds_portmenu_close(); n3ds_manual_toggle(); }
-		else { Pm_page = 1; Pm_focus = 1; }       /* focus starts on NO */
+		else if (i == exit_row) { Pm_page = 1; Pm_focus = 1; }       /* focus starts on NO */
+		else { n3ds_portmenu_close(); n3ds_pm_game_menu_requested = 1; }
 	} else {
 		if (i == 0) { n3ds_portmenu_close(); n3ds_exit_requested = 1; }
 		else { Pm_page = 0; Pm_focus = 2; }
@@ -386,15 +399,21 @@ void n3ds_portmenu_input(int dy, int a, int b, int start, int touch_held, int tx
 	}
 	if (touch_pressed) {
 		Pm_pressed = pm_at(tx, ty);
+		Pm_lx = tx; Pm_ly = ty; Pm_over = Pm_pressed >= 0;
 		if (Pm_pressed >= 0) { Pm_focus = Pm_pressed; n3ds_click(); }
 		return;
 	}
-	if (!touch_held && Pm_pressed >= 0) {        /* act on release, like a real button */
-		int i = Pm_pressed; Pm_pressed = -1;
-		if (pm_at(tx, ty) == i || (tx == 0 && ty == 0)) pm_act(i);
+	if (touch_held) {                            /* FS-08: sliding off the button un-presses it */
+		Pm_lx = tx; Pm_ly = ty;
+		Pm_over = Pm_pressed >= 0 && pm_at(tx, ty) == Pm_pressed;
 		return;
 	}
-	if (touch_held) return;
+	if (Pm_pressed >= 0) {                       /* act on release, like a real button; released outside = cancelled */
+		int i = Pm_pressed; Pm_pressed = -1;
+		if (Pm_over && pm_at(Pm_lx, Pm_ly) == i) pm_act(i);
+		Pm_over = 0;
+		return;
+	}
 	if (b || start) {
 		n3ds_click();
 		if (Pm_page == 1) { Pm_page = 0; Pm_focus = 2; } else n3ds_portmenu_close();
@@ -409,7 +428,7 @@ void n3ds_portmenu_input(int dy, int a, int b, int start, int touch_held, int tx
 static void pm_button(int i, const char *text)
 {
 	int x, y, w, h; pm_rect(i, &x, &y, &w, &h);
-	int pressed = (i == Pm_pressed) || (i == Pm_focus && Pm_flash > 0);
+	int pressed = (i == Pm_pressed && Pm_over) || (i == Pm_focus && Pm_flash > 0);
 	int off = pressed ? 1 : 0;
 	if (pressed) gr_set_color(220, 180, 60); else gr_set_color(40, 56, 120);
 	n3ds_rect(x, y + off, w, h);
@@ -438,11 +457,11 @@ static void pm_draw(void)
 		gr_get_string_size(&w, &h, t);
 		gr_set_color(255, 204, 64);
 		gr_string((DASH_W - w) / 2, 36, t, false);
-		for (int i = 0; i < 3; i++) pm_button(i, Pm_main[i]);
+		for (int i = 0; i < pm_count(); i++) pm_button(i, pm_label(i));
 		const char *v = "Build " PORT_VERSION;   /* port version (git describe of fs2-3ds) */
 		gr_get_string_size(&w, &h, v);
 		gr_set_color(150, 150, 165);
-		gr_string((DASH_W - w) / 2, 190, v, false);
+		gr_string((DASH_W - w) / 2, Pm_flight ? 206 : 190, v, false);
 	} else {
 		const char *t1 = "EXIT FREESPACE 2?", *t2 = "Progress since your last save is lost.";
 		gr_get_string_size(&w, &h, t1);
@@ -602,5 +621,24 @@ void n3ds_dash_draw(void)
 
 	if (Pm_open) pm_draw();
 
+	gr_reset_clip();
+}
+
+/* FS-08: the same menu drawn on the cockpit panel's screen in flight (header bar and all) */
+void n3ds_portmenu_draw_flight(void)
+{
+	gr_set_clip(0, 0, DASH_W, DASH_H, false);
+	gr_set_color(8, 12, 40);
+	n3ds_rect(0, 0, DASH_W, DASH_H);
+	gr_set_color(40, 56, 120);
+	n3ds_rect(0, 0, DASH_W, 22);
+	gr_set_font(FONT1);
+	gr_set_color(255, 204, 64);
+	gr_string(8, 4, "FREESPACE 2", false);
+	gr_set_color(150, 150, 165);
+	int w, h;
+	gr_get_string_size(&w, &h, "PAUSED");
+	gr_string(DASH_W - 8 - w, 4, "PAUSED", false);
+	pm_draw();
 	gr_reset_clip();
 }

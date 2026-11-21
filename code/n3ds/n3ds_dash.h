@@ -19,10 +19,12 @@ void n3ds_dash_nav(int dx, int dy, int press);
 /* label of the menu region under the pointer (main hall rooms etc.) for this frame */
 void n3ds_dash_hover(const char *text);
 
-/* House-style START port menu (menus only): RESUME / MANUAL / EXIT GAME, EXIT asks YES/NO
+/* House-style START port menu (menus and flight): RESUME / MANUAL / (GAME MENU in flight) / EXIT GAME, EXIT asks YES/NO
    with the focus on NO. Drawn over the dashboard; works by touch or D-Pad + A; B or START close. */
 int  n3ds_portmenu_is_open(void);
-void n3ds_portmenu_open(void);
+void n3ds_portmenu_open(int in_flight);   /* in flight it has a GAME MENU row and the platform pauses the game */
+void n3ds_portmenu_draw_flight(void);      /* the menu on the cockpit panel's screen */
+extern int n3ds_pm_game_menu_requested;    /* GAME MENU chosen: the platform sends Esc once the menu is closed */
 void n3ds_portmenu_close(void);
 /* one call per menu frame while open: D-Pad step, A, B, START, and the touch (dashboard coords;
    pass held = pressed = 0 when the dashboard can't be touched) */
