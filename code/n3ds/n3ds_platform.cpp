@@ -634,9 +634,15 @@ extern "C" void n3ds_input_poll(void)
 	static int was_flight = -1;
 	static int panel_nav = 0;         /* flight: D-Pad / A work the cockpit panel's buttons */
 	static int select_used = 0;
+	/* The START menu opened in flight pauses the game, and the engine's pause is a state of its own
+	   (GS_STATE_GAME_PAUSED, not GAME_PLAY): that change must not close the menu it was made for
+	   (on hardware the menu vanished at once and left the game's own PAUSED screen). */
+	static int pm_from_flight = 0;    /* the open START menu was opened in flight */
+	static int pm_esc_pending = 0;    /* GAME MENU: Esc goes to the game once it is flying again */
+	const int paused = gameseq_get_state() == GS_STATE_GAME_PAUSED;
 	if (flight != was_flight) {
 		release_all_keys();
-		if (n3ds_portmenu_is_open()) n3ds_portmenu_close();   /* the game moved on (a mission ended) under an open menu */
+		if (n3ds_portmenu_is_open() && !(pm_from_flight && paused)) n3ds_portmenu_close();   /* the game moved on (a mission ended) under an open menu */
 		was_flight = flight;
 		panel_nav = 0;
 		n3ds_panel_set_nav(0);
@@ -648,6 +654,10 @@ extern "C" void n3ds_input_poll(void)
 	   key the manual uses) and it has a GAME MENU row: the game's own pause / options / abort screen,
 	   which START used to send Esc for. B is still the game's back key in menus. */
 	static int pm_was_open = 0;
+	if (pm_esc_pending > 0) {         /* GAME MENU was chosen: the game's own pause / abort screen */
+		if (flight) { pm_esc_pending = 0; key_mark(KEY_ESC, 1, 0); key_mark(KEY_ESC, 0, 0); }
+		else pm_esc_pending--;
+	}
 	if (!n3ds_manual_is_open()) {
 		if (n3ds_portmenu_is_open()) {
 			touchPosition ptp; hidTouchRead(&ptp);
@@ -662,11 +672,12 @@ extern "C" void n3ds_input_poll(void)
 				pm_was_open = 0;
 				/* closed: in flight the game was paused for the menu. RESUME, B and GAME MENU unpause;
 				   MANUAL keeps it paused (closing the manual unpauses) and EXIT is leaving anyway */
-				if (flight && !n3ds_manual_is_open() && !n3ds_exit_requested) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+				if (pm_from_flight && paused && !n3ds_manual_is_open() && !n3ds_exit_requested) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
 				if (n3ds_pm_game_menu_requested) {
 					n3ds_pm_game_menu_requested = 0;
-					if (flight) { key_mark(KEY_ESC, 1, 0); key_mark(KEY_ESC, 0, 0); }
+					if (pm_from_flight) pm_esc_pending = 120;   /* sent below, once the game has left its pause state */
 				}
+				pm_from_flight = 0;
 			}
 			return;
 		}
@@ -674,6 +685,8 @@ extern "C" void n3ds_input_poll(void)
 			n3ds_click();
 			n3ds_portmenu_open(flight);
 			pm_was_open = 1;
+			pm_from_flight = flight;
+			pm_esc_pending = 0;
 			release_all_keys();
 			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
 			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
