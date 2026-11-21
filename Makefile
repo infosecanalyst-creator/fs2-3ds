@@ -68,7 +68,9 @@ OPT      := -O2 -ffast-math -fno-strict-aliasing -fsigned-char -ffunction-sectio
 WARN     :=
 
 CFLAGS   := $(ARCH) $(OPT) $(WARN) $(DEFINES) $(INCLUDES)
-CXXFLAGS := $(CFLAGS) -std=gnu++98 -fpermissive -Wno-narrowing
+# -Wno-write-strings: fs2_open passes string literals as char* ~11,000 times (harmless, and it
+# buried every other warning in a 5 MB log). Everything else is shown.
+CXXFLAGS := $(CFLAGS) -std=gnu++98 -fpermissive -Wno-narrowing -Wno-write-strings
 LDFLAGS  := -specs=3dsx.specs $(ARCH) -Wl,-Map,$(BUILD)/$(TARGET).map -Wl,--gc-sections
 # Hardware test hooks (3ds-test-suite hwtest/selftest, code/n3ds/selftest.cpp): inactive unless
 # the test agent starts the game with --selftest=<script>.
