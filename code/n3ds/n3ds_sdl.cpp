@@ -121,6 +121,46 @@ struct n3ds_timer {
 	volatile bool self_free; /* removed from inside its own callback: the thread frees itself */
 };
 
+/* FS-01: live timers, so every way out can stop their threads (n3ds_threads_stop). Once
+   stopping has begun nothing is freed by a timer thread any more (the process is ending). */
+#define N3DS_MAX_TIMERS 16
+static n3ds_timer *n3ds_timers[N3DS_MAX_TIMERS];
+static LightLock n3ds_timers_lock;
+static bool n3ds_timers_lock_ready = false;
+static volatile bool n3ds_timers_stopping = false;
+static void timers_lock(void)
+{
+	if (!n3ds_timers_lock_ready) { LightLock_Init(&n3ds_timers_lock); n3ds_timers_lock_ready = true; }   /* first use: main thread */
+	LightLock_Lock(&n3ds_timers_lock);
+}
+static void timers_unlock(void) { LightLock_Unlock(&n3ds_timers_lock); }
+static void timers_add(n3ds_timer *t)
+{
+	timers_lock();
+	for (int i = 0; i < N3DS_MAX_TIMERS; i++) if (!n3ds_timers[i]) { n3ds_timers[i] = t; break; }
+	timers_unlock();
+}
+static void timers_forget(n3ds_timer *t)   /* call with the lock held */
+{
+	for (int i = 0; i < N3DS_MAX_TIMERS; i++) if (n3ds_timers[i] == t) n3ds_timers[i] = NULL;
+}
+
+extern "C" void n3ds_timers_stop(void)
+{
+	n3ds_timer *list[N3DS_MAX_TIMERS];
+	timers_lock();
+	n3ds_timers_stopping = true;
+	memcpy(list, n3ds_timers, sizeof list);
+	timers_unlock();
+	for (int i = 0; i < N3DS_MAX_TIMERS; i++) if (list[i]) list[i]->run = false;
+	for (int i = 0; i < N3DS_MAX_TIMERS; i++) {
+		if (!list[i] || threadGetCurrent() == list[i]->th) continue;
+		/* sleeps are 10 ms slices; a callback in progress gets 1 s to return */
+		if (R_FAILED(threadJoin(list[i]->th, 1000000000ULL)))
+			n3ds_note("exit: a streaming timer thread was still busy after 1 s\n");
+	}
+}
+
 static void sdl_timer_entry(void *arg)
 {
 	n3ds_timer *t = (n3ds_timer *)arg;
@@ -145,8 +185,14 @@ static void sdl_timer_entry(void *arg)
 	/* removed from inside its own callback (the stream finished while being serviced):
 	   nobody else will join this thread, so it cleans up after itself */
 	if (t->self_free) {
-		threadDetach(t->th);   /* libctru frees the Thread when this function returns */
-		free(t);
+		timers_lock();
+		bool stopping = n3ds_timers_stopping;
+		if (!stopping) timers_forget(t);
+		timers_unlock();
+		if (!stopping) {         /* while the process is ending, n3ds_timers_stop may still join it */
+			threadDetach(t->th);   /* libctru frees the Thread when this function returns */
+			free(t);
+		}
 	}
 	/* if SDL_RemoveTimer gave up waiting, the struct and thread are simply left behind
 	   (a few KB); freeing them from here raced the engine and crashed in free() (Nov 16) */
@@ -165,6 +211,7 @@ SDL_TimerID SDL_AddTimer(Uint32 interval, SDL_NewTimerCallback callback, void *p
 	t->th = threadCreate(sdl_timer_entry, t, 32 * 1024, prio - 2, -2, false);
 	if (!t->th) n3ds_note("SDL_AddTimer: threadCreate FAILED (thread limit?)\n");
 	if (!t->th) { free(t); return NULL; }
+	timers_add(t);
 	return (SDL_TimerID)t;
 }
 
@@ -186,6 +233,9 @@ SDL_bool SDL_RemoveTimer(SDL_TimerID id)
 	   once its callback returns) and never free anything it may still touch. Freeing
 	   or detaching it after a 1 s wait crashed in free() (ml11). */
 	if (R_SUCCEEDED(threadJoin(t->th, 3000000000ULL))) {
+		timers_lock();
+		timers_forget(t);
+		timers_unlock();
 		threadFree(t->th);
 		free(t);
 		return SDL_TRUE;

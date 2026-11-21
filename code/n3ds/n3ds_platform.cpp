@@ -106,6 +106,28 @@ extern "C" void n3ds_note(const char *fmt, ...)
 }
 
 extern "C" void n3ds_audio_shutdown(void);
+extern "C" void n3ds_timers_stop(void);   /* n3ds_sdl.cpp */
+
+/* FS-01/FS-02: every way out (Error()'s exit, the engine's exit(1)s, the quit door's return
+   from SDL_main, HOME -> Close's _exit) stops our helper threads first: the streaming-audio
+   timer threads (their callbacks feed the engine's audio streams) and the stall-trace thread
+   (it writes to the log). Left running, they touched the log file, the AL state and the
+   engine's audio streams while exit() closed and freed them. Runs once. */
+static Thread n3ds_stall_th = NULL;           /* the stall-trace thread (n3ds_present) */
+static volatile bool n3ds_stall_run = true;
+static Thread n3ds_stall_thread_handle(void) { return n3ds_stall_th; }
+extern "C" void n3ds_threads_stop(void)
+{
+	static bool done = false;
+	if (done) return;
+	done = true;
+	Thread st = n3ds_stall_thread_handle();
+	if (st) {
+		n3ds_stall_run = false;
+		if (R_SUCCEEDED(threadJoin(st, 2000000000ULL))) threadFree(st);
+	}
+	n3ds_timers_stop();
+}
 
 extern "C" void n3ds_fatal(const char *msg)
 {
@@ -117,7 +139,8 @@ extern "C" void n3ds_fatal(const char *msg)
 	errorDisp(&err);
 	/* the caller ends the process next (exit, or abort for a failed assertion, which skips the
 	   atexit handlers): stop the mixer and give our ndsp reference back first, so the DSP
-	   thread is gone before the heap is */
+	   thread is gone before the heap is (the timer and stall threads first, FS-01) */
+	n3ds_threads_stop();
 	n3ds_audio_shutdown();
 }
 
@@ -213,6 +236,7 @@ extern "C" void n3ds_init(void)
 	n3ds_require_new3ds();
 	osSetSpeedupEnable(true);           /* 804 MHz + L2 cache on New 3DS */
 	threadOnException(n3ds_exception_handler, n3ds_exc_stack + sizeof(n3ds_exc_stack), WRITE_DATA_TO_HANDLER_STACK);
+	atexit(n3ds_threads_stop);   /* FS-01: any exit() stops the helper threads (n3ds_al.cpp registers it again after the mixer's) */
 	gfxInitDefault();
 	gfxSet3D(true);
 	hidInit();
@@ -236,6 +260,7 @@ extern "C" void n3ds_init(void)
 
 extern "C" void n3ds_shutdown(void)
 {
+	n3ds_threads_stop();   /* FS-02: the quit door returns from SDL_main to here */
 	n3ds_note("shutdown\n");
 	if (n3ds_logfile) fclose(n3ds_logfile);
 	n3ds_logfile = NULL;
@@ -518,6 +543,7 @@ extern "C" void n3ds_input_poll(void)
 			Pilot.save_player(Player);
 			n3ds_note("close: pilot saved in %llu ms\n", (unsigned long long)(osGetTime() - c0));
 		}
+		n3ds_threads_stop();   /* FS-01: timer and stall threads before the mixer and the services */
 		n3ds_audio_shutdown();
 		n3ds_note("bye\n");
 		if (n3ds_logfile) { fclose(n3ds_logfile); n3ds_logfile = NULL; }
@@ -1078,8 +1104,9 @@ static volatile u32 n3ds_present_count = 0;
 static void stall_thread(void*)
 {
 	u32 last = 0; u64 still = osGetTime(), lastLog = 0;
-	for (;;) {
-		svcSleepThread(500000000LL);
+	while (n3ds_stall_run) {
+		for (int i = 0; i < 5 && n3ds_stall_run; i++) svcSleepThread(100000000LL);   /* 0.5 s, stoppable */
+		if (!n3ds_stall_run) break;
 		const u64 now = osGetTime();
 		const u32 c = n3ds_present_count;
 		if (c != last) { last = c; still = now; continue; }
@@ -1104,7 +1131,8 @@ extern "C" void n3ds_present(void)
 	frames++;
 	n3ds_present_count++;
 	{ static bool st = false; if (!st) { st = true; s32 pr = 0x30; svcGetThreadPriority(&pr, CUR_THREAD_HANDLE);
-	  if (!threadCreate(stall_thread, NULL, 8 * 1024, pr - 2, -2, true)) n3ds_note("stall trace: no thread\n"); } }
+	  n3ds_stall_th = threadCreate(stall_thread, NULL, 8 * 1024, pr - 2, -2, false);   /* joined at exit (FS-01) */
+	  if (!n3ds_stall_th) n3ds_note("stall trace: no thread\n"); } }
 	static u64 window_t0 = 0;
 	if (!window_t0) window_t0 = svcGetSystemTick();
 	if ((frames % 300) == 0) {

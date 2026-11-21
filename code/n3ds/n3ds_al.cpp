@@ -237,6 +237,7 @@ static void mix_thread_func(void *arg)
 }
 
 static void stop_mixer(void);
+extern "C" void n3ds_threads_stop(void);   /* n3ds_platform.cpp (FS-01) */
 
 static void start_mixer(void)
 {
@@ -253,7 +254,9 @@ static void start_mixer(void)
 	   path this does nothing. */
 	{
 		static int registered = 0;
-		if (!registered) { registered = 1; atexit(stop_mixer); }
+		/* registered after stop_mixer, so it runs before it (atexit is last in, first out): the
+		   streaming timer threads stop before the mixer does (FS-01) */
+		if (!registered) { registered = 1; atexit(stop_mixer); atexit(n3ds_threads_stop); }
 	}
 	LightLock_Init(&Al_lock);
 	LightEvent_Init(&Mix_event, RESET_ONESHOT);
