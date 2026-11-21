@@ -26,7 +26,7 @@ tangoa_fs2.vp  tangob_fs2.vp
 
 In the GOG version, `tangoA_fs2.vp` and `tangoB_fs2.vp` are in the `data2` and `data3` subfolders. `sparky_hi_fs2.vp` is not needed.
 
-Put `fs2-3ds.3dsx` directly in `sdmc:/3ds/` (as `sdmc:/3ds/fs2-3ds.3dsx`, not in the game folder) and start it from the Homebrew Launcher. Pilot files are saved in `sdmc:/3ds/freespace2/.fs2_open`. A log, including per-stage frame timings, is written to `fs2_3ds.log` in that folder.
+Put `fs2-3ds.3dsx` directly in `sdmc:/3ds/` (as `sdmc:/3ds/fs2-3ds.3dsx`, not in the game folder) and start it from the Homebrew Launcher. Pilot files are saved in `sdmc:/3ds/freespace2/.fs2_open`. `fs2_3ds.log` in that folder gets only start, exit and crash lines; create an empty `sdmc:/3ds/freespace2/debug.txt` for the full debug log (input, game states, per-stage frame timings), buffered and rolled over at 1 MB.
 
 ## Building
 

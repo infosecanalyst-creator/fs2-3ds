@@ -43,23 +43,66 @@ static FILE *n3ds_logfile = NULL;
 static int n3ds_quit = 0;
 static int n3ds_in_keyboard = 0;   /* the system keyboard applet is open (FS-05) */
 
-extern "C" void n3ds_log(const char *fmt, ...)
+/* FS-04: fs2_3ds.log used to get every line written and flushed to the SD card (one per
+   button press, state change and model load, profiler lines every 300 frames), and each SD
+   write stalls the game. Now n3ds_log() lines are written only when
+   sdmc:/3ds/freespace2/debug.txt exists (checked once, at start-up), buffered and rolled
+   over to fs2_3ds.old.log at 1 MB. n3ds_note() lines (start, exit, pilot saved on close,
+   crash, stall, failures) are always written and flushed at once: they are rare. */
+static int n3ds_debug = -1;
+static long n3ds_log_bytes = 0;
+
+extern "C" int n3ds_debug_on(void)
 {
+	if (n3ds_debug < 0) {
+		FILE *f = fopen(FS2_DIR "/debug.txt", "r");
+		n3ds_debug = f ? 1 : 0;
+		if (f) fclose(f);
+	}
+	return n3ds_debug;
+}
+
+static void n3ds_log_v(int flush, const char *fmt, va_list ap)
+{
+	if (n3ds_logfile && n3ds_log_bytes > 1024 * 1024) {
+		fclose(n3ds_logfile);
+		n3ds_logfile = NULL;
+		remove(FS2_DIR "/fs2_3ds.old.log");
+		rename(FS2_DIR "/fs2_3ds.log", FS2_DIR "/fs2_3ds.old.log");
+	}
 	if (!n3ds_logfile) {
 		static int opened_before = 0;
 		/* first open of a run truncates; a reopen (after the quit path closed it) appends */
 		n3ds_logfile = fopen(FS2_DIR "/fs2_3ds.log", opened_before ? "a" : "w");
 		opened_before = 1;
 		if (!n3ds_logfile) return;
+		setvbuf(n3ds_logfile, NULL, _IOFBF, 16384);
+		n3ds_log_bytes = 0;
 	}
 	static u64 t0 = 0;
 	if (!t0) t0 = osGetTime();
-	fprintf(n3ds_logfile, "[%6.1f] ", (double)(osGetTime() - t0) / 1000.0);
+	int n = fprintf(n3ds_logfile, "[%6.1f] ", (double)(osGetTime() - t0) / 1000.0);
+	if (n > 0) n3ds_log_bytes += n;
+	n = vfprintf(n3ds_logfile, fmt, ap);
+	if (n > 0) n3ds_log_bytes += n;
+	if (flush) fflush(n3ds_logfile);
+}
+
+extern "C" void n3ds_log(const char *fmt, ...)
+{
+	if (!n3ds_debug_on()) return;
 	va_list ap;
 	va_start(ap, fmt);
-	vfprintf(n3ds_logfile, fmt, ap);
+	n3ds_log_v(0, fmt, ap);
 	va_end(ap);
-	fflush(n3ds_logfile);
+}
+
+extern "C" void n3ds_note(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	n3ds_log_v(1, fmt, ap);
+	va_end(ap);
 }
 
 extern "C" void n3ds_audio_shutdown(void);
@@ -67,7 +110,7 @@ extern "C" void n3ds_audio_shutdown(void);
 extern "C" void n3ds_fatal(const char *msg)
 {
 	if (n3ds_quit) _exit(0);     /* errors while closing down: just leave */
-	n3ds_log("FATAL: %s\n", msg);
+	n3ds_note("FATAL: %s\n", msg);
 	errorConf err;
 	errorInit(&err, ERROR_TEXT_WORD_WRAP, CFG_LANGUAGE_EN);
 	errorText(&err, msg);
@@ -89,7 +132,7 @@ static void n3ds_exception_handler(ERRF_ExceptionInfo *excep, CpuRegisters *regs
 		(int)excep->type, (unsigned long)regs->pc, (unsigned long)regs->lr, (unsigned long)regs->sp,
 		(unsigned long)excep->far, (unsigned long)regs->r[0], (unsigned long)regs->r[1],
 		(unsigned long)regs->r[2], (unsigned long)regs->r[3]);
-	n3ds_log("%s", n3ds_exc_msg);
+	n3ds_note("%s", n3ds_exc_msg);
 	if (n3ds_logfile) fclose(n3ds_logfile);
 	n3ds_logfile = NULL;
 	/* Nov 16: a crash used to sit here forever with a frozen picture (Ryan had to hold
@@ -177,8 +220,8 @@ extern "C" void n3ds_init(void)
 	mkdir(FS2_DIR, 0777);
 	chdir(FS2_DIR);
 
-	n3ds_log("FreeSpace 2 3DS starting\n");
-	n3ds_log("heap %lu KB, linear %lu KB free\n", (unsigned long)(envGetHeapSize() / 1024), (unsigned long)(linearSpaceFree() / 1024));
+	n3ds_note("FreeSpace 2 3DS starting%s\n", n3ds_debug_on() ? " (debug log on: debug.txt)" : "");
+	n3ds_note("heap %lu KB, linear %lu KB free\n", (unsigned long)(envGetHeapSize() / 1024), (unsigned long)(linearSpaceFree() / 1024));
 
 	pglInitEx(N3DS_GAME_W, N3DS_GAME_H);
 	glGenTextures(1, &n3ds_main_tex);
@@ -193,7 +236,7 @@ extern "C" void n3ds_init(void)
 
 extern "C" void n3ds_shutdown(void)
 {
-	n3ds_log("shutdown\n");
+	n3ds_note("shutdown\n");
 	if (n3ds_logfile) fclose(n3ds_logfile);
 	n3ds_logfile = NULL;
 	pglExit();
@@ -470,13 +513,13 @@ extern "C" void n3ds_input_poll(void)
 		   engine has none). */
 		n3ds_quit = 1;
 		u64 c0 = osGetTime();
-		n3ds_log("close requested - saving pilot and exiting\n");
+		n3ds_note("close requested - saving pilot and exiting\n");
 		if (Player && Player->callsign[0]) {
 			Pilot.save_player(Player);
-			n3ds_log("close: pilot saved in %llu ms\n", (unsigned long long)(osGetTime() - c0));
+			n3ds_note("close: pilot saved in %llu ms\n", (unsigned long long)(osGetTime() - c0));
 		}
 		n3ds_audio_shutdown();
-		n3ds_log("bye\n");
+		n3ds_note("bye\n");
 		if (n3ds_logfile) { fclose(n3ds_logfile); n3ds_logfile = NULL; }
 		pglExit();
 		hidExit();
@@ -1043,7 +1086,7 @@ static void stall_thread(void*)
 		if (c == 0 || now - still < 3000) continue;
 		if (lastLog && now - lastLog < 10000) continue;
 		lastLog = now;
-		n3ds_log("STALL: no frame for %.1f s after frame %lu; last step '%s' (freespace.cpp line %d)\n",
+		n3ds_note("STALL: no frame for %.1f s after frame %lu; last step '%s' (freespace.cpp line %d)\n",
 		         (double)(now - still) / 1000.0, (unsigned long)c, (const char*)n3ds_phase, (int)n3ds_phase_line);
 	}
 }
@@ -1061,7 +1104,7 @@ extern "C" void n3ds_present(void)
 	frames++;
 	n3ds_present_count++;
 	{ static bool st = false; if (!st) { st = true; s32 pr = 0x30; svcGetThreadPriority(&pr, CUR_THREAD_HANDLE);
-	  if (!threadCreate(stall_thread, NULL, 8 * 1024, pr - 2, -2, true)) n3ds_log("stall trace: no thread\n"); } }
+	  if (!threadCreate(stall_thread, NULL, 8 * 1024, pr - 2, -2, true)) n3ds_note("stall trace: no thread\n"); } }
 	static u64 window_t0 = 0;
 	if (!window_t0) window_t0 = svcGetSystemTick();
 	if ((frames % 300) == 0) {
@@ -1214,7 +1257,8 @@ extern "C" void n3ds_present(void)
 			state, probe_ms[0], probe_ms[1], probe_ms[2], probe_ms[3], (int)(vramSpaceFree() / 1024));
 		memset(probe_ms, 0, sizeof(probe_ms));
 	}
-	probe_frame = (state == GS_STATE_GAME_PLAY) && ((frames % 300) == 150);   /* flight only */
+	/* GPU probe (three glFinish waits in one frame every 300): debug.txt only */
+	probe_frame = n3ds_debug_on() && (state == GS_STATE_GAME_PLAY) && ((frames % 300) == 150);   /* flight only */
 
 	int stereo = 0;
 	u64 t_present0 = osGetTime();
