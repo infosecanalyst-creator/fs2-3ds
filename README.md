@@ -1,6 +1,6 @@
 # FreeSpace 2 for the New Nintendo 3DS
 
-A port of fs2_open 3.6.10 to the New 3DS / New 3DS XL.
+A port of fs2_open 3.7.2 to the New 3DS / New 3DS XL.
 
 **Bring your own game files.** This repository contains no FreeSpace 2 game data. You need your own copy of FreeSpace 2 (GOG or Steam).
 
