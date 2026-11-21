@@ -53,6 +53,10 @@ ARCH     := -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 DEFINES  := -D__3DS__ -DARM11 -D_3DS -DSCP_UNIX -DSCP_3DS -DUSE_OPENAL -DNO_DIRECT3D -DNO_NETWORK_SPEECH \
             -DNDEBUG -DFS2_SPEECH=0 -DLUA_ANSI -DHAVE_STDINT_H
 
+# Port version shown in the START menu: git describe of fs2-3ds
+PORT_VERSION ?= $(shell git -c safe.directory='*' -C "$(CURDIR)" describe --always --dirty 2>/dev/null || echo unknown)
+DEFINES  += -DPORT_VERSION=\"$(PORT_VERSION)\"
+
 INCLUDES := -I$(CURDIR)/code -I$(CURDIR)/code/n3ds/include -I$(CURDIR)/lua -I$(CURDIR)/libjpeg \
             -I$(CURDIR)/lib/picaGL/include -I$(CURDIR)/lib/picaGL/source -I$(BUILD)/shaders \
             -I$(CURDIR)/lib/vorbis/include -I$(CURDIR)/lib/vorbis/lib -I$(CURDIR)/lib/theora/include \
@@ -61,7 +65,7 @@ INCLUDES := -I$(CURDIR)/code -I$(CURDIR)/code/n3ds/include -I$(CURDIR)/lua -I$(C
 
 OPT      := -O2 -ffast-math -fno-strict-aliasing -fsigned-char -ffunction-sections -fdata-sections \
             -mword-relocations
-WARN     := -w
+WARN     :=
 
 CFLAGS   := $(ARCH) $(OPT) $(WARN) $(DEFINES) $(INCLUDES)
 CXXFLAGS := $(CFLAGS) -std=gnu++98 -fpermissive -Wno-narrowing

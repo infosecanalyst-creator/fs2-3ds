@@ -229,6 +229,9 @@ extern "C" void n3ds_menu_zoom(int delta);
 extern "C" void n3ds_tap_key(int key);
 #include "io/key.h"
 #include "n3ds/n3ds_manual.h"
+#ifndef PORT_VERSION
+#define PORT_VERSION "unknown"
+#endif
 
 static void dash_action(int i)
 {
@@ -436,6 +439,10 @@ static void pm_draw(void)
 		gr_set_color(255, 204, 64);
 		gr_string((DASH_W - w) / 2, 36, t, false);
 		for (int i = 0; i < 3; i++) pm_button(i, Pm_main[i]);
+		const char *v = "Build " PORT_VERSION;   /* port version (git describe of fs2-3ds) */
+		gr_get_string_size(&w, &h, v);
+		gr_set_color(150, 150, 165);
+		gr_string((DASH_W - w) / 2, 190, v, false);
 	} else {
 		const char *t1 = "EXIT FREESPACE 2?", *t2 = "Progress since your last save is lost.";
 		gr_get_string_size(&w, &h, t1);
