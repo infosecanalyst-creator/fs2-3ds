@@ -4,3 +4,4 @@ build.log
 *.elf
 *.smdh
 *.vp
+localbuild.log

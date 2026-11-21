@@ -146,6 +146,8 @@ extern "C" void n3ds_fatal(const char *msg)
 
 /* crash handler: log the faulting address and registers, then show a dialog */
 static u8 n3ds_exc_stack[0x2000] __attribute__((aligned(8)));
+extern "C" { extern int __system_argc; extern char **__system_argv; }
+static volatile int n3ds_test_run = 0;   /* started by the test agent (--selftest=...): see n3ds_exception_handler */
 static char n3ds_exc_msg[512];
 
 static void n3ds_exception_handler(ERRF_ExceptionInfo *excep, CpuRegisters *regs)
@@ -158,16 +160,38 @@ static void n3ds_exception_handler(ERRF_ExceptionInfo *excep, CpuRegisters *regs
 	n3ds_note("%s", n3ds_exc_msg);
 	if (n3ds_logfile) fclose(n3ds_logfile);
 	n3ds_logfile = NULL;
-	/* Nov 16: a crash used to sit here forever with a frozen picture (Ryan had to hold
-	   POWER). Restart the console instead: cold restart through the MCU, which Luma treats
-	   as a power-on (it autoboots the test agent / Homebrew Launcher). */
-	svcSleepThread(1000000000LL);
-	if (R_SUCCEEDED(mcuHwcInit())) {
-		u8 v = 1 << 2;
-		MCUHWC_WriteRegister(0x20, &v, 1);
-		mcuHwcExit();
+	/* FS-10: a crash shows a crash screen and waits; it never restarts the console by itself.
+	   (The Nov 16 version cold-restarted through the MCU so test runs never needed a hand: that
+	   belongs to the test hooks' restartguard. A test run, started with --selftest=, keeps that
+	   restart until restartguard owns it; a normal launch never does.) */
+	if (n3ds_test_run) {
+		svcSleepThread(1000000000LL);
+		if (R_SUCCEEDED(mcuHwcInit())) {
+			u8 v = 1 << 2;
+			MCUHWC_WriteRegister(0x20, &v, 1);
+			mcuHwcExit();
+		}
+		for (;;) svcSleepThread(1000000000LL);
 	}
-	for (;;) svcSleepThread(1000000000LL);
+	PrintConsole top, bot;
+	consoleInit(GFX_TOP, &top);
+	consoleInit(GFX_BOTTOM, &bot);
+	/* the console's font is 8x8: 50 columns on top, 40 below; every line is kept under that */
+	consoleSelect(&top);
+	printf("\n  FreeSpace 2 crashed\n\n");
+	printf("  type %d   pc %08lx\n  lr %08lx   sp %08lx\n  far %08lx\n", (int)excep->type, (unsigned long)regs->pc,
+	       (unsigned long)regs->lr, (unsigned long)regs->sp, (unsigned long)excep->far);
+	consoleSelect(&bot);
+	printf("\n The game stopped on an error.\n\n The details are in\n sdmc:/3ds/freespace2/\n fs2_3ds.log\n\n Press START to go back to the\n Homebrew Menu.\n");
+	gfxFlushBuffers();
+	gfxSwapBuffers();
+	for (;;) {
+		hidScanInput();
+		if (hidKeysDown() & KEY_START) break;
+		gspWaitForVBlank();
+	}
+	gfxExit();
+	_exit(0);
 }
 
 int n3ds_trace_frames = 10;
@@ -235,6 +259,9 @@ extern "C" void n3ds_init(void)
 {
 	n3ds_require_new3ds();
 	osSetSpeedupEnable(true);           /* 804 MHz + L2 cache on New 3DS */
+	for (int i = 0; i < __system_argc; i++)
+		if (__system_argv[i] && !strncmp(__system_argv[i], "--selftest=", 11)) n3ds_test_run = 1;
+	{ struct stat tst; if (stat("sdmc:/3ds/testagent/emu_selftest.txt", &tst) == 0) n3ds_test_run = 1; }
 	threadOnException(n3ds_exception_handler, n3ds_exc_stack + sizeof(n3ds_exc_stack), WRITE_DATA_TO_HANDLER_STACK);
 	atexit(n3ds_threads_stop);   /* FS-01: any exit() stops the helper threads (n3ds_al.cpp registers it again after the mixer's) */
 	gfxInitDefault();
