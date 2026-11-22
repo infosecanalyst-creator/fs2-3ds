@@ -37,11 +37,16 @@ for st, title in re.findall(r'\{ (GS_STATE_\w+), "([^"]+)"', dash):
 def roww(n): return (320 - 12 - 4 * (n - 1)) // n
 for lbl in re.findall(r'Base_labels\[4\] = \{(.*?)\}', dash)[0].replace('"', '').split(','):
     check(F1, lbl.strip(), roww(4) - 4, "dash button")
-for n, body in re.findall(r'\{ GS_STATE_\w+, (\d), \{ (.*?) \} \},\n', dash):
+nrows = 0
+for n, body, widths in re.findall(r'\{ GS_STATE_\w+, (\d), \{ (.*?) \} \}(?:, \{ ([\d, ]+) \})? \},\n', dash):
     labels = re.findall(r'\{ "([^"]+)", ACT_', body)
     assert len(labels) == int(n), (n, labels)
-    for lbl in labels:
-        check(F1, lbl, roww(int(n)) - 4, f"dash action button (row of {n})")
+    nrows += 1
+    ws = [int(x) for x in widths.split(',')] if widths else [roww(int(n))] * int(n)
+    assert sum(ws) + 4 * (int(n) - 1) <= 308, ("action row too wide", labels, ws)
+    for lbl, w in zip(labels, ws):
+        check(F1, lbl, w - 8, f"dash action button ({w} px, 4 px each side)")
+assert nrows == dash.count('{ GS_STATE_') - dash.count('"PILOT SELECT"') * 0 - len(re.findall(r'\{ (GS_STATE_\w+), "([^"]+)"', dash)), "an action row was not read"
 # START menu, settings and message pages: rows are 308 wide, hints use the first that fits
 for lbl in re.findall(r'Pm_main(?:_menus)?\[\] = \{(.*?)\}', dash):
     for l in lbl.replace('"', '').split(','):

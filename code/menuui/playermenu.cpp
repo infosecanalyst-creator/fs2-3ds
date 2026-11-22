@@ -1339,6 +1339,12 @@ void player_tips_popup()
 {
 	int tip, ret;
 
+#ifdef SCP_3DS
+	// New 3DS: the "new user tips" name PC keys ("Press [Alt-M] to enable auto-speed matching"),
+	// none of which exist here; the built-in manual lists the real buttons. Never shown.
+	return;
+#endif
+
 	// player has disabled tips
 	if ( (Player != NULL) && !Player->tips ) {
 		return;

@@ -224,17 +224,18 @@ static const char *const Base_labels[4] = { "BACK", "ENTER", "ZOOM", "MANUAL" };
    sends the key the game itself reads for that action, or posts the event a click on the room posts. */
 enum { ACT_KEY, ACT_EVENT, ACT_READY_ROOM };
 struct screen_action { const char *label; int kind; int arg; };
-struct screen_actions { int state; int count; screen_action a[4]; };
+struct screen_actions { int state; int count; screen_action a[4]; int widths[4]; };   /* widths: on the 320 screen, all 0 = equal */
 #include "io/key.h"
 #include "globalincs/systemvars.h"
 static const screen_actions Actions[] = {
-	{ GS_STATE_MAIN_MENU, 3, { { "READY ROOM", ACT_READY_ROOM, 0 }, { "TECH ROOM", ACT_EVENT, GS_EVENT_TECH_MENU }, { "OPTIONS", ACT_EVENT, GS_EVENT_OPTIONS_MENU } } },
+	/* widths by label, so each has a clear margin (three equal buttons left READY ROOM 2 px a side) */
+	{ GS_STATE_MAIN_MENU, 3, { { "READY ROOM", ACT_READY_ROOM, 0 }, { "TECH ROOM", ACT_EVENT, GS_EVENT_TECH_MENU }, { "OPTIONS", ACT_EVENT, GS_EVENT_OPTIONS_MENU } }, { 116, 100, 84 } },
 	{ GS_STATE_CMD_BRIEF, 1, { { "CONTINUE", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
 	{ GS_STATE_FICTION_VIEWER, 1, { { "CONTINUE", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
 	{ GS_STATE_RED_ALERT, 1, { { "CONTINUE", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
-	{ GS_STATE_BRIEFING, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
-	{ GS_STATE_SHIP_SELECT, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
-	{ GS_STATE_WEAPON_SELECT, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
+	{ GS_STATE_BRIEFING, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } }, { 76, 60, 82, 78 } },
+	{ GS_STATE_SHIP_SELECT, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } }, { 76, 60, 82, 78 } },
+	{ GS_STATE_WEAPON_SELECT, 4, { { "BRIEFING", ACT_KEY, KEY_B }, { "SHIPS", ACT_KEY, KEY_S }, { "WEAPONS", ACT_KEY, KEY_W }, { "COMMIT", ACT_KEY, KEY_CTRLED | KEY_ENTER } }, { 76, 60, 82, 78 } },
 	{ GS_STATE_DEBRIEF, 2, { { "NEXT TAB", ACT_KEY, KEY_TAB }, { "ACCEPT", ACT_KEY, KEY_CTRLED | KEY_ENTER } } },
 };
 #define NUM_ACTIONS ((int)(sizeof(Actions) / sizeof(Actions[0])))
@@ -267,6 +268,13 @@ static void dash_layout(void)
 	Dash_nact = Dash_actions ? Dash_actions->count : 0;
 	if (Dash_nact) {
 		dash_row(Dash_buttons, Dash_nact, ACT_Y);
+		if (Dash_actions->widths[0]) {
+			/* given widths (they add up to the 320 screen's row); on the 400 screen the extra is shared out */
+			int sum = 0, x = 6;
+			for (int i = 0; i < Dash_nact; i++) sum += Dash_actions->widths[i];
+			const int extra = (DASH_W - 12 - 4 * (Dash_nact - 1) - sum) / Dash_nact;
+			for (int i = 0; i < Dash_nact; i++) { Dash_buttons[i].x = x; Dash_buttons[i].w = Dash_actions->widths[i] + extra; x += Dash_buttons[i].w + 4; }
+		}
 		for (int i = 0; i < Dash_nact; i++) Dash_buttons[i].label = Dash_actions->a[i].label;
 	}
 	dash_row(Dash_buttons + Dash_nact, 4, BTN_Y);
