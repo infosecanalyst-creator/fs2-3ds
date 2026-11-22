@@ -740,7 +740,8 @@ extern "C" void n3ds_input_poll(void)
 			int th = (held & BTN_TOUCH) ? 1 : 0, td = (down & BTN_TOUCH) ? 1 : 0;
 			int dy = (down & BTN_DDOWN) ? 1 : (down & BTN_DUP) ? -1 : 0;
 			if (!dy) dy = (down & BTN_DRIGHT) ? 1 : (down & BTN_DLEFT) ? -1 : 0;
-			if (n3ds_popup_page_input(flight, dy, (down & BTN_A) ? 1 : 0, (down & BTN_B) ? 1 : 0,
+			/* in menus X is the game's Enter ("accept"): there it presses the highlighted answer too */
+			if (n3ds_popup_page_input(flight, dy, (down & (flight ? BTN_A : (BTN_A | BTN_X))) ? 1 : 0, (down & BTN_B) ? 1 : 0,
 					th, th || td ? qtp.px : 0, th || td ? qtp.py : 0, td)) {
 				release_all_keys();
 				if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
