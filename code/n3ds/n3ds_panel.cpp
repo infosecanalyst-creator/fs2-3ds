@@ -9,8 +9,8 @@
  *   |---------------------------------------------------|
  *   |  ENERGY   S  W  E   (tap top half +, bottom -)   |  (24-px columns, x 234..314)
  *   |---------------------------------------------------|
- *   | HOSTILE | NEXT    | FRIEND | SUBSYS | ATTACKER   |
- *   | MATCH   | ORDERS  | EQ SHLD| BOMB   | RADAR      |
+ *   | ENEMY   | NEXT    | FRIEND | SUB    | ATTKR      |
+ *   | MATCH   | COMMS   | EQ SH  | BOMB   | RADAR      |
  *   +-------------------------------------------------+
  */
 #include "n3ds/n3ds_panel.h"
@@ -92,15 +92,17 @@ struct panel_button {
 };
 
 static const panel_button Panel_buttons[] = {
-	/* rule 11: 58 x 30, 4 px apart, 6 px from the screen edges (x 6..312, y 168..232) */
-	{   6, 168, 58, 30, "HOSTILE",  KEY_H },
+	/* rule 11: 58 x 30, 4 px apart, 6 px from the screen edges (x 6..312, y 168..232).
+	   FS2-U4: every label leaves at least 3 px of button on each side (tools/checktext.py):
+	   HOSTILE, ATTACK and SHIELDS were as wide as the button itself, SUBSYS and ORDERS 1 px short. */
+	{   6, 168, 58, 30, "ENEMY",    KEY_H },
 	{  68, 168, 58, 30, "NEXT",     KEY_T },
 	{ 130, 168, 58, 30, "FRIEND",   KEY_F },
-	{ 192, 168, 58, 30, "SUBSYS",   KEY_S },
-	{ 254, 168, 58, 30, "ATTACK",  KEY_R },
+	{ 192, 168, 58, 30, "SUB",      KEY_S },
+	{ 254, 168, 58, 30, "ATTKR",    KEY_R },
 	{   6, 202, 58, 30, "MATCH",    KEY_M },
-	{  68, 202, 58, 30, "ORDERS",   KEY_C },
-	{ 130, 202, 58, 30, "SHIELDS",  KEY_Q },
+	{  68, 202, 58, 30, "COMMS",    KEY_C },
+	{ 130, 202, 58, 30, "EQ SH",    KEY_Q },
 	{ 192, 202, 58, 30, "BOMB",     KEY_B },
 	{ 254, 202, 58, 30, "RADAR",    KEY_PADPLUS },
 };
@@ -124,7 +126,8 @@ static int Panel_pressed_ets = -1;      /* energy cell being pressed: column * 2
 
 /* ---- buttons without touch: a gold highlight moved by the D-Pad over the 10 buttons and the
    6 energy cells (top / bottom half of each column), A presses it */
-#define NAV_TARGETS (NUM_PANEL_BUTTONS + 6)
+#define NAV_TARGETS (NUM_PANEL_BUTTONS + 6 + 1)
+#define NAV_TEXTBOX (NUM_PANEL_BUTTONS + 6)      /* the message box: A turns its page (FS2-X1) */
 static int Panel_nav = 0;
 static int Panel_focus = 0;
 static int Panel_nav_hold = 0;          /* frames left of an A press (key held, button sunk) */
@@ -134,6 +137,8 @@ static void nav_rect(int i, int *x, int *y, int *w, int *h)
 	if (i < NUM_PANEL_BUTTONS) {
 		const panel_button &b = Panel_buttons[i];
 		*x = b.x; *y = b.y; *w = b.w; *h = b.h;
+	} else if (i == NAV_TEXTBOX) {
+		*x = 2; *y = 93; *w = 230; *h = 73;      /* TEXT_W + 4 wide, BOX_Y - 2 .. BOX_BOTTOM */
 	} else {
 		int c = (i - NUM_PANEL_BUTTONS) / 2, lower = (i - NUM_PANEL_BUTTONS) & 1;
 		*x = Ets_cols[c].x; *w = ETS_W; *h = ETS_H / 2;
@@ -246,9 +251,26 @@ static int wrap_lines(const char *text, int maxw, char out[][96], int maxlines)
 	return n;
 }
 
-#define BOX_Y 96
-#define BOX_BOTTOM 164
+/* FS2-X1: seven whole text rows (y 95 .. 165) instead of six; the box is x 2..232, y 93..166 */
+#define BOX_Y 95
+#define BOX_BOTTOM 166
 #define LINE_H 10
+#define BOX_ROWS ((BOX_BOTTOM - BOX_Y) / LINE_H)
+
+/* FS2-X1: a training message too long for the box used to flip pages by itself every 3 s, with
+   no page mark, so half sentences came and went. Now a page stays until the player turns it:
+   a tap on the message box (or A with the panel highlight on it), and the last row of the box
+   says which page this is. A new message starts at its first page. */
+static int Train_page = 0, Train_pages = 1;
+static int Train_flash = 0;                 /* frames the box edge stays lit after a page turn */
+static char Train_last[512] = "";
+static void train_next_page(void)
+{
+	if (Train_pages <= 1) return;
+	Train_page = (Train_page + 1) % Train_pages;
+	Train_flash = 6;
+	n3ds_click();
+}
 
 void n3ds_panel_draw(void)
 {
@@ -310,13 +332,13 @@ void n3ds_panel_draw(void)
 		panel_bar(162, 35, 64, 7, smax > 0.0f ? s / smax : 0.0f, 80, 160, 255);
 
 		gr_set_color(200, 200, 200);
-		panel_string(4, 46, "AFTB");
+		panel_string(4, 46, "BURN");
 		panel_bar(44, 47, 72, 7, sip->afterburner_fuel_capacity > 0.0f ? Player_ship->afterburner_fuel / sip->afterburner_fuel_capacity : 0.0f, 255, 120, 60);
 		gr_set_color(200, 200, 200);
 		panel_string(122, 46, "WPN");
 		panel_bar(162, 47, 64, 7, sip->max_weapon_reserve > 0.0f ? Player_ship->weapon_energy / sip->max_weapon_reserve : 0.0f, 220, 220, 80);
 
-		sprintf(buf, "SPD %d", (int)Player_obj->phys_info.fspeed);
+		sprintf(buf, "SPEED %d", (int)Player_obj->phys_info.fspeed);
 		gr_set_color(200, 200, 200);
 		panel_string(4, 58, buf);
 		if (Player && (Player->flags & PLAYER_FLAGS_MATCH_TARGET)) {
@@ -340,7 +362,7 @@ void n3ds_panel_draw(void)
 				sprintf(tmp, "%s (linked)", buf);
 				if (text_w(tmp) <= TEXT_W - 36) strcpy(buf, tmp);
 			}
-		} else strcpy(buf, "-");
+		} else strcpy(buf, "none");
 		{ char fb[160]; fit_string(buf, TEXT_W - 36, fb, sizeof(fb)); strcpy(buf, fb); }   /* FS-09 */
 		panel_string(36, 72, buf);
 
@@ -350,7 +372,7 @@ void n3ds_panel_draw(void)
 		if (sb >= 0 && sb < swp->num_secondary_banks && swp->secondary_bank_weapons[sb] >= 0) {
 			sprintf(buf, "%s  x%d", Weapon_info[swp->secondary_bank_weapons[sb]].name, swp->secondary_bank_ammo[sb]);
 			if (text_w(buf) > TEXT_W - 36) strcpy(buf, Weapon_info[swp->secondary_bank_weapons[sb]].name);
-		} else strcpy(buf, "-");
+		} else strcpy(buf, "none");
 		{ char fb[160]; fit_string(buf, TEXT_W - 36, fb, sizeof(fb)); strcpy(buf, fb); }   /* FS-09 */
 		panel_string(36, 84, buf);
 
@@ -361,27 +383,67 @@ void n3ds_panel_draw(void)
 		int y = BOX_Y;
 		char lines[8][96];
 		char tbuf[512];
+		/* FS2-U3 (part): the top-screen threat warnings are a few pixels tall at half size, so the
+		   panel says them in words on the first row of the box while they last (red, with a "!"):
+		   bits of Player->threat_flags as set in hudreticle.cpp (1 dumbfire, 2 locking, 4 locked) */
+		if (Player && (Player->threat_flags & 7)) {
+			const char *warn = (Player->threat_flags & 4) ? "! MISSILE LOCKED ON YOU"
+			                 : (Player->threat_flags & 2) ? "! ENEMY IS LOCKING ON" : "! ENEMY GUNS ON YOU";
+			gr_set_color(255, 80, 64);
+			panel_string(5, y, warn);
+			y += LINE_H;
+		}
+		const int box_y0 = y;
 		if (n3ds_training_text(tbuf, sizeof(tbuf))) {
-			char tl[16][96];
-			int n = wrap_lines(tbuf, TEXT_W - 4, tl, 16);
-			int fit = (BOX_BOTTOM - y) / LINE_H - 2;          /* keep room for the key prompt */
-			if (fit < 2) fit = 2;
-			int first = 0;
-			if (n > fit) {
-				/* too long for the box: show it a page at a time, turning every 3 s */
-				int pages = (n + fit - 1) / fit;
-				first = ((timestamp() / 3000) % pages) * fit;
+			static char tl[24][96];
+			int n = wrap_lines(tbuf, TEXT_W - 4, tl, 24);
+			if (strcmp(tbuf, Train_last)) {                /* a new message: back to its first page */
+				snprintf(Train_last, sizeof(Train_last), "%s", tbuf);
+				Train_page = 0;
 			}
+			int fit = BOX_ROWS - 2;                        /* keep two rows for the key prompt */
+			Train_pages = 1;
+			if (n > fit) {
+				fit--;                                     /* the page's last row is the page mark */
+				Train_pages = (n + fit - 1) / fit;
+			}
+			if (Train_page >= Train_pages) Train_page = 0;
+			int first = Train_page * fit;
 			gr_set_color(140, 200, 255);
 			for (int i = first; i < n && i < first + fit; i++, y += LINE_H)
 				panel_string(5, y, tl[i]);
+			if (Train_pages > 1) {
+				/* the mark sits on the row under a full page, also on the shorter last page */
+				y = box_y0 + fit * LINE_H;
+				char mark[40];
+				/* on the touchscreen the mark says how to turn the page; with the screens swapped the
+				   panel cannot be tapped (the page turns with the panel highlight: SELECT+B, then A) */
+				extern int n3ds_screens_swapped(void);
+				if (n3ds_screens_swapped()) snprintf(mark, sizeof(mark), "PAGE %d/%d", Train_page + 1, Train_pages);
+				else snprintf(mark, sizeof(mark), "PAGE %d/%d  TAP FOR MORE", Train_page + 1, Train_pages);
+				if (text_w(mark) > TEXT_W - 4) snprintf(mark, sizeof(mark), "PAGE %d/%d", Train_page + 1, Train_pages);
+				gr_set_color(255, 204, 64);
+				panel_string(5, y, mark);
+				y += LINE_H;
+			}
+		} else {
+			Train_pages = 1; Train_page = 0; Train_last[0] = 0;
+		}
+		if (Train_flash > 0) {
+			/* page turned: the box edge lights for a moment (the press animation of this "button") */
+			Train_flash--;
+			gr_set_color(220, 180, 60);
+			panel_rect(2, BOX_Y - 2, TEXT_W + 4, 1);
+			panel_rect(2, BOX_BOTTOM - 1, TEXT_W + 4, 1);
+			panel_rect(2, BOX_Y - 2, 1, BOX_BOTTOM - BOX_Y + 2);
+			panel_rect(TEXT_W + 5, BOX_Y - 2, 1, BOX_BOTTOM - BOX_Y + 2);
 		}
 		char dl[3][128];
 		int dst[3];
 		int nd = n3ds_directives(dl, dst, 3);
 		for (int d = 0; d < nd; d++) {
 			int n = wrap_lines(dl[d], TEXT_W - 4, lines, 3);
-			if (y + n * LINE_H > BOX_BOTTOM) break;
+			if (y + n * LINE_H > BOX_BOTTOM + 1) break;
 			switch (dst[d]) {
 				case 1: gr_set_color(100, 255, 100); break;
 				case 2: gr_set_color(255, 90, 90); break;
@@ -396,7 +458,7 @@ void n3ds_panel_draw(void)
 			int m = (Panel_msg_head - k + PANEL_MSGS) % PANEL_MSGS;
 			if (!Panel_msg[m][0] || timestamp() - Panel_msg_time[m] > 12000) continue;
 			int n = wrap_lines(Panel_msg[m], TEXT_W - 4, lines, 3);
-			if (y + n * LINE_H > BOX_BOTTOM) break;
+			if (y + n * LINE_H > BOX_BOTTOM + 1) break;
 			gr_set_color(200, 230, 200);
 			for (int i = 0; i < n; i++, y += LINE_H)
 				panel_string(5, y, lines[i]);
@@ -499,6 +561,7 @@ void n3ds_panel_nav(int dx, int dy, int press)
 		if (best >= 0) Panel_focus = best;
 	}
 	if (press) {
+		if (Panel_focus == NAV_TEXTBOX) { train_next_page(); return; }
 		panel_release();
 		int key;
 		if (Panel_focus < NUM_PANEL_BUTTONS) {
@@ -541,6 +604,8 @@ void n3ds_panel_touch(int held, int x, int y, int pressed)
 			return;
 		}
 	}
+	/* FS2-X1: a tap on the message box turns the page of a long training message */
+	if (x >= 2 && x < 2 + TEXT_W + 4 && y >= BOX_Y - 2 && y < BOX_BOTTOM) { by_touch = 0; train_next_page(); return; }
 	for (int c = 0; c < 3; c++) {
 		if (x >= Ets_cols[c].x - 2 && x < Ets_cols[c].x + ETS_W + 2 && y >= ETS_Y && y < ETS_Y + ETS_H) {
 			int lower = (y >= ETS_Y + ETS_H / 2);

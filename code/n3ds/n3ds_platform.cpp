@@ -45,21 +45,53 @@ static int n3ds_in_keyboard = 0;   /* the system keyboard applet is open (FS-05)
 
 /* FS-04: fs2_3ds.log used to get every line written and flushed to the SD card (one per
    button press, state change and model load, profiler lines every 300 frames), and each SD
-   write stalls the game. Now n3ds_log() lines are written only when
-   sdmc:/3ds/freespace2/debug.txt exists (checked once, at start-up), buffered and rolled
-   over to fs2_3ds.old.log at 1 MB. n3ds_note() lines (start, exit, pilot saved on close,
-   crash, stall, failures) are always written and flushed at once: they are rare. */
+   write stalls the game. Now n3ds_log() lines are written only when the debug log is switched
+   on, buffered and rolled over to fs2_3ds.old.log at 1 MB. n3ds_note() lines (start, exit,
+   pilot saved on close, crash, stall, failures) are always written and flushed at once: they
+   are rare.
+   The switch is START > SETTINGS > DEBUG LOG, off by default and kept like the other settings
+   (a marker file, .debuglog). It used to be a debug.txt file in the game folder: one left on
+   the card after a test kept the slow full log on for good with nothing on screen to say so.
+   debug.txt is no longer read. */
 static int n3ds_debug = -1;
 static long n3ds_log_bytes = 0;
+
+/* Settings are marker files in the game folder (.lefty, .swapped, .debuglog): present = on.
+   Returns 1 when the card took the change. A failure (card full or locked) is noted in the log
+   and remembered for the SETTINGS page; the setting still applies until the game is closed. */
+static int n3ds_marker_fail = 0;
+extern "C" void n3ds_note(const char *fmt, ...);
+static int n3ds_marker_set(const char *path, int on)
+{
+	int ok;
+	if (on) {
+		FILE *f = fopen(path, "w");
+		ok = f != NULL;
+		if (f && fclose(f) != 0) ok = 0;
+	} else {
+		struct stat sb;
+		ok = remove(path) == 0 || stat(path, &sb) != 0;      /* gone, or was never there */
+	}
+	n3ds_marker_fail = !ok;
+	if (!ok) n3ds_note("setting not saved: could not %s %s\n", on ? "create" : "remove", path);
+	return ok;
+}
+extern "C" int n3ds_marker_failed(void) { return n3ds_marker_fail; }
 
 extern "C" int n3ds_debug_on(void)
 {
 	if (n3ds_debug < 0) {
-		FILE *f = fopen(FS2_DIR "/debug.txt", "r");
-		n3ds_debug = f ? 1 : 0;
-		if (f) fclose(f);
+		struct stat sb;
+		n3ds_debug = (stat(FS2_DIR "/.debuglog", &sb) == 0) ? 1 : 0;
 	}
 	return n3ds_debug;
+}
+
+extern "C" void n3ds_set_debug(int on)
+{
+	n3ds_debug = on ? 1 : 0;
+	n3ds_marker_set(FS2_DIR "/.debuglog", n3ds_debug);
+	n3ds_note("debug log switched %s (START > SETTINGS)\n", n3ds_debug ? "on" : "off");
 }
 
 static void n3ds_log_v(int flush, const char *fmt, va_list ap)
@@ -294,7 +326,7 @@ extern "C" void n3ds_init(void)
 	mkdir(FS2_DIR, 0777);
 	chdir(FS2_DIR);
 
-	n3ds_note("FreeSpace 2 3DS starting%s\n", n3ds_debug_on() ? " (debug log on: debug.txt)" : "");
+	n3ds_note("FreeSpace 2 3DS starting%s\n", n3ds_debug_on() ? " (debug log on: START > SETTINGS)" : "");
 	n3ds_note("heap %lu KB, linear %lu KB free\n", (unsigned long)(envGetHeapSize() / 1024), (unsigned long)(linearSpaceFree() / 1024));
 
 	pglInitEx(N3DS_GAME_W, N3DS_GAME_H);
@@ -420,10 +452,30 @@ static float view_x = 0, view_y = 0;
 
 static float menu_zoom_scale(void) { return Menu_zooms[menu_zoom]; }
 
-/* ZL swaps the screens: the cockpit / menu picture goes on the touchscreen (scaled to
-   320 wide), the panel / dashboard / manual buttons go on the top screen (centred).
-   Touch is off while swapped. */
+/* ZL swaps the screens: the cockpit / menu picture goes on the touchscreen (it fills it), the
+   panel / dashboard / manual buttons go on the top screen (the dashboard fills it; the cockpit
+   panel is centred). The stylus is then the mouse on the menu picture. */
 static int swapped = 0;
+int n3ds_screens_swapped(void) { return swapped; }
+
+/* FS2-U2: with the screens swapped the menu is on the touchscreen. Zoom level 0 shows the whole
+   800x480 frame on it (as before: every item can be tapped, but small text cannot be read);
+   L / R / ZOOM now zoom this view too: level 1 shows 427x320 and level 2 shows 320x240 engine
+   pixels (1:1, as sharp as the top screen's closest zoom). The view follows the pointer when the
+   Circle Pad or C-Stick moves it; it never moves because of the stylus, so a tap lands on what
+   is under the stylus and the picture stays put afterwards. Returns the size of the view in
+   engine pixels. */
+static int view_follow = 1;         /* the pointer was last moved by a stick (0: put there by the stylus) */
+static void menu_view_size(float *ww, float *wh)
+{
+	if (swapped) {
+		if (menu_zoom == 0) { *ww = N3DS_GAME_W; *wh = N3DS_GAME_H; }
+		else { *ww = 320.0f / menu_zoom_scale(); *wh = 240.0f / menu_zoom_scale(); }
+	} else {
+		*ww = 400.0f / menu_zoom_scale(); *wh = 240.0f / menu_zoom_scale();
+	}
+}
+
 
 /* Left-handed play: the D-pad and the face buttons swap places
    (Y<->Up, A<->Right, B<->Down, X<->Left). Toggled from the manual, kept as a marker file. */
@@ -436,8 +488,7 @@ int n3ds_lefty(void)
 void n3ds_set_lefty(int on)
 {
 	Lefty = on ? 1 : 0;
-	if (on) { FILE *f = fopen(FS2_DIR "/.lefty", "w"); if (f) fclose(f); }
-	else remove(FS2_DIR "/.lefty");
+	n3ds_marker_set(FS2_DIR "/.lefty", Lefty);       /* FS2-Q4: the write is checked */
 }
 static u32 lefty_remap(u32 m)
 {
@@ -467,6 +518,7 @@ static void move_pointer(float vx, float vy)
 	if (fy > N3DS_GAME_H - 1) fy = N3DS_GAME_H - 1;
 	touch_x = (int)fx;
 	touch_y = (int)fy;
+	view_follow = 1;
 }
 
 /* Menus with the game on the top screen (not swapped): the touchscreen is the dashboard,
@@ -617,8 +669,7 @@ extern "C" void n3ds_input_poll(void)
 	}
 	if (down & BTN_ZL) {
 		swapped = !swapped;
-		if (swapped) { FILE *f = fopen(FS2_DIR "/.swapped", "w"); if (f) fclose(f); }
-		else remove(FS2_DIR "/.swapped");
+		n3ds_marker_set(FS2_DIR "/.swapped", swapped);   /* FS2-Q4: the write is checked */
 	}
 	held &= ~BTN_ZL; down &= ~BTN_ZL; up &= ~BTN_ZL;
 	/* swapped: the touchscreen shows the game picture, so the stylus works on that
@@ -680,6 +731,23 @@ extern "C" void n3ds_input_poll(void)
 				pm_from_flight = 0;
 			}
 			return;
+		}
+		/* FS2-U1: a pop-up with answers is up: its message page (big buttons on the dashboard's or
+		   the cockpit panel's screen) takes the D-Pad, A, B and the touch; nothing else reaches the
+		   game until it is answered. START does nothing here (the pop-up has to be answered first). */
+		{
+			touchPosition qtp; hidTouchRead(&qtp);
+			int th = (held & BTN_TOUCH) ? 1 : 0, td = (down & BTN_TOUCH) ? 1 : 0;
+			int dy = (down & BTN_DDOWN) ? 1 : (down & BTN_DUP) ? -1 : 0;
+			if (!dy) dy = (down & BTN_DRIGHT) ? 1 : (down & BTN_DLEFT) ? -1 : 0;
+			/* in menus X is the game's Enter ("accept"): there it presses the highlighted answer too */
+			if (n3ds_popup_page_input(flight, dy, (down & (flight ? BTN_A : (BTN_A | BTN_X))) ? 1 : 0, (down & BTN_B) ? 1 : 0,
+					th, th || td ? qtp.px : 0, th || td ? qtp.py : 0, td)) {
+				release_all_keys();
+				if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
+				pm_esc_pending = 0;
+				return;
+			}
 		}
 		if ((down & BTN_START) && !(held & BTN_SELECT)) {
 			n3ds_click();
@@ -788,11 +856,18 @@ extern "C" void n3ds_input_poll(void)
 		static int stylus_frames = 0;
 		int stylus = 0;
 		if (swapped && !n3ds_manual_is_open() && raw_touch_held) {
-			touch_x = tp.px * N3DS_GAME_W / 320;
-			touch_y = tp.py * N3DS_GAME_H / 240;
+			/* the stylus points into the view shown on the touchscreen (the whole frame at zoom
+			   level 0, a part of it when zoomed in: FS2-U2) */
+			float vw, vh;
+			menu_view_size(&vw, &vh);
+			touch_x = (int)(view_x + tp.px * vw / 320.0f);
+			touch_y = (int)(view_y + tp.py * vh / 240.0f);
 			if (touch_x > N3DS_GAME_W - 1) touch_x = N3DS_GAME_W - 1;
 			if (touch_y > N3DS_GAME_H - 1) touch_y = N3DS_GAME_H - 1;
+			if (touch_x < 0) touch_x = 0;
+			if (touch_y < 0) touch_y = 0;
 			stylus = (++stylus_frames >= 2);
+			view_follow = 0;
 		} else {
 			stylus_frames = 0;
 		}
@@ -845,7 +920,7 @@ extern "C" void n3ds_input_poll(void)
 		} else {
 			n3ds_manual_touch((held & BTN_TOUCH) ? 1 : 0, tp.px, tp.py, (down & BTN_TOUCH) ? 1 : 0);
 		}
-		if (down & (BTN_B | BTN_START)) {
+		if (n3ds_manual_take_close() || (down & (BTN_B | BTN_START))) {   /* the CLOSE button does what B does */
 			n3ds_manual_close();
 			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
 		}
@@ -1283,6 +1358,12 @@ extern "C" void n3ds_present(void)
 			n3ds_manual_draw();
 			n3ds_phase = "present: overlay_to"; n3ds_phase_line = 998;
 			overlay_to(PGL_TARGET_BOTTOM, 320);
+		} else if (!n3ds_portmenu_is_open() && n3ds_popup_page_active()) {
+			/* FS2-U1: the game asks something in a pop-up: its answers as big buttons, on the panel's screen */
+			overlay_begin();
+			n3ds_popup_draw_flight();
+			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+			else overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else if (n3ds_portmenu_is_open()) {
 			/* FS-08: the START menu, on the panel's screen, every frame (its buttons animate) */
 			overlay_begin();
@@ -1306,7 +1387,8 @@ extern "C" void n3ds_present(void)
 	} else {
 		/* ---- top: the menu, at a readable zoom; the view follows the pointer */
 		float z = menu_zoom_scale();
-		float ww = 400.0f / z, wh = 240.0f / z;            /* engine pixels in view */
+		float ww, wh;                                      /* engine pixels in view */
+		menu_view_size(&ww, &wh);
 		/* a popup opening: centre the view (and the pointer) on it - popups sit in the
 		   middle of the screen and are wider than the 1:1 view */
 		static int was_popup = 0;
@@ -1319,10 +1401,12 @@ extern "C" void n3ds_present(void)
 		}
 		was_popup = popup;
 		const float margin = 48.0f / z;
-		if (touch_x < view_x + margin) view_x = touch_x - margin;
-		if (touch_x > view_x + ww - margin) view_x = touch_x - ww + margin;
-		if (touch_y < view_y + margin) view_y = touch_y - margin;
-		if (touch_y > view_y + wh - margin) view_y = touch_y - wh + margin;
+		if (!swapped || view_follow) {     /* the view never moves because of the stylus (FS2-U2) */
+			if (touch_x < view_x + margin) view_x = touch_x - margin;
+			if (touch_x > view_x + ww - margin) view_x = touch_x - ww + margin;
+			if (touch_y < view_y + margin) view_y = touch_y - margin;
+			if (touch_y > view_y + wh - margin) view_y = touch_y - wh + margin;
+		}
 		if (view_x > N3DS_GAME_W - ww) view_x = N3DS_GAME_W - ww;
 		if (view_y > N3DS_GAME_H - wh) view_y = N3DS_GAME_H - wh;
 		if (view_x < 0) view_x = 0;
@@ -1337,7 +1421,9 @@ extern "C" void n3ds_present(void)
 			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 1040;
 			compose_begin(PGL_TARGET_BOTTOM);
 			n3ds_phase = "present: blit_main"; n3ds_phase_line = 1041;
-			blit_main(0, 0, 320, 240, src_x0, src_y0, src_x1, src_y1);   /* fills the touchscreen, no bars */
+			/* fills the touchscreen, no bars: the whole frame at zoom level 0, else the view (FS2-U2) */
+			blit_main(0, 0, 320, 240, src_x0 + view_x * kx, src_y0 + view_y * ky,
+				src_x0 + (view_x + ww) * kx, src_y0 + (view_y + wh) * ky);
 		} else {
 			n3ds_phase = "present: compose_begin"; n3ds_phase_line = 1043;
 			compose_begin(PGL_TARGET_TOP);
@@ -1354,8 +1440,9 @@ extern "C" void n3ds_present(void)
 			n3ds_phase = "present: overlay_begin"; n3ds_phase_line = 1053;
 			overlay_begin();
 			n3ds_phase = "present: n3ds_dash_draw"; n3ds_phase_line = 1054;
+			n3ds_dash_set_nav(swapped);        /* also its width: 400 on the top screen, 320 below */
 			if (!n3ds_perf_flag("nodash")) n3ds_dash_draw();
-			if (swapped) overlay_to_ex(PGL_TARGET_TOP, 320, 40, 0, 360, 240);
+			if (swapped) overlay_to(PGL_TARGET_TOP, 400);   /* FS2-U2: the whole top screen, no side bars */
 			else overlay_to(PGL_TARGET_BOTTOM, 320);
 		} else {
 			bottom = 0;
@@ -1463,7 +1550,7 @@ static const key_name Key_names[] = {
 	{ KEY_DELETE,              "the panel's W -" },
 	{ KEY_PAGEUP,              "the panel's E +" },
 	{ KEY_PAGEDOWN,            "the panel's E -" },
-	{ KEY_SHIFTED | KEY_R,     "ORDERS (rearm)" },
+	{ KEY_SHIFTED | KEY_R,     "COMMS (rearm)" },
 	{ KEY_PAUSE,               "SELECT+START" },
 };
 
@@ -1474,7 +1561,7 @@ extern "C++" const char *n3ds_key_name(int keycode)
 	for (unsigned i = 0; i < sizeof(Key_names) / sizeof(Key_names[0]); i++)
 		if (Key_names[i].key == keycode)
 			return Key_names[i].name;
-	return "the panel / ORDERS";   /* no 3DS button: never show a PC key */
+	return "the panel / COMMS";   /* no 3DS button: never show a PC key */
 }
 
 // Heaps: like libctru's default (32 MB linear, the rest heap) but leave 8 MB uncommitted

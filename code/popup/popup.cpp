@@ -126,6 +126,51 @@ static int Popup_should_die=0;			// popup should quit during the next iteration 
 static popup_info Popup_info;
 static int Popup_flags;
 
+#ifdef SCP_3DS
+extern int Popup_default_choice;
+// New 3DS (FS2-U1): the port shows a choice popup's question and answers as big buttons on the
+// dashboard / cockpit-panel screen (n3ds_dash.cpp). It reads the popup here and hands back the
+// answer the player picked; the popup's own loop takes it like a click on that answer.
+static int N3ds_popup_choice = -1;
+static int N3ds_popup_shown = 0;		// the popup's loop is running (its buttons exist)
+
+// returns the number of answers (0: no popup, or one that types text), the unbroken text and the answers
+int n3ds_popup_get(const char **text, const char **buttons, int max_buttons)
+{
+	if ( !Popup_is_active || !N3ds_popup_shown || (Popup_flags & PF_INPUT) || Popup_info.nchoices <= 0 ) {
+		return 0;
+	}
+	int n = Popup_info.nchoices;
+	if ( n > max_buttons ) {
+		n = max_buttons;
+	}
+	for ( int i = 0; i < n; i++ ) {
+		buttons[i] = Popup_info.button_text[i] ? Popup_info.button_text[i] : "";
+	}
+	*text = Popup_info.raw_text;
+	return n;
+}
+
+void n3ds_popup_choose(int choice)
+{
+	if ( Popup_is_active && N3ds_popup_shown && choice >= 0 && choice < Popup_info.nchoices ) {
+		N3ds_popup_choice = choice;
+	}
+}
+
+// in the popup loops: the answer picked on the port's page, or POPUP_NOCHANGE
+static int n3ds_popup_take(popup_info *pi)
+{
+	int c = N3ds_popup_choice;
+	N3ds_popup_choice = -1;
+	if ( c >= 0 && c < pi->nchoices ) {
+		Popup_default_choice = c;
+		return c;
+	}
+	return POPUP_NOCHANGE;
+}
+#endif
+
 static int Title_coords[GR_NUM_RESOLUTIONS][5] =
 {
 	{ // GR_640
@@ -554,6 +599,11 @@ int popup_init(popup_info *pi, int flags)
 void popup_close(popup_info *pi, int screen_id)
 {
 	int i;
+
+#ifdef SCP_3DS
+	N3ds_popup_shown = 0;
+	N3ds_popup_choice = -1;
+#endif
 	
 	gamesnd_play_iface(SND_POPUP_DISAPPEAR); 	// play sound when popup disappears
 
@@ -827,6 +877,11 @@ int popup_do(popup_info *pi, int flags)
 
 	gr_reset_screen_scale();
 
+#ifdef SCP_3DS
+	N3ds_popup_choice = -1;
+	N3ds_popup_shown = 1;
+#endif
+
 	while(!done) {
 		int k;
 
@@ -860,6 +915,15 @@ int popup_do(popup_info *pi, int flags)
 				done=1;
 			}
 		}
+
+#ifdef SCP_3DS
+		if ( !done ) {
+			choice = n3ds_popup_take(pi);
+			if ( choice != POPUP_NOCHANGE ) {
+				done=1;
+			}
+		}
+#endif
 
 		// don't draw anything 
 		if(!(flags & PF_RUN_STATE)){
@@ -899,6 +963,11 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 
 	gr_reset_screen_scale();
 
+#ifdef SCP_3DS
+	N3ds_popup_choice = -1;
+	N3ds_popup_shown = 1;
+#endif
+
 	while(!done) {
 		int k;
 
@@ -932,6 +1001,15 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 					done=1;
 				}
 			}
+
+#ifdef SCP_3DS
+			if ( !done ) {
+				choice = n3ds_popup_take(pi);
+				if ( choice != POPUP_NOCHANGE ) {
+					done=1;
+				}
+			}
+#endif
 		}		
 	}
 

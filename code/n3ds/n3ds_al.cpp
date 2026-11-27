@@ -238,12 +238,26 @@ static void mix_thread_func(void *arg)
 
 static void stop_mixer(void);
 extern "C" void n3ds_threads_stop(void);   /* n3ds_platform.cpp (FS-01) */
+extern "C" void n3ds_note(const char *fmt, ...);   /* n3ds_platform.cpp: a log line that is always written */
 
 static void start_mixer(void)
 {
 	if (Ndsp_ok) return;
 	if (R_FAILED(ndspInit())) {
 		/* no dspfirm.cdc dump: run silently */
+		return;
+	}
+	/* FS2-Q3: the mix buffers come from the linear heap, which can be short right at start (the
+	   app that ran before may still hold memory). The result was used unchecked: a NULL here
+	   crashed at launch. Now: wait up to a second for it, and if there is still none, give the
+	   DSP back and run without sound (said in the log), as when there is no DSP firmware. */
+	for (int tries = 0; tries < 10 && !Wave_data; tries++) {
+		Wave_data = (s16 *)linearAlloc(MIX_SAMPLES * 4 * MIX_BUFFERS);
+		if (!Wave_data) svcSleepThread(100000000LL);
+	}
+	if (!Wave_data) {
+		ndspExit();
+		n3ds_note("sound off: no linear memory for the mix buffers (%u KB free)\n", (unsigned)(linearSpaceFree() / 1024));
 		return;
 	}
 	Ndsp_ok = 1;
@@ -269,7 +283,6 @@ static void start_mixer(void)
 	float mix[12] = { 1.0f, 1.0f };
 	ndspChnSetMix(0, mix);
 
-	Wave_data = (s16 *)linearAlloc(MIX_SAMPLES * 4 * MIX_BUFFERS);
 	memset(Wave_data, 0, MIX_SAMPLES * 4 * MIX_BUFFERS);
 	memset(Wave, 0, sizeof(Wave));
 	for (int w = 0; w < MIX_BUFFERS; w++) {
