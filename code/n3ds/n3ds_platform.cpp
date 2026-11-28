@@ -526,6 +526,12 @@ static void move_pointer(float vx, float vy)
    moves the pointer by how far the stylus moves (not to where it is), a short tap clicks
    where the pointer is (R held: right button). The pointer is drawn on the top screen. */
 static int input_frame = 0;
+/* A press that answered a pop-up, or chose a row of the START menu, must not go on to click the
+   menu under the pointer: the page closes a few frames after the press, and A is usually still
+   down then (seen in the emulator: "No" on the main hall's "Exit Game?" went on to click the
+   Ready Room door under the pointer). While this is set A is not the mouse button; it clears
+   when A is let go. */
+static int a_swallowed = 0;
 static int pad_click_left = 0, pad_click_right = 0;   /* frames a tap's click is still held */
 static int r_modifier_used = 0;                       /* R was held for a right-click tap */
 
@@ -718,6 +724,7 @@ extern "C" void n3ds_input_poll(void)
 			n3ds_portmenu_input(dy, (down & BTN_A) ? 1 : 0, (down & BTN_B) ? 1 : 0, (down & BTN_START) ? 1 : 0,
 				th, th || td ? ptp.px : 0, th || td ? ptp.py : 0, td);
 			release_all_keys();
+			a_swallowed = 1;
 			if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
 			if (!n3ds_portmenu_is_open() && pm_was_open) {
 				pm_was_open = 0;
@@ -744,6 +751,7 @@ extern "C" void n3ds_input_poll(void)
 			if (n3ds_popup_page_input(flight, dy, (down & (flight ? BTN_A : (BTN_A | BTN_X))) ? 1 : 0, (down & BTN_B) ? 1 : 0,
 					th, th || td ? qtp.px : 0, th || td ? qtp.py : 0, td)) {
 				release_all_keys();
+				a_swallowed = 1;
 				if (touch_down) { mouse_mark_button(MOUSE_LEFT_BUTTON, 0); touch_down = 0; }
 				pm_esc_pending = 0;
 				return;
@@ -873,7 +881,8 @@ extern "C" void n3ds_input_poll(void)
 		}
 		/* A (or the stylus, or a touchpad tap) = left mouse button; a tap with R held = right */
 		if (pad_click_left) pad_click_left--;
-		int now = ((held & BTN_A) || stylus || pad_click_left) ? 1 : 0;
+		if (!(held & BTN_A)) a_swallowed = 0;
+		int now = (((held & BTN_A) && !a_swallowed) || stylus || pad_click_left) ? 1 : 0;
 		if (now != touch_down) {
 			/* make sure the cursor position is updated before the click lands */
 			mouse_mark_button(MOUSE_LEFT_BUTTON, now);
@@ -896,6 +905,7 @@ extern "C" void n3ds_input_poll(void)
 		return;
 	}
 	if (n3ds_manual_is_open()) {
+		a_swallowed = 1;   /* A on CLOSE or LEFT HAND is not a click on the menu behind */
 		/* the standard manual controls of all the 3DS ports */
 		circlePosition mcp, mcs;
 		hidCircleRead(&mcp);
