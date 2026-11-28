@@ -532,6 +532,7 @@ static int input_frame = 0;
    Ready Room door under the pointer). While this is set A is not the mouse button; it clears
    when A is let go. */
 static int a_swallowed = 0;
+static int manual_unpause = 0;   /* the manual was opened from the flight START menu: unpause when it closes */
 static int pad_click_left = 0, pad_click_right = 0;   /* frames a tap's click is still held */
 static int r_modifier_used = 0;                       /* R was held for a right-click tap */
 
@@ -731,6 +732,7 @@ extern "C" void n3ds_input_poll(void)
 				/* closed: in flight the game was paused for the menu. RESUME, B and GAME MENU unpause;
 				   MANUAL keeps it paused (closing the manual unpauses) and EXIT is leaving anyway */
 				if (pm_from_flight && paused && !n3ds_manual_is_open() && !n3ds_exit_requested) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+				if (pm_from_flight && paused && n3ds_manual_is_open()) manual_unpause = 1;   /* MANUAL: unpause when it closes */
 				if (n3ds_pm_game_menu_requested) {
 					n3ds_pm_game_menu_requested = 0;
 					if (pm_from_flight) pm_esc_pending = 120;   /* sent below, once the game has left its pause state */
@@ -932,7 +934,11 @@ extern "C" void n3ds_input_poll(void)
 		}
 		if (n3ds_manual_take_close() || (down & (BTN_B | BTN_START))) {   /* the CLOSE button does what B does */
 			n3ds_manual_close();
-			if (flight) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+			/* back to flight: the manual opened with SELECT + START in flight (flight is true) or from
+			   the flight START menu (the game is in its own pause state then, so "flight" is false;
+			   seen in the emulator: the game stayed on its PAUSED screen after the manual closed) */
+			if (flight || (manual_unpause && gameseq_get_state() == GS_STATE_GAME_PAUSED)) { key_mark(KEY_PAUSE, 1, 0); key_mark(KEY_PAUSE, 0, 0); }
+			manual_unpause = 0;
 		}
 		return;
 	}

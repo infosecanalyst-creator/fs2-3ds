@@ -14,6 +14,8 @@
 - Manual: CLOSE button; the control hints are a strip under the text; scrolling never shows a line cut in half.
 - Settings that cannot be written to the card are reported (log line, and a line on the SETTINGS page).
 - The game starts without sound instead of crashing if there is no memory for the sound buffers at launch.
+- In flight, START > MANUAL then closing the manual goes straight back to flight (it left the game on its PAUSED screen).
+- A press that answers a pop-up, the START menu or the manual no longer clicks the menu behind it.
 - The "new user tips" pop-up is off: its tips name PC keys ("Press [Alt-M]").
 
 ## 2026-11-21
