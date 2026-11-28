@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-27 (cross-port consistency)
+
+- EXIT GAME asks "Exit FreeSpace 2?" (was "EXIT FREESPACE 2?" in capitals), as the other ports name their game. The second line is in the house words: "It is saved first (your pilot)." or, with no pilot yet, "No pilot yet: nothing to save." In flight the line "The mission you are flying is not saved." stays. YES / NO, focus on NO and B going back are unchanged.
+- Manual: the Files & saves page says the exit question's words.
+
 ## 2026-11-21 (night: audit fixes)
 
 - Training messages on the cockpit panel no longer flip pages by themselves every 3 seconds. A long message shows a page mark (PAGE 1/2) and stays until you tap the message box for the next page. The box holds seven lines instead of six.

@@ -605,9 +605,10 @@ static void pm_draw(void)
 		   (n3ds_input_poll); a mission in flight cannot be saved by this engine. */
 		const int pilot = Player && Player->callsign[0];
 		gr_set_color(255, 204, 64);
-		centred(sw, 60, "EXIT FREESPACE 2?");
+		/* cross-port pass (Nov 27): the house question "Exit <Game>?" and second line */
+		centred(sw, 60, "Exit FreeSpace 2?");
 		gr_set_color(240, 240, 240);
-		centred(sw, 84, pilot ? "Your pilot is saved first." : "There is no pilot to save yet.");
+		centred(sw, 84, pilot ? "It is saved first (your pilot)." : "No pilot yet: nothing to save.");
 		if (Pm_flight) centred(sw, 100, "The mission you are flying is not saved.");
 		for (int i = 0; i < 2; i++) pm_button(i, Pm_confirm[i]);
 	} else {
